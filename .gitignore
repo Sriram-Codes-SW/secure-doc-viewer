@@ -1,0 +1,21 @@
+# Build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Generated tile storage — never commit ingested documents
+storage/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

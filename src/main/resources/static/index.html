@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Secure Document Viewer — demo</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.25rem; }
+  section { border: 1px solid #8884; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  label { display: block; margin-top: 0.5rem; font-size: 0.9rem; }
+  input, button { font-size: 0.95rem; padding: 0.4rem 0.6rem; margin-top: 0.25rem; }
+  button { cursor: pointer; }
+  #status { font-size: 0.85rem; opacity: 0.75; white-space: pre-wrap; }
+  #pageCanvas { border: 1px solid #8884; max-width: 100%; background: #fff; }
+  .row { display: flex; gap: 0.5rem; align-items: center; }
+  #nav { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Secure Document Viewer — tile + signed-URL + watermark demo</h1>
+<p id="status">Not logged in.</p>
+
+<section id="loginSection">
+  <label>Username
+    <input id="username" value="demo-user">
+  </label>
+  <button id="loginBtn">Log in</button>
+  <button id="logoutBtn" style="display:none">Log out</button>
+</section>
+
+<section id="uploadSection" style="display:none">
+  <label>Document title
+    <input id="title" value="Sample document">
+  </label>
+  <label>PDF file
+    <input id="fileInput" type="file" accept="application/pdf">
+  </label>
+  <button id="uploadBtn">Upload &amp; tile</button>
+</section>
+
+<section id="viewerSection" style="display:none">
+  <div class="row" id="nav">
+    <button id="prevBtn">&larr; Prev</button>
+    <span id="pageLabel"></span>
+    <button id="nextBtn">Next &rarr;</button>
+  </div>
+  <canvas id="pageCanvas"></canvas>
+</section>
+
+<script>
+let sessionId = null;
+let manifest = null;
+let currentPage = 0;
+
+const statusEl = document.getElementById('status');
+function setStatus(msg) { statusEl.textContent = msg; }
+
+async function api(path, options = {}) {
+  const headers = options.headers || {};
+  if (sessionId) headers['X-Session-Id'] = sessionId;
+  const res = await fetch(path, { ...options, headers });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`${res.status} ${res.statusText}: ${body}`);
+  }
+  return res;
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const username = document.getElementById('username').value.trim();
+  if (!username) return;
+  try {
+    const res = await api(`/api/session/login?username=${encodeURIComponent(username)}`, { method: 'POST' });
+    const data = await res.json();
+    sessionId = data.sessionId;
+    setStatus(`Logged in as ${data.username}. Session: ${sessionId}`);
+    document.getElementById('uploadSection').style.display = '';
+    document.getElementById('logoutBtn').style.display = '';
+  } catch (e) {
+    setStatus('Login failed: ' + e.message);
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try {
+    await api('/api/session/logout', { method: 'POST' });
+  } catch (e) { /* ignore */ }
+  sessionId = null;
+  manifest = null;
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('viewerSection').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  setStatus('Logged out. Any previously issued tile URLs are now dead, even if unexpired.');
+});
+
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+  const title = document.getElementById('title').value.trim() || 'Untitled';
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) { setStatus('Choose a PDF first.'); return; }
+
+  const form = new FormData();
+  form.append('title', title);
+  form.append('file', file);
+
+  setStatus('Uploading and rasterizing into tiles…');
+  try {
+    const res = await api('/api/documents', { method: 'POST', body: form });
+    manifest = await res.json();
+    currentPage = 0;
+    document.getElementById('viewerSection').style.display = '';
+    document.getElementById('nav').style.display = manifest.pageCount > 1 ? 'flex' : 'none';
+    setStatus(`Tiled "${manifest.title}" into ${manifest.pageCount} page(s). Document id: ${manifest.documentId}`);
+    await renderPage(currentPage);
+  } catch (e) {
+    setStatus('Upload failed: ' + e.message);
+  }
+});
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentPage > 0) { currentPage--; renderPage(currentPage); }
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (currentPage < manifest.pageCount - 1) { currentPage++; renderPage(currentPage); }
+});
+
+async function renderPage(pageIndex) {
+  document.getElementById('pageLabel').textContent = `Page ${pageIndex + 1} / ${manifest.pageCount}`;
+  setStatus(`Requesting fresh signed tile URLs for page ${pageIndex + 1}…`);
+
+  const res = await api(`/api/documents/${manifest.documentId}/pages/${pageIndex}/tile-urls`);
+  const grid = await res.json();
+
+  const canvas = document.getElementById('pageCanvas');
+  const pageInfo = manifest.pages.find(p => p.page === pageIndex);
+  canvas.width = pageInfo.pageWidthPx;
+  canvas.height = pageInfo.pageHeightPx;
+  const ctx = canvas.getContext('2d');
+
+  let loaded = 0;
+  const total = grid.rows * grid.cols;
+
+  for (let row = 0; row < grid.rows; row++) {
+    for (let col = 0; col < grid.cols; col++) {
+      const url = grid.tileUrls[row][col];
+      // Each fetch redeems a single-tile, session-bound, short-lived token.
+      const tileRes = await api(url);
+      const blob = await tileRes.blob();
+      const bitmap = await createImageBitmap(blob);
+      ctx.drawImage(bitmap, col * grid.tileSize, row * grid.tileSize);
+      loaded++;
+      setStatus(`Rendering page ${pageIndex + 1}: ${loaded}/${total} tiles fetched and painted onto canvas…`);
+    }
+  }
+
+  setStatus(`Page ${pageIndex + 1} fully painted from ${total} individually-signed, watermarked tiles.`);
+}
+</script>
+</body>
+</html>

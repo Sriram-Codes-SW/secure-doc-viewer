@@ -1,0 +1,30 @@
+server:
+  port: 8080
+
+secure-doc-viewer:
+  # Root directory where uploaded PDFs are rasterized into per-tile PNGs.
+  # Mirrors an object-storage "bucket" layout: {storage-root}/{docId}/page-{n}/tile-{row}_{col}.png
+  storage-root: ./storage
+
+  # Pixel size of each square tile. Smaller tiles = more requests but each one
+  # is useless in isolation, which is the point.
+  tile-size: 256
+
+  # DPI used when rasterizing PDF pages to images before tiling.
+  render-dpi: 150
+
+  # Secret used to HMAC-sign tile access tokens. In a real deployment this
+  # would come from a secrets manager, never be committed, and be rotated.
+  signing-secret: "demo-only-signing-secret-change-me"
+
+  # How long a signed tile URL remains valid after being issued.
+  url-ttl-seconds: 120
+
+  # How long a login session stays valid.
+  session-ttl-seconds: 1800
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
