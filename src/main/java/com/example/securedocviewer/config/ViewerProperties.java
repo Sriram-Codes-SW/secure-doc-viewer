@@ -26,6 +26,10 @@ public class ViewerProperties {
     @Size(min = 32, message = "SIGNING_SECRET must be at least 32 characters")
     private String signingSecret;
     private long urlTtlSeconds = 120;
+    /** Uploads with more pages are rejected before anything is rendered. */
+    private int maxPages = 500;
+    /** Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs. */
+    private long maxPagePixels = 40_000_000L;
     private int tileRateLimitPerWindow = 120;
     private long tileRateLimitWindowSeconds = 60;
 
@@ -67,6 +71,22 @@ public class ViewerProperties {
 
     public void setUrlTtlSeconds(long urlTtlSeconds) {
         this.urlTtlSeconds = urlTtlSeconds;
+    }
+
+    public int getMaxPages() {
+        return maxPages;
+    }
+
+    public void setMaxPages(int maxPages) {
+        this.maxPages = maxPages;
+    }
+
+    public long getMaxPagePixels() {
+        return maxPagePixels;
+    }
+
+    public void setMaxPagePixels(long maxPagePixels) {
+        this.maxPagePixels = maxPagePixels;
     }
 
     public int getTileRateLimitPerWindow() {

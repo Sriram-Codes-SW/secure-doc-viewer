@@ -6,6 +6,8 @@ import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.model.PageInfo;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -49,25 +53,30 @@ public class TileGenerationService {
     }
 
     /**
-     * Renders every page into a fresh staging directory. Throws
-     * {@link BadRequestException} if the bytes aren't a readable PDF; on any
-     * failure the staging directory is removed before the exception escapes.
+     * Renders every page into a fresh staging directory. The upload is
+     * streamed to a temporary file and parsed from disk rather than held in
+     * memory. Throws {@link BadRequestException} if it isn't a readable PDF or
+     * exceeds the page-count or page-size limits — all checked before any
+     * page is rendered. On any failure the staging directory is removed.
      */
-    public RenderedDocument render(byte[] pdfBytes) throws IOException {
+    public RenderedDocument render(InputStream pdf) throws IOException {
         Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
         Files.createDirectories(stagingDir);
+        Path source = stagingDir.resolve("upload.pdf");
         try {
+            Files.copy(pdf, source);
+            requirePdfSignature(source);
             List<PageInfo> pages = new ArrayList<>();
-            try (PDDocument document = loadPdf(pdfBytes)) {
-                if (document.getNumberOfPages() == 0) {
-                    throw new BadRequestException("The PDF has no pages.");
-                }
+            try (PDDocument document = loadPdf(source)) {
+                requireWithinLimits(document);
                 PDFRenderer renderer = new PDFRenderer(document);
                 for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) {
                     BufferedImage rendered = renderer.renderImageWithDPI(pageIndex, properties.getRenderDpi());
                     pages.add(tileAndSave(stagingDir.resolve("page-" + pageIndex), pageIndex, rendered));
                 }
             }
+            // The PDF itself must never be committed alongside its tiles.
+            Files.delete(source);
             return new RenderedDocument(stagingDir, properties.getTileSize(), pages);
         } catch (IOException | RuntimeException e) {
             try {
@@ -153,9 +162,44 @@ public class TileGenerationService {
         return ImageIO.read(tilePath.toFile());
     }
 
-    private static PDDocument loadPdf(byte[] pdfBytes) {
+    /** Cheap first check: real PDFs start with "%PDF-" (a few writers prepend junk, so allow 1 KB). */
+    private static void requirePdfSignature(Path file) throws IOException {
+        byte[] head = new byte[1024];
+        int read;
+        try (InputStream in = Files.newInputStream(file)) {
+            read = in.readNBytes(head, 0, head.length);
+        }
+        if (!new String(head, 0, read, StandardCharsets.ISO_8859_1).contains("%PDF-")) {
+            throw new BadRequestException("The file is not a readable PDF.");
+        }
+    }
+
+    private void requireWithinLimits(PDDocument document) {
+        int pageCount = document.getNumberOfPages();
+        if (pageCount == 0) {
+            throw new BadRequestException("The PDF has no pages.");
+        }
+        if (pageCount > properties.getMaxPages()) {
+            throw new BadRequestException("The PDF has " + pageCount + " pages; the limit is "
+                    + properties.getMaxPages() + ".");
+        }
+        double scale = properties.getRenderDpi() / 72.0;
+        for (int i = 0; i < pageCount; i++) {
+            PDPage page = document.getPage(i);
+            PDRectangle box = page.getCropBox();
+            boolean rotated = page.getRotation() % 180 != 0;
+            double width = (rotated ? box.getHeight() : box.getWidth()) * scale;
+            double height = (rotated ? box.getWidth() : box.getHeight()) * scale;
+            if (width * height > properties.getMaxPagePixels()) {
+                throw new BadRequestException("Page " + (i + 1) + " is too large to render ("
+                        + Math.round(width) + "x" + Math.round(height) + " px).");
+            }
+        }
+    }
+
+    private static PDDocument loadPdf(Path file) {
         try {
-            return Loader.loadPDF(pdfBytes);
+            return Loader.loadPDF(file.toFile());
         } catch (IOException e) {
             // Covers non-PDF content, truncated files and password-protected PDFs.
             throw new BadRequestException("The file is not a readable PDF.");

@@ -62,3 +62,13 @@ label.choice {
   font-weight: 400;
   color: var(--fg);
 }
+
+progress {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+}
