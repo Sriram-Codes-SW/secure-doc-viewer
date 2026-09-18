@@ -5,15 +5,36 @@ const ADMIN_PASSWORD = process.env['E2E_ADMIN_PASSWORD'] ?? '';
 
 // Unique per run, so the suite can be re-run against the same database.
 const run = Date.now().toString(36);
-const publisher = { username: `e2e-pub-${run}`, password: 'e2e-publisher-password', role: 'PUBLISHER' };
-const reader = { username: `e2e-reader-${run}`, password: 'e2e-reader-password', role: 'READER' };
-const outsider = { username: `e2e-outsider-${run}`, password: 'e2e-outsider-password', role: 'READER' };
+// Admin-set passwords are temporary: each user must choose their own on first sign-in.
+const publisher = { username: `e2e-pub-${run}`, temporary: 'e2e-publisher-temp', password: 'e2e-publisher-password', role: 'PUBLISHER' };
+const reader = { username: `e2e-reader-${run}`, temporary: 'e2e-reader-temp', password: 'e2e-reader-password', role: 'READER' };
+const outsider = { username: `e2e-outsider-${run}`, temporary: 'e2e-outsider-temp', password: 'e2e-outsider-password', role: 'READER' };
+type NewUser = typeof publisher;
 
-async function signIn(browser: Browser, username: string, password: string): Promise<Page> {
+async function submitSignIn(browser: Browser, username: string, password: string): Promise<Page> {
   const page = await (await browser.newContext()).newPage();
   await page.goto('/login');
   await page.fill('#username', username);
   await page.fill('#password', password);
+  await page.click('button[type=submit]');
+  return page;
+}
+
+async function signIn(browser: Browser, username: string, password: string): Promise<Page> {
+  const page = await submitSignIn(browser, username, password);
+  await expect(page).toHaveURL(/\/documents/);
+  return page;
+}
+
+/** First sign-in with an admin-set password: nothing else is reachable until it is replaced. */
+async function firstSignIn(browser: Browser, user: NewUser): Promise<Page> {
+  const page = await submitSignIn(browser, user.username, user.temporary);
+  await expect(page).toHaveURL(/\/account\?.*required=1/);
+  await page.goto('/documents');
+  await expect(page).toHaveURL(/\/account\?.*required=1/);
+  await page.fill('#current', user.temporary);
+  await page.fill('#new', user.password);
+  await page.fill('#confirm', user.password);
   await page.click('button[type=submit]');
   await expect(page).toHaveURL(/\/documents/);
   return page;
@@ -27,7 +48,7 @@ test('a publisher shares a document with one reader, and nobody else can see it'
   await admin.goto('/admin');
   for (const user of [publisher, reader, outsider]) {
     await admin.fill('input[name=newUsername]', user.username);
-    await admin.fill('input[name=newPassword]', user.password);
+    await admin.fill('input[name=newPassword]', user.temporary);
     await admin.selectOption('select[name=newRole]', user.role);
     await admin.click('button:has-text("Create user")');
     await expect(admin.getByText(`Created ${user.username}`)).toBeVisible();
@@ -40,7 +61,7 @@ test('a publisher shares a document with one reader, and nobody else can see it'
   await pdfPage.pdf({ path: pdfPath, format: 'A4' });
 
   // Publisher uploads it (private by default) and shares it with the reader.
-  const pub = await signIn(browser, publisher.username, publisher.password);
+  const pub = await firstSignIn(browser, publisher);
   await pub.goto('/documents/upload');
   await pub.setInputFiles('#file', pdfPath);
   await pub.fill('#title', `E2E ${run}`);
@@ -52,7 +73,7 @@ test('a publisher shares a document with one reader, and nobody else can see it'
   await expect(pub.getByText(`Shared with ${reader.username}.`)).toBeVisible();
 
   // The reader sees every tile load, and can turn pages with the keyboard.
-  const rd = await signIn(browser, reader.username, reader.password);
+  const rd = await firstSignIn(browser, reader);
   await rd.goto(`/viewer/${documentId}`);
   await expect(rd.locator('.tile').first()).toBeVisible();
   await expect(rd.locator('.tile.pending')).toHaveCount(0, { timeout: 30_000 });
@@ -62,7 +83,7 @@ test('a publisher shares a document with one reader, and nobody else can see it'
   await expect(rd.locator('.tile.pending')).toHaveCount(0, { timeout: 30_000 });
 
   // Someone it wasn't shared with can't tell it exists.
-  const out = await signIn(browser, outsider.username, outsider.password);
+  const out = await firstSignIn(browser, outsider);
   await expect(out.getByText(`E2E ${run}`)).toHaveCount(0);
   await out.goto(`/viewer/${documentId}`);
   await expect(out.getByText(/hasn.t been shared with you/)).toBeVisible();
