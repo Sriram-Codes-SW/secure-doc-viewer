@@ -1,5 +1,7 @@
 # Local development:  `docker compose up -d`                    -> MySQL only (run the app with mvnw / ng serve)
 # Full stack:         `docker compose --profile full up -d --build` -> MySQL + API + web at http://localhost:8081
+# With HTTPS:         `docker compose --profile full --profile tls up -d --build` -> also https://localhost:8443
+#                     (see deploy/Caddyfile; set SESSION_COOKIE_SECURE=true in .env when serving over HTTPS)
 # Credentials come from the git-ignored .env file (copy .env.example).
 services:
   mysql:
@@ -35,8 +37,11 @@ services:
       DB_HOST: mysql
       DB_PORT: "3306"
       STORAGE_ROOT: /data/storage
-      # Behind nginx: trust X-Forwarded-For so throttling and audit see real client IPs.
+      # Behind nginx: trust X-Forwarded-For so throttling and audit see real client IPs...
       FORWARD_HEADERS_STRATEGY: native
+      # ...but only from nginx itself (its fixed address below). Any other container
+      # on this network that talks to app:8080 directly is judged by its own address.
+      TRUSTED_PROXY_REGEX: '172\.28\.0\.10'
     volumes:
       - app-storage:/data/storage
     depends_on:
@@ -45,6 +50,12 @@ services:
     # Not published: only reachable through the web container.
     expose:
       - "8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 6
 
   web:
     profiles: ["full"]
@@ -53,10 +64,53 @@ services:
     restart: unless-stopped
     mem_limit: 128m
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     ports:
       - "127.0.0.1:${WEB_PORT:-8081}:80"
+    networks:
+      default:
+        # Fixed, because the app trusts forwarded client addresses from this IP only.
+        ipv4_address: 172.28.0.10
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Optional HTTPS front end with HSTS. Uses Caddy's own local CA by default
+  # (browsers will warn until you trust it); set TLS_MODE to an e-mail address
+  # and SITE_ADDRESS to your domain for a real Let's Encrypt certificate.
+  tls:
+    profiles: ["tls"]
+    image: caddy:2-alpine
+    container_name: securedocs-tls
+    restart: unless-stopped
+    mem_limit: 128m
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      TLS_MODE: ${TLS_MODE:-internal}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${TLS_PORT:-8443}:443"
+    networks:
+      default:
+        # nginx takes the client address from X-Forwarded-For only when it comes from here.
+        ipv4_address: 172.28.0.11
+
+networks:
+  default:
+    ipam:
+      config:
+        # Fixed so nginx and Caddy keep the addresses the trust settings above name.
+        - subnet: 172.28.0.0/24
 
 volumes:
   mysql-data:
   app-storage:
+  caddy-data:

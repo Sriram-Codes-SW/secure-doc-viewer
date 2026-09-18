@@ -1,5 +1,6 @@
 package com.example.securedocviewer.service;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.example.securedocviewer.config.ViewerProperties;
 import com.example.securedocviewer.exception.BadRequestException;
 import com.example.securedocviewer.model.PageInfo;
@@ -36,7 +37,7 @@ class TileGenerationServiceTest {
         properties.setTileSize(50);
         properties.setRenderDpi(72);
 
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
         TileGenerationService.RenderedDocument rendered = service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf()));
 
         assertEquals(1, rendered.pages().size());
@@ -55,7 +56,7 @@ class TileGenerationServiceTest {
         properties.setTileSize(200);
         properties.setRenderDpi(72);
 
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
         TileGenerationService.RenderedDocument rendered = service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf()));
         service.commit(rendered, "doc-1", 1);
         PageInfo page = rendered.pages().get(0);
@@ -76,7 +77,7 @@ class TileGenerationServiceTest {
     void aFileThatIsNotAPdfIsRejectedAndLeavesNothingOnDisk(@TempDir Path tempDir) throws IOException {
         ViewerProperties properties = new ViewerProperties();
         properties.setStorageRoot(tempDir.toString());
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
 
         assertThrows(BadRequestException.class,
                 () -> service.render(new java.io.ByteArrayInputStream("definitely not a pdf".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
@@ -92,7 +93,7 @@ class TileGenerationServiceTest {
         properties.setStorageRoot(tempDir.toString());
         properties.setTileSize(200);
         properties.setRenderDpi(72);
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
 
         service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 1);
         service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 2);
@@ -119,7 +120,7 @@ class TileGenerationServiceTest {
         properties.setStorageRoot(tempDir.toString());
         properties.setMaxConcurrentRenders(1);
         properties.setRenderQueueTimeoutSeconds(1);
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
 
         // Hold the only permit with an upload whose stream never ends until released.
         java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
@@ -158,7 +159,7 @@ class TileGenerationServiceTest {
         properties.setStorageRoot(tempDir.toString());
         properties.setTileSize(200);
         properties.setRenderDpi(72);
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
         service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 1);
 
         service.deleteTiles("doc-1");
@@ -171,7 +172,7 @@ class TileGenerationServiceTest {
         ViewerProperties properties = new ViewerProperties();
         properties.setStorageRoot(tempDir.toString());
         properties.setMaxPages(2);
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
 
         BadRequestException e = assertThrows(BadRequestException.class,
                 () -> service.render(new java.io.ByteArrayInputStream(pdfWithPages(3, PDRectangle.A6))));
@@ -184,7 +185,7 @@ class TileGenerationServiceTest {
         properties.setStorageRoot(tempDir.toString());
         properties.setRenderDpi(150);
         properties.setMaxPagePixels(1_000_000);
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
 
         // Letter at 150 DPI is 1275x1650 = ~2.1M px.
         BadRequestException e = assertThrows(BadRequestException.class,
@@ -198,7 +199,7 @@ class TileGenerationServiceTest {
         properties.setStorageRoot(tempDir.toString());
         properties.setTileSize(200);
         properties.setRenderDpi(72);
-        TileGenerationService service = new TileGenerationService(properties);
+        TileGenerationService service = new TileGenerationService(properties, new ViewerMetrics(new SimpleMeterRegistry()));
 
         service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 1);
 

@@ -1,0 +1,23 @@
+# HTTPS front end for the compose "tls" profile: terminates TLS, adds HSTS and
+# forwards everything to nginx (which serves the app and proxies the API).
+#
+# SITE_ADDRESS  host name to serve (default localhost)
+# TLS_MODE      "internal" = Caddy's own local CA, for trying it out;
+#               an e-mail address = real certificate from Let's Encrypt
+#               (needs a public DNS name and ports 80/443 reachable).
+
+{$SITE_ADDRESS} {
+	tls {$TLS_MODE}
+
+	encode zstd gzip
+
+	header {
+		# Browsers must only ever use HTTPS for this site from now on.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Caddy replaces (never appends to) X-Forwarded-For with the real client
+	# address, because no upstream proxy is trusted here.
+	reverse_proxy web:80
+}

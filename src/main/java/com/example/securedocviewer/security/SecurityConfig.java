@@ -1,5 +1,6 @@
 package com.example.securedocviewer.security;
 
+import com.example.securedocviewer.config.ViewerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,7 +15,11 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
@@ -47,7 +52,8 @@ public class SecurityConfig {
                                                    CsrfTokenRepository csrfTokenRepository,
                                                    SecurityContextRepository securityContextRepository,
                                                    SessionRegistry sessionRegistry,
-                                                   SecurityErrorResponses errors) throws Exception {
+                                                   SecurityErrorResponses errors,
+                                                   ViewerProperties properties) throws Exception {
         http
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
@@ -72,6 +78,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Liveness/readiness for monitoring: status only, no details.
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+                        // Metrics: only from the configured scraper addresses (nginx never proxies it).
+                        .requestMatchers(HttpMethod.GET, "/actuator/prometheus")
+                                .access(fromAddresses(properties.getMetricsAllowedAddresses()))
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/documents").hasAnyRole("PUBLISHER", "ADMIN")
@@ -90,6 +99,13 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
         return http.build();
+    }
+
+    /** Allows a request only from one of the given CIDR ranges, judged by the TCP peer. */
+    static AuthorizationManager<RequestAuthorizationContext> fromAddresses(List<String> cidrs) {
+        List<IpAddressMatcher> matchers = cidrs.stream().map(String::trim).map(IpAddressMatcher::new).toList();
+        return (authentication, context) -> new AuthorizationDecision(
+                matchers.stream().anyMatch(m -> m.matches(context.getRequest())));
     }
 
     /** Delegating encoder stores "{bcrypt}..." so the algorithm can be upgraded later without a migration. */

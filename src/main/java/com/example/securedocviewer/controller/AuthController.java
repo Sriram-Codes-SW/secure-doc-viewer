@@ -1,5 +1,7 @@
 package com.example.securedocviewer.controller;
 
+import com.example.securedocviewer.service.ViewerMetrics;
+import com.example.securedocviewer.service.ViewerMetrics.SignInOutcome;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.audit.AuditEvent.Actor;
 import com.example.securedocviewer.audit.AuditEvent.Subject;
@@ -75,6 +77,7 @@ public class AuthController {
     private final Duration configuredSessionTimeout;
     private final KnownDevices knownDevices;
     private final SessionMetadata sessionMetadata;
+    private final ViewerMetrics metrics;
 
     public AuthController(AuthenticationManager authenticationManager,
                           SessionAuthenticationStrategy sessionAuthenticationStrategy,
@@ -87,7 +90,8 @@ public class AuthController {
                           RequestActors actors,
                           @Value("${server.servlet.session.timeout:30m}") Duration configuredSessionTimeout,
                           KnownDevices knownDevices,
-                          SessionMetadata sessionMetadata) {
+                          SessionMetadata sessionMetadata,
+                          ViewerMetrics metrics) {
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
@@ -100,6 +104,7 @@ public class AuthController {
         this.configuredSessionTimeout = configuredSessionTimeout;
         this.knownDevices = knownDevices;
         this.sessionMetadata = sessionMetadata;
+        this.metrics = metrics;
     }
 
     @PostMapping("/login")
@@ -113,6 +118,7 @@ public class AuthController {
         try {
             loginThrottle.checkAllowed(username, clientIp, recognisedDevice);
         } catch (LoginLockedException e) {
+            metrics.signIn(SignInOutcome.LOCKED);
             // Once a minute per account+IP is enough to show a lockout without flooding the log.
             audit.recordAtMostEvery(Duration.ofMinutes(1), "locked:" + username + "|" + clientIp + "|" + e.getRule(),
                     AuditEventType.SIGN_IN_LOCKED, attempted, Subject.detail("rule=" + e.getRule()));
@@ -127,10 +133,12 @@ public class AuthController {
             // Same message for unknown user, wrong password and disabled
             // account, so the response doesn't reveal which accounts exist.
             loginThrottle.recordFailure(username, clientIp);
+            metrics.signIn(SignInOutcome.FAILURE);
             audit.record(AuditEventType.SIGN_IN_FAILED, attempted, Subject.none());
             throw new BadCredentialsException("Invalid username or password.");
         }
         loginThrottle.recordSuccess(username, clientIp);
+        metrics.signIn(SignInOutcome.SUCCESS);
         knownDevices.remember(username, clientIp);
         boolean mustChangePassword = accounts.recordSignIn(username);
 

@@ -13,8 +13,9 @@ RUN ./mvnw -B -q -DskipTests package
 
 FROM eclipse-temurin:25-jre
 # The watermark and PDF rendering use Java2D text, which needs real fonts in a headless container.
+# curl is for the compose health check.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core \
+    && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core curl \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system app && useradd --system --gid app --home /app app \
     && mkdir -p /app /data/storage && chown -R app:app /app /data

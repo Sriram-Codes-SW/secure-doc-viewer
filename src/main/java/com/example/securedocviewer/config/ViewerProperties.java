@@ -6,6 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
+
 /**
  * Binds the {@code secure-doc-viewer.*} block from application.yml.
  */
@@ -39,6 +41,19 @@ public class ViewerProperties {
     private double watermarkSpacing = 1.5;
     private int tileRateLimitPerWindow = 180;
     private long tileRateLimitWindowSeconds = 60;
+    /**
+     * Addresses (CIDR) allowed to scrape /actuator/prometheus. nginx never
+     * proxies it; this stops anything else on the network reading it directly.
+     */
+    private List<String> metricsAllowedAddresses = List.of("127.0.0.1/32", "::1/128");
+
+    public List<String> getMetricsAllowedAddresses() {
+        return metricsAllowedAddresses;
+    }
+
+    public void setMetricsAllowedAddresses(List<String> metricsAllowedAddresses) {
+        this.metricsAllowedAddresses = metricsAllowedAddresses;
+    }
 
     public String getStorageRoot() {
         return storageRoot;

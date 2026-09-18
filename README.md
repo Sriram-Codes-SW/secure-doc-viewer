@@ -24,8 +24,8 @@ protection here is structural instead — it lives on the server, where the clie
 | "Share the URL with someone else" | Tokens carry a keyed hash of the issuing session (never the session id itself), and a tile request must also present that session's httpOnly cookie. A URL pasted into another browser or account gets 401. |
 | "Keep using URLs after logout" | The session is checked on every tile request, independently of token expiry, so signing out — or an admin revoking the session — kills every outstanding URL immediately. |
 | "Open a document that wasn't shared with me" | Every document has an owner and a visibility: PRIVATE (owner + users it is shared with) or EVERYONE. Anyone else gets `404` — not `403` — so they can't even tell it exists. The check runs on the list, the manifest, when tile URLs are issued, and again on every single tile request, so unsharing or deleting a document cuts off pages that are already open. |
-| "Just sign in as someone else" | Real accounts: username + BCrypt password, created by an admin (no self-signup). Failed sign-ins are throttled per account and per client IP (`429` + `Retry-After`). Roles — READER, PUBLISHER, ADMIN — are enforced server-side on every endpoint. |
-| "Script every tile of every page in one burst" | `/api/tiles` is rate-limited per user (default 120 tile requests per 60s window — about three pages a minute). A valid signature, unexpired token, and live session still only get throttled access — bulk harvesting becomes slow and boundable instead of instant. Throttled requests get `429` with a `Retry-After` header, and the viewer shows a countdown and loads the rest of the page when the window allows. |
+| "Just sign in as someone else" | Real accounts: username + BCrypt password, created by an admin (no self-signup). Failed sign-ins are throttled per account, per client IP and account-wide from unrecognised devices (`429` + `Retry-After`; see [Sign-in lockout](#sign-in-lockout)). Accounts created or reset by an admin must choose their own password before doing anything else. Roles — READER, PUBLISHER, ADMIN — are enforced server-side on every endpoint. |
+| "Script every tile of every page in one burst" | `/api/tiles` is rate-limited per user (default 180 tile requests per 60s window; with 512 px tiles a letter page is ~12 tiles, so about 15 pages a minute). A valid signature, unexpired token, and live session still only get throttled access — bulk harvesting becomes slow and boundable instead of instant. Throttled requests get `429` with a `Retry-After` header, and the viewer shows a countdown and loads the rest of the page when the window allows. |
 | "Screenshot it anyway" | Not prevented — see [Limitations](#limitations). Every served tile is watermarked with the requesting viewer's identity and a UTC timestamp, so a leaked capture is attributable. The mark (viewer on one line; UTC timestamp and a six-character trace code on the next — type the code into the audit log's trace filter to find the exact sign-in) is repeated in a non-overlapping pattern across each tile rather than stamped once in the centre, so every tile carries it and a full tile holds at least one complete, readable copy. |
 
 ### The client also blocks right-click — on purpose, with eyes open
@@ -160,7 +160,7 @@ curl -s -b "$jar" -H "X-XSRF-TOKEN: $(x)" -X PUT localhost:8080/api/documents/$D
 
 # 3. get signed tile URLs for page 0
 curl -s -b "$jar" localhost:8080/api/documents/$DOC/pages/0/tile-urls
-# → {"page":0,"rows":8,"cols":6,"tileSize":256,"tileUrls":[["/api/tiles?token=…",…],…]}
+# → {"page":0,"rows":4,"cols":3,"tileSize":512,"tileUrls":[["/api/tiles?token=…",…],…]}
 
 # 4. redeem one, with the same session
 curl -s -b "$jar" "localhost:8080/api/tiles?token=…" --output tile.png
@@ -179,23 +179,28 @@ All under `secure-doc-viewer.*` in `application.yml`; secrets come from the envi
 | Key | Default | Meaning |
 |---|---|---|
 | `storage-root` | `STORAGE_ROOT` (default `./storage`) | Where tiles are written — keep it out of synced folders |
-| `tile-size` | `256` | Square tile edge in px |
+| `tile-size` | `512` | Square tile edge in px |
 | `render-dpi` | `150` | Rasterization DPI |
 | `signing-secret` | `SIGNING_SECRET` | HMAC key; startup fails if missing or under 32 characters |
 | `url-ttl-seconds` | `120` | Signed URL lifetime |
 | `max-pages` | `500` | Uploads with more pages are rejected before rendering |
 | `max-page-pixels` | `40000000` | Largest page (px at render DPI) accepted; guards against decompression-bomb PDFs |
 | `watermark-opacity` / `watermark-spacing` | `0.2` / `1.5` | Watermark ink opacity, and gap between copies as a multiple of the text height |
-| `tile-rate-limit-per-window` | `120` | Max tile requests a user may make per window |
+| `tile-rate-limit-per-window` | `180` | Max tile requests a user may make per window |
 | `tile-rate-limit-window-seconds` | `60` | Width of that rolling window |
+| `max-concurrent-renders` / `render-queue-timeout-seconds` | `2` / `30` | PDFs rendered at once; further uploads wait this long, then get `503` + `Retry-After` |
 | `audit-retention-days` | `180` | Audit events older than this are purged nightly |
+| `metrics-allowed-addresses` | `METRICS_ALLOWED_ADDRESSES` (default loopback) | CIDRs allowed to scrape `/actuator/prometheus` |
 | `bootstrap-admin.username` / `.password` | `admin` / `BOOTSTRAP_ADMIN_PASSWORD` | First admin, created only on an empty database |
 
 Uploads are capped at 50 MB (`spring.servlet.multipart.max-file-size`; larger files get a JSON
 `413`), must start with a `%PDF-` signature, and are streamed to disk rather than held in memory.
 
-`GET /actuator/health` (public, status only, `503` when the database is down) is the one Actuator
-endpoint exposed. Every API response carries a strict Content-Security-Policy,
+`GET /actuator/health` (public, status only, `503` when the database is down) is the only Actuator
+endpoint nginx forwards. `GET /actuator/prometheus` serves metrics only to
+`metrics-allowed-addresses` — the viewer's own counters are `sdv_tiles_served_total`,
+`sdv_tiles_rate_limited_total`, `sdv_sign_in_total{outcome=success|failure|locked}`,
+`sdv_render_seconds` and `sdv_render_rejected_total`, next to the usual JVM, HTTP and pool metrics. Every API response carries a strict Content-Security-Policy,
 `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer` (tile URLs carry tokens) and a
 Permissions-Policy. Errors are always `{"error": "..."}` JSON; unexpected failures return a generic
 `500` with a reference that is logged alongside the full exception.
@@ -203,12 +208,82 @@ Permissions-Policy. Errors are always `{"error": "..."}` JSON; unexpected failur
 Sessions time out after 30 minutes of inactivity (`server.servlet.session.timeout`). Set
 `SESSION_COOKIE_SECURE=true` wherever the app is served over HTTPS.
 
+Replacing a PDF renders it into a new tile version (`{doc}/v{n}`) and switches the document to it
+under a row lock, so readers never see old and new tiles mixed; tile URLs issued for the old
+version answer `410 Gone` and the viewer reloads the new one. Admins can hand a document to
+another publisher (e.g. before disabling its owner).
+
+### Sign-in lockout
+
+Three counters, each over a rolling 15 minutes; a sign-in is refused (`429` + `Retry-After`) when
+any rule it is subject to is over its limit:
+
+| Rule | Limit | Applies to |
+|---|---|---|
+| account + IP | 5 failures | every attempt — stops guessing one account from one place |
+| IP | 20 failures | every attempt — stops one place spraying many accounts |
+| account-wide | 20 failures | only attempts from **unrecognised** devices — stops a botnet spreading guesses over many IPs |
+
+A device is *recognised* for an account after a successful sign-in from its address (IPv6 grouped
+by /64) within the last 30 days. Only a keyed hash of the address is stored
+(`account_known_ip`), and the list is cleared when the password is changed or reset or the account
+is disabled. The trade-off, stated plainly: while an account is under a distributed attack, its
+owner can still sign in from a usual device, but not from a new one (a new laptop, a hotel
+network) until the window passes or an admin presses **Unlock** on the Admin page (audited as
+`USER_UNLOCKED`). The lockout audit event records which rule fired (`rule=account-wide`, …).
+
+The failure counters live in memory in each instance; recognised devices are in the database.
+
+### Trust boundary
+
+Throttling and the audit log use the client address, so where it comes from matters:
+
+- The API trusts `X-Forwarded-For` only when `FORWARD_HEADERS_STRATEGY=native`, and then only
+  from `TRUSTED_PROXY_REGEX` — in compose, nginx's fixed address `172.28.0.10`. Anything else that
+  reaches `app:8080` directly is judged by its own address, whatever headers it sends.
+- nginx **overwrites** `X-Forwarded-For` with the TCP peer, so a client can't choose its address.
+  It accepts a forwarded address only from the optional HTTPS front end (Caddy, `172.28.0.11`).
+- `app:8080` and MySQL are not published; only nginx (and Caddy) listen on the host, on 127.0.0.1.
+  If you deploy differently, keep the API reachable only through the proxy.
+
+### HTTPS
+
+```bash
+docker compose --profile full --profile tls up -d --build   # https://localhost:8443 (Caddy's local CA)
+```
+
+Caddy terminates TLS, adds `Strict-Transport-Security` and forwards to nginx
+(`deploy/Caddyfile`). For a real host set `SITE_ADDRESS=docs.example.com` and `TLS_MODE` to an
+e-mail address in `.env` to get a Let's Encrypt certificate (publish ports 80/443 instead of the
+local-only 8443), and set `SESSION_COOKIE_SECURE=true`.
+
+### Backup and restore
+
+Two things hold state: the MySQL database and the `app-storage` volume with the rendered tiles.
+Back them up together (tiles without rows are swept as orphans; documents without tiles can't
+be viewed).
+
+```bash
+# backup
+docker compose exec -T mysql sh -c 'exec mysqldump --single-transaction --routines -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > securedocs.sql
+docker run --rm -v secure-doc-viewer_app-storage:/data -v "$PWD":/backup alpine tar czf /backup/storage.tgz -C /data .
+
+# restore (stop the app first so nothing is written meanwhile)
+docker compose --profile full stop app
+docker compose exec -T mysql sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < securedocs.sql
+docker run --rm -v secure-doc-viewer_app-storage:/data -v "$PWD":/backup alpine sh -c 'rm -rf /data/* && tar xzf /backup/storage.tgz -C /data'
+docker compose --profile full start app
+```
+
+Keep `.env` (above all `SIGNING_SECRET`) with the backup: a restore under a different secret
+still works, but every account's recognised devices are forgotten (their hashes are keyed by it).
+
 ---
 
 ## Tests
 
 ```bash
-./mvnw verify                              # backend (in-memory H2 in MySQL mode; no services needed)
+./mvnw verify                              # backend: H2 in MySQL mode, plus MySQL 8.4 via Testcontainers when Docker is running
 cd frontend && npx ng test --watch=false   # frontend unit tests
 # end-to-end, against the running Docker stack; needs an admin account:
 cd frontend && E2E_ADMIN_USER=admin E2E_ADMIN_PASSWORD=… npx playwright test
@@ -235,6 +310,10 @@ payload-splicing rejection, expiry, malformed tokens, the rate limiter, watermar
 distinctness between viewers, and tile-grid math. The grid tests include a round-trip property check: slicing an image and reassembling
 every tile at its offset must reproduce the source pixel-for-pixel, so edge tiles are proven to
 be cropped rather than padded or dropped.
+
+`MySqlIntegrationTest` runs against a real MySQL 8.4 (skipped without Docker; CI has it): all
+Flyway migrations, two concurrent PDF replacements serialised by the row lock, and timestamps
+stored as UTC with the server and the JVM each set to a different non-UTC zone.
 
 ---
 

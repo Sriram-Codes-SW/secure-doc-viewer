@@ -75,6 +75,10 @@ secure-doc-viewer:
   # How long audit events are kept before the nightly purge deletes them.
   audit-retention-days: 180
 
+  # Who may scrape /actuator/prometheus (CIDR, comma-separated). Loopback only
+  # by default; point it at the Prometheus server's address in production.
+  metrics-allowed-addresses: ${METRICS_ALLOWED_ADDRESSES:127.0.0.1/32,::1/128}
+
   # First admin, created only when the database has no accounts at all.
   # If no password is given, a random one is generated and logged once.
   bootstrap-admin:
@@ -85,8 +89,9 @@ management:
   endpoints:
     web:
       exposure:
-        # Only the health check; nothing else from Actuator is reachable over HTTP.
-        include: health
+        # Health (status only) and Prometheus metrics. nginx proxies only the bare
+        # health status; metrics are limited to metrics-allowed-addresses.
+        include: health,prometheus
   endpoint:
     health:
       show-details: never

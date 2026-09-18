@@ -17,6 +17,7 @@ import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.exception.RateLimitExceededException;
 import com.example.securedocviewer.service.SignedUrlService;
 import com.example.securedocviewer.service.TileGenerationService;
+import com.example.securedocviewer.service.ViewerMetrics;
 import com.example.securedocviewer.service.WatermarkService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -59,6 +60,7 @@ public class TileController {
     private final DocumentService documents;
     private final RequestActors actors;
     private final ViewerProperties properties;
+    private final ViewerMetrics metrics;
 
     public TileController(SignedUrlService signedUrlService,
                            SessionKeys sessionKeys,
@@ -68,7 +70,8 @@ public class TileController {
                            AuditLogService auditLogService,
                            DocumentService documents,
                            RequestActors actors,
-                           ViewerProperties properties) {
+                           ViewerProperties properties,
+                           ViewerMetrics metrics) {
         this.signedUrlService = signedUrlService;
         this.sessionKeys = sessionKeys;
         this.tileRateLimiter = tileRateLimiter;
@@ -78,6 +81,7 @@ public class TileController {
         this.documents = documents;
         this.actors = actors;
         this.properties = properties;
+        this.metrics = metrics;
     }
 
     @GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
@@ -106,6 +110,7 @@ public class TileController {
         try {
             tileRateLimiter.recordAndEnforce(username);
         } catch (RateLimitExceededException e) {
+            metrics.tileRateLimited();
             auditLogService.recordAtMostEvery(Duration.ofSeconds(properties.getTileRateLimitWindowSeconds()),
                     "rate-limited:" + username, AuditEventType.RATE_LIMITED, actor,
                     Subject.document(payload.documentId(), null));
@@ -138,6 +143,7 @@ public class TileController {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(watermarked, "png", out);
+        metrics.tileServed();
 
         return ResponseEntity.ok()
                 // Deliberately not cacheable beyond a moment — a shared cache

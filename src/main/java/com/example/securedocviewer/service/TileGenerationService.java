@@ -5,6 +5,7 @@ import com.example.securedocviewer.exception.BadRequestException;
 import com.example.securedocviewer.model.PageInfo;
 import com.example.securedocviewer.exception.ServiceBusyException;
 import com.example.securedocviewer.exception.TileGoneException;
+import io.micrometer.core.instrument.Timer;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -60,9 +61,11 @@ public class TileGenerationService {
 
     private final ViewerProperties properties;
     private final Semaphore renderPermits;
+    private final ViewerMetrics metrics;
 
-    public TileGenerationService(ViewerProperties properties) {
+    public TileGenerationService(ViewerProperties properties, ViewerMetrics metrics) {
         this.properties = properties;
+        this.metrics = metrics;
         this.renderPermits = new Semaphore(Math.max(1, properties.getMaxConcurrentRenders()), true);
     }
 
@@ -75,16 +78,19 @@ public class TileGenerationService {
      */
     public RenderedDocument render(InputStream pdf) throws IOException {
         acquireRenderPermit();
+        Timer.Sample timing = metrics.renderStarted();
         try {
             return renderWithPermit(pdf);
         } finally {
             renderPermits.release();
+            metrics.renderFinished(timing);
         }
     }
 
     private void acquireRenderPermit() {
         try {
             if (!renderPermits.tryAcquire(properties.getRenderQueueTimeoutSeconds(), TimeUnit.SECONDS)) {
+                metrics.renderRejected();
                 throw new ServiceBusyException("The server is busy rendering other documents. Try again shortly.",
                         properties.getRenderQueueTimeoutSeconds());
             }
