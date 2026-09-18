@@ -14,12 +14,14 @@ public enum AuditEventType {
     USER_CREATED,
     USER_UPDATED,
     USER_PASSWORD_RESET,
+    USER_UNLOCKED,
     DOCUMENT_UPLOADED,
     DOCUMENT_REPLACED,
     DOCUMENT_UPDATED,
     DOCUMENT_DELETED,
     DOCUMENT_SHARED,
     DOCUMENT_UNSHARED,
+    DOCUMENT_OWNER_CHANGED,
     /** A request for a document or tile the user isn't allowed to see. */
     ACCESS_DENIED,
     /** Recorded at most once per user per rate-limit window, not per rejected request. */

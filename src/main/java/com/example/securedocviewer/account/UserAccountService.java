@@ -26,18 +26,27 @@ public class UserAccountService {
 
     private final AppUserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final com.example.securedocviewer.security.KnownDevices knownDevices;
 
-    public UserAccountService(AppUserRepository repository, PasswordEncoder passwordEncoder) {
+    public UserAccountService(AppUserRepository repository, PasswordEncoder passwordEncoder,
+                              com.example.securedocviewer.security.KnownDevices knownDevices) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.knownDevices = knownDevices;
     }
 
     public static String normalizeUsername(String username) {
         return username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
     }
 
+    /** An account an admin creates must choose its own password at first sign-in. */
     @Transactional
     public UserSummary create(String rawUsername, String password, Role role) {
+        return create(rawUsername, password, role, true);
+    }
+
+    @Transactional
+    public UserSummary create(String rawUsername, String password, Role role, boolean mustChangePassword) {
         String username = normalizeUsername(rawUsername);
         if (!USERNAME.matcher(username).matches()) {
             throw new BadRequestException(
@@ -50,7 +59,9 @@ public class UserAccountService {
         if (repository.existsByUsername(username)) {
             throw new UsernameTakenException(username);
         }
-        return UserSummary.of(repository.save(new AppUser(username, passwordEncoder.encode(password), role)));
+        AppUser user = new AppUser(username, passwordEncoder.encode(password), role);
+        user.setMustChangePassword(mustChangePassword);
+        return UserSummary.of(repository.save(user));
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +93,9 @@ public class UserAccountService {
         }
         if (enabled != null) {
             user.setEnabled(enabled);
+            if (!enabled) {
+                knownDevices.forget(user.getUsername());
+            }
         }
         return UserSummary.of(user);
     }
@@ -89,7 +103,10 @@ public class UserAccountService {
     @Transactional
     public void resetPassword(String rawUsername, String newPassword) {
         requireAcceptablePassword(newPassword);
-        require(rawUsername).setPasswordHash(passwordEncoder.encode(newPassword));
+        AppUser user = require(rawUsername);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(true);
+        knownDevices.forget(user.getUsername());
     }
 
     @Transactional
@@ -103,6 +120,25 @@ public class UserAccountService {
         }
         requireAcceptablePassword(newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
+        knownDevices.forget(user.getUsername());
+    }
+
+    @Transactional
+    public boolean recordSignIn(String username) {
+        AppUser user = require(username);
+        user.setLastSignInAt(java.time.Instant.now());
+        return user.isMustChangePassword();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean mustChangePassword(String username) {
+        return require(username).isMustChangePassword();
+    }
+
+    @Transactional(readOnly = true)
+    public void requireExists(String rawUsername) {
+        require(rawUsername);
     }
 
     private AppUser require(String rawUsername) {

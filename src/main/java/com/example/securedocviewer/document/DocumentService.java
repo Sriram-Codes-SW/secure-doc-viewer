@@ -204,6 +204,33 @@ public class DocumentService {
         audit.record(AuditEventType.DOCUMENT_DELETED, actor, Subject.document(documentId, title));
     }
 
+    /**
+     * Admin only: hands a document to another publisher (e.g. its owner left
+     * or was demoted). The new owner must be an enabled PUBLISHER or ADMIN.
+     */
+    public DocumentDetail transferOwnership(String documentId, String rawUsername, Viewer viewer, Actor actor) {
+        if (!viewer.admin()) {
+            throw new ForbiddenException("Only an admin can change a document's owner.");
+        }
+        String username = UserAccountService.normalizeUsername(rawUsername);
+        String[] previousOwner = new String[1];
+        DocumentDetail updated = tx.execute(status -> {
+            Document document = requireViewable(documentId, viewer, actor);
+            AppUser newOwner = users.findByUsername(username)
+                    .orElseThrow(() -> new BadRequestException("No user named '" + username + "'."));
+            if (!newOwner.isEnabled() || newOwner.getRole() == com.example.securedocviewer.account.Role.READER) {
+                throw new BadRequestException("The new owner must be an enabled publisher or admin.");
+            }
+            previousOwner[0] = document.getOwner().getUsername();
+            document.getSharedWith().removeIf(u -> u.getId().equals(newOwner.getId()));
+            document.setOwner(newOwner);
+            return detail(document, viewer);
+        });
+        audit.record(AuditEventType.DOCUMENT_OWNER_CHANGED, actor,
+                Subject.document(documentId, updated.title(), previousOwner[0] + " -> " + username));
+        return updated;
+    }
+
     public List<String> shares(String documentId, Viewer viewer, Actor actor) {
         return tx.execute(status -> sharedWith(requireManageable(documentId, viewer, actor)));
     }

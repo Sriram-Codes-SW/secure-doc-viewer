@@ -213,6 +213,61 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void anAdminSetPasswordMustBeChangedBeforeAnythingElseWorks() throws Exception {
+        MockHttpSession admin = login("admin", "bootstrap-admin-password");
+        mvc.perform(post("/api/admin/users").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("username", "fresh-user",
+                                "password", "temporary-password-1", "role", "READER"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mustChangePassword").value(true));
+
+        MvcResult signIn = mvc.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest("fresh-user", "temporary-password-1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mustChangePassword").value(true))
+                .andReturn();
+        MockHttpSession fresh = (MockHttpSession) signIn.getRequest().getSession(false);
+
+        mvc.perform(get("/api/documents").session(fresh))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.passwordChangeRequired").value(true));
+        mvc.perform(get("/api/auth/me").session(fresh)).andExpect(status().isOk());
+
+        mvc.perform(post("/api/auth/password").session(fresh).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("currentPassword", "temporary-password-1",
+                                "newPassword", "my-own-password-123"))))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/documents").session(fresh)).andExpect(status().isOk());
+        mvc.perform(get("/api/auth/me").session(fresh)).andExpect(jsonPath("$.mustChangePassword").value(false));
+    }
+
+    @Test
+    void adminCanUnlockAnAccountButReadersCannot() throws Exception {
+        user("locked-user", Role.READER);
+        for (int i = 0; i < LoginThrottle.MAX_FAILURES_PER_ACCOUNT; i++) {
+            mvc.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                    .content(loginRequest("locked-user", "wrong-" + i))).andExpect(status().isUnauthorized());
+        }
+        mvc.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content(loginRequest("locked-user", PASSWORD))).andExpect(status().isTooManyRequests());
+
+        user("plain-reader-2", Role.READER);
+        MockHttpSession reader = login("plain-reader-2", PASSWORD);
+        mvc.perform(post("/api/admin/users/locked-user/unlock").session(reader).with(csrf()))
+                .andExpect(status().isForbidden());
+        MockHttpSession admin = login("admin", "bootstrap-admin-password");
+        mvc.perform(post("/api/admin/users/locked-user/unlock").session(admin))
+                .andExpect(status().isForbidden()); // no CSRF token
+        mvc.perform(post("/api/admin/users/no-such-user/unlock").session(admin).with(csrf()))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/admin/users/Locked-User/unlock").session(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content(loginRequest("locked-user", PASSWORD))).andExpect(status().isOk());
+    }
+
+    @Test
     void roleChangeEndsTheUsersExistingSessions() throws Exception {
         user("promoted-user", Role.READER);
         MockHttpSession promoted = login("promoted-user", PASSWORD);
@@ -229,7 +284,7 @@ class SecurityIntegrationTest {
 
     private void user(String username, Role role) {
         try {
-            accounts.create(username, PASSWORD, role);
+            accounts.create(username, PASSWORD, role, false);
         } catch (UsernameTakenException alreadyCreated) {
             // Context (and its in-memory database) is shared across tests.
         }

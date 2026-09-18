@@ -49,7 +49,7 @@ class CsrfCookieFlowTest {
         // Regression: Spring's CsrfAuthenticationStrategy deleted the cookie
         // at sign-in without issuing a new one, so the first write made
         // straight after signing in got a 403.
-        accounts.create("csrf-user", "correct-horse-battery", Role.READER);
+        accounts.create("csrf-user", "correct-horse-battery", Role.READER, false);
 
         MvcResult anonymous = mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized()).andReturn();
         Cookie initialToken = anonymous.getResponse().getCookie("XSRF-TOKEN");

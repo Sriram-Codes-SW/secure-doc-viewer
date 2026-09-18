@@ -56,8 +56,13 @@ public class AuditLogService {
 
     private final JdbcTemplate jdbc;
     private final int retentionDays;
-    /** Last time a throttled event was written, per key — see {@link #recordAtMostEvery}. */
-    private final Map<String, Instant> lastThrottled = new ConcurrentHashMap<>();
+    /** Per throttle key: when an event was last written and how many were suppressed since. */
+    private static final class Throttled {
+        Instant lastWritten;
+        int suppressed;
+    }
+
+    private final Map<String, Throttled> throttled = new ConcurrentHashMap<>();
 
     public AuditLogService(JdbcTemplate jdbc,
                            @Value("${secure-doc-viewer.audit-retention-days:180}") int retentionDays) {
@@ -84,12 +89,33 @@ public class AuditLogService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordAtMostEvery(Duration interval, String key, AuditEventType type, Actor actor, Subject subject) {
         Instant now = Instant.now();
-        Instant previous = lastThrottled.get(key);
-        if (previous != null && previous.plus(interval).isAfter(now)) {
-            return;
+        Throttled state = throttled.computeIfAbsent(key, k -> new Throttled());
+        int suppressedBefore;
+        synchronized (state) {
+            if (state.lastWritten != null && state.lastWritten.plus(interval).isAfter(now)) {
+                state.suppressed++;
+                return;
+            }
+            state.lastWritten = now;
+            suppressedBefore = state.suppressed;
+            state.suppressed = 0;
         }
-        lastThrottled.put(key, now);
-        record(type, actor, subject);
+        // Say how many similar events were dropped since the last one, so volume isn't hidden.
+        Subject withCount = suppressedBefore == 0 ? subject : new Subject(subject.documentId(), subject.documentTitle(),
+                subject.page(), subject.tileRow(), subject.tileCol(),
+                (subject.detail() == null ? "" : subject.detail() + " ") + "(+" + suppressedBefore + " similar suppressed)");
+        record(type, actor, withCount);
+    }
+
+    /** Forget throttle keys idle for an hour, so the map stays small. */
+    @Scheduled(fixedDelay = 3_600_000)
+    public void sweepThrottled() {
+        Instant cutoff = Instant.now().minus(Duration.ofHours(1));
+        throttled.entrySet().removeIf(e -> {
+            synchronized (e.getValue()) {
+                return e.getValue().lastWritten == null || e.getValue().lastWritten.isBefore(cutoff);
+            }
+        });
     }
 
     public Page search(Query query, int page, int size) {
@@ -118,7 +144,6 @@ public class AuditLogService {
     public void purgeExpired() {
         Instant cutoff = Instant.now().minus(Duration.ofDays(retentionDays));
         int deleted = jdbc.update("delete from audit_event where occurred_at < ?", Timestamp.from(cutoff));
-        lastThrottled.entrySet().removeIf(e -> e.getValue().isBefore(Instant.now().minus(Duration.ofHours(1))));
         if (deleted > 0) {
             log.info("Purged {} audit events older than {} days", deleted, retentionDays);
         }

@@ -7,7 +7,10 @@ import com.example.securedocviewer.audit.AuditEventType;
 import com.example.securedocviewer.audit.AuditLogService;
 import com.example.securedocviewer.audit.RequestActors;
 import com.example.securedocviewer.exception.LoginLockedException;
+import com.example.securedocviewer.security.KnownDevices;
 import com.example.securedocviewer.security.LoginThrottle;
+import com.example.securedocviewer.security.PasswordChangeRequiredFilter;
+import com.example.securedocviewer.security.SessionMetadata;
 import com.example.securedocviewer.security.SessionAdministration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -52,8 +55,12 @@ public class AuthController {
     public record ChangePasswordRequest(@NotBlank String currentPassword, @NotBlank String newPassword) {
     }
 
-    /** {@code sessionTimeoutSeconds} is the idle timeout, so the UI can warn before it signs the user out. */
-    public record CurrentUser(String username, String role, int sessionTimeoutSeconds) {
+    /**
+     * {@code sessionTimeoutSeconds} is the idle timeout, so the UI can warn
+     * before it signs the user out; {@code mustChangePassword} sends the user
+     * to the password form (the server refuses everything else meanwhile).
+     */
+    public record CurrentUser(String username, String role, int sessionTimeoutSeconds, boolean mustChangePassword) {
     }
 
     private final AuthenticationManager authenticationManager;
@@ -66,6 +73,8 @@ public class AuthController {
     private final AuditLogService audit;
     private final RequestActors actors;
     private final Duration configuredSessionTimeout;
+    private final KnownDevices knownDevices;
+    private final SessionMetadata sessionMetadata;
 
     public AuthController(AuthenticationManager authenticationManager,
                           SessionAuthenticationStrategy sessionAuthenticationStrategy,
@@ -76,7 +85,9 @@ public class AuthController {
                           CsrfTokenRepository csrfTokenRepository,
                           AuditLogService audit,
                           RequestActors actors,
-                          @Value("${server.servlet.session.timeout:30m}") Duration configuredSessionTimeout) {
+                          @Value("${server.servlet.session.timeout:30m}") Duration configuredSessionTimeout,
+                          KnownDevices knownDevices,
+                          SessionMetadata sessionMetadata) {
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
@@ -87,6 +98,8 @@ public class AuthController {
         this.audit = audit;
         this.actors = actors;
         this.configuredSessionTimeout = configuredSessionTimeout;
+        this.knownDevices = knownDevices;
+        this.sessionMetadata = sessionMetadata;
     }
 
     @PostMapping("/login")
@@ -96,12 +109,13 @@ public class AuthController {
         String username = UserAccountService.normalizeUsername(body.username());
         String clientIp = request.getRemoteAddr();
         Actor attempted = new Actor(username, null, clientIp);
+        boolean recognisedDevice = knownDevices.isRecognised(username, clientIp);
         try {
-            loginThrottle.checkAllowed(username, clientIp);
+            loginThrottle.checkAllowed(username, clientIp, recognisedDevice);
         } catch (LoginLockedException e) {
             // Once a minute per account+IP is enough to show a lockout without flooding the log.
-            audit.recordAtMostEvery(Duration.ofMinutes(1), "locked:" + username + "|" + clientIp,
-                    AuditEventType.SIGN_IN_LOCKED, attempted, Subject.none());
+            audit.recordAtMostEvery(Duration.ofMinutes(1), "locked:" + username + "|" + clientIp + "|" + e.getRule(),
+                    AuditEventType.SIGN_IN_LOCKED, attempted, Subject.detail("rule=" + e.getRule()));
             throw e;
         }
 
@@ -117,6 +131,8 @@ public class AuthController {
             throw new BadCredentialsException("Invalid username or password.");
         }
         loginThrottle.recordSuccess(username, clientIp);
+        knownDevices.remember(username, clientIp);
+        boolean mustChangePassword = accounts.recordSignIn(username);
 
         // Ensure a session exists, then rotate its id and register it.
         request.getSession(true);
@@ -126,6 +142,9 @@ public class AuthController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
+        HttpSession session = request.getSession();
+        session.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, mustChangePassword);
+        sessionMetadata.recordSignIn(session.getId(), clientIp, request.getHeader("User-Agent"));
         audit.record(AuditEventType.SIGN_IN, actors.of(request, username), Subject.none());
 
         return ResponseEntity.ok(toCurrentUser(authentication, request));
@@ -155,6 +174,9 @@ public class AuthController {
                                                Authentication authentication,
                                                HttpServletRequest request) {
         accounts.changeOwnPassword(authentication.getName(), body.currentPassword(), body.newPassword());
+        request.getSession().setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, false);
+        // The password just changed: this device is known-good again (knownDevices were cleared).
+        knownDevices.remember(authentication.getName(), request.getRemoteAddr());
         sessions.revokeAllFor(authentication.getName(), request.getSession().getId());
         audit.record(AuditEventType.PASSWORD_CHANGED, actors.of(request, authentication), Subject.none());
         return ResponseEntity.noContent().build();
@@ -186,6 +208,7 @@ public class AuthController {
         if (sessionTimeout <= 0) {
             sessionTimeout = (int) configuredSessionTimeout.toSeconds();
         }
-        return new CurrentUser(authentication.getName(), role, sessionTimeout);
+        Object flag = request.getSession().getAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE);
+        return new CurrentUser(authentication.getName(), role, sessionTimeout, Boolean.TRUE.equals(flag));
     }
 }

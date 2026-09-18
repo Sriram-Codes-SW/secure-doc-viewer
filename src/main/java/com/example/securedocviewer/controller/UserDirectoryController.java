@@ -29,7 +29,13 @@ public class UserDirectoryController {
     @GetMapping
     public List<String> search(@RequestParam(defaultValue = "") String q, Authentication authentication) {
         String prefix = UserAccountService.normalizeUsername(q);
+        // Nothing for one character, and never admins (they can already see every document),
+        // so the picker can't be used to list the account directory.
+        if (prefix.length() < 2) {
+            return List.of();
+        }
         return users.findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc(prefix).stream()
+                .filter(u -> u.getRole() != com.example.securedocviewer.account.Role.ADMIN)
                 .map(AppUser::getUsername)
                 .filter(username -> !username.equals(authentication.getName()))
                 .toList();

@@ -4,6 +4,11 @@ server:
   # docker-compose "full" profile does); otherwise X-Forwarded-For is ignored,
   # so clients can't spoof their IP to dodge login throttling.
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
+  tomcat:
+    remoteip:
+      # Which peers may set X-Forwarded-For. Compose pins this to the nginx
+      # container's fixed address, so nothing else on the network can spoof it.
+      internal-proxies: ${TRUSTED_PROXY_REGEX:127\.0\.0\.1|0:0:0:0:0:0:0:1}
   servlet:
     session:
       # Idle timeout: each request extends it, so an active reader is never

@@ -304,7 +304,7 @@ class DocumentAccessIntegrationTest {
 
     private MockHttpSession signIn(String username, Role role) throws Exception {
         try {
-            accounts.create(username, PASSWORD, role);
+            accounts.create(username, PASSWORD, role, false);
         } catch (UsernameTakenException alreadyCreated) {
             // The context and its in-memory database are shared across tests.
         }

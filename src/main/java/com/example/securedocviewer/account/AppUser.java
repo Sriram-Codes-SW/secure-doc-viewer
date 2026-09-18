@@ -35,6 +35,12 @@ public class AppUser {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
+
+    @Column(name = "last_sign_in_at")
+    private Instant lastSignInAt;
+
     protected AppUser() {
     }
 
@@ -79,5 +85,21 @@ public class AppUser {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
+    }
+
+    public Instant getLastSignInAt() {
+        return lastSignInAt;
+    }
+
+    public void setLastSignInAt(Instant lastSignInAt) {
+        this.lastSignInAt = lastSignInAt;
     }
 }

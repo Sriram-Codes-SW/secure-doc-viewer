@@ -83,6 +83,8 @@ public class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(errors)
                         .accessDeniedHandler(errors))
+                .addFilterAfter(new PasswordChangeRequiredFilter(),
+                        org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .requestCache(cache -> cache.disable())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
