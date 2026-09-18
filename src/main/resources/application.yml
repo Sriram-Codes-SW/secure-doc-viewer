@@ -23,6 +23,17 @@ secure-doc-viewer:
   # How long a login session stays valid.
   session-ttl-seconds: 1800
 
+  # Max tiles a single session may redeem within the rolling window below.
+  # This is what stands between "read the pages you're viewing" and
+  # "script every tile of every page in one burst" — a valid signature,
+  # unexpired token, and live session still only get throttled access.
+  # A 150-DPI letter page is ~35 tiles, so 120 lets a reader turn ~3 pages a
+  # minute without waiting while still keeping a full-document scrape slow.
+  tile-rate-limit-per-window: 120
+
+  # Width of the rolling window the limit above applies to.
+  tile-rate-limit-window-seconds: 60
+
 spring:
   servlet:
     multipart:

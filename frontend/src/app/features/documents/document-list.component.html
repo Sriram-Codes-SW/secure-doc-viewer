@@ -1,0 +1,21 @@
+<div class="page-header">
+  <h1>Documents</h1>
+  <a class="button" routerLink="/documents/upload">Upload a PDF</a>
+</div>
+
+@if (loading()) {
+  <p class="muted">Loading…</p>
+} @else if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+} @else if (documents().length === 0) {
+  <p class="muted">No documents yet. Upload a PDF to get started.</p>
+} @else {
+  <div class="doc-grid">
+    @for (doc of documents(); track doc.documentId) {
+      <a class="doc-card" [routerLink]="['/viewer', doc.documentId]">
+        <h2>{{ doc.title }}</h2>
+        <p class="muted">{{ doc.pageCount }} page{{ doc.pageCount === 1 ? '' : 's' }}</p>
+      </a>
+    }
+  </div>
+}

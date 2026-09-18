@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -43,6 +44,15 @@ public class DocumentController {
         DocumentManifest manifest = tileGenerationService.ingest(title, file.getBytes());
         documentRegistry.save(manifest);
         return ResponseEntity.ok(manifest);
+    }
+
+    /** Backs the document library view — every document uploaded so far. */
+    @GetMapping
+    public ResponseEntity<List<DocumentManifest>> listDocuments(
+            @RequestHeader("X-Session-Id") String sessionId) {
+
+        sessionService.requireValidSession(sessionId);
+        return ResponseEntity.ok(documentRegistry.listAll());
     }
 
     @GetMapping("/{documentId}")

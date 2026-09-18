@@ -16,6 +16,8 @@ public class ViewerProperties {
     private String signingSecret;
     private long urlTtlSeconds = 120;
     private long sessionTtlSeconds = 1800;
+    private int tileRateLimitPerWindow = 120;
+    private long tileRateLimitWindowSeconds = 60;
 
     public String getStorageRoot() {
         return storageRoot;
@@ -63,5 +65,21 @@ public class ViewerProperties {
 
     public void setSessionTtlSeconds(long sessionTtlSeconds) {
         this.sessionTtlSeconds = sessionTtlSeconds;
+    }
+
+    public int getTileRateLimitPerWindow() {
+        return tileRateLimitPerWindow;
+    }
+
+    public void setTileRateLimitPerWindow(int tileRateLimitPerWindow) {
+        this.tileRateLimitPerWindow = tileRateLimitPerWindow;
+    }
+
+    public long getTileRateLimitWindowSeconds() {
+        return tileRateLimitWindowSeconds;
+    }
+
+    public void setTileRateLimitWindowSeconds(long tileRateLimitWindowSeconds) {
+        this.tileRateLimitWindowSeconds = tileRateLimitWindowSeconds;
     }
 }

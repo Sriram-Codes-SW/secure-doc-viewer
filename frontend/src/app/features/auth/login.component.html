@@ -1,0 +1,25 @@
+<div class="auth-card">
+  <h1>Secure Doc Viewer</h1>
+  <p class="subtitle">This demo doesn't check a password — any username mints a session, same as the backend's demo login.</p>
+
+  <form (ngSubmit)="submit()">
+    <label for="username">Username</label>
+    <input
+      id="username"
+      name="username"
+      type="text"
+      [(ngModel)]="username"
+      placeholder="e.g. alice"
+      autocomplete="username"
+      required
+    />
+
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+
+    <button type="submit" [disabled]="submitting() || !username.trim()">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</div>

@@ -1,0 +1,85 @@
+<h1>Admin</h1>
+<p class="muted">Live view of what the security layer is already enforcing &mdash; nothing here grants extra access.</p>
+
+<div class="admin-grid">
+  <section class="panel">
+    <h2>Active sessions</h2>
+    @if (sessions().length === 0) {
+      <p class="muted">No active sessions.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Session ID</th>
+            <th>Expires</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (session of sessions(); track session.sessionId) {
+            <tr>
+              <td>{{ session.username }}</td>
+              <td class="mono">{{ session.sessionId | slice: 0 : 8 }}&hellip;</td>
+              <td>{{ formatTime(session.expiresAtEpochSeconds) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section class="panel">
+    <h2>Rate-limit usage</h2>
+    <div class="rate-limit-picker">
+      <select [(ngModel)]="selectedSessionId" (ngModelChange)="checkRateLimit()">
+        @for (session of sessions(); track session.sessionId) {
+          <option [value]="session.sessionId">{{ session.username }}</option>
+        }
+      </select>
+      <button (click)="checkRateLimit()">Check</button>
+    </div>
+
+    @if (rateLimitStatus(); as status) {
+      <div class="usage-bar">
+        <div class="usage-fill" [style.width.%]="usagePercent(status)"></div>
+      </div>
+      <p class="muted">{{ status.used }} / {{ status.limit }} tiles in the last {{ status.windowSeconds }}s</p>
+    }
+  </section>
+
+  <section class="panel wide">
+    <h2>Tile access audit log</h2>
+    <div class="audit-controls">
+      <label for="limit">Show last</label>
+      <input id="limit" type="number" min="1" max="500" [(ngModel)]="auditLimit" (keyup.enter)="refreshAudit()" />
+      <button (click)="refreshAudit()">Refresh</button>
+    </div>
+
+    @if (auditEntries().length === 0) {
+      <p class="muted">No tile requests recorded yet.</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Username</th>
+            <th>Document</th>
+            <th>Page</th>
+            <th>Tile</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of auditEntries(); track entry.timestampEpochSeconds + entry.sessionId + entry.row + entry.col) {
+            <tr>
+              <td>{{ formatTime(entry.timestampEpochSeconds) }}</td>
+              <td>{{ entry.username }}</td>
+              <td class="mono">{{ entry.documentId | slice: 0 : 8 }}&hellip;</td>
+              <td>{{ entry.page + 1 }}</td>
+              <td>({{ entry.row }}, {{ entry.col }})</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</div>

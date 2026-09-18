@@ -12,14 +12,29 @@
   input, button { font-size: 0.95rem; padding: 0.4rem 0.6rem; margin-top: 0.25rem; }
   button { cursor: pointer; }
   #status { font-size: 0.85rem; opacity: 0.75; white-space: pre-wrap; }
-  #pageCanvas { border: 1px solid #8884; max-width: 100%; background: #fff; }
+  #pageCanvas {
+    border: 1px solid #8884; max-width: 100%; background: #fff;
+    /* Cosmetic friction only — stops a casual drag/select, not a
+       determined user. See README "Limitations": nothing client-side
+       can prevent someone with a live session from reading the pixels. */
+    -webkit-user-select: none; user-select: none;
+    -webkit-user-drag: none; user-drag: none;
+  }
   .row { display: flex; gap: 0.5rem; align-items: center; }
   #nav { display: none; }
+  #devtoolsWarning {
+    display: none; font-size: 0.85rem; color: #a33; border: 1px solid #a335;
+    background: #a331; border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 1rem;
+  }
 </style>
 </head>
 <body>
 
 <h1>Secure Document Viewer — tile + signed-URL + watermark demo</h1>
+<p id="devtoolsWarning">
+  Developer tools appear to be open. This is a courtesy notice, not an access control — every
+  tile you can see is watermarked with your identity and timestamp regardless.
+</p>
 <p id="status">Not logged in.</p>
 
 <section id="loginSection">
@@ -46,7 +61,7 @@
     <span id="pageLabel"></span>
     <button id="nextBtn">Next &rarr;</button>
   </div>
-  <canvas id="pageCanvas"></canvas>
+  <canvas id="pageCanvas" oncontextmenu="return false" ondragstart="return false"></canvas>
 </section>
 
 <script>
@@ -56,6 +71,31 @@ let currentPage = 0;
 
 const statusEl = document.getElementById('status');
 function setStatus(msg) { statusEl.textContent = msg; }
+
+// --- Cosmetic deterrents only ---------------------------------------------
+// None of this is real access control. It doesn't survive a user disabling
+// JS, using a different browser, or hitting the API directly (curl, Burp,
+// the browser's own network tools). The actual protections — signed
+// short-lived tile URLs, session binding, per-session rate limiting, and
+// per-tile watermarking — are all server-side and unaffected by any of
+// this. This layer exists purely to raise friction for casual, non-technical
+// right-click-and-save attempts, per an explicit choice to accept that
+// tradeoff. See README "Limitations".
+
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Heuristic only: a resized/narrow window or a snapped/tiled layout can
+// trigger false positives, and any devtools panel undocked into its own
+// window won't be detected at all. Intentionally a soft warning, not a
+// block, to avoid locking out legitimate users on a false positive.
+const devtoolsWarningEl = document.getElementById('devtoolsWarning');
+const DEVTOOLS_SIZE_THRESHOLD = 160;
+setInterval(() => {
+  const widthGap = window.outerWidth - window.innerWidth;
+  const heightGap = window.outerHeight - window.innerHeight;
+  const likelyOpen = widthGap > DEVTOOLS_SIZE_THRESHOLD || heightGap > DEVTOOLS_SIZE_THRESHOLD;
+  devtoolsWarningEl.style.display = likelyOpen ? '' : 'none';
+}, 1000);
 
 async function api(path, options = {}) {
   const headers = options.headers || {};

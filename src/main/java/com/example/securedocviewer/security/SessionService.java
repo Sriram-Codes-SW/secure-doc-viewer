@@ -2,9 +2,12 @@ package com.example.securedocviewer.security;
 
 import com.example.securedocviewer.config.ViewerProperties;
 import com.example.securedocviewer.exception.SessionExpiredException;
+import com.example.securedocviewer.model.SessionSummary;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,5 +67,28 @@ public class SessionService {
         } catch (SessionExpiredException e) {
             return false;
         }
+    }
+
+    /**
+     * Snapshot of every session that hasn't expired yet, for the admin
+     * module. Expired-but-not-yet-evicted entries are dropped here rather
+     * than returned and filtered by the caller, since "expired" should mean
+     * the same thing everywhere in this class.
+     */
+    public List<SessionSummary> listActiveSessions() {
+        Instant now = Instant.now();
+        List<SessionSummary> summaries = new ArrayList<>();
+        for (Map.Entry<String, Session> entry : sessions.entrySet()) {
+            Session session = entry.getValue();
+            if (now.isAfter(session.expiresAt())) {
+                continue;
+            }
+            summaries.add(new SessionSummary(
+                    entry.getKey(),
+                    session.username(),
+                    session.expiresAt().getEpochSecond()
+            ));
+        }
+        return summaries;
     }
 }

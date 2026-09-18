@@ -47,4 +47,26 @@ class SessionServiceTest {
         SessionService service = serviceWithTtl(300);
         assertThrows(SessionExpiredException.class, () -> service.requireValidSession("never-issued"));
     }
+
+    @Test
+    void listActiveSessionsIncludesOnlyUnexpiredSessions() {
+        SessionService service = serviceWithTtl(300);
+        String aliceSession = service.login("alice");
+        String bobSession = service.login("bob");
+        service.logout(bobSession);
+
+        var summaries = service.listActiveSessions();
+
+        assertEquals(1, summaries.size());
+        assertEquals(aliceSession, summaries.get(0).sessionId());
+        assertEquals("alice", summaries.get(0).username());
+    }
+
+    @Test
+    void listActiveSessionsExcludesExpiredSessions() {
+        SessionService service = serviceWithTtl(-1);
+        service.login("alice");
+
+        assertTrue(service.listActiveSessions().isEmpty());
+    }
 }

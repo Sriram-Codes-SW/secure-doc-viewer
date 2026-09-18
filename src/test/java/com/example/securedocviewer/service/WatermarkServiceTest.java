@@ -3,6 +3,7 @@ package com.example.securedocviewer.service;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 
@@ -49,6 +50,75 @@ class WatermarkServiceTest {
         }
 
         assertTrue(anyPixelDiffers, "expected the watermark text to change at least one pixel");
+    }
+
+    @Test
+    void watermarkCoversEveryQuadrantOfAFullTile() {
+        // A single centered instance (the old behavior) leaves the corners
+        // untouched. The tiled pattern must reach all four quadrants so that
+        // no crop of the tile can dodge the mark entirely.
+        WatermarkService service = new WatermarkService();
+        BufferedImage source = blankWhiteTile(256);
+
+        BufferedImage stamped = service.applyWatermark(source, "alice@example.com");
+
+        assertTrue(quadrantHasMark(source, stamped, 0, 0, 128, 128), "top-left quadrant unmarked");
+        assertTrue(quadrantHasMark(source, stamped, 128, 0, 128, 128), "top-right quadrant unmarked");
+        assertTrue(quadrantHasMark(source, stamped, 0, 128, 128, 128), "bottom-left quadrant unmarked");
+        assertTrue(quadrantHasMark(source, stamped, 128, 128, 128, 128), "bottom-right quadrant unmarked");
+    }
+
+    @Test
+    void watermarkStillAppearsOnASmallCroppedEdgeTile() {
+        // Edge/bottom tiles in the grid are cropped shorter than a full
+        // tile (TileGrid.sliceTile), so this simulates the worst case: a
+        // sliver far smaller than the font/step sizing was computed for.
+        WatermarkService service = new WatermarkService();
+        BufferedImage source = blankWhiteTile(256).getSubimage(0, 0, 40, 30);
+
+        BufferedImage stamped = service.applyWatermark(source, "alice@example.com");
+
+        boolean anyPixelDiffers = false;
+        outer:
+        for (int x = 0; x < source.getWidth(); x++) {
+            for (int y = 0; y < source.getHeight(); y++) {
+                if (source.getRGB(x, y) != stamped.getRGB(x, y)) {
+                    anyPixelDiffers = true;
+                    break outer;
+                }
+            }
+        }
+
+        assertTrue(anyPixelDiffers, "expected the watermark to reach a small cropped edge tile");
+    }
+
+    @Test
+    void adjacentCopiesNeverOverprintEachOther() {
+        // Regression: spacing used to be a fixed multiple of the font size
+        // (~150px) while the label rendered ~400px wide, so every copy was
+        // drawn on top of its neighbours and the mark was unreadable.
+        BufferedImage scratch = blankWhiteTile(256);
+        Graphics2D g = scratch.createGraphics();
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
+        String[] lines = {"a.really.long.username@example.com", "2026-09-18 10:51:45"};
+
+        WatermarkService.Layout layout = WatermarkService.Layout.of(g.getFontMetrics(), lines);
+        g.dispose();
+
+        assertTrue(layout.stepX() > layout.blockWidth(), "copies on a row overlap horizontally");
+        assertTrue(layout.stepY() >= layout.lineHeight() * lines.length, "rows overlap vertically");
+    }
+
+    private boolean quadrantHasMark(BufferedImage source, BufferedImage stamped,
+                                     int startX, int startY, int w, int h) {
+        for (int x = startX; x < startX + w; x++) {
+            for (int y = startY; y < startY + h; y++) {
+                if (source.getRGB(x, y) != stamped.getRGB(x, y)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Test

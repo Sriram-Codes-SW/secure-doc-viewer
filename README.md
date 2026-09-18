@@ -23,7 +23,18 @@ protection here is structural instead — it lives on the server, where the clie
 | "Reuse the URL later" | Tokens expire (default 120s). Expiry is inside the signed payload, so it cannot be edited. |
 | "Share the URL with someone else" | Tokens are bound to the issuing session id, and that session is re-validated on every tile request. |
 | "Keep using URLs after logout" | Session revocation is checked independently of token expiry, so logging out kills every outstanding URL immediately. |
-| "Screenshot it anyway" | Not prevented — see [Limitations](#limitations). Every served tile is watermarked with the requesting viewer's identity and a UTC timestamp, so a leaked capture is attributable. |
+| "Script every tile of every page in one burst" | `/api/tiles` is rate-limited per session (default 120 tiles/60s window — about three pages a minute). A valid signature, unexpired token, and live session still only get throttled access — bulk harvesting becomes slow and boundable instead of instant. Throttled requests get `429` with a `Retry-After` header, and the viewer shows a countdown and loads the rest of the page when the window allows. |
+| "Screenshot it anyway" | Not prevented — see [Limitations](#limitations). Every served tile is watermarked with the requesting viewer's identity and a UTC timestamp, so a leaked capture is attributable. The mark (viewer on one line, timestamp on the next) is repeated in a non-overlapping pattern across each tile rather than stamped once in the centre, so every tile carries it and a full tile holds at least one complete, readable copy. |
+
+### The client also blocks right-click and warns on DevTools — on purpose, with eyes open
+
+`index.html` blocks the canvas's context menu/drag and shows a soft warning when DevTools looks
+open (a window-size heuristic — easy to evade, and it only warns, it never blocks anything). This
+is exactly the naive, browser-side trick this README opens by dismissing, added anyway as a
+deliberate, acknowledged tradeoff: it stops nothing for anyone who disables JS, opens a console,
+or hits `/api/tiles` directly, but it does add friction for the casual "right-click → Save image"
+path a non-technical user would otherwise take without a second thought. It provides zero
+additional protection on top of the server-side controls above and must never be mistaken for one.
 
 ### Watermarking happens on the way out, not at ingest
 
@@ -111,8 +122,10 @@ curl "localhost:8080/api/tiles?token=…" --output tile.png
 ```
 
 Worth trying, to see the protections fire: edit one character of a token (401, signature
-mismatch), wait past the TTL and retry (401, expired), or log out and retry an unexpired token
-(401, session revoked).
+mismatch), wait past the TTL and retry (401, expired), log out and retry an unexpired token
+(401, session revoked), or request more than `tile-rate-limit-per-window` distinct tiles for the
+same session inside the window (429, rate limited, with `Retry-After` giving the seconds until the
+next slot frees up).
 
 ### Configuration
 
@@ -126,6 +139,8 @@ All under `secure-doc-viewer.*` in `application.yml`:
 | `signing-secret` | *(demo value)* | HMAC key — supply via env/secrets manager in any real deployment |
 | `url-ttl-seconds` | `120` | Signed URL lifetime |
 | `session-ttl-seconds` | `1800` | Session lifetime |
+| `tile-rate-limit-per-window` | `120` | Max tiles a session may redeem per window |
+| `tile-rate-limit-window-seconds` | `60` | Width of that rolling window |
 
 ---
 
@@ -150,8 +165,9 @@ Stated plainly, because the honest framing matters more than the feature list:
 - **This does not make content uncopyable, and nothing can.** Anything rendered on a screen can
   be photographed or screen-captured. The goal is to raise cost and add attribution, not to
   achieve prevention.
-- A determined user with a legitimate session can request every tile and reassemble them. The
-  watermark is what makes that traceable, and rate limiting per session would make it slow.
+- A determined user with a legitimate session can still request every tile and reassemble them —
+  the per-session rate limit only bounds how *fast*, not whether. The watermark is what makes the
+  result traceable regardless.
 - Sessions and manifests are in-memory, so both are lost on restart and neither survives more
   than one instance. Real deployments need a shared store (Postgres/Redis) for both.
 - `SessionController` is not authentication. It mints a session for any username with no
@@ -167,7 +183,9 @@ Stated plainly, because the honest framing matters more than the feature list:
 - Back storage with S3 and issue CloudFront signed URLs instead of app-issued tokens
 - Replace the in-memory session store with Spring Security + Redis
 - Persist manifests in Postgres so documents survive restart
-- Per-session rate limiting on `/api/tiles` to make bulk harvesting impractical
+- Move the rate-limit counters into a shared store (Redis) so limits hold across instances,
+  and log/alert on the specific pattern of "every tile-urls page fetched back-to-back" rather
+  than just a flat per-minute cap
 - Progressive/lazy tile loading (only fetch tiles inside the viewport at current zoom)
 
 ## License

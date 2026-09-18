@@ -1,0 +1,20 @@
+<header class="topbar">
+  <div class="brand">Secure Doc Viewer</div>
+
+  @if (sessionService.isLoggedIn()) {
+    <nav>
+      <a routerLink="/documents" routerLinkActive="active">Documents</a>
+      <a routerLink="/admin" routerLinkActive="active">Admin</a>
+    </nav>
+    <div class="account">
+      <span class="muted">{{ sessionService.username() }}</span>
+      <button (click)="logout()">Sign out</button>
+    </div>
+  } @else {
+    <a class="button" routerLink="/login">Sign in</a>
+  }
+</header>
+
+<main>
+  <router-outlet />
+</main>
