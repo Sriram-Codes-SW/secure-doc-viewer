@@ -260,13 +260,16 @@ local-only 8443), and set `SESSION_COOKIE_SECURE=true`.
 ### Backup and restore
 
 Two things hold state: the MySQL database and the `app-storage` volume with the rendered tiles.
-Back them up together (tiles without rows are swept as orphans; documents without tiles can't
-be viewed).
+They must be captured **at the same moment**: replacing a PDF deletes the previous tile version
+as soon as it commits, so a dump taken before a replace plus a tile archive taken after it would
+point documents at tiles that no longer exist. Stop the app for the few seconds a backup takes:
 
 ```bash
-# backup
+# backup (the app is stopped so the database and the tiles match)
+docker compose --profile full stop app
 docker compose exec -T mysql sh -c 'exec mysqldump --single-transaction --routines -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > securedocs.sql
 docker run --rm -v secure-doc-viewer_app-storage:/data -v "$PWD":/backup alpine tar czf /backup/storage.tgz -C /data .
+docker compose --profile full start app
 
 # restore (stop the app first so nothing is written meanwhile)
 docker compose --profile full stop app
@@ -275,8 +278,26 @@ docker run --rm -v secure-doc-viewer_app-storage:/data -v "$PWD":/backup alpine 
 docker compose --profile full start app
 ```
 
+Try a restore into a scratch environment before relying on the backups. As a safety net, the
+storage janitor never removes a document's other tile versions while its current one is missing.
+
 Keep `.env` (above all `SIGNING_SECRET`) with the backup: a restore under a different secret
 still works, but every account's recognised devices are forgotten (their hashes are keyed by it).
+
+---
+
+### Go-live checklist
+
+- Serve over HTTPS: the `tls` profile with `SITE_ADDRESS` set to the domain and `TLS_MODE` to an
+  e-mail address (real certificate), ports 80/443 published, and `SESSION_COOKIE_SECURE=true`.
+  Add `includeSubDomains` to `HSTS_POLICY` only if every subdomain is HTTPS.
+- Keep `app:8080`, MySQL and the metrics endpoint off the network; set `METRICS_ALLOWED_ADDRESSES`
+  to the Prometheus server and alert on `sdv_sign_in_total{outcome="locked"}`,
+  `sdv_tiles_rate_limited_total` and `sdv_render_rejected_total`.
+- Strong, unique `SIGNING_SECRET`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`; change the bootstrap admin
+  password at first sign-in (the app requires it when the password was generated).
+- Scheduled backups as above, plus one restore drill.
+- One app instance (see [Limitations](#limitations)).
 
 ---
 
@@ -325,7 +346,11 @@ Stated plainly, because the honest framing matters more than the feature list:
   be photographed or screen-captured. The goal is to raise cost and add attribution, not to
   achieve prevention.
 - A determined user with a legitimate session can still request every tile and reassemble them —
-  the per-user rate limit only bounds how *fast*, not whether. The watermark is what makes the
+  the per-user rate limit only bounds how *fast*, not whether. The defaults favour readers:
+  512 px tiles at 180 a minute let someone read ~15 pages a minute without pausing, which also
+  means a scripted harvest of a 500-page document takes about half an hour rather than hours.
+  Lower `tile-rate-limit-per-window` (or `tile-size`) for documents where that matters more
+  than reading speed; documents keep the tile size they were rendered with. The watermark is what makes the
   result traceable regardless.
 - Accounts, documents, shares and the audit trail live in MySQL; sessions and the rate-limit
   counters are still in memory, so they don't span instances. Multiple instances would need a

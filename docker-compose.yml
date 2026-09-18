@@ -90,6 +90,7 @@ services:
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
       TLS_MODE: ${TLS_MODE:-internal}
+      HSTS_POLICY: ${HSTS_POLICY:-max-age=31536000}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

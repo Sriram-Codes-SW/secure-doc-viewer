@@ -76,7 +76,15 @@ public class StorageJanitor {
                 }
                 continue;
             }
-            // Superseded renders of a live document (a replace whose cleanup failed).
+            // Superseded renders of a live document (a replace whose cleanup failed) —
+            // but only while the current version is actually there. If it is missing
+            // (e.g. a database and a tile backup taken at different moments), the other
+            // versions are the only tiles left and are kept for an operator to recover.
+            Path current = version == 0 ? dir : dir.resolve("v" + version);
+            if (version > 0 && !Files.isDirectory(current)) {
+                log.warn("Document {} points at tile version {} which is missing; leaving its other tiles alone", name, version);
+                continue;
+            }
             for (Path child : directories(dir)) {
                 String childName = child.getFileName().toString();
                 boolean staleVersion = childName.matches("v\\d+") && Integer.parseInt(childName.substring(1)) != version;

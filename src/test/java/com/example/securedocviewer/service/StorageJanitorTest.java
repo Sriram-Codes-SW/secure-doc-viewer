@@ -54,6 +54,21 @@ class StorageJanitorTest {
         assertTrue(Files.exists(activeStaging), "a render in progress must not be removed");
     }
 
+    @Test
+    void keepsEveryVersionWhenTheCurrentOneIsMissing(@TempDir Path root) throws IOException {
+        // e.g. a database restored from before a replace, with tiles archived after it
+        Instant old = Instant.now().minus(StorageJanitor.MIN_AGE).minusSeconds(60);
+        Path onlySurvivor = dir(root.resolve(KNOWN).resolve("v3"), old);
+
+        ViewerProperties properties = new ViewerProperties();
+        properties.setStorageRoot(root.toString());
+        DocumentRepository documents = mock(DocumentRepository.class);
+        when(documents.findAllTileVersions()).thenReturn(List.<Object[]>of(new Object[] {KNOWN, 2}));
+
+        assertEquals(0, new StorageJanitor(properties, documents).removeOrphans(Instant.now()));
+        assertTrue(Files.exists(onlySurvivor), "the only tiles left must be kept for recovery");
+    }
+
     private static Path dir(Path path, Instant modified) throws IOException {
         Files.createDirectories(path);
         Files.writeString(path.resolve("tile.png"), "x");

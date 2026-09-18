@@ -12,8 +12,9 @@
 	encode zstd gzip
 
 	header {
-		# Browsers must only ever use HTTPS for this site from now on.
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Browsers must only ever use HTTPS for this site from now on. Add
+		# "; includeSubDomains" via HSTS_POLICY only if every subdomain is HTTPS too.
+		Strict-Transport-Security "{$HSTS_POLICY}"
 		-Server
 	}
 

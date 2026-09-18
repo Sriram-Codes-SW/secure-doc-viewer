@@ -1,6 +1,7 @@
 package com.example.securedocviewer.document;
 
 import com.example.securedocviewer.account.AppUser;
+import com.example.securedocviewer.account.Role;
 import com.example.securedocviewer.account.AppUserRepository;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.audit.AuditEvent.Actor;
@@ -145,9 +146,18 @@ public class DocumentService {
             updated = tx.execute(status -> {
                 Document document = documents.findByIdForUpdate(documentId)
                         .orElseThrow(() -> new DocumentNotFoundException("Document not found."));
+                // Rendering can take a while: the owner may have been demoted or disabled,
+                // or the document handed to someone else, since the check above.
+                if (!canManage(document, currentRoles(viewer))) {
+                    recordDenied(actor, viewer, Subject.document(documentId, document.getTitle(), "manage"));
+                    throw new ForbiddenException("Only the owner (as a publisher) or an admin can change this document.");
+                }
                 previousVersion[0] = document.getTileVersion();
                 int nextVersion = document.getTileVersion() + 1;
                 try {
+                    // Under the row lock nothing committed points past the current version,
+                    // so anything already at the next one is debris from a failed replace.
+                    tiles.deleteVersion(documentId, nextVersion);
                     tiles.commit(rendered, documentId, nextVersion);
                 } catch (IOException e) {
                     throw new java.io.UncheckedIOException(e);
@@ -301,6 +311,15 @@ public class DocumentService {
                 || document.getVisibility() == Visibility.EVERYONE
                 || document.getOwner().getUsername().equals(viewer.username())
                 || document.getSharedWith().stream().anyMatch(u -> u.getUsername().equals(viewer.username()));
+    }
+
+    /** The viewer's roles as they are in the database now, not as they were at sign-in. */
+    private Viewer currentRoles(Viewer viewer) {
+        return users.findByUsername(viewer.username())
+                .filter(AppUser::isEnabled)
+                .map(user -> new Viewer(user.getUsername(), user.getRole() == Role.ADMIN,
+                        user.getRole() == Role.ADMIN || user.getRole() == Role.PUBLISHER))
+                .orElse(new Viewer(viewer.username(), false, false));
     }
 
     private static boolean canManage(Document document, Viewer viewer) {
