@@ -54,6 +54,13 @@ secure-doc-viewer:
   # further uploads wait up to render-queue-timeout-seconds, then get 503.
   max-concurrent-renders: 2
   render-queue-timeout-seconds: 30
+  # A PDF that takes longer than this to render is rejected (400) and its
+  # render slot freed, so a hostile file can't block everyone's uploads.
+  render-timeout: 3m
+
+  # Signed-in sessions end this long after sign-in even if in constant use
+  # (the 30-minute idle timeout above still applies too).
+  session-max-lifetime: 12h
 
   # Watermark look: ink opacity (0.05-0.6) and gap between copies as a multiple
   # of the text height. Each mark shows the viewer, a UTC timestamp and a short

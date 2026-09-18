@@ -38,10 +38,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   /** Username awaiting a second click to confirm disabling. */
   readonly confirmingDisable = signal<string | null>(null);
   readonly userQuery = signal('');
+  readonly showDisabled = signal(false);
   readonly filteredUsers = computed(() => {
     const q = this.userQuery().trim().toLowerCase();
-    return q ? this.users().filter((u) => u.username.includes(q)) : this.users();
+    return this.users().filter(
+      (u) => (this.showDisabled() || u.enabled) && (!q || u.username.includes(q)),
+    );
   });
+  readonly hiddenDisabledCount = computed(() =>
+    this.showDisabled() ? 0 : this.users().filter((u) => !u.enabled).length,
+  );
   readonly usersMessage = signal<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   selectedUsername = '';
@@ -178,7 +184,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   unlock(user: UserSummary): void {
     this.adminService.unlock(user.username).subscribe({
-      next: () => this.usersMessage.set({ kind: 'success', text: `${user.username} can sign in again (lockout cleared).` }),
+      next: () => {
+        this.usersMessage.set({ kind: 'success', text: `${user.username} can sign in again (lockout cleared).` });
+        this.loadUsers();
+      },
       error: (err: HttpErrorResponse) => this.showUsersError(err),
     });
   }
@@ -235,8 +244,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Same format as the audit log and the watermark: UTC, to the minute. */
   formatTime(epochSeconds: number): string {
-    return new Date(epochSeconds * 1000).toLocaleString();
+    return new Date(epochSeconds * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
   }
 
   usagePercent(status: RateLimitStatus): number {

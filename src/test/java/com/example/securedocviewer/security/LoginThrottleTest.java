@@ -90,4 +90,44 @@ class LoginThrottleTest {
         throttle.recordFailure("erin", "198.51.100.9");
         assertDoesNotThrow(() -> throttle.checkAllowed("erin", "198.51.100.9", false));
     }
+
+    @Test
+    void parallelAttemptsCannotAllSlipPastTheCheck() throws Exception {
+        LoginThrottle throttle = new LoginThrottle();
+        int threads = 40;
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicInteger admitted = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+        try {
+            for (int t = 0; t < threads; t++) {
+                pool.submit(() -> {
+                    start.await();
+                    try {
+                        throttle.reserve("frank", "198.51.100.10", false);
+                        admitted.incrementAndGet(); // the password then turns out wrong: the failure stands
+                    } catch (LoginLockedException refused) {
+                        // expected for all but the first five
+                    }
+                    return null;
+                });
+            }
+            start.countDown();
+        } finally {
+            pool.shutdown();
+            assertTrue(pool.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS));
+        }
+        assertEquals(LoginThrottle.MAX_FAILURES_PER_ACCOUNT, admitted.get());
+    }
+
+    @Test
+    void aSuccessfulReservationIsHandedBack() {
+        LoginThrottle throttle = new LoginThrottle();
+        for (int i = 0; i < LoginThrottle.MAX_FAILURES_PER_IP - 1; i++) {
+            throttle.recordFailure("spray" + i, "198.51.100.11");
+        }
+        java.time.Instant attempt = throttle.reserve("gina", "198.51.100.11", false);
+        throttle.succeeded("gina", "198.51.100.11", attempt);
+        // The correct password must not have used up the address's last allowed failure.
+        assertDoesNotThrow(() -> throttle.reserve("harry", "198.51.100.11", false));
+    }
 }

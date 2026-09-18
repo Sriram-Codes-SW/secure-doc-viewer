@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,7 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *       recently signed in from ({@link KnownDevices}) are exempt, so an
  *       attacker can't lock the owner out of their usual device.</li>
  * </ol>
- * Attempts refused by a lock aren't counted as failures. Counters are
+ * Checking and counting happen in one step ({@link #reserve}): every attempt
+ * is counted as a failure before the password is checked and handed back on
+ * success, so a burst of parallel guesses can't all pass the check before any
+ * of them is counted. Attempts refused by a lock aren't counted. Counters are
  * in-memory per instance (a restart clears them); recognised devices are in
  * the database. An admin can clear an account's counters ({@link #unlock}).
  */
@@ -65,8 +69,30 @@ public class LoginThrottle {
         this.clock = clock;
     }
 
+    /**
+     * Atomically checks every rule and, if none refuses, counts this attempt as
+     * a failure in advance. Pass the returned token to {@link #succeeded} if the
+     * password turns out to be right; otherwise the failure simply stands.
+     *
+     * @param recognisedDevice whether the account has recently signed in successfully from this address
+     * @throws LoginLockedException if a rule refuses the attempt (then nothing is counted)
+     */
+    public synchronized Instant reserve(String username, String clientIp, boolean recognisedDevice) {
+        checkAllowed(username, clientIp, recognisedDevice);
+        Instant at = clock.instant();
+        recordFailure(username, clientIp, at);
+        return at;
+    }
+
+    /** The reserved attempt succeeded: hand back its provisional failure and clear this address's account counter. */
+    public synchronized void succeeded(String username, String clientIp, Instant reservation) {
+        failures.remove(accountKey(username, clientIp));
+        removeOne(ipKey(clientIp), reservation);
+        removeOne(anyIpKey(username), reservation);
+    }
+
     /** @param recognisedDevice whether the account has recently signed in successfully from this address */
-    public void checkAllowed(String username, String clientIp, boolean recognisedDevice) {
+    public synchronized void checkAllowed(String username, String clientIp, boolean recognisedDevice) {
         Instant now = clock.instant();
         check(Rule.ACCOUNT_AND_IP, lockedFor(accountKey(username, clientIp), MAX_FAILURES_PER_ACCOUNT, now));
         check(Rule.IP, lockedFor(ipKey(clientIp), MAX_FAILURES_PER_IP, now));
@@ -75,14 +101,17 @@ public class LoginThrottle {
         }
     }
 
-    public void recordFailure(String username, String clientIp) {
-        Instant now = clock.instant();
+    public synchronized void recordFailure(String username, String clientIp) {
+        recordFailure(username, clientIp, clock.instant());
+    }
+
+    private void recordFailure(String username, String clientIp, Instant now) {
         append(accountKey(username, clientIp), now);
         append(ipKey(clientIp), now);
         append(anyIpKey(username), now);
     }
 
-    public void recordSuccess(String username, String clientIp) {
+    public synchronized void recordSuccess(String username, String clientIp) {
         failures.remove(accountKey(username, clientIp));
     }
 
@@ -91,7 +120,7 @@ public class LoginThrottle {
      * account-wide). Per-address counters are left alone: they belong to the
      * address, not the account.
      */
-    public void unlock(String username) {
+    public synchronized void unlock(String username) {
         String accountPrefix = "account:" + username + "|";
         failures.keySet().removeIf(key -> key.startsWith(accountPrefix) || key.equals(anyIpKey(username)));
     }
@@ -131,6 +160,27 @@ public class LoginThrottle {
                     .orElseThrow()
                     .plus(WINDOW);
             return Math.max(1, Duration.between(now, unlocksAt).toSeconds());
+        }
+    }
+
+    /** Whether any account rule currently refuses this account from some address (for the admin list). */
+    public synchronized boolean isLocked(String username) {
+        Instant now = clock.instant();
+        String accountPrefix = "account:" + username + "|";
+        for (String key : List.copyOf(failures.keySet())) {
+            if (key.startsWith(accountPrefix) && lockedFor(key, MAX_FAILURES_PER_ACCOUNT, now) > 0) {
+                return true;
+            }
+        }
+        return lockedFor(anyIpKey(username), MAX_FAILURES_PER_ACCOUNT_ANY_IP, now) > 0;
+    }
+
+    private void removeOne(String key, Instant at) {
+        Deque<Instant> attempts = failures.get(key);
+        if (attempts != null) {
+            synchronized (attempts) {
+                attempts.removeLastOccurrence(at);
+            }
         }
     }
 

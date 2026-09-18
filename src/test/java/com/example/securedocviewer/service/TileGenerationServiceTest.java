@@ -218,4 +218,49 @@ class TileGenerationServiceTest {
             return out.toByteArray();
         }
     }
+
+    @Test
+    void aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot(@org.junit.jupiter.api.io.TempDir Path storage) throws Exception {
+        ViewerProperties slow = new ViewerProperties();
+        slow.setStorageRoot(storage.toString());
+        slow.setSigningSecret("test-signing-secret-0123456789-abcdef");
+        slow.setMaxConcurrentRenders(1);
+        slow.setRenderTimeout(java.time.Duration.ofMillis(1));
+        TileGenerationService service = new TileGenerationService(slow, new ViewerMetrics(new SimpleMeterRegistry()));
+
+        byte[] manyPages = pdfWithPages(40);
+        com.example.securedocviewer.exception.BadRequestException e = assertThrows(
+                com.example.securedocviewer.exception.BadRequestException.class,
+                () -> service.render(new java.io.ByteArrayInputStream(manyPages)));
+        assertTrue(e.getMessage().contains("too long"));
+
+        // The only slot is free again at once, and the abandoned render cleans up after itself.
+        slow.setRenderTimeout(java.time.Duration.ofMinutes(1));
+        TileGenerationService.RenderedDocument ok = service.render(new java.io.ByteArrayInputStream(pdfWithPages(1)));
+        assertEquals(1, ok.pages().size());
+        Path staging = storage.resolve(TileGenerationService.STAGING_DIR);
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            try (var dirs = java.nio.file.Files.list(staging)) {
+                if (dirs.count() == 1) {
+                    break; // only the successful render is left
+                }
+            }
+            Thread.sleep(100);
+        }
+        try (var dirs = java.nio.file.Files.list(staging)) {
+            assertEquals(1, dirs.count(), "abandoned render left its staging directory behind");
+        }
+    }
+
+    private static byte[] pdfWithPages(int pages) throws IOException {
+        try (org.apache.pdfbox.pdmodel.PDDocument document = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            for (int i = 0; i < pages; i++) {
+                document.addPage(new org.apache.pdfbox.pdmodel.PDPage(org.apache.pdfbox.pdmodel.common.PDRectangle.A4));
+            }
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            document.save(out);
+            return out.toByteArray();
+        }
+    }
 }

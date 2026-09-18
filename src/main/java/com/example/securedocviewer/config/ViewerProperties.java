@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -35,6 +36,26 @@ public class ViewerProperties {
     /** PDFs rendered at once; further uploads wait up to renderQueueTimeoutSeconds, then get 503. */
     private int maxConcurrentRenders = 2;
     private long renderQueueTimeoutSeconds = 30;
+    /** A PDF that takes longer than this to render is rejected, so a hostile file can't hold a render slot. */
+    private Duration renderTimeout = Duration.ofMinutes(3);
+    /** Sessions end this long after sign-in regardless of activity. */
+    private Duration sessionMaxLifetime = Duration.ofHours(12);
+
+    public Duration getRenderTimeout() {
+        return renderTimeout;
+    }
+
+    public void setRenderTimeout(Duration renderTimeout) {
+        this.renderTimeout = renderTimeout;
+    }
+
+    public Duration getSessionMaxLifetime() {
+        return sessionMaxLifetime;
+    }
+
+    public void setSessionMaxLifetime(Duration sessionMaxLifetime) {
+        this.sessionMaxLifetime = sessionMaxLifetime;
+    }
     /** Watermark ink opacity, 0.05-0.6. Lower is easier to read through; higher survives recompression better. */
     private float watermarkOpacity = 0.2f;
     /** Gap between watermark copies, as a multiple of the text height. Larger is lighter on the page. */

@@ -19,7 +19,9 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      # $$ defers expansion to the container, so the password never appears in
+      # the stored command (docker inspect); MYSQL_PWD keeps it off the argv.
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h localhost -u root --silent"]
       interval: 5s
       timeout: 5s
       retries: 20

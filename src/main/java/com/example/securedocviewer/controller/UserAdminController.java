@@ -49,7 +49,7 @@ public class UserAdminController {
     /** The admin list also shows how many documents each user owns (e.g. before disabling them). */
     public record AdminUserView(String username, com.example.securedocviewer.account.Role role, boolean enabled,
                                 long createdAtEpochSeconds, Long lastSignInEpochSeconds, boolean mustChangePassword,
-                                long ownedDocuments) {
+                                long ownedDocuments, boolean locked) {
     }
 
     private final UserAccountService accounts;
@@ -75,7 +75,7 @@ public class UserAdminController {
         return accounts.list().stream()
                 .map(u -> new AdminUserView(u.username(), u.role(), u.enabled(), u.createdAtEpochSeconds(),
                         u.lastSignInEpochSeconds(), u.mustChangePassword(),
-                        documents.countByOwner_Username(u.username())))
+                        documents.countByOwner_Username(u.username()), loginThrottle.isLocked(u.username())))
                 .toList();
     }
 

@@ -255,6 +255,9 @@ public class DocumentService {
             if (user.getId().equals(document.getOwner().getId())) {
                 throw new BadRequestException("The owner always has access.");
             }
+            if (!user.isEnabled()) {
+                throw new BadRequestException("'" + username + "' is disabled and can't be given access.");
+            }
             document.getSharedWith().add(user);
             document.touch();
             title[0] = document.getTitle();

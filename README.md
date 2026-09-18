@@ -189,6 +189,8 @@ All under `secure-doc-viewer.*` in `application.yml`; secrets come from the envi
 | `tile-rate-limit-per-window` | `180` | Max tile requests a user may make per window |
 | `tile-rate-limit-window-seconds` | `60` | Width of that rolling window |
 | `max-concurrent-renders` / `render-queue-timeout-seconds` | `2` / `30` | PDFs rendered at once; further uploads wait this long, then get `503` + `Retry-After` |
+| `render-timeout` | `3m` | A PDF that takes longer to render is rejected (`400`) and its render slot freed |
+| `session-max-lifetime` | `12h` | Sessions end this long after sign-in, however active (on top of the 30-minute idle timeout) |
 | `audit-retention-days` | `180` | Audit events older than this are purged nightly |
 | `metrics-allowed-addresses` | `METRICS_ALLOWED_ADDRESSES` (default loopback) | CIDRs allowed to scrape `/actuator/prometheus` |
 | `bootstrap-admin.username` / `.password` | `admin` / `BOOTSTRAP_ADMIN_PASSWORD` | First admin, created only on an empty database |
@@ -215,7 +217,10 @@ another publisher (e.g. before disabling its owner).
 
 ### Sign-in lockout
 
-Three counters, each over a rolling 15 minutes; a sign-in is refused (`429` + `Retry-After`) when
+Three counters, each over a rolling 15 minutes. Checking and counting are one atomic step (an
+attempt is counted before its password is checked, and handed back if it was right), so a burst of
+parallel guesses gets no more tries than a sequence would. Changing your password is throttled
+the same way, so a stolen session can't be used to guess the current password. A sign-in is refused (`429` + `Retry-After`) when
 any rule it is subject to is over its limit:
 
 | Rule | Limit | Applies to |
@@ -356,7 +361,18 @@ Stated plainly, because the honest framing matters more than the feature list:
 - Accounts, documents, shares and the audit trail live in MySQL; sessions and the rate-limit
   counters are still in memory, so they don't span instances. Multiple instances would need a
   shared session store (e.g. Redis) and shared tile storage.
-- Sharing is per user or with everyone; there are no groups yet.
+- Sharing is per user or with everyone; there are no groups yet. Users are disabled, never
+  deleted (their audit history stays meaningful); the admin list hides disabled accounts by
+  default.
+- Sign-in is by password only; there is no MFA, including for admins. Passwords are limited to
+  72 bytes, BCrypt's maximum.
+- Publishers can discover non-admin usernames through the share picker (two-character prefix
+  search), by design: they need it to share.
+- Pages are images, so screen readers get no text; there is no text layer by design.
+- A render that overruns `render-timeout` is abandoned at its next page boundary; a single
+  pathological page can keep one CPU busy until it finishes, but no longer blocks other uploads.
+- Docker base images and GitHub Actions are pinned by version tag, not digest; Dependabot keeps
+  them current.
 - Tiles are stored on local disk. Object storage (S3) plus a CDN with signed URLs is the
   production shape; `SignedUrlService` deliberately mirrors the presigned-URL pattern so it maps
   onto CloudFront signed URLs with little change.

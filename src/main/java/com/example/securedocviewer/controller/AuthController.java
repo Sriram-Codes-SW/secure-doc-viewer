@@ -1,5 +1,8 @@
 package com.example.securedocviewer.controller;
 
+import com.example.securedocviewer.security.SessionLifetimeFilter;
+import java.time.Instant;
+import com.example.securedocviewer.exception.WrongPasswordException;
 import com.example.securedocviewer.service.ViewerMetrics;
 import com.example.securedocviewer.service.ViewerMetrics.SignInOutcome;
 import com.example.securedocviewer.account.UserAccountService;
@@ -115,8 +118,9 @@ public class AuthController {
         String clientIp = request.getRemoteAddr();
         Actor attempted = new Actor(username, null, clientIp);
         boolean recognisedDevice = knownDevices.isRecognised(username, clientIp);
+        Instant attempt;
         try {
-            loginThrottle.checkAllowed(username, clientIp, recognisedDevice);
+            attempt = loginThrottle.reserve(username, clientIp, recognisedDevice);
         } catch (LoginLockedException e) {
             metrics.signIn(SignInOutcome.LOCKED);
             // Once a minute per account+IP is enough to show a lockout without flooding the log.
@@ -127,17 +131,21 @@ public class AuthController {
 
         Authentication authentication;
         try {
+            // BCrypt only looks at 72 bytes and refuses longer input; no stored password is longer.
+            if (!UserAccountService.fitsBcrypt(body.password())) {
+                throw new BadCredentialsException("Password too long.");
+            }
             authentication = authenticationManager.authenticate(
                     UsernamePasswordAuthenticationToken.unauthenticated(username, body.password()));
         } catch (AuthenticationException e) {
             // Same message for unknown user, wrong password and disabled
             // account, so the response doesn't reveal which accounts exist.
-            loginThrottle.recordFailure(username, clientIp);
+            // The failure was already counted by reserve().
             metrics.signIn(SignInOutcome.FAILURE);
             audit.record(AuditEventType.SIGN_IN_FAILED, attempted, Subject.none());
             throw new BadCredentialsException("Invalid username or password.");
         }
-        loginThrottle.recordSuccess(username, clientIp);
+        loginThrottle.succeeded(username, clientIp, attempt);
         metrics.signIn(SignInOutcome.SUCCESS);
         knownDevices.remember(username, clientIp);
         boolean mustChangePassword = accounts.recordSignIn(username);
@@ -152,6 +160,7 @@ public class AuthController {
         securityContextRepository.saveContext(context, request, response);
         HttpSession session = request.getSession();
         session.setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, mustChangePassword);
+        session.setAttribute(SessionLifetimeFilter.SIGNED_IN_AT, Instant.now());
         sessionMetadata.recordSignIn(session.getId(), clientIp, request.getHeader("User-Agent"));
         audit.record(AuditEventType.SIGN_IN, actors.of(request, username), Subject.none());
 
@@ -181,7 +190,20 @@ public class AuthController {
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest body,
                                                Authentication authentication,
                                                HttpServletRequest request) {
-        accounts.changeOwnPassword(authentication.getName(), body.currentPassword(), body.newPassword());
+        // Guessing the current password from a stolen session is throttled like signing in.
+        String username = authentication.getName();
+        String clientIp = request.getRemoteAddr();
+        Instant attempt = loginThrottle.reserve(username, clientIp, knownDevices.isRecognised(username, clientIp));
+        try {
+            accounts.changeOwnPassword(username, body.currentPassword(), body.newPassword());
+        } catch (WrongPasswordException e) {
+            audit.record(AuditEventType.PASSWORD_CHANGE_FAILED, actors.of(request, authentication), Subject.none());
+            throw e;
+        } catch (RuntimeException e) {
+            loginThrottle.succeeded(username, clientIp, attempt); // not a guess (e.g. new password too short)
+            throw e;
+        }
+        loginThrottle.succeeded(username, clientIp, attempt);
         request.getSession().setAttribute(PasswordChangeRequiredFilter.SESSION_ATTRIBUTE, false);
         // The password just changed: this device is known-good again (knownDevices were cleared).
         knownDevices.remember(authentication.getName(), request.getRemoteAddr());

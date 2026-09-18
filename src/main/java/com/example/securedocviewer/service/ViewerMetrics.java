@@ -21,6 +21,7 @@ public class ViewerMetrics {
     private final Counter tilesServed;
     private final Counter tilesRateLimited;
     private final Counter rendersRejected;
+    private final Counter rendersTimedOut;
     private final Timer renderTime;
 
     public ViewerMetrics(MeterRegistry registry) {
@@ -31,6 +32,8 @@ public class ViewerMetrics {
                 .description("Tile requests refused by the per-user rate limit").register(registry);
         this.rendersRejected = Counter.builder("sdv.render.rejected")
                 .description("Uploads refused with 503 because every render slot stayed busy").register(registry);
+        this.rendersTimedOut = Counter.builder("sdv.render.timed_out")
+                .description("Uploads rejected because rendering exceeded render-timeout").register(registry);
         this.renderTime = Timer.builder("sdv.render")
                 .description("Time to render a whole PDF into tiles").register(registry);
         // Registered up front so every outcome is exported as 0 before it first happens.
@@ -49,6 +52,10 @@ public class ViewerMetrics {
 
     public void renderRejected() {
         rendersRejected.increment();
+    }
+
+    public void renderTimedOut() {
+        rendersTimedOut.increment();
     }
 
     public void signIn(SignInOutcome outcome) {

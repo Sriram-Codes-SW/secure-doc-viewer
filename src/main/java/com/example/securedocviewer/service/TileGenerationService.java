@@ -12,6 +12,8 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -25,7 +27,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -60,8 +69,13 @@ public class TileGenerationService {
     }
 
     private final ViewerProperties properties;
+    private static final Logger log = LoggerFactory.getLogger(TileGenerationService.class);
+
     private final Semaphore renderPermits;
     private final ViewerMetrics metrics;
+    /** Renders run here so the request thread can give up on one that takes too long. */
+    private final ExecutorService renderThreads =
+            Executors.newCachedThreadPool(Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
 
     public TileGenerationService(ViewerProperties properties, ViewerMetrics metrics) {
         this.properties = properties;
@@ -80,7 +94,45 @@ public class TileGenerationService {
         acquireRenderPermit();
         Timer.Sample timing = metrics.renderStarted();
         try {
-            return renderWithPermit(pdf);
+            Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
+            Files.createDirectories(stagingDir);
+            Path source = stagingDir.resolve("upload.pdf");
+            try {
+                Files.copy(pdf, source);
+            } catch (IOException | RuntimeException e) {
+                discardStaging(stagingDir, e);
+                throw e;
+            }
+            AtomicBoolean cancelled = new AtomicBoolean();
+            Future<RenderedDocument> job = renderThreads.submit(() -> renderStaged(stagingDir, source, cancelled));
+            try {
+                return job.get(properties.getRenderTimeout().toMillis(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                // The render stops at its next page and cleans up after itself; the
+                // slot is freed now so one hostile PDF can't hold it indefinitely.
+                cancelled.set(true);
+                job.cancel(true);
+                metrics.renderTimedOut();
+                log.warn("Rendering took longer than {}; abandoned {}", properties.getRenderTimeout(), stagingDir);
+                throw new BadRequestException("This PDF took too long to prepare. Try a smaller or simpler file.");
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof IOException io) {
+                    throw io;
+                }
+                if (cause instanceof RuntimeException runtime) {
+                    throw runtime;
+                }
+                if (cause instanceof Error error) {
+                    throw error;
+                }
+                throw new IOException(cause);
+            } catch (InterruptedException e) {
+                cancelled.set(true);
+                job.cancel(true);
+                Thread.currentThread().interrupt();
+                throw new ServiceBusyException("Upload interrupted. Try again.", 5);
+            }
         } finally {
             renderPermits.release();
             metrics.renderFinished(timing);
@@ -100,12 +152,8 @@ public class TileGenerationService {
         }
     }
 
-    private RenderedDocument renderWithPermit(InputStream pdf) throws IOException {
-        Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
-        Files.createDirectories(stagingDir);
-        Path source = stagingDir.resolve("upload.pdf");
+    private RenderedDocument renderStaged(Path stagingDir, Path source, AtomicBoolean cancelled) throws IOException {
         try {
-            Files.copy(pdf, source);
             requirePdfSignature(source);
             List<PageInfo> pages = new ArrayList<>();
             try (PDDocument document = loadPdf(source)) {
@@ -114,6 +162,9 @@ public class TileGenerationService {
                 // Decode huge embedded images at reduced resolution instead of in full.
                 renderer.setSubsamplingAllowed(true);
                 for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) {
+                    if (cancelled.get() || Thread.currentThread().isInterrupted()) {
+                        throw new CancellationException("Render abandoned after render-timeout");
+                    }
                     BufferedImage rendered = renderer.renderImageWithDPI(pageIndex, properties.getRenderDpi());
                     pages.add(tileAndSave(stagingDir.resolve("page-" + pageIndex), pageIndex, rendered));
                 }
@@ -122,13 +173,17 @@ public class TileGenerationService {
             Files.delete(source);
             return new RenderedDocument(stagingDir, properties.getTileSize(), pages);
         } catch (IOException | RuntimeException e) {
-            try {
-                FileOperations.deleteDirectory(stagingDir);
-            } catch (IOException cleanupFailure) {
-                // Never mask the real error (e.g. "not a readable PDF"); StorageJanitor removes it later.
-                e.addSuppressed(cleanupFailure);
-            }
+            discardStaging(stagingDir, e);
             throw e;
+        }
+    }
+
+    private static void discardStaging(Path stagingDir, Exception cause) {
+        try {
+            FileOperations.deleteDirectory(stagingDir);
+        } catch (IOException cleanupFailure) {
+            // Never mask the real error (e.g. "not a readable PDF"); StorageJanitor removes it later.
+            cause.addSuppressed(cleanupFailure);
         }
     }
 

@@ -31,7 +31,7 @@ public class UserDirectoryController {
         String prefix = UserAccountService.normalizeUsername(q);
         // Nothing for one character, and never admins (they can already see every document),
         // so the picker can't be used to list the account directory.
-        if (prefix.length() < 2) {
+        if (prefix.length() < 2 || prefix.length() > 32) {
             return List.of();
         }
         return users.findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc(prefix).stream()

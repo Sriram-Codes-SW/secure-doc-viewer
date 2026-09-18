@@ -7,6 +7,7 @@ public enum AuditEventType {
     TILE_VIEWED,
     SIGN_IN,
     SIGN_IN_FAILED,
+    PASSWORD_CHANGE_FAILED,
     SIGN_IN_LOCKED,
     SIGN_OUT,
     PASSWORD_CHANGED,

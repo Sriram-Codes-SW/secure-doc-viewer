@@ -84,4 +84,6 @@ export interface UserSummary {
   lastSignInEpochSeconds: number | null;
   mustChangePassword: boolean;
   ownedDocuments: number;
+  /** A sign-in lockout currently applies to this account (from some address, or account-wide). */
+  locked: boolean;
 }

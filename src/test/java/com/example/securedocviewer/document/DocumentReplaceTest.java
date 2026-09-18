@@ -65,6 +65,15 @@ class DocumentReplaceTest {
         assertFalse(Files.exists(STORAGE.resolve(id).resolve("v2")), "the rejected render must not be committed");
     }
 
+    @Test
+    void aDisabledUserCannotBeGivenAccess() throws IOException {
+        String id = uploadAs("rp-sharer");
+        accounts.create("rp-disabled", "correct-horse-battery", Role.READER, false);
+        accounts.update("admin", "rp-disabled", null, false);
+        assertThrows(com.example.securedocviewer.exception.BadRequestException.class, () ->
+                documents.share(id, "rp-disabled", new Viewer("rp-sharer", false, true), actor("rp-sharer")));
+    }
+
     private static Actor actor(String username) {
         return new Actor(username, null, "127.0.0.1");
     }

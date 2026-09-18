@@ -246,3 +246,22 @@ td input {
 .panel {
   overflow-x: auto;
 }
+
+.user-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.user-filters .checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.danger-tag {
+  color: var(--danger, #b00020);
+  border-color: currentColor;
+}

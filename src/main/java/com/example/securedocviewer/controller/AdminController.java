@@ -1,5 +1,6 @@
 package com.example.securedocviewer.controller;
 
+import jakarta.validation.constraints.Size;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.audit.AuditEvent;
 import com.example.securedocviewer.audit.AuditEvent.Subject;
@@ -78,11 +79,11 @@ public class AdminController {
     @GetMapping("/audit")
     public AuditLogService.Page audit(
             @RequestParam(required = false) AuditEventType type,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String documentId,
+            @RequestParam(required = false) @Size(max = 64) String username,
+            @RequestParam(required = false) @Size(max = 64) String documentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @RequestParam(required = false) String trace,
+            @RequestParam(required = false) @Size(max = 64) String trace,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(500) int size) {
         return auditLogService.search(new AuditLogService.Query(type, username, documentId, from, to, trace), page, size);
@@ -92,11 +93,11 @@ public class AdminController {
     @GetMapping(value = "/audit/export", produces = "text/csv")
     public ResponseEntity<String> exportAudit(
             @RequestParam(required = false) AuditEventType type,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String documentId,
+            @RequestParam(required = false) @Size(max = 64) String username,
+            @RequestParam(required = false) @Size(max = 64) String documentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
-            @RequestParam(required = false) String trace) {
+            @RequestParam(required = false) @Size(max = 64) String trace) {
         List<AuditEvent> events = auditLogService.export(
                 new AuditLogService.Query(type, username, documentId, from, to, trace), MAX_EXPORT_ROWS);
         String header = "time_utc,event,username,client_ip,session,document_id,document_title,page,tile_row,tile_col,detail";

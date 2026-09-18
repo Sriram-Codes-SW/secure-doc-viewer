@@ -282,6 +282,93 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$.role").value("PUBLISHER"));
     }
 
+    @Test
+    void aBurstOfParallelWrongPasswordsGetsNoMoreThanTheLimit() throws Exception {
+        user("burst-user", Role.READER);
+        int attempts = 12;
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(attempts);
+        java.util.List<java.util.concurrent.Future<Integer>> statuses = new java.util.ArrayList<>();
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        for (int i = 0; i < attempts; i++) {
+            String guess = "wrong-guess-" + i;
+            statuses.add(pool.submit(() -> {
+                start.await();
+                return mvc.perform(post("/api/auth/login").with(csrf()).with(from("198.51.100.61"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest("burst-user", guess))).andReturn().getResponse().getStatus();
+            }));
+        }
+        start.countDown();
+        int guessed = 0;
+        for (java.util.concurrent.Future<Integer> status : statuses) {
+            int code = status.get();
+            assertTrue(code == 401 || code == 429, "unexpected " + code);
+            guessed += code == 401 ? 1 : 0;
+        }
+        pool.shutdown();
+        assertEquals(LoginThrottle.MAX_FAILURES_PER_ACCOUNT, guessed, "passwords actually checked");
+    }
+
+    @Test
+    void passwordsLongerThanBcryptAcceptsAreRefusedCleanly() throws Exception {
+        MockHttpSession admin = login("admin", "bootstrap-admin-password");
+        for (String tooLong : new String[] {"x".repeat(100), "\uD83D\uDD12".repeat(30)}) {
+            mvc.perform(post("/api/admin/users").session(admin).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(
+                                    Map.of("username", "long-pw-user", "password", tooLong, "role", "READER"))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("72 bytes")));
+        }
+        // Signing in with one is just a failed sign-in, never a 500.
+        mvc.perform(post("/api/auth/login").with(csrf()).with(from("198.51.100.62"))
+                        .contentType(MediaType.APPLICATION_JSON).content(loginRequest("admin", "y".repeat(100))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void guessingTheCurrentPasswordFromASessionIsThrottled() throws Exception {
+        user("pwguess-user", Role.READER);
+        MockHttpSession session = login("pwguess-user", PASSWORD);
+        for (int i = 0; i < LoginThrottle.MAX_FAILURES_PER_ACCOUNT; i++) {
+            mvc.perform(post("/api/auth/password").session(session).with(csrf()).with(from("198.51.100.63"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(Map.of(
+                                    "currentPassword", "not-it-" + i, "newPassword", "a-brand-new-password"))))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/auth/password").session(session).with(csrf()).with(from("198.51.100.63"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "currentPassword", PASSWORD, "newPassword", "a-brand-new-password"))))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void readersAreRefusedAReplacementUploadBeforeItIsRead() throws Exception {
+        user("replace-reader", Role.READER);
+        MockHttpSession reader = login("replace-reader", PASSWORD);
+        mvc.perform(multipart(org.springframework.http.HttpMethod.PUT, "/api/documents/any-id/file")
+                        .file(pdfPart()).session(reader).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void aSessionEndsAFixedTimeAfterSignInHoweverActive() throws Exception {
+        user("lifetime-user", Role.READER);
+        MockHttpSession session = login("lifetime-user", PASSWORD);
+        mvc.perform(get("/api/auth/me").session(session)).andExpect(status().isOk());
+        session.setAttribute(SessionLifetimeFilter.SIGNED_IN_AT, java.time.Instant.now().minus(java.time.Duration.ofHours(13)));
+        mvc.perform(get("/api/auth/me").session(session)).andExpect(status().isUnauthorized());
+    }
+
+    /** Tests that cause failures use their own address, so they don't use up 127.0.0.1's allowance. */
+    private static org.springframework.test.web.servlet.request.RequestPostProcessor from(String ip) {
+        return request -> {
+            request.setRemoteAddr(ip);
+            return request;
+        };
+    }
+
     private void user(String username, Role role) {
         try {
             accounts.create(username, PASSWORD, role, false);

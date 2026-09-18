@@ -84,6 +84,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/documents").hasAnyRole("PUBLISHER", "ADMIN")
+                        // Refuse readers before a 50 MB replacement body is received.
+                        .requestMatchers(HttpMethod.PUT, "/api/documents/*/file").hasAnyRole("PUBLISHER", "ADMIN")
                         // Per-document owner/admin checks for edits live in DocumentService.
                         .requestMatchers("/api/users/**").hasAnyRole("PUBLISHER", "ADMIN")
                         .requestMatchers("/api/**").authenticated()
@@ -92,6 +94,8 @@ public class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(errors)
                         .accessDeniedHandler(errors))
+                .addFilterBefore(new SessionLifetimeFilter(properties.getSessionMaxLifetime()),
+                        org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .addFilterAfter(new PasswordChangeRequiredFilter(),
                         org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .requestCache(cache -> cache.disable())

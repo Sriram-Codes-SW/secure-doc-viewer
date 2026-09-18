@@ -23,8 +23,17 @@
       <p [class]="message.kind" role="status">{{ message.text }}</p>
     }
 
-    <input class="user-search" type="search" placeholder="Search users" aria-label="Search users"
-           [ngModel]="userQuery()" (ngModelChange)="userQuery.set($event)" />
+    <div class="user-filters">
+      <input class="user-search" type="search" placeholder="Search users" aria-label="Search users"
+             [ngModel]="userQuery()" (ngModelChange)="userQuery.set($event)" />
+      <label class="checkbox">
+        <input type="checkbox" [ngModel]="showDisabled()" (ngModelChange)="showDisabled.set($event)" />
+        Show disabled users
+        @if (hiddenDisabledCount()) {
+          <span class="muted">({{ hiddenDisabledCount() }} hidden)</span>
+        }
+      </label>
+    </div>
 
     <table>
       <thead>
@@ -42,6 +51,9 @@
           <tr [class.disabled-row]="!user.enabled">
             <td>
               {{ user.username }}
+              @if (user.locked) {
+                <span class="tag danger-tag">locked</span>
+              }
               @if (user.mustChangePassword) {
                 <span class="tag" title="Must choose a new password at next sign-in">temp password</span>
               }
@@ -73,7 +85,9 @@
                   <button (click)="resettingUser.set(null)">Cancel</button>
                 } @else {
                   <button (click)="startReset(user)">Reset password</button>
-                  <button (click)="unlock(user)" title="Clear sign-in lockout">Unlock</button>
+                  @if (user.locked) {
+                    <button (click)="unlock(user)" title="Clear sign-in lockout">Unlock</button>
+                  }
                   <button (click)="toggleEnabled(user)" [class.danger]="confirmingDisable() === user.username">
                     {{ user.enabled ? (confirmingDisable() === user.username ? 'Confirm disable' : 'Disable') : 'Enable' }}
                   </button>

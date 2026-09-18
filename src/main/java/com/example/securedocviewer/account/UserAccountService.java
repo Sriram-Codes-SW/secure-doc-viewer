@@ -1,5 +1,6 @@
 package com.example.securedocviewer.account;
 
+import com.example.securedocviewer.exception.WrongPasswordException;
 import com.example.securedocviewer.exception.BadRequestException;
 import com.example.securedocviewer.exception.ResourceNotFoundException;
 import com.example.securedocviewer.exception.UsernameTakenException;
@@ -23,6 +24,12 @@ public class UserAccountService {
     private static final Pattern USERNAME = Pattern.compile("[a-z0-9._-]{3,32}");
     static final int MIN_PASSWORD_LENGTH = 12;
     static final int MAX_PASSWORD_LENGTH = 128;
+    /** BCrypt uses at most 72 bytes of a password and refuses longer ones. */
+    public static final int MAX_PASSWORD_BYTES = 72;
+
+    public static boolean fitsBcrypt(String password) {
+        return password == null || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= MAX_PASSWORD_BYTES;
+    }
 
     private final AppUserRepository repository;
     private final PasswordEncoder passwordEncoder;
@@ -112,8 +119,9 @@ public class UserAccountService {
     @Transactional
     public void changeOwnPassword(String username, String currentPassword, String newPassword) {
         AppUser user = require(username);
-        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new BadRequestException("Current password is incorrect.");
+        if (currentPassword == null || !fitsBcrypt(currentPassword)
+                || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new WrongPasswordException();
         }
         if (currentPassword.equals(newPassword)) {
             throw new BadRequestException("New password must differ from the current one.");
@@ -151,6 +159,10 @@ public class UserAccountService {
         if (password == null || password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
             throw new BadRequestException("Password must be " + MIN_PASSWORD_LENGTH + "-" + MAX_PASSWORD_LENGTH
                     + " characters long.");
+        }
+        if (!fitsBcrypt(password)) {
+            throw new BadRequestException("Password is too long: at most " + MAX_PASSWORD_BYTES
+                    + " bytes (fewer characters if it uses accents, non-Latin letters or emoji).");
         }
         if (password.isBlank()) {
             throw new BadRequestException("Password can't be only whitespace.");
