@@ -1,10 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { DecimalPipe, NgStyle } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { API_BASE_URL } from '../../core/config';
 import { DocumentsService } from '../documents/documents.service';
-import { DocumentManifest } from '../documents/document.models';
+import { DocumentDetail } from '../documents/document.models';
 import { buildTileViewModels, TileViewModel } from './tile-view-model';
 
 const MAX_ZOOM = 2;
@@ -47,7 +48,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
-  readonly manifest = signal<DocumentManifest | null>(null);
+  readonly manifest = signal<DocumentDetail | null>(null);
   readonly currentPage = signal(0);
   readonly tiles = signal<TileState[]>([]);
   readonly zoom = signal(1);
@@ -96,13 +97,17 @@ export class ViewerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.documentId = this.route.snapshot.paramMap.get('documentId') ?? '';
-    this.documentsService.getManifest(this.documentId).subscribe({
+    this.documentsService.get(this.documentId).subscribe({
       next: (manifest) => {
         this.manifest.set(manifest);
         this.loadPage(0);
       },
-      error: () => {
-        this.errorMessage.set('Could not load this document.');
+      error: (err: HttpErrorResponse) => {
+        this.errorMessage.set(
+          err.status === 404
+            ? 'This document doesn’t exist, or it hasn’t been shared with you.'
+            : 'Could not load this document.',
+        );
         this.loading.set(false);
       },
     });
@@ -216,7 +221,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   private async fetchPendingTiles(page: number, generation: number, allowUrlReissue: boolean): Promise<void> {
     const queue = this.tiles().filter((t) => t.status !== 'loaded');
     const { signal } = this.abortController;
-    const outcome = { retryAfterSeconds: null as number | null, unauthorized: false };
+    const outcome = { retryAfterSeconds: null as number | null, unauthorized: false, accessRevoked: false };
 
     const worker = async (): Promise<void> => {
       // Once any request is throttled, stop issuing new ones: every further
@@ -246,6 +251,9 @@ export class ViewerComponent implements OnInit, OnDestroy {
           outcome.retryAfterSeconds = parseRetryAfter(response.headers.get('Retry-After'));
         } else if (response.status === 401) {
           outcome.unauthorized = true;
+        } else if (response.status === 404) {
+          // Unshared or deleted while open: access is re-checked on every tile.
+          outcome.accessRevoked = true;
         } else {
           this.updateTile(tile.key, { status: 'failed' });
         }
@@ -257,7 +265,9 @@ export class ViewerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (outcome.retryAfterSeconds !== null) {
+    if (outcome.accessRevoked) {
+      this.errorMessage.set('You no longer have access to this document.');
+    } else if (outcome.retryAfterSeconds !== null) {
       this.startThrottleCountdown(page, generation, outcome.retryAfterSeconds);
     } else if (outcome.unauthorized && allowUrlReissue) {
       // A tile URL expired before we reached it, or the session was

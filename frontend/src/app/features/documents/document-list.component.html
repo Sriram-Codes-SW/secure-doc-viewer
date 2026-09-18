@@ -12,15 +12,41 @@
 } @else if (documents().length === 0) {
   <p class="muted">
     No documents yet.
-    {{ sessionService.canUpload() ? 'Upload a PDF to get started.' : 'Ask a publisher to share one with you.' }}
+    {{ sessionService.canUpload() ? 'Upload a PDF to get started.' : 'Documents shared with you will appear here.' }}
   </p>
 } @else {
+  <input
+    class="search"
+    type="search"
+    placeholder="Search by title or owner"
+    aria-label="Search documents"
+    [ngModel]="query()"
+    (ngModelChange)="query.set($event)"
+  />
+
+  @if (filtered().length === 0) {
+    <p class="muted">No documents match “{{ query() }}”.</p>
+  }
+
   <div class="doc-grid">
-    @for (doc of documents(); track doc.documentId) {
-      <a class="doc-card" [routerLink]="['/viewer', doc.documentId]">
-        <h2>{{ doc.title }}</h2>
-        <p class="muted">{{ doc.pageCount }} page{{ doc.pageCount === 1 ? '' : 's' }}</p>
-      </a>
+    @for (doc of filtered(); track doc.documentId) {
+      <article class="doc-card">
+        <a class="doc-open" [routerLink]="['/viewer', doc.documentId]">
+          <h2>{{ doc.title }}</h2>
+          <p class="muted">
+            {{ doc.pageCount }} page{{ doc.pageCount === 1 ? '' : 's' }} &middot; {{ formatDate(doc.createdAtEpochSeconds) }}
+          </p>
+          <p class="muted owner">
+            {{ doc.owner === sessionService.username() ? 'You' : doc.owner }}
+          </p>
+        </a>
+        <footer>
+          <span class="badge" [class.everyone]="doc.visibility === 'EVERYONE'">{{ accessLabel(doc) }}</span>
+          @if (doc.canManage) {
+            <a class="manage" [routerLink]="['/documents', doc.documentId, 'manage']">Manage</a>
+          }
+        </footer>
+      </article>
     }
   </div>
 }

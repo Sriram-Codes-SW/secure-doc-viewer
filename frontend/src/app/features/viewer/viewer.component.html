@@ -3,6 +3,9 @@
     <div>
       <a class="back-link" routerLink="/documents">&larr; Documents</a>
       <h1>{{ doc.title }}</h1>
+      @if (doc.canManage) {
+        <a class="manage-link" [routerLink]="['/documents', doc.documentId, 'manage']">Manage sharing &amp; settings</a>
+      }
     </div>
 
     <div class="controls">

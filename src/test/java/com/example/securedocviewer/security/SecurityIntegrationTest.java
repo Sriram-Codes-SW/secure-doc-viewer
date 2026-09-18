@@ -183,9 +183,12 @@ class SecurityIntegrationTest {
     @Test
     void auditLimitIsValidated() throws Exception {
         MockHttpSession admin = login("admin", "bootstrap-admin-password");
-        mvc.perform(get("/api/admin/audit").param("limit", "-1").session(admin)).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/admin/audit").param("limit", "501").session(admin)).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/admin/audit").param("limit", "10").session(admin)).andExpect(status().isOk());
+        mvc.perform(get("/api/admin/audit").param("size", "0").session(admin)).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/admin/audit").param("size", "501").session(admin)).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/admin/audit").param("page", "-1").session(admin)).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/admin/audit").param("type", "NOT_A_TYPE").session(admin))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/admin/audit").param("size", "10").session(admin)).andExpect(status().isOk());
     }
 
     @Test
@@ -250,7 +253,8 @@ class SecurityIntegrationTest {
 
     private String upload(MockHttpSession publisher) throws Exception {
         MvcResult result = mvc.perform(multipart("/api/documents").file(pdfPart())
-                        .param("title", "Integration test doc").session(publisher).with(csrf()))
+                        .param("title", "Integration test doc").param("visibility", "EVERYONE")
+                        .session(publisher).with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
         return json(result).get("documentId").asText();

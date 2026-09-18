@@ -12,4 +12,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     boolean existsByUsername(String username);
 
     List<AppUser> findAllByOrderByUsernameAsc();
+
+    List<AppUser> findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc(String prefix);
 }

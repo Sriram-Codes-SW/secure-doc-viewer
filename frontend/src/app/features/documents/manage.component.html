@@ -1,0 +1,106 @@
+<a class="back-link" routerLink="/documents">&larr; Documents</a>
+
+@if (loadError()) {
+  <p class="error">{{ loadError() }}</p>
+} @else if (document(); as doc) {
+  <div class="page-header">
+    <div>
+      <h1>{{ doc.title }}</h1>
+      <p class="muted">
+        {{ doc.pageCount }} page{{ doc.pageCount === 1 ? '' : 's' }} &middot; owned by {{ doc.owner }}
+      </p>
+    </div>
+    <a class="button" [routerLink]="['/viewer', doc.documentId]">Open</a>
+  </div>
+
+  @if (justUploaded()) {
+    <p class="notice" role="status">Uploaded. It’s {{ doc.visibility === 'EVERYONE' ? 'visible to everyone' : 'private' }} — share it below if others need it.</p>
+  }
+  @if (notice(); as n) {
+    <p [class]="n.kind" role="status">{{ n.text }}</p>
+  }
+
+  <section class="panel">
+    <h2>Details</h2>
+    <form class="stack" (ngSubmit)="saveDetails()">
+      <label for="title">Title</label>
+      <input id="title" name="title" [(ngModel)]="title" maxlength="200" required />
+
+      <fieldset>
+        <legend>Who can view it</legend>
+        <label class="choice">
+          <input type="radio" name="visibility" value="PRIVATE" [(ngModel)]="visibility" />
+          Only the owner and people it’s shared with
+        </label>
+        <label class="choice">
+          <input type="radio" name="visibility" value="EVERYONE" [(ngModel)]="visibility" />
+          Everyone who can sign in
+        </label>
+      </fieldset>
+
+      <button type="submit" [disabled]="busy() || !title.trim()">Save</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Shared with</h2>
+    @if (doc.visibility === 'EVERYONE') {
+      <p class="muted">Everyone can already view this document. Shares still apply if you make it private again.</p>
+    }
+
+    @if ((doc.sharedWith ?? []).length === 0) {
+      <p class="muted">Not shared with anyone yet.</p>
+    } @else {
+      <ul class="shares">
+        @for (username of doc.sharedWith; track username) {
+          <li>
+            <span>{{ username }}</span>
+            <button class="secondary" (click)="unshare(username)" [disabled]="busy()">Remove</button>
+          </li>
+        }
+      </ul>
+    }
+
+    <form class="inline" (ngSubmit)="share()">
+      <input
+        name="shareWith"
+        [(ngModel)]="shareWith"
+        (ngModelChange)="onShareInput($event)"
+        placeholder="username"
+        aria-label="Share with username"
+        autocomplete="off"
+        list="user-suggestions"
+      />
+      <datalist id="user-suggestions">
+        @for (name of suggestions(); track name) {
+          <option [value]="name"></option>
+        }
+      </datalist>
+      <button type="submit" [disabled]="busy() || !shareWith.trim()">Share</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Replace PDF</h2>
+    <p class="muted">Upload a new version. The link, title, visibility and sharing stay the same.</p>
+    <div class="inline">
+      <input type="file" accept="application/pdf" aria-label="Replacement PDF" (change)="onReplacementSelected($event)" />
+      <button (click)="replaceFile()" [disabled]="busy() || !replacement">
+        {{ busy() && replacement ? 'Rendering…' : 'Replace' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="panel danger-zone">
+    <h2>Delete</h2>
+    <p class="muted">Removes the document and all of its tiles for everyone. The audit trail is kept.</p>
+    <button class="danger" (click)="deleteDocument()" [disabled]="busy()">
+      {{ confirmingDelete() ? 'Click again to delete permanently' : 'Delete document' }}
+    </button>
+    @if (confirmingDelete()) {
+      <button class="secondary" (click)="confirmingDelete.set(false)">Cancel</button>
+    }
+  </section>
+} @else {
+  <p class="muted">Loading…</p>
+}

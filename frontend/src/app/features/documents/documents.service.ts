@@ -1,37 +1,70 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../core/config';
-import { DocumentManifest, TileUrlGrid } from './document.models';
+import { DocumentDetail, DocumentSummary, TileUrlGrid, Visibility } from './document.models';
 
 /**
- * Everything about a document's identity and structure (what pages exist,
- * how big each one is) — never the pixels themselves. Fetching actual tile
- * pixels is the viewer module's job, deliberately kept separate: this
- * service can be safely cached/reused, tile URLs cannot (they expire).
+ * Everything about a document's identity, structure and access — never the
+ * pixels themselves. Fetching tile pixels is the viewer's job, deliberately
+ * kept separate: this data can be cached and reused, tile URLs cannot (they
+ * expire and are bound to the session).
  */
 @Injectable({ providedIn: 'root' })
 export class DocumentsService {
+  private readonly base = `${API_BASE_URL}/api/documents`;
+
   constructor(private readonly http: HttpClient) {}
 
-  list(): Observable<DocumentManifest[]> {
-    return this.http.get<DocumentManifest[]>(`${API_BASE_URL}/api/documents`);
+  list(): Observable<DocumentSummary[]> {
+    return this.http.get<DocumentSummary[]>(this.base);
   }
 
-  getManifest(documentId: string): Observable<DocumentManifest> {
-    return this.http.get<DocumentManifest>(`${API_BASE_URL}/api/documents/${documentId}`);
+  get(documentId: string): Observable<DocumentDetail> {
+    return this.http.get<DocumentDetail>(`${this.base}/${encodeURIComponent(documentId)}`);
   }
 
-  upload(title: string, file: File): Observable<DocumentManifest> {
+  upload(title: string, file: File, visibility: Visibility): Observable<DocumentDetail> {
     const formData = new FormData();
     formData.append('title', title);
+    formData.append('visibility', visibility);
     formData.append('file', file);
-    return this.http.post<DocumentManifest>(`${API_BASE_URL}/api/documents`, formData);
+    return this.http.post<DocumentDetail>(this.base, formData);
+  }
+
+  update(documentId: string, change: { title?: string; visibility?: Visibility }): Observable<DocumentDetail> {
+    return this.http.patch<DocumentDetail>(`${this.base}/${encodeURIComponent(documentId)}`, change);
+  }
+
+  replaceFile(documentId: string, file: File): Observable<DocumentDetail> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.put<DocumentDetail>(`${this.base}/${encodeURIComponent(documentId)}/file`, formData);
+  }
+
+  delete(documentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${encodeURIComponent(documentId)}`);
+  }
+
+  share(documentId: string, username: string): Observable<string[]> {
+    return this.http.put<string[]>(
+      `${this.base}/${encodeURIComponent(documentId)}/shares/${encodeURIComponent(username)}`,
+      null,
+    );
+  }
+
+  unshare(documentId: string, username: string): Observable<string[]> {
+    return this.http.delete<string[]>(
+      `${this.base}/${encodeURIComponent(documentId)}/shares/${encodeURIComponent(username)}`,
+    );
+  }
+
+  /** Username suggestions for the share picker (publishers and admins only). */
+  findUsers(prefix: string): Observable<string[]> {
+    return this.http.get<string[]>(`${API_BASE_URL}/api/users`, { params: new HttpParams().set('q', prefix) });
   }
 
   getTileUrls(documentId: string, page: number): Observable<TileUrlGrid> {
-    return this.http.get<TileUrlGrid>(
-      `${API_BASE_URL}/api/documents/${documentId}/pages/${page}/tile-urls`,
-    );
+    return this.http.get<TileUrlGrid>(`${this.base}/${encodeURIComponent(documentId)}/pages/${page}/tile-urls`);
   }
 }

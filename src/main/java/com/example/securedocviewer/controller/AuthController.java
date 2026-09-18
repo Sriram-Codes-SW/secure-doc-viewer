@@ -1,6 +1,12 @@
 package com.example.securedocviewer.controller;
 
 import com.example.securedocviewer.account.UserAccountService;
+import com.example.securedocviewer.audit.AuditEvent.Actor;
+import com.example.securedocviewer.audit.AuditEvent.Subject;
+import com.example.securedocviewer.audit.AuditEventType;
+import com.example.securedocviewer.audit.AuditLogService;
+import com.example.securedocviewer.audit.RequestActors;
+import com.example.securedocviewer.exception.LoginLockedException;
 import com.example.securedocviewer.security.LoginThrottle;
 import com.example.securedocviewer.security.SessionAdministration;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +34,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+
 /**
  * Sign-in, sign-out and "who am I". The response never contains the session
  * id: it travels only in the httpOnly session cookie set by the container.
@@ -53,6 +61,8 @@ public class AuthController {
     private final UserAccountService accounts;
     private final SessionAdministration sessions;
     private final CsrfTokenRepository csrfTokenRepository;
+    private final AuditLogService audit;
+    private final RequestActors actors;
 
     public AuthController(AuthenticationManager authenticationManager,
                           SessionAuthenticationStrategy sessionAuthenticationStrategy,
@@ -60,7 +70,9 @@ public class AuthController {
                           LoginThrottle loginThrottle,
                           UserAccountService accounts,
                           SessionAdministration sessions,
-                          CsrfTokenRepository csrfTokenRepository) {
+                          CsrfTokenRepository csrfTokenRepository,
+                          AuditLogService audit,
+                          RequestActors actors) {
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
@@ -68,6 +80,8 @@ public class AuthController {
         this.accounts = accounts;
         this.sessions = sessions;
         this.csrfTokenRepository = csrfTokenRepository;
+        this.audit = audit;
+        this.actors = actors;
     }
 
     @PostMapping("/login")
@@ -76,7 +90,15 @@ public class AuthController {
                                              HttpServletResponse response) {
         String username = UserAccountService.normalizeUsername(body.username());
         String clientIp = request.getRemoteAddr();
-        loginThrottle.checkAllowed(username, clientIp);
+        Actor attempted = new Actor(username, null, clientIp);
+        try {
+            loginThrottle.checkAllowed(username, clientIp);
+        } catch (LoginLockedException e) {
+            // Once a minute per account+IP is enough to show a lockout without flooding the log.
+            audit.recordAtMostEvery(Duration.ofMinutes(1), "locked:" + username + "|" + clientIp,
+                    AuditEventType.SIGN_IN_LOCKED, attempted, Subject.none());
+            throw e;
+        }
 
         Authentication authentication;
         try {
@@ -86,6 +108,7 @@ public class AuthController {
             // Same message for unknown user, wrong password and disabled
             // account, so the response doesn't reveal which accounts exist.
             loginThrottle.recordFailure(username, clientIp);
+            audit.record(AuditEventType.SIGN_IN_FAILED, attempted, Subject.none());
             throw new BadCredentialsException("Invalid username or password.");
         }
         loginThrottle.recordSuccess(username, clientIp);
@@ -98,12 +121,16 @@ public class AuthController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
+        audit.record(AuditEventType.SIGN_IN, actors.of(request, username), Subject.none());
 
         return ResponseEntity.ok(toCurrentUser(authentication));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
+    public ResponseEntity<Void> logout(HttpServletRequest request, Authentication authentication) {
+        if (authentication != null) {
+            audit.record(AuditEventType.SIGN_OUT, actors.of(request, authentication), Subject.none());
+        }
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
@@ -124,6 +151,7 @@ public class AuthController {
                                                HttpServletRequest request) {
         accounts.changeOwnPassword(authentication.getName(), body.currentPassword(), body.newPassword());
         sessions.revokeAllFor(authentication.getName(), request.getSession().getId());
+        audit.record(AuditEventType.PASSWORD_CHANGED, actors.of(request, authentication), Subject.none());
         return ResponseEntity.noContent().build();
     }
 
