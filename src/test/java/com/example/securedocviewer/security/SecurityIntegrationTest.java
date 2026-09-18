@@ -3,14 +3,14 @@ package com.example.securedocviewer.security;
 import com.example.securedocviewer.account.Role;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.exception.UsernameTakenException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
@@ -138,9 +138,9 @@ class SecurityIntegrationTest {
 
         boolean readerListed = false;
         for (JsonNode session : sessions) {
-            readerListed |= session.get("username").asText().equals("listed-reader");
+            readerListed |= session.get("username").asString().equals("listed-reader");
             assertFalse(session.has("sessionId"), "response has a sessionId field");
-            String handle = session.get("handle").asText();
+            String handle = session.get("handle").asString();
             assertNotEquals(reader.getId(), handle, "reader's session id exposed as handle");
             assertNotEquals(admin.getId(), handle, "admin's session id exposed as handle");
         }
@@ -172,7 +172,7 @@ class SecurityIntegrationTest {
         MockHttpSession thief = login("tile-thief", PASSWORD);
         JsonNode grid = json(mvc.perform(get("/api/documents/" + documentId + "/pages/0/tile-urls").session(owner))
                 .andExpect(status().isOk()).andReturn());
-        String tileUrl = grid.at("/tileUrls/0/0").asText();
+        String tileUrl = grid.at("/tileUrls/0/0").asString();
         assertFalse(tileUrl.contains(owner.getId()), "tile URL leaks the session id");
 
         mvc.perform(get(tileUrl).session(owner)).andExpect(status().isOk())
@@ -245,8 +245,8 @@ class SecurityIntegrationTest {
 
     private String handleOf(String username, MockHttpSession admin) throws Exception {
         for (JsonNode session : json(mvc.perform(get("/api/admin/sessions").session(admin)).andReturn())) {
-            if (session.get("username").asText().equals(username)) {
-                return session.get("handle").asText();
+            if (session.get("username").asString().equals(username)) {
+                return session.get("handle").asString();
             }
         }
         throw new AssertionError("no session listed for " + username);
@@ -258,7 +258,7 @@ class SecurityIntegrationTest {
                         .session(publisher).with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
-        return json(result).get("documentId").asText();
+        return json(result).get("documentId").asString();
     }
 
     private String loginRequest(String username, String password) throws Exception {

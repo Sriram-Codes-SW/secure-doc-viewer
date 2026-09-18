@@ -3,14 +3,14 @@ package com.example.securedocviewer.document;
 import com.example.securedocviewer.account.Role;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.exception.UsernameTakenException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -164,9 +164,9 @@ class DocumentAccessIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         JsonNode created = json(result);
-        assertEquals("quarterly-report", created.get("title").asText());
-        assertEquals("PRIVATE", created.get("visibility").asText());
-        assertEquals("owner-g", created.get("owner").asText());
+        assertEquals("quarterly-report", created.get("title").asString());
+        assertEquals("PRIVATE", created.get("visibility").asString());
+        assertEquals("owner-g", created.get("owner").asString());
     }
 
     @Test
@@ -196,8 +196,8 @@ class DocumentAccessIntegrationTest {
                         .param("type", "DOCUMENT_UPLOADED").param("documentId", id))
                 .andExpect(status().isOk()).andReturn());
         assertEquals(1, uploads.get("total").asLong());
-        assertEquals("=Audit me", uploads.at("/items/0/documentTitle").asText());
-        assertEquals("owner-i", uploads.at("/items/0/username").asText());
+        assertEquals("=Audit me", uploads.at("/items/0/documentTitle").asString());
+        assertEquals("owner-i", uploads.at("/items/0/username").asString());
 
         JsonNode denied = json(mvc.perform(get("/api/admin/audit").session(admin)
                         .param("type", "ACCESS_DENIED").param("username", "snooper-i"))
@@ -227,14 +227,14 @@ class DocumentAccessIntegrationTest {
 
         JsonNode upload = json(mvc.perform(get("/api/admin/audit").session(admin)
                 .param("type", "DOCUMENT_UPLOADED").param("username", "owner-j")).andReturn());
-        String handle = upload.at("/items/0/sessionHandle").asText();
+        String handle = upload.at("/items/0/sessionHandle").asString();
         assertTrue(handle.matches("[0-9A-HJKMNP-TV-Z]{16}"), "handle is not unambiguous Crockford Base32: " + handle);
 
         // What a person would type after reading the watermark: first six characters, any case.
         JsonNode found = json(mvc.perform(get("/api/admin/audit").session(admin)
                 .param("trace", handle.substring(0, 6).toLowerCase())).andReturn());
         assertTrue(found.get("total").asLong() >= 1);
-        found.get("items").forEach(e -> assertEquals("owner-j", e.get("username").asText()));
+        found.get("items").forEach(e -> assertEquals("owner-j", e.get("username").asString()));
     }
 
     @Test
@@ -272,19 +272,19 @@ class DocumentAccessIntegrationTest {
                         .session(session).with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
-        return json(result).get("documentId").asText();
+        return json(result).get("documentId").asString();
     }
 
     private List<String> listedTitles(MockHttpSession session) throws Exception {
         List<String> titles = new ArrayList<>();
         json(mvc.perform(get("/api/documents").session(session)).andExpect(status().isOk()).andReturn())
-                .forEach(doc -> titles.add(doc.get("title").asText()));
+                .forEach(doc -> titles.add(doc.get("title").asString()));
         return titles;
     }
 
     private String firstTileUrl(String documentId, MockHttpSession session) throws Exception {
         return json(mvc.perform(get("/api/documents/" + documentId + "/pages/0/tile-urls").session(session))
-                .andExpect(status().isOk()).andReturn()).at("/tileUrls/0/0").asText();
+                .andExpect(status().isOk()).andReturn()).at("/tileUrls/0/0").asString();
     }
 
     private JsonNode json(MvcResult result) throws Exception {

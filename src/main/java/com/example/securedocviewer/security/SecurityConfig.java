@@ -67,7 +67,7 @@ public class SecurityConfig {
                                 "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"))
                         // Tile URLs carry signed tokens; never send them onward in a Referer.
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
-                        .permissionsPolicy(permissions -> permissions.policy(
+                        .permissionsPolicyHeader(permissions -> permissions.policy(
                                 "camera=(), microphone=(), geolocation=(), payment=()")))
                 .authorizeHttpRequests(auth -> auth
                         // Liveness/readiness for monitoring: status only, no details.
@@ -99,8 +99,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(UserDetailsService userDetailsService,
                                                        PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
     }

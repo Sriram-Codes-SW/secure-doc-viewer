@@ -1,4 +1,5 @@
-# Local development database. Usage: `docker compose up -d` from this folder.
+# Local development:  `docker compose up -d`                    -> MySQL only (run the app with mvnw / ng serve)
+# Full stack:         `docker compose --profile full up -d --build` -> MySQL + API + web at http://localhost:8081
 # Credentials come from the git-ignored .env file (copy .env.example).
 services:
   mysql:
@@ -21,5 +22,37 @@ services:
       timeout: 5s
       retries: 20
 
+  app:
+    profiles: ["full"]
+    build: .
+    container_name: securedocs-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      STORAGE_ROOT: /data/storage
+      # Behind nginx: trust X-Forwarded-For so throttling and audit see real client IPs.
+      FORWARD_HEADERS_STRATEGY: native
+    volumes:
+      - app-storage:/data/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # Not published: only reachable through the web container.
+    expose:
+      - "8080"
+
+  web:
+    profiles: ["full"]
+    build: frontend
+    container_name: securedocs-web
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8081}:80"
+
 volumes:
   mysql-data:
+  app-storage:

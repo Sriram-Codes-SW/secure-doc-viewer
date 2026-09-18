@@ -1,5 +1,9 @@
 server:
   port: 8080
+  # Set to "native" only when running behind a trusted reverse proxy (the
+  # docker-compose "full" profile does); otherwise X-Forwarded-For is ignored,
+  # so clients can't spoof their IP to dodge login throttling.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
   servlet:
     session:
       # Idle timeout: each request extends it, so an active reader is never

@@ -105,13 +105,25 @@ src/main/java/com/example/securedocviewer/
 
 ## Running it
 
-Requires JDK 21+, Maven, Node.js, and Docker (for MySQL).
+Built on Spring Boot 4.1 (Java 25), Angular 22, MySQL 8.4 and PDFBox 3.
+
+**Everything in Docker** (only Docker needed):
 
 ```bash
-cp .env.example .env        # then fill in DB_PASSWORD, DB_ROOT_PASSWORD, SIGNING_SECRET (32+ chars),
-                            # and point STORAGE_ROOT at a folder that is NOT synced (OneDrive, Dropbox…)
-docker compose up -d        # MySQL 8.4, bound to 127.0.0.1 only
-mvn spring-boot:run         # Flyway creates the schema on first start
+cp .env.example .env                          # fill in DB_PASSWORD, DB_ROOT_PASSWORD, SIGNING_SECRET (32+ chars)
+docker compose --profile full up -d --build   # MySQL + API + nginx-served app at http://localhost:8081
+```
+
+Only the web container is published (on 127.0.0.1); the API and database are reachable only
+inside the compose network. nginx serves the app with its own strict CSP and proxies `/api`, so the
+browser sees a single origin.
+
+**Development** (JDK 25+, Node 24, Docker for MySQL):
+
+```bash
+cp .env.example .env        # as above; keep STORAGE_ROOT out of synced folders (OneDrive, Dropbox…)
+docker compose up -d        # MySQL 8.4 only, bound to 127.0.0.1
+./mvnw spring-boot:run      # Maven wrapper pins Maven 3.9.16; Flyway creates the schema
 cd frontend && npx ng serve # http://localhost:4200, proxies /api to :8080
 ```
 
@@ -196,9 +208,19 @@ Sessions time out after 30 minutes of inactivity (`server.servlet.session.timeou
 ## Tests
 
 ```bash
-mvn test                                   # backend (uses in-memory H2 in MySQL mode)
-cd frontend && npx ng test --watch=false   # frontend
+./mvnw verify                              # backend (in-memory H2 in MySQL mode; no services needed)
+cd frontend && npx ng test --watch=false   # frontend unit tests
+# end-to-end, against the running Docker stack; needs an admin account:
+cd frontend && E2E_ADMIN_USER=admin E2E_ADMIN_PASSWORD=… npx playwright test
 ```
+
+GitHub Actions runs all of this on every pull request — backend, frontend, then the Playwright
+journey against a freshly built Docker stack with throwaway secrets — and Dependabot opens weekly
+grouped update PRs for Maven, npm, Docker images and Actions.
+
+The end-to-end test creates a publisher, a reader and an outsider; the publisher uploads a PDF and
+shares it with the reader, who must see every tile load and turn pages by keyboard, while the
+outsider is told the document doesn't exist.
 
 Security integration tests run the real filter chain: sign-in required, identical answers for
 wrong password and unknown user, lockout after repeated failures, disabled accounts, CSRF
