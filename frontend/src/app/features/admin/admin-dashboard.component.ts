@@ -1,19 +1,19 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { SlicePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, interval, startWith, switchMap } from 'rxjs';
 import { Role } from '../../core/session.service';
 import { AdminService } from './admin.service';
-import { AuditEntry, RateLimitStatus, SessionSummary, UserSummary } from './admin.models';
+import { AUDIT_EVENT_TYPES, AuditEvent, AuditFilter, RateLimitStatus, SessionSummary, UserSummary } from './admin.models';
 
 const REFRESH_MS = 5_000;
 const MIN_PASSWORD_LENGTH = 12;
+const AUDIT_PAGE_SIZE = 50;
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [FormsModule, SlicePipe],
+  imports: [FormsModule],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.css',
 })
@@ -23,7 +23,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   readonly sessions = signal<SessionSummary[]>([]);
   readonly users = signal<UserSummary[]>([]);
-  readonly auditEntries = signal<AuditEntry[]>([]);
+  readonly auditTypes = AUDIT_EVENT_TYPES;
+  readonly auditEvents = signal<AuditEvent[]>([]);
+  readonly auditTotal = signal(0);
+  readonly auditPage = signal(0);
+  readonly auditPageSize = AUDIT_PAGE_SIZE;
   readonly rateLimitStatus = signal<RateLimitStatus | null>(null);
   /** Session handle awaiting a second click to confirm revocation. */
   readonly confirmingRevoke = signal<string | null>(null);
@@ -32,7 +36,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly usersMessage = signal<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   selectedUsername = '';
-  auditLimit = 50;
+  auditFilter: AuditFilter = { type: '', username: '', documentId: '' };
   newUser = { username: '', password: '', role: 'READER' as Role };
   resetPasswordValue = '';
 
@@ -76,9 +80,53 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.adminService.getRateLimit(this.selectedUsername).subscribe((status) => this.rateLimitStatus.set(status));
   }
 
-  refreshAudit(): void {
+  /** Re-runs the audit query; filters changed means back to the first page. */
+  refreshAudit(page = 0): void {
     this.auditSub?.unsubscribe();
-    this.auditSub = this.adminService.getAudit(this.auditLimit).subscribe((entries) => this.auditEntries.set(entries));
+    this.auditSub = this.adminService.getAudit(this.auditFilter, page, AUDIT_PAGE_SIZE).subscribe((result) => {
+      this.auditEvents.set(result.items);
+      this.auditTotal.set(result.total);
+      this.auditPage.set(result.page);
+    });
+  }
+
+  clearAuditFilter(): void {
+    this.auditFilter = { type: '', username: '', documentId: '' };
+    this.refreshAudit();
+  }
+
+  /** Click a user or document in the log to filter by it. */
+  filterAuditBy(change: AuditFilter): void {
+    this.auditFilter = { ...this.auditFilter, ...change };
+    this.refreshAudit();
+  }
+
+  auditExportUrl(): string {
+    return this.adminService.auditExportUrl(this.auditFilter);
+  }
+
+  auditLastPage(): number {
+    return Math.max(0, Math.ceil(this.auditTotal() / AUDIT_PAGE_SIZE) - 1);
+  }
+
+  describe(event: AuditEvent): string {
+    const doc = event.documentTitle ?? (event.documentId ? event.documentId.slice(0, 8) + '…' : '');
+    switch (event.type) {
+      case 'TILE_VIEWED':
+        return `${doc} — page ${(event.page ?? 0) + 1}, tile (${event.tileRow}, ${event.tileCol})`;
+      case 'ACCESS_DENIED':
+        return `${doc || 'unknown document'} (${event.detail ?? 'view'})`;
+      default:
+        return [doc, event.detail].filter(Boolean).join(' — ');
+    }
+  }
+
+  isWarning(event: AuditEvent): boolean {
+    return ['SIGN_IN_FAILED', 'SIGN_IN_LOCKED', 'ACCESS_DENIED', 'RATE_LIMITED', 'SESSION_REVOKED'].includes(event.type);
+  }
+
+  formatMillis(epochMillis: number): string {
+    return new Date(epochMillis).toLocaleString();
   }
 
   createUser(): void {

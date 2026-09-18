@@ -2,6 +2,7 @@ package com.example.securedocviewer.controller;
 
 import com.example.securedocviewer.exception.BadRequestException;
 import com.example.securedocviewer.exception.DocumentNotFoundException;
+import com.example.securedocviewer.exception.ForbiddenException;
 import com.example.securedocviewer.exception.InvalidTokenException;
 import com.example.securedocviewer.exception.LoginLockedException;
 import com.example.securedocviewer.exception.RateLimitExceededException;
@@ -44,6 +45,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({DocumentNotFoundException.class, ResourceNotFoundException.class})
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException e) {
         return error(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, String>> handleForbidden(ForbiddenException e) {
+        return error(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(BadRequestException.class)

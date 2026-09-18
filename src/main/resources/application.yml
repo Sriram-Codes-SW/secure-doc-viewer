@@ -15,7 +15,9 @@ server:
 secure-doc-viewer:
   # Root directory where uploaded PDFs are rasterized into per-tile PNGs.
   # Mirrors an object-storage "bucket" layout: {storage-root}/{docId}/page-{n}/tile-{row}_{col}.png
-  storage-root: ./storage
+  # Keep it out of synced folders (OneDrive, Dropbox): rendered pages would be
+  # uploaded to the sync provider, and sync locks break tile moves/deletes.
+  storage-root: ${STORAGE_ROOT:./storage}
 
   # Pixel size of each square tile. Smaller tiles = more requests but each one
   # is useless in isolation, which is the point.
@@ -42,6 +44,9 @@ secure-doc-viewer:
 
   # Width of the rolling window the limit above applies to.
   tile-rate-limit-window-seconds: 60
+
+  # How long audit events are kept before the nightly purge deletes them.
+  audit-retention-days: 180
 
   # First admin, created only when the database has no accounts at all.
   # If no password is given, a random one is generated and logged once.

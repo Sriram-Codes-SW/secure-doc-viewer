@@ -125,38 +125,64 @@
   </section>
 
   <section class="panel wide">
-    <h2>Tile access audit log</h2>
-    <div class="audit-controls">
-      <label for="limit">Show last</label>
-      <input id="limit" type="number" min="1" max="500" [(ngModel)]="auditLimit" (keyup.enter)="refreshAudit()" />
-      <button (click)="refreshAudit()">Refresh</button>
-    </div>
+    <h2>Audit log</h2>
+    <form class="audit-controls" (ngSubmit)="refreshAudit()">
+      <select name="type" [(ngModel)]="auditFilter.type" (ngModelChange)="refreshAudit()" aria-label="Event type">
+        <option value="">All events</option>
+        @for (type of auditTypes; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+      <input name="username" [(ngModel)]="auditFilter.username" placeholder="username" aria-label="Filter by username" />
+      <input name="documentId" [(ngModel)]="auditFilter.documentId" placeholder="document id" aria-label="Filter by document id" />
+      <button type="submit">Apply</button>
+      <button type="button" (click)="clearAuditFilter()">Clear</button>
+      <a class="export" [href]="auditExportUrl()" download>Export CSV</a>
+    </form>
 
-    @if (auditEntries().length === 0) {
-      <p class="muted">No tile requests recorded yet.</p>
+    @if (auditEvents().length === 0) {
+      <p class="muted">No matching events.</p>
     } @else {
       <table>
         <thead>
           <tr>
             <th>Time</th>
-            <th>Username</th>
-            <th>Document</th>
-            <th>Page</th>
-            <th>Tile</th>
+            <th>Event</th>
+            <th>User</th>
+            <th>Details</th>
+            <th>IP</th>
           </tr>
         </thead>
         <tbody>
-          @for (entry of auditEntries(); track $index) {
-            <tr>
-              <td>{{ formatTime(entry.timestampEpochSeconds) }}</td>
-              <td>{{ entry.username }}</td>
-              <td class="mono">{{ entry.documentId | slice: 0 : 8 }}&hellip;</td>
-              <td>{{ entry.page + 1 }}</td>
-              <td>({{ entry.row }}, {{ entry.col }})</td>
+          @for (event of auditEvents(); track event.id) {
+            <tr [class.warning]="isWarning(event)">
+              <td class="nowrap">{{ formatMillis(event.occurredAtEpochMillis) }}</td>
+              <td class="mono">{{ event.type }}</td>
+              <td>
+                @if (event.username) {
+                  <button type="button" class="link" (click)="filterAuditBy({ username: event.username })">{{ event.username }}</button>
+                }
+              </td>
+              <td>
+                @if (event.documentId) {
+                  <button type="button" class="link" (click)="filterAuditBy({ documentId: event.documentId })"
+                          [title]="'Filter by document ' + event.documentId">{{ describe(event) }}</button>
+                } @else {
+                  {{ describe(event) }}
+                }
+              </td>
+              <td class="mono">{{ event.clientIp }}</td>
             </tr>
           }
         </tbody>
       </table>
+      <div class="pager">
+        <button (click)="refreshAudit(auditPage() - 1)" [disabled]="auditPage() === 0">&larr; Newer</button>
+        <span class="muted">
+          {{ auditPage() * auditPageSize + 1 }}–{{ auditPage() * auditPageSize + auditEvents().length }} of {{ auditTotal() }}
+        </span>
+        <button (click)="refreshAudit(auditPage() + 1)" [disabled]="auditPage() >= auditLastPage()">Older &rarr;</button>
+      </div>
     }
   </section>
 </div>

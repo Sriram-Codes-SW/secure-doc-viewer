@@ -5,6 +5,18 @@
   margin-bottom: 1.5rem;
 }
 
+.search {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+}
+
 .doc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -12,13 +24,11 @@
 }
 
 .doc-card {
-  display: block;
-  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  text-decoration: none;
-  color: inherit;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -27,8 +37,48 @@
   transform: translateY(-2px);
 }
 
+.doc-open {
+  display: block;
+  flex: 1;
+  padding: 1.25rem 1.25rem 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
 .doc-card h2 {
   font-size: 1rem;
   margin: 0 0 0.35rem;
   word-break: break-word;
+}
+
+.doc-card p {
+  margin: 0.15rem 0;
+  font-size: 0.85rem;
+}
+
+.doc-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.badge {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.badge.everyone {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.manage {
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-decoration: none;
 }

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../core/config';
 import { Role } from '../../core/session.service';
-import { AuditEntry, RateLimitStatus, SessionSummary, UserSummary } from './admin.models';
+import { AuditFilter, AuditPage, RateLimitStatus, SessionSummary, UserSummary } from './admin.models';
 
 /** ADMIN-only endpoints; the server rejects every call here from any other role. */
 @Injectable({ providedIn: 'root' })
@@ -22,9 +22,29 @@ export class AdminService {
     return this.http.get<RateLimitStatus>(`${API_BASE_URL}/api/admin/rate-limit/${encodeURIComponent(username)}`);
   }
 
-  getAudit(limit: number): Observable<AuditEntry[]> {
-    const params = new HttpParams().set('limit', limit);
-    return this.http.get<AuditEntry[]>(`${API_BASE_URL}/api/admin/audit`, { params });
+  getAudit(filter: AuditFilter, page: number, size: number): Observable<AuditPage> {
+    const params = AdminService.auditParams(filter).set('page', page).set('size', size);
+    return this.http.get<AuditPage>(`${API_BASE_URL}/api/admin/audit`, { params });
+  }
+
+  /** Same-origin GET, so the session cookie authorises the download; opened as a plain link. */
+  auditExportUrl(filter: AuditFilter): string {
+    const query = AdminService.auditParams(filter).toString();
+    return `${API_BASE_URL}/api/admin/audit/export${query ? '?' + query : ''}`;
+  }
+
+  private static auditParams(filter: AuditFilter): HttpParams {
+    let params = new HttpParams();
+    if (filter.type) {
+      params = params.set('type', filter.type);
+    }
+    if (filter.username?.trim()) {
+      params = params.set('username', filter.username.trim());
+    }
+    if (filter.documentId?.trim()) {
+      params = params.set('documentId', filter.documentId.trim());
+    }
+    return params;
   }
 
   getUsers(): Observable<UserSummary[]> {

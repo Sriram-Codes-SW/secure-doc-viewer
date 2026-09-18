@@ -19,6 +19,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/documents/upload.component').then((m) => m.UploadComponent),
   },
   {
+    path: 'documents/:documentId/manage',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/documents/manage.component').then((m) => m.ManageDocumentComponent),
+  },
+  {
     path: 'viewer/:documentId',
     canActivate: [authGuard],
     loadComponent: () => import('./features/viewer/viewer.component').then((m) => m.ViewerComponent),

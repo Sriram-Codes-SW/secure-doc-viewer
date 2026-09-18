@@ -16,14 +16,55 @@ export interface RateLimitStatus {
   windowSeconds: number;
 }
 
-export interface AuditEntry {
-  sessionHandle: string;
-  username: string;
-  documentId: string;
+export const AUDIT_EVENT_TYPES = [
+  'TILE_VIEWED',
+  'SIGN_IN',
+  'SIGN_IN_FAILED',
+  'SIGN_IN_LOCKED',
+  'SIGN_OUT',
+  'PASSWORD_CHANGED',
+  'SESSION_REVOKED',
+  'USER_CREATED',
+  'USER_UPDATED',
+  'USER_PASSWORD_RESET',
+  'DOCUMENT_UPLOADED',
+  'DOCUMENT_REPLACED',
+  'DOCUMENT_UPDATED',
+  'DOCUMENT_DELETED',
+  'DOCUMENT_SHARED',
+  'DOCUMENT_UNSHARED',
+  'ACCESS_DENIED',
+  'RATE_LIMITED',
+] as const;
+
+export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
+
+export interface AuditEvent {
+  id: number;
+  occurredAtEpochMillis: number;
+  type: AuditEventType;
+  username: string | null;
+  sessionHandle: string | null;
+  clientIp: string | null;
+  documentId: string | null;
+  documentTitle: string | null;
+  page: number | null;
+  tileRow: number | null;
+  tileCol: number | null;
+  detail: string | null;
+}
+
+export interface AuditPage {
+  items: AuditEvent[];
+  total: number;
   page: number;
-  row: number;
-  col: number;
-  timestampEpochSeconds: number;
+  size: number;
+}
+
+export interface AuditFilter {
+  type?: AuditEventType | '';
+  username?: string;
+  documentId?: string;
 }
 
 export interface UserSummary {

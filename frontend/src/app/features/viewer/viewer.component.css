@@ -13,6 +13,12 @@
   text-decoration: none;
 }
 
+.manage-link {
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .viewer-header h1 {
   margin: 0.25rem 0 0;
 }

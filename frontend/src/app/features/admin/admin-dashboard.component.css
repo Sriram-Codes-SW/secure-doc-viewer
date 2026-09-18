@@ -72,11 +72,62 @@ td {
   margin-bottom: 1rem;
 }
 
-.audit-controls input {
-  width: 5rem;
-  padding: 0.35rem;
+.audit-controls {
+  flex-wrap: wrap;
+}
+
+.audit-controls input,
+.audit-controls select {
+  padding: 0.35rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+}
+
+.audit-controls .export {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.audit-controls button,
+.pager button {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+  padding: 0.3rem 0.7rem;
+}
+
+button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+tr.warning td {
+  color: var(--danger);
+}
+
+td.nowrap {
+  white-space: nowrap;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 720px) {

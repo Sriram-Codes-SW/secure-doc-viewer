@@ -54,12 +54,13 @@ public class SessionAdministration {
         return summaries;
     }
 
-    public void revoke(String handle) {
+    /** Expires the session with this handle and returns whose it was. */
+    public String revoke(String handle) {
         for (Object principal : registry.getAllPrincipals()) {
             for (SessionInformation session : registry.getAllSessions(principal, false)) {
                 if (sessionKeys.adminHandle(session.getSessionId()).equals(handle)) {
                     session.expireNow();
-                    return;
+                    return principal instanceof UserDetails user ? user.getUsername() : String.valueOf(principal);
                 }
             }
         }
