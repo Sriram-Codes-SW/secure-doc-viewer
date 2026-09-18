@@ -155,8 +155,7 @@ public class TileGenerationService {
                 .resolve("tile-" + row + "_" + col + ".png");
 
         if (!Files.exists(tilePath)) {
-            throw new DocumentNotFoundException(
-                    "No such tile: document=%s page=%d row=%d col=%d".formatted(documentId, page, row, col));
+            throw new DocumentNotFoundException("Tile not found.");
         }
 
         return ImageIO.read(tilePath.toFile());
