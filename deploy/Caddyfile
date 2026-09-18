@@ -14,7 +14,7 @@
 	header {
 		# Browsers must only ever use HTTPS for this site from now on. Add
 		# "; includeSubDomains" via HSTS_POLICY only if every subdomain is HTTPS too.
-		Strict-Transport-Security "{$HSTS_POLICY}"
+		Strict-Transport-Security "{$HSTS_POLICY:max-age=31536000}"
 		-Server
 	}
 

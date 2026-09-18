@@ -295,7 +295,8 @@ still works, but every account's recognised devices are forgotten (their hashes 
   to the Prometheus server and alert on `sdv_sign_in_total{outcome="locked"}`,
   `sdv_tiles_rate_limited_total` and `sdv_render_rejected_total`.
 - Strong, unique `SIGNING_SECRET`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`; change the bootstrap admin
-  password at first sign-in (the app requires it when the password was generated).
+  password at first sign-in. The app forces this only when it generated the password: if you set
+  `BOOTSTRAP_ADMIN_PASSWORD`, change it yourself and clear it from `.env` after the first start.
 - Scheduled backups as above, plus one restore drill.
 - One app instance (see [Limitations](#limitations)).
 
