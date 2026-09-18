@@ -59,6 +59,18 @@ secure-doc-viewer:
     username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only the health check; nothing else from Actuator is reachable over HTTP.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
 spring:
   config:
     # Local development: secrets live in a git-ignored .env next to pom.xml
