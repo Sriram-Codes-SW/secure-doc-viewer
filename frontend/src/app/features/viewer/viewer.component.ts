@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DecimalPipe, NgStyle } from '@angular/common';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { API_BASE_URL } from '../../core/config';
+import { SessionService } from '../../core/session.service';
 import { DocumentsService } from '../documents/documents.service';
 import { DocumentDetail } from '../documents/document.models';
 import { buildTileViewModels, TileViewModel } from './tile-view-model';
@@ -25,6 +26,9 @@ const MAX_CONCURRENT_TILE_FETCHES = 6;
 const FALLBACK_RETRY_AFTER_SECONDS = 5;
 
 type TileStatus = 'pending' | 'loaded' | 'failed';
+
+/** Per-user, per-document "where was I" — a convenience only, so failures to read/write are ignored. */
+const LAST_PAGE_KEY_PREFIX = 'sdv.lastPage.';
 
 interface TileState extends TileViewModel {
   /** Object URL of the fetched PNG, once loaded. */
@@ -92,7 +96,9 @@ export class ViewerComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly documentsService: DocumentsService,
+    private readonly sessionService: SessionService,
   ) {}
 
   ngOnInit(): void {
@@ -100,7 +106,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
     this.documentsService.get(this.documentId).subscribe({
       next: (manifest) => {
         this.manifest.set(manifest);
-        this.loadPage(0);
+        this.loadPage(this.initialPage(manifest.pageCount));
       },
       error: (err: HttpErrorResponse) => {
         this.errorMessage.set(
@@ -127,7 +133,71 @@ export class ViewerComponent implements OnInit, OnDestroy {
     this.errorMessage.set(null);
     this.currentPage.set(page);
     this.loading.set(true);
+    this.rememberPage(page);
     this.requestGrid(page, this.loadGeneration, true);
+  }
+
+  /**
+   * Keyboard navigation, ignored while typing in a field or with modifier
+   * keys held (so browser shortcuts like Ctrl+Plus still work).
+   */
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (event.ctrlKey || event.metaKey || event.altKey || !this.manifest()
+        || (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) || target?.isContentEditable) {
+      return;
+    }
+    const last = this.manifest()!.pageCount - 1;
+    const actions: Record<string, () => void> = {
+      ArrowRight: () => this.nextPage(),
+      PageDown: () => this.nextPage(),
+      ArrowLeft: () => this.prevPage(),
+      PageUp: () => this.prevPage(),
+      Home: () => this.currentPage() !== 0 && this.loadPage(0),
+      End: () => this.currentPage() !== last && this.loadPage(last),
+      '+': () => this.zoomIn(),
+      '=': () => this.zoomIn(),
+      '-': () => this.zoomOut(),
+    };
+    const action = actions[event.key];
+    if (action) {
+      event.preventDefault();
+      action();
+    }
+  }
+
+  /** ?page=N (1-based) wins; otherwise resume where this user left off; otherwise page 1. */
+  private initialPage(pageCount: number): number {
+    const requested = Number(this.route.snapshot.queryParamMap.get('page'));
+    if (Number.isInteger(requested) && requested >= 1 && requested <= pageCount) {
+      return requested - 1;
+    }
+    try {
+      const saved = Number(localStorage.getItem(this.lastPageKey()));
+      return Number.isInteger(saved) && saved >= 0 && saved < pageCount ? saved : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Keeps the URL shareable (?page=N) and remembers the page for next time. */
+  private rememberPage(page: number): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: page + 1 },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    try {
+      localStorage.setItem(this.lastPageKey(), String(page));
+    } catch {
+      // Storage unavailable (private mode, quota); resuming is just a convenience.
+    }
+  }
+
+  private lastPageKey(): string {
+    return `${LAST_PAGE_KEY_PREFIX}${this.sessionService.username() ?? ''}.${this.documentId}`;
   }
 
   /**
