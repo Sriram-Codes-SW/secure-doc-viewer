@@ -1,22 +1,34 @@
+import { Role } from '../../core/session.service';
+
 export interface SessionSummary {
-  sessionId: string;
+  /** Opaque, revocation-only reference. Never the session id. */
+  handle: string;
   username: string;
-  expiresAtEpochSeconds: number;
+  role: Role;
+  lastActiveEpochSeconds: number;
+  current: boolean;
 }
 
 export interface RateLimitStatus {
-  sessionId: string;
+  username: string;
   used: number;
   limit: number;
   windowSeconds: number;
 }
 
 export interface AuditEntry {
-  sessionId: string;
+  sessionHandle: string;
   username: string;
   documentId: string;
   page: number;
   row: number;
   col: number;
   timestampEpochSeconds: number;
+}
+
+export interface UserSummary {
+  username: string;
+  role: Role;
+  enabled: boolean;
+  createdAtEpochSeconds: number;
 }

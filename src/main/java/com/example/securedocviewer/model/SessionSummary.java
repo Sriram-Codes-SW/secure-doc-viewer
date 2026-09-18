@@ -1,12 +1,15 @@
 package com.example.securedocviewer.model;
 
 /**
- * A read-only view of an active session for the admin module — deliberately
- * excludes anything an admin panel doesn't need to render a session list.
+ * One live sign-in as the admin UI sees it. {@code handle} is an opaque,
+ * revocation-only reference derived from the session id; the id itself is
+ * never exposed.
  */
 public record SessionSummary(
-        String sessionId,
+        String handle,
         String username,
-        long expiresAtEpochSeconds
+        String role,
+        long lastActiveEpochSeconds,
+        boolean current
 ) {
 }

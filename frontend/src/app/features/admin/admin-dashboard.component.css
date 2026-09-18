@@ -84,3 +84,68 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.inline-form input,
+.inline-form select,
+td select,
+td input {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+}
+
+.inline-form input {
+  flex: 1 1 10rem;
+}
+
+/* Flex lives on an inner div: display:flex on the <td> itself stops it
+   being a table cell, which breaks the row's border and column widths. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.actions button {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.actions button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.tag {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--border);
+  font-size: 0.7rem;
+}
+
+.disabled-row td {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.success {
+  color: var(--accent);
+}

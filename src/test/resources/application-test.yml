@@ -1,0 +1,14 @@
+# In-memory H2 in MySQL mode, so the same Flyway migrations run in tests
+# without a database server.
+spring:
+  datasource:
+    url: jdbc:h2:mem:securedocs;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+
+secure-doc-viewer:
+  signing-secret: integration-test-signing-secret-0123456789
+  storage-root: ./target/test-storage
+  bootstrap-admin:
+    username: admin
+    password: bootstrap-admin-password

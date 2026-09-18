@@ -1,17 +1,19 @@
 <header class="topbar">
   <div class="brand">Secure Doc Viewer</div>
 
-  @if (sessionService.isLoggedIn()) {
+  @if (sessionService.user(); as user) {
     <nav>
       <a routerLink="/documents" routerLinkActive="active">Documents</a>
-      <a routerLink="/admin" routerLinkActive="active">Admin</a>
+      @if (sessionService.isAdmin()) {
+        <a routerLink="/admin" routerLinkActive="active">Admin</a>
+      }
     </nav>
     <div class="account">
-      <span class="muted">{{ sessionService.username() }}</span>
+      <a class="account-link" routerLink="/account" routerLinkActive="active">
+        {{ user.username }} <span class="role-badge">{{ user.role | lowercase }}</span>
+      </a>
       <button (click)="logout()">Sign out</button>
     </div>
-  } @else {
-    <a class="button" routerLink="/login">Sign in</a>
   }
 </header>
 

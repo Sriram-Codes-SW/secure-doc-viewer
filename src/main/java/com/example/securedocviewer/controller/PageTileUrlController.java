@@ -4,7 +4,8 @@ import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.model.DocumentManifest;
 import com.example.securedocviewer.model.PageInfo;
 import com.example.securedocviewer.model.TileUrlGrid;
-import com.example.securedocviewer.security.SessionService;
+import com.example.securedocviewer.security.SessionKeys;
+import jakarta.servlet.http.HttpServletRequest;
 import com.example.securedocviewer.service.DocumentRegistry;
 import com.example.securedocviewer.service.SignedUrlService;
 import org.springframework.http.ResponseEntity;
@@ -23,23 +24,25 @@ public class PageTileUrlController {
 
     private final DocumentRegistry documentRegistry;
     private final SignedUrlService signedUrlService;
-    private final SessionService sessionService;
+    private final SessionKeys sessionKeys;
 
     public PageTileUrlController(DocumentRegistry documentRegistry,
                                   SignedUrlService signedUrlService,
-                                  SessionService sessionService) {
+                                  SessionKeys sessionKeys) {
         this.documentRegistry = documentRegistry;
         this.signedUrlService = signedUrlService;
-        this.sessionService = sessionService;
+        this.sessionKeys = sessionKeys;
     }
 
     @GetMapping("/tile-urls")
     public ResponseEntity<TileUrlGrid> tileUrls(
-            @RequestHeader("X-Session-Id") String sessionId,
             @PathVariable String documentId,
-            @PathVariable int page) {
+            @PathVariable int page,
+            HttpServletRequest request) {
 
-        sessionService.requireValidSession(sessionId);
+        // Tokens carry a keyed binding to this session, never its id, so a
+        // tile URL can be logged or leaked without leaking the credential.
+        String sessionBinding = sessionKeys.tileBinding(request.getSession().getId());
 
         DocumentManifest manifest = documentRegistry.require(documentId);
         PageInfo pageInfo = manifest.pages().stream()
@@ -51,7 +54,7 @@ public class PageTileUrlController {
         String[][] urls = new String[pageInfo.rows()][pageInfo.cols()];
         for (int row = 0; row < pageInfo.rows(); row++) {
             for (int col = 0; col < pageInfo.cols(); col++) {
-                String token = signedUrlService.issueToken(documentId, page, row, col, sessionId);
+                String token = signedUrlService.issueToken(documentId, page, row, col, sessionBinding);
                 urls[row][col] = "/api/tiles?token=" + token;
             }
         }

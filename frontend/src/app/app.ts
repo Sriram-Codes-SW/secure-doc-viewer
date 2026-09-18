@@ -1,3 +1,4 @@
+import { LowerCasePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SessionService } from './core/session.service';
@@ -5,7 +6,7 @@ import { SessionService } from './core/session.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LowerCasePipe],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

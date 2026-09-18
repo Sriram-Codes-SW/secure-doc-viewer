@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { authGuard, roleGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'documents' },
@@ -15,7 +15,7 @@ export const routes: Routes = [
   },
   {
     path: 'documents/upload',
-    canActivate: [authGuard],
+    canActivate: [roleGuard('PUBLISHER', 'ADMIN')],
     loadComponent: () => import('./features/documents/upload.component').then((m) => m.UploadComponent),
   },
   {
@@ -25,9 +25,14 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    canActivate: [authGuard],
+    canActivate: [roleGuard('ADMIN')],
     loadComponent: () =>
       import('./features/admin/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
+  },
+  {
+    path: 'account',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/auth/account.component').then((m) => m.AccountComponent),
   },
   { path: '**', redirectTo: 'documents' },
 ];

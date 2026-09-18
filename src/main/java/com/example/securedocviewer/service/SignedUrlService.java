@@ -35,9 +35,9 @@ public class SignedUrlService {
         this.properties = properties;
     }
 
-    public String issueToken(String documentId, int page, int row, int col, String sessionId) {
+    public String issueToken(String documentId, int page, int row, int col, String sessionBinding) {
         long expiresAt = Instant.now().getEpochSecond() + properties.getUrlTtlSeconds();
-        SignedTilePayload payload = new SignedTilePayload(documentId, page, row, col, sessionId, expiresAt);
+        SignedTilePayload payload = new SignedTilePayload(documentId, page, row, col, sessionBinding, expiresAt);
         String payloadEncoded = base64Url(payload.canonicalString().getBytes(StandardCharsets.UTF_8));
         String signature = base64Url(hmac(payload.canonicalString()));
         return payloadEncoded + "." + signature;

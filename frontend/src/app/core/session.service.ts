@@ -1,79 +1,72 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, firstValueFrom, map, of, tap } from 'rxjs';
 import { API_BASE_URL } from './config';
 
-interface StoredSession {
-  sessionId: string;
-  username: string;
-}
+export type Role = 'READER' | 'PUBLISHER' | 'ADMIN';
 
-interface LoginResponse {
-  sessionId: string;
+export interface CurrentUser {
   username: string;
+  role: Role;
 }
-
-const STORAGE_KEY = 'secure-doc-viewer.session';
 
 /**
- * Holds the current login session as a signal so every part of the app
- * (nav bar, route guard, HTTP interceptor) reads the same live value.
- * Persisted to sessionStorage only so a page refresh doesn't force a
- * re-login during a demo — a real app would use an httpOnly cookie instead
- * of anything readable from JS.
+ * Who is signed in, as a signal every part of the app reads (nav, guards,
+ * interceptor). The credential itself is an httpOnly cookie the browser
+ * manages — nothing secret is held here or in web storage — so the session
+ * is shared across tabs and survives a reload: on startup we simply ask the
+ * server who we are.
  */
 @Injectable({ providedIn: 'root' })
 export class SessionService {
-  private readonly current = signal<StoredSession | null>(this.restore());
+  private readonly current = signal<CurrentUser | null>(null);
 
+  readonly user = this.current.asReadonly();
   readonly username = computed(() => this.current()?.username ?? null);
-  readonly sessionId = computed(() => this.current()?.sessionId ?? null);
+  readonly role = computed(() => this.current()?.role ?? null);
   readonly isLoggedIn = computed(() => this.current() !== null);
+  readonly isAdmin = computed(() => this.current()?.role === 'ADMIN');
+  readonly canUpload = computed(() => this.hasAnyRole('PUBLISHER', 'ADMIN'));
 
   constructor(private readonly http: HttpClient) {}
 
-  login(username: string): Observable<LoginResponse> {
-    const params = new URLSearchParams({ username });
+  /** Runs once at startup (see app.config.ts). Also primes the CSRF cookie. */
+  restore(): Promise<void> {
+    return firstValueFrom(
+      this.http.get<CurrentUser>(`${API_BASE_URL}/api/auth/me`).pipe(
+        tap((user) => this.current.set(user)),
+        map(() => undefined),
+        catchError(() => {
+          this.current.set(null);
+          return of(undefined);
+        }),
+      ),
+    );
+  }
+
+  login(username: string, password: string): Observable<CurrentUser> {
     return this.http
-      .post<LoginResponse>(`${API_BASE_URL}/api/session/login?${params.toString()}`, null)
-      .pipe(tap((res) => this.setSession(res.sessionId, res.username)));
+      .post<CurrentUser>(`${API_BASE_URL}/api/auth/login`, { username, password })
+      .pipe(tap((user) => this.current.set(user)));
   }
 
   logout(): Observable<void> {
-    const sessionId = this.sessionId();
-    this.clearSession();
-    if (!sessionId) {
-      return new Observable((subscriber) => {
-        subscriber.next();
-        subscriber.complete();
-      });
-    }
-    return this.http.post<void>(`${API_BASE_URL}/api/session/logout`, null, {
-      headers: { 'X-Session-Id': sessionId },
-    });
+    return this.http.post<void>(`${API_BASE_URL}/api/auth/logout`, null).pipe(
+      tap({ finalize: () => this.current.set(null) }),
+    );
   }
 
-  private setSession(sessionId: string, username: string): void {
-    this.current.set({ sessionId, username });
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ sessionId, username }));
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${API_BASE_URL}/api/auth/password`, { currentPassword, newPassword });
   }
 
-  private clearSession(): void {
-    this.current.set(null);
-    sessionStorage.removeItem(STORAGE_KEY);
+  hasAnyRole(...roles: Role[]): boolean {
+    const role = this.current()?.role;
+    return role !== undefined && roles.includes(role);
   }
 
-  private restore(): StoredSession | null {
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as StoredSession) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /** Called by the HTTP interceptor when the server says this session is no longer valid. */
+  /** Called by the HTTP interceptor when the server says the session is gone. */
   forceLogout(): void {
-    this.clearSession();
+    this.current.set(null);
   }
 }

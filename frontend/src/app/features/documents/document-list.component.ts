@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { SessionService } from '../../core/session.service';
 import { DocumentsService } from './documents.service';
 import { DocumentManifest } from './document.models';
 
@@ -15,7 +16,10 @@ export class DocumentListComponent implements OnInit {
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
 
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    readonly sessionService: SessionService,
+  ) {}
 
   ngOnInit(): void {
     this.refresh();

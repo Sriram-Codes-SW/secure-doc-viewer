@@ -8,7 +8,7 @@ package com.example.securedocviewer.model;
  * at all.
  */
 public record AuditEntry(
-        String sessionId,
+        String sessionHandle,
         String username,
         String documentId,
         int page,

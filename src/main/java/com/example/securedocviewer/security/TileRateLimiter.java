@@ -13,8 +13,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Caps how many tiles a single session can redeem within a rolling time
- * window. A signed, unexpired, session-bound token still only proves the
+ * Caps how many tiles a single user can redeem within a rolling time
+ * window. Keyed by username rather than session, so signing in again (or in
+ * several tabs/browsers at once) doesn't hand out a fresh allowance. A
+ * signed, unexpired, session-bound token still only proves the
  * request is legitimate one tile at a time — nothing about the token
  * mechanism stops a script from redeeming every tile of every page in a
  * few seconds. This is what turns that into a slow, boundable operation
@@ -28,7 +30,7 @@ public class TileRateLimiter {
         final Deque<Instant> timestamps = new ArrayDeque<>();
     }
 
-    private final Map<String, Window> windowsBySession = new ConcurrentHashMap<>();
+    private final Map<String, Window> windowsByUser = new ConcurrentHashMap<>();
     private final ViewerProperties properties;
 
     public TileRateLimiter(ViewerProperties properties) {
@@ -36,11 +38,11 @@ public class TileRateLimiter {
     }
 
     /**
-     * Records one tile request for the session and throws if that pushes
-     * the session over its allowance for the current rolling window.
+     * Records one tile request for the user and throws if that pushes
+     * them over their allowance for the current rolling window.
      */
-    public void recordAndEnforce(String sessionId) {
-        Window window = windowsBySession.computeIfAbsent(sessionId, id -> new Window());
+    public void recordAndEnforce(String username) {
+        Window window = windowsByUser.computeIfAbsent(username, id -> new Window());
         Instant now = Instant.now();
         Instant cutoff = now.minusSeconds(properties.getTileRateLimitWindowSeconds());
 
@@ -54,27 +56,27 @@ public class TileRateLimiter {
                 long retryAfterSeconds = Math.max(1, (long) Math.ceil(
                         Duration.between(cutoff, window.timestamps.peekFirst()).toMillis() / 1000.0));
                 throw new RateLimitExceededException(
-                        "Session " + sessionId + " exceeded " + properties.getTileRateLimitPerWindow()
-                                + " tile requests per " + properties.getTileRateLimitWindowSeconds() + "s window",
+                        "Tile rate limit reached (" + properties.getTileRateLimitPerWindow()
+                                + " per " + properties.getTileRateLimitWindowSeconds() + "s).",
                         retryAfterSeconds);
             }
             window.timestamps.addLast(now);
         }
     }
 
-    /** Drops tracking for a session, e.g. on logout, so memory doesn't grow forever. */
-    public void forget(String sessionId) {
-        windowsBySession.remove(sessionId);
+    /** Drops tracking for a user, so memory doesn't grow forever. */
+    public void forget(String username) {
+        windowsByUser.remove(username);
     }
 
     /**
-     * Read-only snapshot of a session's current usage, for the admin module.
+     * Read-only snapshot of a user's current usage, for the admin module.
      * Prunes the same way {@link #recordAndEnforce} does but never records a
      * new request or throws, so merely checking status can't itself count
-     * against the session's budget.
+     * against the user's budget.
      */
-    public RateLimitStatus getUsage(String sessionId) {
-        Window window = windowsBySession.get(sessionId);
+    public RateLimitStatus getUsage(String username) {
+        Window window = windowsByUser.get(username);
         int used;
         if (window == null) {
             used = 0;
@@ -88,7 +90,7 @@ public class TileRateLimiter {
             }
         }
         return new RateLimitStatus(
-                sessionId,
+                username,
                 used,
                 properties.getTileRateLimitPerWindow(),
                 properties.getTileRateLimitWindowSeconds()

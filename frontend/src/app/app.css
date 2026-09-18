@@ -42,3 +42,18 @@ main {
   margin: 0 auto;
   padding: 2rem 1.5rem;
 }
+
+.account-link {
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.role-badge {
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}

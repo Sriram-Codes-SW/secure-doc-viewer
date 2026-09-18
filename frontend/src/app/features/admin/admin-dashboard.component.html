@@ -1,7 +1,71 @@
 <h1>Admin</h1>
-<p class="muted">Live view of what the security layer is already enforcing &mdash; nothing here grants extra access.</p>
+<p class="muted">Accounts, live sessions, and what the security layer is enforcing.</p>
 
 <div class="admin-grid">
+  <section class="panel wide">
+    <h2>Users</h2>
+
+    <form class="inline-form" (ngSubmit)="createUser()">
+      <input name="newUsername" [(ngModel)]="newUser.username" placeholder="username" aria-label="New username"
+             autocomplete="off" required />
+      <input name="newPassword" type="password" [(ngModel)]="newUser.password"
+             [placeholder]="'initial password (' + minPasswordLength + '+ chars)'" aria-label="Initial password"
+             autocomplete="new-password" required />
+      <select name="newRole" [(ngModel)]="newUser.role" aria-label="Role">
+        @for (role of roles; track role) {
+          <option [value]="role">{{ role }}</option>
+        }
+      </select>
+      <button type="submit" [disabled]="!newUser.username.trim() || !newUser.password">Create user</button>
+    </form>
+
+    @if (usersMessage(); as message) {
+      <p [class]="message.kind" role="status">{{ message.text }}</p>
+    }
+
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.username) {
+          <tr [class.disabled-row]="!user.enabled">
+            <td>{{ user.username }}</td>
+            <td>
+              <select [ngModel]="user.role" (ngModelChange)="changeRole(user, $event)"
+                      [attr.aria-label]="'Role for ' + user.username">
+                @for (role of roles; track role) {
+                  <option [value]="role">{{ role }}</option>
+                }
+              </select>
+            </td>
+            <td>{{ user.enabled ? 'Active' : 'Disabled' }}</td>
+            <td>{{ formatTime(user.createdAtEpochSeconds) }}</td>
+            <td class="actions-cell">
+              <div class="actions">
+                @if (resettingUser() === user.username) {
+                  <input type="password" [(ngModel)]="resetPasswordValue" [attr.aria-label]="'New password for ' + user.username"
+                         [placeholder]="minPasswordLength + '+ chars'" autocomplete="new-password" />
+                  <button (click)="submitReset(user)">Save</button>
+                  <button (click)="resettingUser.set(null)">Cancel</button>
+                } @else {
+                  <button (click)="startReset(user)">Reset password</button>
+                  <button (click)="toggleEnabled(user)">{{ user.enabled ? 'Disable' : 'Enable' }}</button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
   <section class="panel">
     <h2>Active sessions</h2>
     @if (sessions().length === 0) {
@@ -10,17 +74,30 @@
       <table>
         <thead>
           <tr>
-            <th>Username</th>
-            <th>Session ID</th>
-            <th>Expires</th>
+            <th>User</th>
+            <th>Last active</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          @for (session of sessions(); track session.sessionId) {
+          @for (session of sessions(); track session.handle) {
             <tr>
-              <td>{{ session.username }}</td>
-              <td class="mono">{{ session.sessionId | slice: 0 : 8 }}&hellip;</td>
-              <td>{{ formatTime(session.expiresAtEpochSeconds) }}</td>
+              <td>
+                {{ session.username }}
+                @if (session.current) {
+                  <span class="tag">you</span>
+                }
+              </td>
+              <td>{{ formatTime(session.lastActiveEpochSeconds) }}</td>
+              <td class="actions-cell">
+                <div class="actions">
+                  @if (!session.current) {
+                    <button (click)="revoke(session)" [class.danger]="confirmingRevoke() === session.handle">
+                      {{ confirmingRevoke() === session.handle ? 'Confirm revoke' : 'Revoke' }}
+                    </button>
+                  }
+                </div>
+              </td>
             </tr>
           }
         </tbody>
@@ -31,9 +108,9 @@
   <section class="panel">
     <h2>Rate-limit usage</h2>
     <div class="rate-limit-picker">
-      <select [(ngModel)]="selectedSessionId" (ngModelChange)="checkRateLimit()">
-        @for (session of sessions(); track session.sessionId) {
-          <option [value]="session.sessionId">{{ session.username }}</option>
+      <select [(ngModel)]="selectedUsername" (ngModelChange)="checkRateLimit()" aria-label="User">
+        @for (user of users(); track user.username) {
+          <option [value]="user.username">{{ user.username }}</option>
         }
       </select>
       <button (click)="checkRateLimit()">Check</button>
@@ -69,7 +146,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (entry of auditEntries(); track entry.timestampEpochSeconds + entry.sessionId + entry.row + entry.col) {
+          @for (entry of auditEntries(); track $index) {
             <tr>
               <td>{{ formatTime(entry.timestampEpochSeconds) }}</td>
               <td>{{ entry.username }}</td>
