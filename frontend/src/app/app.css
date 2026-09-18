@@ -57,3 +57,18 @@ main {
   color: var(--muted);
   font-size: 0.75rem;
 }
+
+.idle-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.idle-banner button {
+  padding: 0.3rem 0.8rem;
+}

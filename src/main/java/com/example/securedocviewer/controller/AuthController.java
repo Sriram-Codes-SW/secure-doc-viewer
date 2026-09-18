@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -51,7 +52,8 @@ public class AuthController {
     public record ChangePasswordRequest(@NotBlank String currentPassword, @NotBlank String newPassword) {
     }
 
-    public record CurrentUser(String username, String role) {
+    /** {@code sessionTimeoutSeconds} is the idle timeout, so the UI can warn before it signs the user out. */
+    public record CurrentUser(String username, String role, int sessionTimeoutSeconds) {
     }
 
     private final AuthenticationManager authenticationManager;
@@ -63,6 +65,7 @@ public class AuthController {
     private final CsrfTokenRepository csrfTokenRepository;
     private final AuditLogService audit;
     private final RequestActors actors;
+    private final Duration configuredSessionTimeout;
 
     public AuthController(AuthenticationManager authenticationManager,
                           SessionAuthenticationStrategy sessionAuthenticationStrategy,
@@ -72,7 +75,8 @@ public class AuthController {
                           SessionAdministration sessions,
                           CsrfTokenRepository csrfTokenRepository,
                           AuditLogService audit,
-                          RequestActors actors) {
+                          RequestActors actors,
+                          @Value("${server.servlet.session.timeout:30m}") Duration configuredSessionTimeout) {
         this.authenticationManager = authenticationManager;
         this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
@@ -82,6 +86,7 @@ public class AuthController {
         this.csrfTokenRepository = csrfTokenRepository;
         this.audit = audit;
         this.actors = actors;
+        this.configuredSessionTimeout = configuredSessionTimeout;
     }
 
     @PostMapping("/login")
@@ -123,7 +128,7 @@ public class AuthController {
         securityContextRepository.saveContext(context, request, response);
         audit.record(AuditEventType.SIGN_IN, actors.of(request, username), Subject.none());
 
-        return ResponseEntity.ok(toCurrentUser(authentication));
+        return ResponseEntity.ok(toCurrentUser(authentication, request));
     }
 
     @PostMapping("/logout")
@@ -140,8 +145,8 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public CurrentUser me(Authentication authentication) {
-        return toCurrentUser(authentication);
+    public CurrentUser me(Authentication authentication, HttpServletRequest request) {
+        return toCurrentUser(authentication, request);
     }
 
     /** Also ends the user's other sessions, so a password change locks out anyone who had it. */
@@ -168,13 +173,19 @@ public class AuthController {
         csrfTokenRepository.saveToken(fresh, request, response);
     }
 
-    private static CurrentUser toCurrentUser(Authentication authentication) {
+    private CurrentUser toCurrentUser(Authentication authentication, HttpServletRequest request) {
         String role = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(a -> a.startsWith("ROLE_"))
                 .map(a -> a.substring("ROLE_".length()))
                 .findFirst()
                 .orElse("");
-        return new CurrentUser(authentication.getName(), role);
+        // The container normally applies server.servlet.session.timeout to the session; fall back to
+        // the configured value where it doesn't (e.g. mock sessions in tests).
+        int sessionTimeout = request.getSession().getMaxInactiveInterval();
+        if (sessionTimeout <= 0) {
+            sessionTimeout = (int) configuredSessionTimeout.toSeconds();
+        }
+        return new CurrentUser(authentication.getName(), role, sessionTimeout);
     }
 }

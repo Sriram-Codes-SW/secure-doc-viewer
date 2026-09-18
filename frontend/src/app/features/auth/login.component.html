@@ -1,6 +1,9 @@
 <div class="auth-card">
   <h1>Secure Doc Viewer</h1>
   <p class="subtitle">Sign in with the account your administrator gave you.</p>
+  @if (signedOutForInactivity) {
+    <p class="notice" role="status">You were signed out after a period of inactivity.</p>
+  }
 
   <form (ngSubmit)="submit()">
     <label for="username">Username</label>

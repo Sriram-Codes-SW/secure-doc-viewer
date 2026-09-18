@@ -312,6 +312,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
           return;
         }
         if (response.ok) {
+          this.sessionService.touch();
           const blob = await response.blob();
           if (generation !== this.loadGeneration) {
             return;

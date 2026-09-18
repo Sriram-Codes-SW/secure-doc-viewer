@@ -16,12 +16,15 @@ export class LoginComponent {
   password = '';
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly signedOutForInactivity: boolean;
 
   constructor(
     private readonly sessionService: SessionService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-  ) {}
+  ) {
+    this.signedOutForInactivity = this.route.snapshot.queryParamMap.get('reason') === 'idle';
+  }
 
   submit(): void {
     if (!this.username.trim() || !this.password) {
