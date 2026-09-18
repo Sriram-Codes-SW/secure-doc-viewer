@@ -72,3 +72,19 @@ progress {
   margin: 0.25rem 0 0;
   font-size: 0.8rem;
 }
+
+.steps {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.steps .done {
+  text-decoration: line-through;
+}
+
+.steps .active {
+  color: var(--fg);
+  font-weight: 600;
+}

@@ -97,4 +97,31 @@ describe('ViewerComponent navigation', () => {
     expect(viewer.currentPage()).toBe(0);
     http.verify();
   });
+
+  function touch(x: number, y: number): Touch {
+    return { clientX: x, clientY: y } as Touch;
+  }
+
+  it('turns pages with a horizontal swipe, but not when zoomed in (then a swipe pans)', () => {
+    const viewer = create();
+    expectGridRequestFor(0);
+
+    viewer.onTouchStart({ touches: [touch(300, 200)] } as unknown as TouchEvent);
+    viewer.onTouchEnd({ changedTouches: [touch(150, 210)] } as unknown as TouchEvent);
+    expect(viewer.currentPage()).toBe(1);
+    expectGridRequestFor(1);
+
+    viewer.zoomIn();
+    viewer.onTouchStart({ touches: [touch(300, 200)] } as unknown as TouchEvent);
+    viewer.onTouchEnd({ changedTouches: [touch(150, 205)] } as unknown as TouchEvent);
+    expect(viewer.currentPage()).toBe(1);
+    http.verify();
+  });
+
+  it('shows the access-lost state when the document stops being available mid-read', () => {
+    const viewer = create();
+    http.expectOne('/api/documents/doc-1/pages/0/tile-urls').flush({ error: 'Document not found.' }, { status: 404, statusText: 'Not Found' });
+    expect(viewer.accessLost()).toBe(true);
+  });
 });
+

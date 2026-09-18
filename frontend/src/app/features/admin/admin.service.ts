@@ -62,6 +62,10 @@ export class AdminService {
     return this.http.patch<UserSummary>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}`, change);
   }
 
+  unlock(username: string): Observable<void> {
+    return this.http.post<void>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}/unlock`, null);
+  }
+
   resetPassword(username: string, password: string): Observable<void> {
     return this.http.post<void>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}/password`, {
       password,

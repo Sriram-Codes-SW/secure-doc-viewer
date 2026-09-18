@@ -7,6 +7,10 @@ export interface SessionSummary {
   role: Role;
   lastActiveEpochSeconds: number;
   current: boolean;
+  clientIp: string | null;
+  /** e.g. "Chrome on Windows" (the raw User-Agent is not kept). */
+  device: string | null;
+  startedAtEpochSeconds: number | null;
 }
 
 export interface RateLimitStatus {
@@ -28,12 +32,14 @@ export const AUDIT_EVENT_TYPES = [
   'USER_CREATED',
   'USER_UPDATED',
   'USER_PASSWORD_RESET',
+  'USER_UNLOCKED',
   'DOCUMENT_UPLOADED',
   'DOCUMENT_REPLACED',
   'DOCUMENT_UPDATED',
   'DOCUMENT_DELETED',
   'DOCUMENT_SHARED',
   'DOCUMENT_UNSHARED',
+  'DOCUMENT_OWNER_CHANGED',
   'ACCESS_DENIED',
   'RATE_LIMITED',
 ] as const;
@@ -75,4 +81,7 @@ export interface UserSummary {
   role: Role;
   enabled: boolean;
   createdAtEpochSeconds: number;
+  lastSignInEpochSeconds: number | null;
+  mustChangePassword: boolean;
+  ownedDocuments: number;
 }

@@ -34,9 +34,14 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     this.sessionService.login(this.username.trim(), this.password).subscribe({
-      next: () => {
+      next: (user) => {
         this.password = '';
-        this.router.navigateByUrl(safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl')));
+        const returnUrl = safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+        if (user.mustChangePassword) {
+          this.router.navigate(['/account'], { queryParams: { required: 1, returnUrl } });
+        } else {
+          this.router.navigateByUrl(returnUrl);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);

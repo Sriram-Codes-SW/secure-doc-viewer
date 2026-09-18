@@ -1,6 +1,6 @@
 <div class="upload-card">
   <h1>Upload a PDF</h1>
-  <p class="muted">The backend rasterizes every page and slices it into tiles &mdash; nothing about the original PDF file is kept servable afterward.</p>
+  <p class="muted">Readers see each page as a watermarked image. The PDF file itself is never shown or downloadable.</p>
 
   <form (ngSubmit)="submit()">
     <label for="file">PDF file</label>
@@ -31,12 +31,19 @@
       {{ uploading() ? 'Uploading…' : 'Upload' }}
     </button>
     @if (uploading()) {
-      @if (uploadPercent() !== null) {
+      <ol class="steps" aria-label="Upload progress">
+        <li [class.done]="uploadPercent() === null">
+          Step 1 of 2: uploading{{ uploadPercent() ? ' — ' + uploadPercent() + '%' : '' }}
+        </li>
+        <li [class.active]="uploadPercent() === null">Step 2 of 2: preparing pages</li>
+      </ol>
+      @if (uploadPercent()) {
         <progress max="100" [value]="uploadPercent()" aria-label="Upload progress"></progress>
-        <p class="muted" role="status">Uploading… {{ uploadPercent() }}%</p>
       } @else {
-        <progress aria-label="Rendering pages"></progress>
-        <p class="muted" role="status">Uploaded. Rendering pages — this can take a little while for long documents.</p>
+        <progress aria-label="Working"></progress>
+      }
+      @if (uploadPercent() === null) {
+        <p class="muted" role="status">Uploaded. Preparing pages — long documents can take a little while.</p>
       }
     }
   </form>

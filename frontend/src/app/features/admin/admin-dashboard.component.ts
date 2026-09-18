@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription, interval, startWith, switchMap } from 'rxjs';
 import { Role } from '../../core/session.service';
@@ -33,6 +33,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly confirmingRevoke = signal<string | null>(null);
   /** Username whose inline password-reset form is open. */
   readonly resettingUser = signal<string | null>(null);
+  /** A role change waiting for confirmation (nothing is sent until confirmed). */
+  readonly pendingRole = signal<{ username: string; role: Role } | null>(null);
+  /** Username awaiting a second click to confirm disabling. */
+  readonly confirmingDisable = signal<string | null>(null);
+  readonly userQuery = signal('');
+  readonly filteredUsers = computed(() => {
+    const q = this.userQuery().trim().toLowerCase();
+    return q ? this.users().filter((u) => u.username.includes(q)) : this.users();
+  });
   readonly usersMessage = signal<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   selectedUsername = '';
@@ -148,7 +157,33 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  changeRole(user: UserSummary, role: Role): void {
+  /** Selecting a new role only stages it; confirmRoleChange applies it. */
+  requestRoleChange(user: UserSummary, role: Role): void {
+    this.pendingRole.set(role === user.role ? null : { username: user.username, role });
+  }
+
+  cancelRoleChange(): void {
+    this.pendingRole.set(null);
+    this.loadUsers(); // puts the select back to the saved role
+  }
+
+  confirmRoleChange(user: UserSummary): void {
+    const pending = this.pendingRole();
+    if (!pending || pending.username !== user.username) {
+      return;
+    }
+    this.pendingRole.set(null);
+    this.changeRole(user, pending.role);
+  }
+
+  unlock(user: UserSummary): void {
+    this.adminService.unlock(user.username).subscribe({
+      next: () => this.usersMessage.set({ kind: 'success', text: `${user.username} can sign in again (lockout cleared).` }),
+      error: (err: HttpErrorResponse) => this.showUsersError(err),
+    });
+  }
+
+  private changeRole(user: UserSummary, role: Role): void {
     this.adminService.updateUser(user.username, { role }).subscribe({
       next: () => {
         this.usersMessage.set({ kind: 'success', text: `${user.username} is now ${role}; their sessions were ended.` });
@@ -162,6 +197,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   toggleEnabled(user: UserSummary): void {
+    // Disabling takes two clicks; the first shows what it affects.
+    if (user.enabled && this.confirmingDisable() !== user.username) {
+      this.confirmingDisable.set(user.username);
+      return;
+    }
+    this.confirmingDisable.set(null);
     this.adminService.updateUser(user.username, { enabled: !user.enabled }).subscribe({
       next: () => {
         this.usersMessage.set({

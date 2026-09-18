@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, Subject, Subscription, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { SessionService } from '../../core/session.service';
 import { DocumentDetail, Visibility } from './document.models';
 import { DocumentsService } from './documents.service';
 
@@ -24,11 +25,14 @@ export class ManageDocumentComponent implements OnInit, OnDestroy {
   readonly suggestions = signal<string[]>([]);
   readonly busy = signal(false);
   readonly confirmingDelete = signal(false);
+  /** Errors from sharing are shown next to the share box, not at the top of the page. */
+  readonly shareError = signal<string | null>(null);
 
   title = '';
   visibility: Visibility = 'PRIVATE';
   shareWith = '';
   replacement: File | null = null;
+  newOwner = '';
 
   private documentId = '';
   private readonly userQuery = new Subject<string>();
@@ -38,6 +42,7 @@ export class ManageDocumentComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly documentsService: DocumentsService,
+    readonly sessionService: SessionService,
   ) {}
 
   ngOnInit(): void {
@@ -61,7 +66,8 @@ export class ManageDocumentComponent implements OnInit, OnDestroy {
       .pipe(
         debounceTime(200),
         distinctUntilChanged(),
-        switchMap((q) => (q.trim() ? this.documentsService.findUsers(q).pipe(catchError(() => of([]))) : of([]))),
+        // The server returns nothing under two characters; don't even ask.
+        switchMap((q) => (q.trim().length >= 2 ? this.documentsService.findUsers(q).pipe(catchError(() => of([]))) : of([]))),
       )
       .subscribe((names) => {
         const shared = new Set(this.document()?.sharedWith ?? []);
@@ -104,11 +110,20 @@ export class ManageDocumentComponent implements OnInit, OnDestroy {
     if (!username) {
       return;
     }
-    this.run(this.documentsService.share(this.documentId, username), (sharedWith) => {
-      this.patchShares(sharedWith);
-      this.shareWith = '';
-      this.suggestions.set([]);
-      this.notice.set({ kind: 'success', text: `Shared with ${username.toLowerCase()}.` });
+    this.shareError.set(null);
+    this.busy.set(true);
+    this.documentsService.share(this.documentId, username).subscribe({
+      next: (sharedWith) => {
+        this.busy.set(false);
+        this.patchShares(sharedWith);
+        this.shareWith = '';
+        this.suggestions.set([]);
+        this.notice.set({ kind: 'success', text: `Shared with ${username.toLowerCase()}.` });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.shareError.set(err.error?.error ?? 'Could not share.');
+      },
     });
   }
 
@@ -116,6 +131,18 @@ export class ManageDocumentComponent implements OnInit, OnDestroy {
     this.run(this.documentsService.unshare(this.documentId, username), (sharedWith) => {
       this.patchShares(sharedWith);
       this.notice.set({ kind: 'success', text: `${username} can no longer open it — including pages already open.` });
+    });
+  }
+
+  transferOwnership(): void {
+    const username = this.newOwner.trim();
+    if (!username) {
+      return;
+    }
+    this.run(this.documentsService.transferOwnership(this.documentId, username), (updated) => {
+      this.apply(updated);
+      this.newOwner = '';
+      this.notice.set({ kind: 'success', text: `${updated.owner} now owns this document.` });
     });
   }
 

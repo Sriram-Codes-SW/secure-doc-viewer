@@ -200,3 +200,49 @@ td input {
 .success {
   color: var(--accent);
 }
+
+.user-search {
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+}
+
+.confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.confirm-row button {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.confirm-row button.danger,
+.warning-text {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.warning-text {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+/* Wide admin tables scroll inside their panel on small screens. */
+.panel {
+  overflow-x: auto;
+}
