@@ -38,7 +38,13 @@ public class AuditLogService {
     private static final Logger log = LoggerFactory.getLogger(AuditLogService.class);
 
     /** Filters for {@link #search}; any field may be null. */
-    public record Query(AuditEventType type, String username, String documentId, Instant from, Instant to) {
+    /** {@code traceCode} matches the start of the session handle, as printed in the watermark. */
+    public record Query(AuditEventType type, String username, String documentId, Instant from, Instant to,
+                        String traceCode) {
+
+        public Query(AuditEventType type, String username, String documentId, Instant from, Instant to) {
+            this(type, username, documentId, from, to, null);
+        }
     }
 
     public record Page(List<AuditEvent> items, long total, int page, int size) {
@@ -131,6 +137,13 @@ public class AuditLogService {
         if (query.documentId() != null && !query.documentId().isBlank()) {
             conditions.add("document_id = ?");
             args.add(query.documentId().trim());
+        }
+        if (query.traceCode() != null && !query.traceCode().isBlank()) {
+            // Crockford Base32 is case-insensitive; keep only valid characters so
+            // the value can't smuggle LIKE wildcards into the pattern.
+            String code = query.traceCode().trim().toUpperCase().replaceAll("[^0-9A-Z]", "");
+            conditions.add("session_handle like ?");
+            args.add(code + "%");
         }
         if (query.from() != null) {
             conditions.add("occurred_at >= ?");

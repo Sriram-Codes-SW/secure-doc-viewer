@@ -30,6 +30,10 @@ public class ViewerProperties {
     private int maxPages = 500;
     /** Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs. */
     private long maxPagePixels = 40_000_000L;
+    /** Watermark ink opacity, 0.05-0.6. Lower is easier to read through; higher survives recompression better. */
+    private float watermarkOpacity = 0.2f;
+    /** Gap between watermark copies, as a multiple of the text height. Larger is lighter on the page. */
+    private double watermarkSpacing = 1.5;
     private int tileRateLimitPerWindow = 120;
     private long tileRateLimitWindowSeconds = 60;
 
@@ -87,6 +91,22 @@ public class ViewerProperties {
 
     public void setMaxPagePixels(long maxPagePixels) {
         this.maxPagePixels = maxPagePixels;
+    }
+
+    public float getWatermarkOpacity() {
+        return watermarkOpacity;
+    }
+
+    public void setWatermarkOpacity(float watermarkOpacity) {
+        this.watermarkOpacity = watermarkOpacity;
+    }
+
+    public double getWatermarkSpacing() {
+        return watermarkSpacing;
+    }
+
+    public void setWatermarkSpacing(double watermarkSpacing) {
+        this.watermarkSpacing = watermarkSpacing;
     }
 
     public int getTileRateLimitPerWindow() {

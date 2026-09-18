@@ -65,6 +65,8 @@ export interface AuditFilter {
   type?: AuditEventType | '';
   username?: string;
   documentId?: string;
+  /** Trace code read off a watermark; matches the start of the session handle. */
+  trace?: string;
 }
 
 export interface UserSummary {

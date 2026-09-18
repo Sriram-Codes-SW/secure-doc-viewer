@@ -39,6 +39,12 @@ secure-doc-viewer:
   max-pages: 500
   max-page-pixels: 40000000
 
+  # Watermark look: ink opacity (0.05-0.6) and gap between copies as a multiple
+  # of the text height. Each mark shows the viewer, a UTC timestamp and a short
+  # trace code matching the session column of the audit log.
+  watermark-opacity: 0.2
+  watermark-spacing: 1.5
+
   # Max tiles a single user may redeem within the rolling window below.
   # This is what stands between "read the pages you're viewing" and
   # "script every tile of every page in one burst" — a valid signature,

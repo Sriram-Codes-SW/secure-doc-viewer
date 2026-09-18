@@ -26,7 +26,7 @@ protection here is structural instead — it lives on the server, where the clie
 | "Open a document that wasn't shared with me" | Every document has an owner and a visibility: PRIVATE (owner + users it is shared with) or EVERYONE. Anyone else gets `404` — not `403` — so they can't even tell it exists. The check runs on the list, the manifest, when tile URLs are issued, and again on every single tile request, so unsharing or deleting a document cuts off pages that are already open. |
 | "Just sign in as someone else" | Real accounts: username + BCrypt password, created by an admin (no self-signup). Failed sign-ins are throttled per account and per client IP (`429` + `Retry-After`). Roles — READER, PUBLISHER, ADMIN — are enforced server-side on every endpoint. |
 | "Script every tile of every page in one burst" | `/api/tiles` is rate-limited per user (default 120 tile requests per 60s window — about three pages a minute). A valid signature, unexpired token, and live session still only get throttled access — bulk harvesting becomes slow and boundable instead of instant. Throttled requests get `429` with a `Retry-After` header, and the viewer shows a countdown and loads the rest of the page when the window allows. |
-| "Screenshot it anyway" | Not prevented — see [Limitations](#limitations). Every served tile is watermarked with the requesting viewer's identity and a UTC timestamp, so a leaked capture is attributable. The mark (viewer on one line, timestamp on the next) is repeated in a non-overlapping pattern across each tile rather than stamped once in the centre, so every tile carries it and a full tile holds at least one complete, readable copy. |
+| "Screenshot it anyway" | Not prevented — see [Limitations](#limitations). Every served tile is watermarked with the requesting viewer's identity and a UTC timestamp, so a leaked capture is attributable. The mark (viewer on one line; UTC timestamp and a six-character trace code on the next — type the code into the audit log's trace filter to find the exact sign-in) is repeated in a non-overlapping pattern across each tile rather than stamped once in the centre, so every tile carries it and a full tile holds at least one complete, readable copy. |
 
 ### The client also blocks right-click — on purpose, with eyes open
 
@@ -173,6 +173,7 @@ All under `secure-doc-viewer.*` in `application.yml`; secrets come from the envi
 | `url-ttl-seconds` | `120` | Signed URL lifetime |
 | `max-pages` | `500` | Uploads with more pages are rejected before rendering |
 | `max-page-pixels` | `40000000` | Largest page (px at render DPI) accepted; guards against decompression-bomb PDFs |
+| `watermark-opacity` / `watermark-spacing` | `0.2` / `1.5` | Watermark ink opacity, and gap between copies as a multiple of the text height |
 | `tile-rate-limit-per-window` | `120` | Max tile requests a user may make per window |
 | `tile-rate-limit-window-seconds` | `60` | Width of that rolling window |
 | `audit-retention-days` | `180` | Audit events older than this are purged nightly |

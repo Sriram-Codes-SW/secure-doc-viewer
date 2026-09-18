@@ -120,7 +120,10 @@ public class TileController {
         BufferedImage rawTile = tileGenerationService.loadRawTile(
                 payload.documentId(), payload.page(), payload.row(), payload.col());
 
-        BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username);
+        // First 6 characters of the session's admin handle: enough to single out one sign-in
+        // in the audit log's session column, too short to be of any other use.
+        String traceCode = sessionKeys.adminHandle(session.getId()).substring(0, 6);
+        BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode);
 
         auditLogService.record(AuditEventType.TILE_VIEWED, actor, Subject.tile(
                 payload.documentId(), title, payload.page(), payload.row(), payload.col()));

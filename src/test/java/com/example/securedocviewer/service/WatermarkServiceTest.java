@@ -109,6 +109,36 @@ class WatermarkServiceTest {
         assertTrue(layout.stepY() >= layout.lineHeight() * lines.length, "rows overlap vertically");
     }
 
+    @Test
+    void traceCodeChangesTheMarkAndWiderSpacingInksFewerPixels() {
+        BufferedImage source = blankWhiteTile(256);
+
+        BufferedImage withoutTrace = new WatermarkService(0.2f, 1.5).applyWatermark(source, "alice");
+        BufferedImage withTrace = new WatermarkService(0.2f, 1.5).applyWatermark(source, "alice", "k3Fz9a");
+        assertTrue(countChanged(source, withoutTrace) != countChanged(source, withTrace)
+                || !sameImage(withoutTrace, withTrace), "trace code made no difference to the mark");
+
+        int dense = countChanged(source, new WatermarkService(0.2f, 0.5).applyWatermark(source, "alice", "k3Fz9a"));
+        int airy = countChanged(source, new WatermarkService(0.2f, 4.0).applyWatermark(source, "alice", "k3Fz9a"));
+        assertTrue(airy < dense, "wider spacing should ink fewer pixels (dense=" + dense + ", airy=" + airy + ")");
+    }
+
+    private static int countChanged(BufferedImage a, BufferedImage b) {
+        int changed = 0;
+        for (int x = 0; x < a.getWidth(); x++) {
+            for (int y = 0; y < a.getHeight(); y++) {
+                if (a.getRGB(x, y) != b.getRGB(x, y)) {
+                    changed++;
+                }
+            }
+        }
+        return changed;
+    }
+
+    private static boolean sameImage(BufferedImage a, BufferedImage b) {
+        return countChanged(a, b) == 0;
+    }
+
     private boolean quadrantHasMark(BufferedImage source, BufferedImage stamped,
                                      int startX, int startY, int w, int h) {
         for (int x = startX; x < startX + w; x++) {

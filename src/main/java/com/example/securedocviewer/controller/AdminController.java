@@ -82,9 +82,10 @@ public class AdminController {
             @RequestParam(required = false) String documentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String trace,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(500) int size) {
-        return auditLogService.search(new AuditLogService.Query(type, username, documentId, from, to), page, size);
+        return auditLogService.search(new AuditLogService.Query(type, username, documentId, from, to, trace), page, size);
     }
 
     /** The same filters as {@link #audit}, as CSV (newest first, capped at 50,000 rows). */
@@ -94,9 +95,10 @@ public class AdminController {
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String documentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String trace) {
         List<AuditEvent> events = auditLogService.export(
-                new AuditLogService.Query(type, username, documentId, from, to), MAX_EXPORT_ROWS);
+                new AuditLogService.Query(type, username, documentId, from, to, trace), MAX_EXPORT_ROWS);
         String header = "time_utc,event,username,client_ip,session,document_id,document_title,page,tile_row,tile_col,detail";
         String rows = events.stream().map(AdminController::csvRow).collect(Collectors.joining("\n"));
         return ResponseEntity.ok()

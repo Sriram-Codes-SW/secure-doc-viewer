@@ -32,6 +32,24 @@ public class WatermarkService {
     private static final int FONT_DIVISOR = 14;
     private static final int MIN_FONT_SIZE = 9;
 
+    private final float opacity;
+    private final double spacing;
+
+    /** Defaults; used by unit tests. */
+    public WatermarkService() {
+        this(0.2f, 1.5);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WatermarkService(com.example.securedocviewer.config.ViewerProperties properties) {
+        this(properties.getWatermarkOpacity(), properties.getWatermarkSpacing());
+    }
+
+    WatermarkService(float opacity, double spacing) {
+        this.opacity = Math.max(0.05f, Math.min(0.6f, opacity));
+        this.spacing = Math.max(0.5, Math.min(6.0, spacing));
+    }
+
     /**
      * Tiles are individually watermarked (see {@link com.example.securedocviewer.controller.TileController}),
      * but edge/bottom tiles in the grid are cropped shorter than a full tile
@@ -48,6 +66,16 @@ public class WatermarkService {
      * ever contain a complete copy of it.
      */
     public BufferedImage applyWatermark(BufferedImage source, String viewerLabel) {
+        return applyWatermark(source, viewerLabel, null);
+    }
+
+    /**
+     * @param traceCode short code identifying the viewer's session (see
+     *                  SessionKeys#adminHandle), so a leaked capture can be
+     *                  matched to one specific sign-in in the audit log, not
+     *                  just to a username. May be null.
+     */
+    public BufferedImage applyWatermark(BufferedImage source, String viewerLabel, String traceCode) {
         int width = source.getWidth();
         int height = source.getHeight();
         BufferedImage stamped = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -58,13 +86,14 @@ public class WatermarkService {
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g.drawImage(source, 0, 0, null);
 
-            String[] lines = {viewerLabel, TIMESTAMP_FORMAT.format(Instant.now())};
+            String stamp = TIMESTAMP_FORMAT.format(Instant.now());
+            String[] lines = {viewerLabel, traceCode == null ? stamp : stamp + " · " + traceCode};
 
             int fontSize = Math.max(MIN_FONT_SIZE, Math.min(width, height) / FONT_DIVISOR);
             g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, fontSize));
-            Layout layout = Layout.of(g.getFontMetrics(), lines);
+            Layout layout = Layout.of(g.getFontMetrics(), lines, spacing);
 
-            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.28f));
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
             g.setColor(Color.RED);
             g.rotate(-Math.PI / 6);
 
@@ -101,12 +130,16 @@ public class WatermarkService {
     record Layout(int blockWidth, int lineHeight, int stepX, int stepY) {
 
         static Layout of(FontMetrics metrics, String[] lines) {
+            return of(metrics, lines, 1.0);
+        }
+
+        static Layout of(FontMetrics metrics, String[] lines, double spacing) {
             int blockWidth = 0;
             for (String line : lines) {
                 blockWidth = Math.max(blockWidth, metrics.stringWidth(line));
             }
             int lineHeight = metrics.getHeight();
-            int gap = metrics.getHeight();
+            int gap = (int) Math.round(metrics.getHeight() * spacing);
             return new Layout(blockWidth, lineHeight, blockWidth + gap, lineHeight * lines.length + gap / 2);
         }
     }
