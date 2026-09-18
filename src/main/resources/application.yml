@@ -1,5 +1,16 @@
 server:
   port: 8080
+  servlet:
+    session:
+      # Idle timeout: each request extends it, so an active reader is never
+      # cut off mid-document, while an abandoned session still dies.
+      timeout: 30m
+      cookie:
+        name: SDV_SESSION
+        http-only: true
+        same-site: strict
+        # Must be true anywhere the app is served over HTTPS.
+        secure: ${SESSION_COOKIE_SECURE:false}
 
 secure-doc-viewer:
   # Root directory where uploaded PDFs are rasterized into per-tile PNGs.
@@ -13,17 +24,48 @@ secure-doc-viewer:
   # DPI used when rasterizing PDF pages to images before tiling.
   render-dpi: 150
 
-  # Secret used to HMAC-sign tile access tokens. In a real deployment this
-  # would come from a secrets manager, never be committed, and be rotated.
-  signing-secret: "demo-only-signing-secret-change-me"
+  # HMAC key for tile tokens. Never committed: set SIGNING_SECRET in the
+  # environment or in the git-ignored .env file (see .env.example).
+  # Startup fails if it is missing or shorter than 32 characters.
+  signing-secret: ${SIGNING_SECRET:}
 
   # How long a signed tile URL remains valid after being issued.
   url-ttl-seconds: 120
 
-  # How long a login session stays valid.
-  session-ttl-seconds: 1800
+  # Max tiles a single user may redeem within the rolling window below.
+  # This is what stands between "read the pages you're viewing" and
+  # "script every tile of every page in one burst" — a valid signature,
+  # unexpired token, and live session still only get throttled access.
+  # A 150-DPI letter page is ~35 tiles, so 120 lets a reader turn ~3 pages a
+  # minute without waiting while still keeping a full-document scrape slow.
+  tile-rate-limit-per-window: 120
+
+  # Width of the rolling window the limit above applies to.
+  tile-rate-limit-window-seconds: 60
+
+  # First admin, created only when the database has no accounts at all.
+  # If no password is given, a random one is generated and logged once.
+  bootstrap-admin:
+    username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
 spring:
+  config:
+    # Local development: secrets live in a git-ignored .env next to pom.xml
+    # (the same file docker compose reads). Real environment variables win.
+    import: optional:file:.env[.properties]
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:securedocs}
+    username: ${DB_USERNAME:securedocs}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    open-in-view: false
+    # Flyway owns the schema; Hibernate never alters it.
+    hibernate:
+      ddl-auto: none
+
   servlet:
     multipart:
       max-file-size: 100MB

@@ -1,0 +1,143 @@
+.viewer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.back-link {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.viewer-header h1 {
+  margin: 0.25rem 0 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.divider {
+  width: 1px;
+  height: 1.5rem;
+  background: var(--border);
+  margin: 0 0.25rem;
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.page-jump input {
+  width: 3.75rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  text-align: center;
+}
+
+.page-jump input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.page-jump button {
+  padding: 0.4rem 0.75rem;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--border);
+  padding: 0.25rem 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.notice {
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.zoom-indicator {
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 5rem;
+  text-align: center;
+}
+
+.stage-wrapper {
+  position: relative;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.stage-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 2;
+}
+
+/*
+ * Deliberately no <img> tags: page content is painted as CSS
+ * background-image on plain divs, and every layer disables selection and
+ * native drag. This is the exact client-side technique discussed for
+ * why flipbook readers don't offer "Save Image As" on right-click. It is
+ * a UX nicety, not real protection — real protection is the short-lived
+ * signed URL, per-request watermark, and rate limit behind each tile.
+ */
+.stage {
+  position: relative;
+  background: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+/*
+ * Each tile is drawn 1px wider and taller than its slice (see the template)
+ * and stretched to fill it, so neighbours overlap by a pixel. Without that,
+ * the fractional scale() on the stage leaves hairline seams between tiles
+ * that show up clearly over dark page content.
+ */
+.tile {
+  position: absolute;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.tile.pending {
+  background-color: #f0f1f3;
+}
+
+.hint {
+  max-width: 900px;
+  margin: 1rem auto 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}

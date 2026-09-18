@@ -31,7 +31,7 @@ class SignedUrlServiceTest {
         assertEquals(2, payload.page());
         assertEquals(3, payload.row());
         assertEquals(4, payload.col());
-        assertEquals("session-abc", payload.sessionId());
+        assertEquals("session-abc", payload.sessionBinding());
     }
 
     @Test

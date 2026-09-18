@@ -4,6 +4,7 @@ import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.model.DocumentManifest;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,5 +29,10 @@ public class DocumentRegistry {
             throw new DocumentNotFoundException("No such document: " + documentId);
         }
         return manifest;
+    }
+
+    /** Powers the document library view — every manifest ingested so far. */
+    public List<DocumentManifest> listAll() {
+        return List.copyOf(manifests.values());
     }
 }

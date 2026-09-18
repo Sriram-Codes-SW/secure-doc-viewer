@@ -1,0 +1,87 @@
+@if (manifest(); as doc) {
+  <div class="viewer-header">
+    <div>
+      <a class="back-link" routerLink="/documents">&larr; Documents</a>
+      <h1>{{ doc.title }}</h1>
+    </div>
+
+    <div class="controls">
+      <button (click)="prevPage()" [disabled]="currentPage() === 0">&larr; Prev</button>
+      <!-- novalidate: goToPage owns validation so every bad value gets the same inline message. -->
+      <form class="page-jump" novalidate (submit)="$event.preventDefault(); goToPage(pageInput.value)">
+        <label for="page-input">Page</label>
+        <input
+          #pageInput
+          id="page-input"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          [max]="doc.pageCount"
+          [value]="currentPage() + 1"
+          [attr.aria-invalid]="pageInputError() ? true : null"
+          aria-describedby="page-input-error"
+        />
+        <span class="page-count">/ {{ doc.pageCount }}</span>
+        <button type="submit" class="secondary">Go</button>
+      </form>
+      <button (click)="nextPage()" [disabled]="currentPage() >= doc.pageCount - 1">Next &rarr;</button>
+      <span class="divider"></span>
+      <button (click)="zoomOut()">&minus;</button>
+      <span class="zoom-indicator">{{ (zoom() * 100) | number: '1.0-0' }}%</span>
+      <button (click)="zoomIn()">+</button>
+    </div>
+  </div>
+
+  @if (pageInputError()) {
+    <p class="error" id="page-input-error" role="alert">{{ pageInputError() }}</p>
+  }
+
+  @if (throttledSeconds() !== null) {
+    <p class="notice" role="status">
+      Viewing speed limit reached &mdash; {{ loadedTileCount() }} of {{ tiles().length }} tiles loaded.
+      The rest of this page will load in {{ throttledSeconds() }}s.
+    </p>
+  }
+
+  @if (errorMessage()) {
+    <p class="error" role="alert">
+      {{ errorMessage() }}
+      @if (hasFailedTiles()) {
+        <button class="secondary" (click)="retryFailedTiles()">Retry</button>
+      }
+    </p>
+  }
+
+  <div class="stage-wrapper" [ngStyle]="stageWrapperStyle()">
+    @if (loading()) {
+      <div class="stage-loading">Loading page…</div>
+    }
+    <div
+      class="stage"
+      [ngStyle]="stageStyle()"
+      (contextmenu)="blockContextMenu($event)"
+    >
+      @for (tile of tiles(); track tile.key) {
+        <div
+          class="tile"
+          [class.pending]="tile.status !== 'loaded'"
+          [style.top.px]="tile.top"
+          [style.left.px]="tile.left"
+          [style.width.px]="tile.width + 1"
+          [style.height.px]="tile.height + 1"
+          [style.background-image]="tile.src ? 'url(' + tile.src + ')' : null"
+        ></div>
+      }
+    </div>
+  </div>
+
+  <p class="hint">
+    Every tile is watermarked with your username and fetched once through a short-lived signed URL.
+    Tile requests are rate-limited per session, so flipping through many pages quickly will pause briefly.
+  </p>
+} @else if (errorMessage()) {
+  <a class="back-link" routerLink="/documents">&larr; Documents</a>
+  <p class="error">{{ errorMessage() }}</p>
+} @else {
+  <p class="muted">Loading document…</p>
+}

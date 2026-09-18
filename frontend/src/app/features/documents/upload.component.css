@@ -1,0 +1,41 @@
+.upload-card {
+  max-width: 420px;
+}
+
+.upload-card .muted {
+  margin-bottom: 1.5rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+input[type='text'] {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+input[type='file'] {
+  padding: 0.4rem 0;
+}
+
+button {
+  margin-top: 1.25rem;
+  align-self: flex-start;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}

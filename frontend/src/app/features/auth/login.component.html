@@ -1,0 +1,36 @@
+<div class="auth-card">
+  <h1>Secure Doc Viewer</h1>
+  <p class="subtitle">Sign in with the account your administrator gave you.</p>
+
+  <form (ngSubmit)="submit()">
+    <label for="username">Username</label>
+    <input
+      id="username"
+      name="username"
+      type="text"
+      [(ngModel)]="username"
+      autocomplete="username"
+      autocapitalize="none"
+      spellcheck="false"
+      required
+    />
+
+    <label for="password">Password</label>
+    <input
+      id="password"
+      name="password"
+      type="password"
+      [(ngModel)]="password"
+      autocomplete="current-password"
+      required
+    />
+
+    @if (errorMessage()) {
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+    }
+
+    <button type="submit" [disabled]="submitting() || !username.trim() || !password">
+      {{ submitting() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</div>

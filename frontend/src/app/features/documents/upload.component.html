@@ -1,0 +1,20 @@
+<div class="upload-card">
+  <h1>Upload a PDF</h1>
+  <p class="muted">The backend rasterizes every page and slices it into tiles &mdash; nothing about the original PDF file is kept servable afterward.</p>
+
+  <form (ngSubmit)="submit()">
+    <label for="title">Title</label>
+    <input id="title" name="title" type="text" [(ngModel)]="title" required />
+
+    <label for="file">PDF file</label>
+    <input id="file" name="file" type="file" accept="application/pdf" (change)="onFileSelected($event)" required />
+
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+
+    <button type="submit" [disabled]="uploading() || !title.trim() || !file">
+      {{ uploading() ? 'Uploading & tiling…' : 'Upload' }}
+    </button>
+  </form>
+</div>
