@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../core/config';
@@ -24,12 +24,13 @@ export class DocumentsService {
     return this.http.get<DocumentDetail>(`${this.base}/${encodeURIComponent(documentId)}`);
   }
 
-  upload(title: string, file: File, visibility: Visibility): Observable<DocumentDetail> {
+  /** Emits upload-progress events, then the created document as the final response. */
+  upload(title: string, file: File, visibility: Visibility): Observable<HttpEvent<DocumentDetail>> {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('visibility', visibility);
     formData.append('file', file);
-    return this.http.post<DocumentDetail>(this.base, formData);
+    return this.http.post<DocumentDetail>(this.base, formData, { reportProgress: true, observe: 'events' });
   }
 
   update(documentId: string, change: { title?: string; visibility?: Visibility }): Observable<DocumentDetail> {

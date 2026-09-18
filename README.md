@@ -171,10 +171,21 @@ All under `secure-doc-viewer.*` in `application.yml`; secrets come from the envi
 | `render-dpi` | `150` | Rasterization DPI |
 | `signing-secret` | `SIGNING_SECRET` | HMAC key; startup fails if missing or under 32 characters |
 | `url-ttl-seconds` | `120` | Signed URL lifetime |
+| `max-pages` | `500` | Uploads with more pages are rejected before rendering |
+| `max-page-pixels` | `40000000` | Largest page (px at render DPI) accepted; guards against decompression-bomb PDFs |
 | `tile-rate-limit-per-window` | `120` | Max tile requests a user may make per window |
 | `tile-rate-limit-window-seconds` | `60` | Width of that rolling window |
 | `audit-retention-days` | `180` | Audit events older than this are purged nightly |
 | `bootstrap-admin.username` / `.password` | `admin` / `BOOTSTRAP_ADMIN_PASSWORD` | First admin, created only on an empty database |
+
+Uploads are capped at 50 MB (`spring.servlet.multipart.max-file-size`; larger files get a JSON
+`413`), must start with a `%PDF-` signature, and are streamed to disk rather than held in memory.
+
+`GET /actuator/health` (public, status only, `503` when the database is down) is the one Actuator
+endpoint exposed. Every API response carries a strict Content-Security-Policy,
+`X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer` (tile URLs carry tokens) and a
+Permissions-Policy. Errors are always `{"error": "..."}` JSON; unexpected failures return a generic
+`500` with a reference that is logged alongside the full exception.
 
 Sessions time out after 30 minutes of inactivity (`server.servlet.session.timeout`). Set
 `SESSION_COOKIE_SECURE=true` wherever the app is served over HTTPS.

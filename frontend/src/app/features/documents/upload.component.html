@@ -25,11 +25,19 @@
       <p class="error" role="alert">{{ errorMessage() }}</p>
     }
 
+    <p class="muted hint">PDF only, up to {{ maxUploadMb }} MB.</p>
+
     <button type="submit" [disabled]="uploading() || !title.trim() || !file">
-      {{ uploading() ? 'Uploading & tiling…' : 'Upload' }}
+      {{ uploading() ? 'Uploading…' : 'Upload' }}
     </button>
     @if (uploading()) {
-      <p class="muted" role="status">Rendering every page can take a little while for long documents.</p>
+      @if (uploadPercent() !== null) {
+        <progress max="100" [value]="uploadPercent()" aria-label="Upload progress"></progress>
+        <p class="muted" role="status">Uploading… {{ uploadPercent() }}%</p>
+      } @else {
+        <progress aria-label="Rendering pages"></progress>
+        <p class="muted" role="status">Uploaded. Rendering pages — this can take a little while for long documents.</p>
+      }
     }
   </form>
 </div>

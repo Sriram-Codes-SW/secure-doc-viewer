@@ -58,8 +58,10 @@ public class DocumentController {
                                  @RequestParam("file") MultipartFile file,
                                  Authentication authentication,
                                  HttpServletRequest request) throws IOException {
-        return documents.upload(title, file.getOriginalFilename(), file.getBytes(), visibility,
-                Viewer.of(authentication), actors.of(request, authentication));
+        try (var in = file.getInputStream()) {
+            return documents.upload(title, file.getOriginalFilename(), in, visibility,
+                    Viewer.of(authentication), actors.of(request, authentication));
+        }
     }
 
     @PatchMapping("/{documentId}")
@@ -73,8 +75,9 @@ public class DocumentController {
     @PutMapping("/{documentId}/file")
     public DocumentDetail replaceFile(@PathVariable String documentId, @RequestParam("file") MultipartFile file,
                                       Authentication authentication, HttpServletRequest request) throws IOException {
-        return documents.replaceFile(documentId, file.getBytes(),
-                Viewer.of(authentication), actors.of(request, authentication));
+        try (var in = file.getInputStream()) {
+            return documents.replaceFile(documentId, in, Viewer.of(authentication), actors.of(request, authentication));
+        }
     }
 
     @DeleteMapping("/{documentId}")

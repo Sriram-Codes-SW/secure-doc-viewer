@@ -21,6 +21,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -100,7 +101,7 @@ public class DocumentService {
                 : documents.findTitleIfVisible(documentId, viewer.username(), Visibility.EVERYONE);
     }
 
-    public DocumentDetail upload(String rawTitle, String originalFilename, byte[] pdf, Visibility visibility,
+    public DocumentDetail upload(String rawTitle, String originalFilename, InputStream pdf, Visibility visibility,
                                  Viewer viewer, Actor actor) throws IOException {
         String title = validTitle(rawTitle == null || rawTitle.isBlank() ? titleFromFilename(originalFilename) : rawTitle);
         RenderedDocument rendered = tiles.render(pdf);
@@ -125,7 +126,7 @@ public class DocumentService {
     }
 
     /** Swaps in a new PDF; the document keeps its id, title, visibility and shares. */
-    public DocumentDetail replaceFile(String documentId, byte[] pdf, Viewer viewer, Actor actor) throws IOException {
+    public DocumentDetail replaceFile(String documentId, InputStream pdf, Viewer viewer, Actor actor) throws IOException {
         tx.executeWithoutResult(status -> requireManageable(documentId, viewer, actor));
         RenderedDocument rendered = tiles.render(pdf);
         tiles.commit(rendered, documentId);

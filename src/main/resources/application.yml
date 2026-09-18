@@ -34,6 +34,11 @@ secure-doc-viewer:
   # How long a signed tile URL remains valid after being issued.
   url-ttl-seconds: 120
 
+  # Upload limits, checked before anything is rendered. Pixel limit is per
+  # page at render-dpi: 40M px is roughly A1 at 150 DPI.
+  max-pages: 500
+  max-page-pixels: 40000000
+
   # Max tiles a single user may redeem within the rolling window below.
   # This is what stands between "read the pages you're viewing" and
   # "script every tile of every page in one burst" — a valid signature,
@@ -54,6 +59,18 @@ secure-doc-viewer:
     username: ${BOOTSTRAP_ADMIN_USERNAME:admin}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only the health check; nothing else from Actuator is reachable over HTTP.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
 spring:
   config:
     # Local development: secrets live in a git-ignored .env next to pom.xml
@@ -73,5 +90,6 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+      # Keep in step with GlobalExceptionHandler.MAX_UPLOAD_MB and the frontend check.
+      max-file-size: 50MB
+      max-request-size: 51MB
