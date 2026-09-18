@@ -44,16 +44,44 @@ public class SessionKeys {
                 binding.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Crockford Base32 (digits and upper-case letters without I, L, O, U),
+     * because its first characters are printed in the watermark as a trace
+     * code and must survive being read off a screenshot or typed back in.
+     */
     public String adminHandle(String sessionId) {
-        return derive("admin-handle:", sessionId, 9);
+        return crockfordBase32(digest("admin-handle:", sessionId, 10));
+    }
+
+    private static final char[] CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
+
+    static String crockfordBase32(byte[] bytes) {
+        StringBuilder out = new StringBuilder();
+        int buffer = 0;
+        int bits = 0;
+        for (byte b : bytes) {
+            buffer = (buffer << 8) | (b & 0xff);
+            bits += 8;
+            while (bits >= 5) {
+                out.append(CROCKFORD[(buffer >>> (bits - 5)) & 31]);
+                bits -= 5;
+            }
+        }
+        if (bits > 0) {
+            out.append(CROCKFORD[(buffer << (5 - bits)) & 31]);
+        }
+        return out.toString();
     }
 
     private String derive(String context, String sessionId, int bytes) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(digest(context, sessionId, bytes));
+    }
+
+    private byte[] digest(String context, String sessionId, int bytes) {
         try {
             Mac mac = Mac.getInstance(HMAC_ALGO);
             mac.init(new SecretKeySpec(properties.getSigningSecret().getBytes(StandardCharsets.UTF_8), HMAC_ALGO));
-            byte[] digest = mac.doFinal((context + sessionId).getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(Arrays.copyOf(digest, bytes));
+            return Arrays.copyOf(mac.doFinal((context + sessionId).getBytes(StandardCharsets.UTF_8)), bytes);
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("Failed to derive session key", e);
         }

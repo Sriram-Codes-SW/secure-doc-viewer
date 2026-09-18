@@ -17,6 +17,15 @@
   }
 </header>
 
+@if (idle(); as state) {
+  @if (state.kind === 'warning') {
+    <div class="idle-banner" role="alert">
+      You'll be signed out in {{ formatCountdown(state.secondsLeft) }} because of inactivity.
+      <button (click)="staySignedIn()">Stay signed in</button>
+    </div>
+  }
+}
+
 <main>
   <router-outlet />
 </main>

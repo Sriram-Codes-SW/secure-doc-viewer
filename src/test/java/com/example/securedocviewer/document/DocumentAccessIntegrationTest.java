@@ -220,6 +220,24 @@ class DocumentAccessIntegrationTest {
     }
 
     @Test
+    void aWatermarkTraceCodeFindsTheExactSessionInTheAuditLog() throws Exception {
+        MockHttpSession owner = signIn("owner-j", Role.PUBLISHER);
+        MockHttpSession admin = signInExisting("admin", "bootstrap-admin-password");
+        upload(owner, "Traceable", "PRIVATE");
+
+        JsonNode upload = json(mvc.perform(get("/api/admin/audit").session(admin)
+                .param("type", "DOCUMENT_UPLOADED").param("username", "owner-j")).andReturn());
+        String handle = upload.at("/items/0/sessionHandle").asText();
+        assertTrue(handle.matches("[0-9A-HJKMNP-TV-Z]{16}"), "handle is not unambiguous Crockford Base32: " + handle);
+
+        // What a person would type after reading the watermark: first six characters, any case.
+        JsonNode found = json(mvc.perform(get("/api/admin/audit").session(admin)
+                .param("trace", handle.substring(0, 6).toLowerCase())).andReturn());
+        assertTrue(found.get("total").asLong() >= 1);
+        found.get("items").forEach(e -> assertEquals("owner-j", e.get("username").asText()));
+    }
+
+    @Test
     void userDirectoryIsForPublishersOnlyAndReturnsNamesOnly() throws Exception {
         MockHttpSession publisher = signIn("dir-publisher", Role.PUBLISHER);
         MockHttpSession reader = signIn("dir-reader", Role.READER);

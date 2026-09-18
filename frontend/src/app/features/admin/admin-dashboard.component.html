@@ -135,6 +135,7 @@
       </select>
       <input name="username" [(ngModel)]="auditFilter.username" placeholder="username" aria-label="Filter by username" />
       <input name="documentId" [(ngModel)]="auditFilter.documentId" placeholder="document id" aria-label="Filter by document id" />
+      <input name="trace" [(ngModel)]="auditFilter.trace" placeholder="trace code from watermark" aria-label="Filter by watermark trace code" />
       <button type="submit">Apply</button>
       <button type="button" (click)="clearAuditFilter()">Clear</button>
       <a class="export" [href]="auditExportUrl()" download>Export CSV</a>

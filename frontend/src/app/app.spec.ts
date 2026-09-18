@@ -16,7 +16,7 @@ describe('App', () => {
 
   function signInAs(role: Role): void {
     TestBed.inject(SessionService).login('someone', 'irrelevant-password').subscribe();
-    TestBed.inject(HttpTestingController).expectOne('/api/auth/login').flush({ username: 'someone', role });
+    TestBed.inject(HttpTestingController).expectOne('/api/auth/login').flush({ username: 'someone', role, sessionTimeoutSeconds: 1800 });
   }
 
   async function render(): Promise<HTMLElement> {

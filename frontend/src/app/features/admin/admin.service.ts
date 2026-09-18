@@ -44,6 +44,9 @@ export class AdminService {
     if (filter.documentId?.trim()) {
       params = params.set('documentId', filter.documentId.trim());
     }
+    if (filter.trace?.trim()) {
+      params = params.set('trace', filter.trace.trim());
+    }
     return params;
   }
 

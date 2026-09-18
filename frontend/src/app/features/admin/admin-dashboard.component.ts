@@ -36,7 +36,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly usersMessage = signal<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   selectedUsername = '';
-  auditFilter: AuditFilter = { type: '', username: '', documentId: '' };
+  auditFilter: AuditFilter = { type: '', username: '', documentId: '', trace: '' };
   newUser = { username: '', password: '', role: 'READER' as Role };
   resetPasswordValue = '';
 
@@ -91,7 +91,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   clearAuditFilter(): void {
-    this.auditFilter = { type: '', username: '', documentId: '' };
+    this.auditFilter = { type: '', username: '', documentId: '', trace: '' };
     this.refreshAudit();
   }
 

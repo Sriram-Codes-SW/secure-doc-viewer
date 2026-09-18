@@ -1,7 +1,8 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, tap, throwError } from 'rxjs';
+import { HttpResponse } from '@angular/common/http';
 import { SessionService } from './session.service';
 
 /** Endpoints whose 401 means "not signed in / wrong password", not "session ended". */
@@ -19,6 +20,11 @@ export const sessionInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   return next(req).pipe(
+    tap((event) => {
+      if (event instanceof HttpResponse && sessionService.isLoggedIn()) {
+        sessionService.touch();
+      }
+    }),
     catchError((error: unknown) => {
       const isAuthProbe = AUTH_PROBES.some((path) => req.url.endsWith(path));
       if (!isAuthProbe && error instanceof HttpErrorResponse && error.status === 401) {

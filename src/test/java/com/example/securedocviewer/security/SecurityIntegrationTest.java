@@ -100,6 +100,7 @@ class SecurityIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("cookie-user"))
                 .andExpect(jsonPath("$.role").value("READER"))
+                .andExpect(jsonPath("$.sessionTimeoutSeconds").value(1800))
                 .andReturn();
         String sessionId = result.getRequest().getSession(false).getId();
         assertFalse(result.getResponse().getContentAsString().contains(sessionId));
