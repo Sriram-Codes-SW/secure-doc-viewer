@@ -112,6 +112,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   describe(event: AuditEvent): string {
     const doc = event.documentTitle ?? (event.documentId ? event.documentId.slice(0, 8) + '…' : '');
     switch (event.type) {
+      case 'PAGE_VIEWED':
+        return `${doc} — page ${(event.page ?? 0) + 1}`;
       case 'TILE_VIEWED':
         return `${doc} — page ${(event.page ?? 0) + 1}, tile (${event.tileRow}, ${event.tileCol})`;
       case 'ACCESS_DENIED':
@@ -125,8 +127,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return ['SIGN_IN_FAILED', 'SIGN_IN_LOCKED', 'ACCESS_DENIED', 'RATE_LIMITED', 'SESSION_REVOKED'].includes(event.type);
   }
 
+  /** UTC, to match the watermark timestamp and the CSV export. */
   formatMillis(epochMillis: number): string {
-    return new Date(epochMillis).toLocaleString();
+    return new Date(epochMillis).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
   }
 
   createUser(): void {

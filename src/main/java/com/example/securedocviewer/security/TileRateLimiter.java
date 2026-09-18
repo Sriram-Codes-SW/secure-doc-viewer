@@ -64,6 +64,21 @@ public class TileRateLimiter {
         }
     }
 
+    /** Drops windows with no requests left in them, so the map can't grow without bound. */
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 300_000)
+    public void sweep() {
+        Instant cutoff = Instant.now().minusSeconds(properties.getTileRateLimitWindowSeconds());
+        windowsByUser.entrySet().removeIf(entry -> {
+            synchronized (entry.getValue()) {
+                Deque<Instant> timestamps = entry.getValue().timestamps;
+                while (!timestamps.isEmpty() && timestamps.peekFirst().isBefore(cutoff)) {
+                    timestamps.pollFirst();
+                }
+                return timestamps.isEmpty();
+            }
+        });
+    }
+
     /** Drops tracking for a user, so memory doesn't grow forever. */
     public void forget(String username) {
         windowsByUser.remove(username);

@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local secrets (see .env.example)
 .env
+
+# Angular CLI cache when run from the repo root
+.angular/

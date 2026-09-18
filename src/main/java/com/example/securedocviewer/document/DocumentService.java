@@ -33,7 +33,9 @@ import java.util.UUID;
  *   <li><b>view</b> — the owner, users it is shared with, everyone if its
  *       visibility is EVERYONE, and admins;</li>
  *   <li><b>manage</b> (rename, change visibility, share, replace, delete) —
- *       the owner and admins.</li>
+ *       admins, and the owner while they still hold the PUBLISHER role (a
+ *       publisher demoted to reader keeps read access but can no longer
+ *       share, replace or re-publish what they uploaded).</li>
  * </ul>
  * A document the user can't view is reported as not found, never as
  * forbidden, so its existence isn't revealed.
@@ -46,6 +48,7 @@ public class DocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
     private static final int MAX_TITLE_LENGTH = 200;
+    static final java.time.Duration DENIAL_AUDIT_INTERVAL = java.time.Duration.ofSeconds(5);
 
     private final DocumentRepository documents;
     private final AppUserRepository users;
@@ -213,7 +216,7 @@ public class DocumentService {
     private Document requireViewable(String documentId, Viewer viewer, Actor actor) {
         Document document = documents.findById(documentId).orElse(null);
         if (document == null || !canView(document, viewer)) {
-            audit.record(AuditEventType.ACCESS_DENIED, actor, Subject.document(documentId, null, "view"));
+            recordDenied(actor, viewer, Subject.document(documentId, null, "view"));
             throw new DocumentNotFoundException("Document not found.");
         }
         return document;
@@ -222,10 +225,20 @@ public class DocumentService {
     private Document requireManageable(String documentId, Viewer viewer, Actor actor) {
         Document document = requireViewable(documentId, viewer, actor);
         if (!canManage(document, viewer)) {
-            audit.record(AuditEventType.ACCESS_DENIED, actor, Subject.document(documentId, document.getTitle(), "manage"));
-            throw new ForbiddenException("Only the owner or an admin can change this document.");
+            recordDenied(actor, viewer, Subject.document(documentId, document.getTitle(), "manage"));
+            throw new ForbiddenException("Only the owner (as a publisher) or an admin can change this document.");
         }
         return document;
+    }
+
+    /**
+     * At most one denial per user every few seconds: enough to show probing in
+     * the audit trail, without letting any signed-in user grow the audit table
+     * at request rate by asking for made-up ids.
+     */
+    private void recordDenied(Actor actor, Viewer viewer, Subject subject) {
+        audit.recordAtMostEvery(DENIAL_AUDIT_INTERVAL, "denied:" + viewer.username(),
+                AuditEventType.ACCESS_DENIED, actor, subject);
     }
 
     private static boolean canView(Document document, Viewer viewer) {
@@ -236,7 +249,8 @@ public class DocumentService {
     }
 
     private static boolean canManage(Document document, Viewer viewer) {
-        return viewer.admin() || document.getOwner().getUsername().equals(viewer.username());
+        return viewer.admin()
+                || (viewer.publisher() && document.getOwner().getUsername().equals(viewer.username()));
     }
 
     private static DocumentSummary summary(Document d, Viewer viewer) {

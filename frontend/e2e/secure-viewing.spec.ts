@@ -1,4 +1,4 @@
-import { Browser, Page, expect, test } from '@playwright/test';
+import { APIRequestContext, Browser, Page, expect, request, test } from '@playwright/test';
 
 const ADMIN_USER = process.env['E2E_ADMIN_USER'] ?? 'admin';
 const ADMIN_PASSWORD = process.env['E2E_ADMIN_PASSWORD'] ?? '';
@@ -66,4 +66,28 @@ test('a publisher shares a document with one reader, and nobody else can see it'
   await expect(out.getByText(`E2E ${run}`)).toHaveCount(0);
   await out.goto(`/viewer/${documentId}`);
   await expect(out.getByText(/hasn.t been shared with you/)).toBeVisible();
+});
+
+/** POSTs to the API with the double-submit CSRF header, as the SPA does. */
+async function postJson(api: APIRequestContext, url: string, body: unknown, headers: Record<string, string> = {}) {
+  const csrf = (await api.storageState()).cookies.find((c) => c.name === 'XSRF-TOKEN')?.value ?? '';
+  return api.post(url, { data: body, headers: { 'X-XSRF-TOKEN': csrf, ...headers } });
+}
+
+test('a spoofed X-Forwarded-For header cannot reset the sign-in lockout', async ({ baseURL }) => {
+  // Regression: the proxy used to append to a client-supplied X-Forwarded-For,
+  // and the backend trusted it, so changing the header on every attempt gave
+  // unlimited password guesses. nginx must overwrite it with the real peer.
+  const api = await request.newContext({ baseURL });
+  await api.get('/api/auth/me'); // picks up the CSRF cookie
+  const username = `e2e-spoof-${run}`;
+  const statuses: number[] = [];
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const response = await postJson(api, '/api/auth/login', { username, password: `wrong-${attempt}` },
+      { 'X-Forwarded-For': `203.0.113.${attempt + 1}` });
+    statuses.push(response.status());
+  }
+  expect(statuses.slice(0, 5)).toEqual([401, 401, 401, 401, 401]);
+  expect(statuses[5]).toBe(429);
+  await api.dispose();
 });

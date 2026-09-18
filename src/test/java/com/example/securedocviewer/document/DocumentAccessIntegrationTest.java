@@ -238,6 +238,59 @@ class DocumentAccessIntegrationTest {
     }
 
     @Test
+    void aPublisherDemotedToReaderCanStillReadButNoLongerManageTheirDocuments() throws Exception {
+        MockHttpSession owner = signIn("owner-k", Role.PUBLISHER);
+        String id = upload(owner, "Owner K private", "PRIVATE");
+        accounts.update("admin", "owner-k", Role.READER, null);
+        MockHttpSession demoted = signInExisting("owner-k", PASSWORD);
+
+        mvc.perform(get("/api/documents/" + id).session(demoted))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.canManage").value(false));
+        mvc.perform(patch("/api/documents/" + id).session(demoted).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"visibility\":\"EVERYONE\"}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/documents/" + id + "/shares/reader-b").session(demoted).with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void viewingAPageRecordsOneAuditEventNotOnePerTile() throws Exception {
+        MockHttpSession owner = signIn("owner-l", Role.PUBLISHER);
+        MockHttpSession admin = signInExisting("admin", "bootstrap-admin-password");
+        String id = upload(owner, "Owner L", "PRIVATE");
+
+        JsonNode grid = json(mvc.perform(get("/api/documents/" + id + "/pages/0/tile-urls").session(owner)).andReturn());
+        int tiles = 0;
+        for (JsonNode row : grid.get("tileUrls")) {
+            for (JsonNode url : row) {
+                mvc.perform(get(url.asString()).session(owner)).andExpect(status().isOk());
+                tiles++;
+            }
+        }
+        assertTrue(tiles > 1, "test needs a multi-tile page");
+
+        JsonNode views = json(mvc.perform(get("/api/admin/audit").session(admin)
+                .param("type", "PAGE_VIEWED").param("documentId", id)).andReturn());
+        assertEquals(1, views.get("total").asLong(), "expected one PAGE_VIEWED for " + tiles + " tiles");
+        assertEquals(0, views.at("/items/0/page").asInt());
+    }
+
+    @Test
+    void probingMadeUpDocumentIdsCannotFloodTheAuditLog() throws Exception {
+        MockHttpSession prober = signIn("prober-m", Role.READER);
+        MockHttpSession admin = signInExisting("admin", "bootstrap-admin-password");
+        for (int i = 0; i < 25; i++) {
+            mvc.perform(get("/api/documents/00000000-0000-0000-0000-0000000000" + String.format("%02d", i)).session(prober))
+                    .andExpect(status().isNotFound());
+        }
+        JsonNode denied = json(mvc.perform(get("/api/admin/audit").session(admin)
+                .param("type", "ACCESS_DENIED").param("username", "prober-m")).andReturn());
+        long recorded = denied.get("total").asLong();
+        assertTrue(recorded >= 1 && recorded <= 2, "25 probes should leave 1-2 audit rows, got " + recorded);
+    }
+
+    @Test
     void userDirectoryIsForPublishersOnlyAndReturnsNamesOnly() throws Exception {
         MockHttpSession publisher = signIn("dir-publisher", Role.PUBLISHER);
         MockHttpSession reader = signIn("dir-reader", Role.READER);

@@ -88,12 +88,17 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:securedocs}
+    # connectionTimeZone=UTC: DATETIME columns hold UTC regardless of the JVM's
+    # time zone, so a backend in UTC (Docker) and one in local time (a dev
+    # machine) read the same instant back.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:securedocs}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
     username: ${DB_USERNAME:securedocs}
     password: ${DB_PASSWORD:}
 
   jpa:
     open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
     # Flyway owns the schema; Hibernate never alters it.
     hibernate:
       ddl-auto: none

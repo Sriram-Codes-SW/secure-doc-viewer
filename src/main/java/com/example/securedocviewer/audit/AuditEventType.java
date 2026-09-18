@@ -1,6 +1,9 @@
 package com.example.securedocviewer.audit;
 
 public enum AuditEventType {
+    /** Recorded once per session, document and page every 10 minutes (not per tile). */
+    PAGE_VIEWED,
+    /** Legacy: one row per tile, written by earlier versions; no longer recorded. */
     TILE_VIEWED,
     SIGN_IN,
     SIGN_IN_FAILED,

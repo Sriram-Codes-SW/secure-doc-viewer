@@ -45,10 +45,11 @@ public class SignedUrlService {
 
     /**
      * Verifies the signature and expiry of a token and returns its decoded
-     * contents. Does NOT check that the session itself is still valid —
-     * that is a separate, independent check ({@code SessionService}) so the
-     * two failure modes (tampered/expired token vs. revoked session) stay
-     * distinguishable.
+     * contents. Does NOT check that the request comes from the session the
+     * token is bound to, or that the session is still live — TileController
+     * does that separately (Spring Security plus SessionKeys), so the two
+     * failure modes (tampered/expired token vs. wrong or revoked session)
+     * stay distinguishable.
      */
     public SignedTilePayload verifyAndDecode(String token) {
         String[] parts = token.split("\\.", 2);

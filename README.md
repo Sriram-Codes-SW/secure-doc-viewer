@@ -86,7 +86,7 @@ src/main/java/com/example/securedocviewer/
 │   ├── PageTileUrlController.java      # issues a signed URL grid for one page
 │   ├── TileController.java             # the only endpoint returning pixels
 │   └── GlobalExceptionHandler.java     # JSON error mapping (400/401/404/409/429)
-├── model/                              # DocumentManifest, PageInfo, TileUrlGrid, SignedTilePayload, …
+├── model/                              # PageInfo, TileUrlGrid, SignedTilePayload, SessionSummary, …
 ├── security/
 │   ├── SecurityConfig.java             # filter chain: sessions, CSRF, role rules
 │   ├── SessionKeys.java                # tile binding + admin handle derived from session id

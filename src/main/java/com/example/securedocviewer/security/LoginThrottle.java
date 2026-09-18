@@ -16,7 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Slows password guessing. Failures are counted in a rolling window per
  * (username, client IP) — so one attacker can't lock a real user out from
  * everywhere — and separately per client IP, so spraying many usernames from
- * one address is capped too. A success clears that account's counter.
+ * one address is capped too. A higher per-account cap applies across all
+ * IPs, so rotating source addresses can't buy unlimited guesses either. A
+ * success clears that account's per-IP counter.
  *
  * <p>In-memory, so counts reset on restart and aren't shared across
  * instances; that's acceptable for a throttle (it only ever errs on the
@@ -27,6 +29,7 @@ public class LoginThrottle {
 
     static final int MAX_FAILURES_PER_ACCOUNT = 5;
     static final int MAX_FAILURES_PER_IP = 20;
+    static final int MAX_FAILURES_PER_ACCOUNT_ANY_IP = 20;
     static final Duration WINDOW = Duration.ofMinutes(15);
 
     private final Map<String, Deque<Instant>> failures = new ConcurrentHashMap<>();
@@ -43,8 +46,9 @@ public class LoginThrottle {
     public void checkAllowed(String username, String clientIp) {
         Instant now = clock.instant();
         long retryAfter = Math.max(
-                lockedFor(accountKey(username, clientIp), MAX_FAILURES_PER_ACCOUNT, now),
-                lockedFor(ipKey(clientIp), MAX_FAILURES_PER_IP, now));
+                Math.max(lockedFor(accountKey(username, clientIp), MAX_FAILURES_PER_ACCOUNT, now),
+                        lockedFor(ipKey(clientIp), MAX_FAILURES_PER_IP, now)),
+                lockedFor(anyIpKey(username), MAX_FAILURES_PER_ACCOUNT_ANY_IP, now));
         if (retryAfter > 0) {
             throw new LoginLockedException(retryAfter);
         }
@@ -54,6 +58,7 @@ public class LoginThrottle {
         Instant now = clock.instant();
         append(accountKey(username, clientIp), now);
         append(ipKey(clientIp), now);
+        append(anyIpKey(username), now);
     }
 
     public void recordSuccess(String username, String clientIp) {
@@ -107,6 +112,10 @@ public class LoginThrottle {
 
     private static String accountKey(String username, String clientIp) {
         return "account:" + username + "|" + clientIp;
+    }
+
+    private static String anyIpKey(String username) {
+        return "user:" + username;
     }
 
     private static String ipKey(String clientIp) {

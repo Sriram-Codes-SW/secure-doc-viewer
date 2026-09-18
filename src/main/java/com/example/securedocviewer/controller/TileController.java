@@ -47,6 +47,8 @@ import java.time.Duration;
 @RestController
 public class TileController {
 
+    static final Duration PAGE_VIEW_AUDIT_INTERVAL = Duration.ofMinutes(10);
+
     private final SignedUrlService signedUrlService;
     private final SessionKeys sessionKeys;
     private final TileRateLimiter tileRateLimiter;
@@ -112,8 +114,8 @@ public class TileController {
         // Fourth: the document may have been unshared or deleted since the URL was issued.
         String title = documents.titleIfViewable(payload.documentId(), Viewer.of(authentication))
                 .orElseThrow(() -> {
-                    auditLogService.record(AuditEventType.ACCESS_DENIED, actor,
-                            Subject.document(payload.documentId(), null, "tile"));
+                    auditLogService.recordAtMostEvery(Duration.ofSeconds(5), "denied:" + username,
+                            AuditEventType.ACCESS_DENIED, actor, Subject.document(payload.documentId(), null, "tile"));
                     return new DocumentNotFoundException("Document not found.");
                 });
 
@@ -125,8 +127,12 @@ public class TileController {
         String traceCode = sessionKeys.adminHandle(session.getId()).substring(0, 6);
         BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode);
 
-        auditLogService.record(AuditEventType.TILE_VIEWED, actor, Subject.tile(
-                payload.documentId(), title, payload.page(), payload.row(), payload.col()));
+        // One event per page view rather than per tile: a page is ~35 tiles, and
+        // per-tile rows buried everything else in the audit log.
+        auditLogService.recordAtMostEvery(PAGE_VIEW_AUDIT_INTERVAL,
+                "page:" + actor.sessionHandle() + "|" + payload.documentId() + "|" + payload.page(),
+                AuditEventType.PAGE_VIEWED, actor,
+                new Subject(payload.documentId(), title, payload.page(), null, null, null));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(watermarked, "png", out);

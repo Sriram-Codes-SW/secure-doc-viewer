@@ -17,6 +17,7 @@ export interface RateLimitStatus {
 }
 
 export const AUDIT_EVENT_TYPES = [
+  'PAGE_VIEWED',
   'TILE_VIEWED',
   'SIGN_IN',
   'SIGN_IN_FAILED',
