@@ -150,7 +150,8 @@ class DocumentAccessIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.documentId").value(id))
                 .andExpect(jsonPath("$.pageCount").value(3));
-        assertTrue(Files.isDirectory(STORAGE.resolve(id).resolve("page-2")), "replacement tiles not in place");
+        assertTrue(Files.isDirectory(STORAGE.resolve(id).resolve("v2").resolve("page-2")), "replacement tiles not in place");
+        assertFalse(Files.exists(STORAGE.resolve(id).resolve("v1")), "superseded render not removed");
 
         mvc.perform(delete("/api/documents/" + id).session(owner).with(csrf())).andExpect(status().isNoContent());
         mvc.perform(get("/api/documents/" + id).session(owner)).andExpect(status().isNotFound());

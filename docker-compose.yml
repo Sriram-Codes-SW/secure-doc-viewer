@@ -27,6 +27,9 @@ services:
     build: .
     container_name: securedocs-app
     restart: unless-stopped
+    # The JVM sizes its heap from this (MaxRAMPercentage=75); rendering is bounded by
+    # max-concurrent-renders, so a PDF can't take the host down with it.
+    mem_limit: 1536m
     env_file: .env
     environment:
       DB_HOST: mysql
@@ -48,6 +51,7 @@ services:
     build: frontend
     container_name: securedocs-web
     restart: unless-stopped
+    mem_limit: 128m
     depends_on:
       - app
     ports:

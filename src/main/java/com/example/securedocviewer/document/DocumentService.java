@@ -98,10 +98,10 @@ public class DocumentService {
      * deleting a document cuts off even tile URLs that were already issued.
      * Returns the title for the audit record.
      */
-    public Optional<String> titleIfViewable(String documentId, Viewer viewer) {
+    public Optional<TileAccess> tileAccessIfViewable(String documentId, Viewer viewer) {
         return viewer.admin()
-                ? documents.findTitle(documentId)
-                : documents.findTitleIfVisible(documentId, viewer.username(), Visibility.EVERYONE);
+                ? documents.findTileAccess(documentId)
+                : documents.findTileAccessIfVisible(documentId, viewer.username(), Visibility.EVERYONE);
     }
 
     public DocumentDetail upload(String rawTitle, String originalFilename, InputStream pdf, Visibility visibility,
@@ -109,14 +109,14 @@ public class DocumentService {
         String title = validTitle(rawTitle == null || rawTitle.isBlank() ? titleFromFilename(originalFilename) : rawTitle);
         RenderedDocument rendered = tiles.render(pdf);
         String documentId = UUID.randomUUID().toString();
-        tiles.commit(rendered, documentId);
+        tiles.commit(rendered, documentId, 1);
         try {
             DocumentDetail created = tx.execute(status -> {
                 AppUser owner = users.findByUsername(viewer.username())
                         .orElseThrow(() -> new ResourceNotFoundException("No such user."));
                 Document document = documents.save(new Document(documentId, title, owner,
                         visibility == null ? Visibility.PRIVATE : visibility,
-                        rendered.tileSize(), toPages(rendered)));
+                        1, rendered.tileSize(), toPages(rendered)));
                 return detail(document, viewer);
             });
             audit.record(AuditEventType.DOCUMENT_UPLOADED, actor,
@@ -128,17 +128,42 @@ public class DocumentService {
         }
     }
 
-    /** Swaps in a new PDF; the document keeps its id, title, visibility and shares. */
+    /**
+     * Swaps in a new PDF; the document keeps its id, title, visibility and
+     * shares. Rendering happens outside any transaction; then, under a row
+     * lock, the new render is moved into a fresh version directory and the
+     * row switched to it in one transaction. The previous version is removed
+     * only after that commits, so readers never see a mix of old and new
+     * tiles and concurrent replaces/deletes are serialised.
+     */
     public DocumentDetail replaceFile(String documentId, InputStream pdf, Viewer viewer, Actor actor) throws IOException {
         tx.executeWithoutResult(status -> requireManageable(documentId, viewer, actor));
         RenderedDocument rendered = tiles.render(pdf);
-        tiles.commit(rendered, documentId);
-        DocumentDetail updated = tx.execute(status -> {
-            Document document = documents.findById(documentId)
-                    .orElseThrow(() -> new DocumentNotFoundException("No such document."));
-            document.replacePages(rendered.tileSize(), toPages(rendered));
-            return detail(document, viewer);
-        });
+        int[] previousVersion = new int[1];
+        DocumentDetail updated;
+        try {
+            updated = tx.execute(status -> {
+                Document document = documents.findByIdForUpdate(documentId)
+                        .orElseThrow(() -> new DocumentNotFoundException("Document not found."));
+                previousVersion[0] = document.getTileVersion();
+                int nextVersion = document.getTileVersion() + 1;
+                try {
+                    tiles.commit(rendered, documentId, nextVersion);
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+                document.replacePages(nextVersion, rendered.tileSize(), toPages(rendered));
+                return detail(document, viewer);
+            });
+        } catch (RuntimeException e) {
+            tiles.discard(rendered);
+            throw e;
+        }
+        try {
+            tiles.deleteVersion(documentId, previousVersion[0]);
+        } catch (IOException e) {
+            log.warn("Could not remove superseded tiles of {}; the storage janitor will retry", documentId, e);
+        }
         audit.record(AuditEventType.DOCUMENT_REPLACED, actor,
                 Subject.document(documentId, updated.title(), updated.pageCount() + " pages"));
         return updated;
@@ -163,7 +188,10 @@ public class DocumentService {
 
     public void delete(String documentId, Viewer viewer, Actor actor) {
         String title = tx.execute(status -> {
-            Document document = requireManageable(documentId, viewer, actor);
+            requireManageable(documentId, viewer, actor);
+            // Lock the row so a replace can't commit new tiles into a document being deleted.
+            Document document = documents.findByIdForUpdate(documentId)
+                    .orElseThrow(() -> new DocumentNotFoundException("Document not found."));
             documents.delete(document);
             return document.getTitle();
         });

@@ -12,9 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -59,12 +59,31 @@ public class StorageJanitor {
         if (!Files.isDirectory(root)) {
             return 0;
         }
-        Set<String> known = new HashSet<>(documents.findAllIds());
+        Map<String, Integer> currentVersion = new HashMap<>();
+        for (Object[] row : documents.findAllTileVersions()) {
+            currentVersion.put((String) row[0], ((Number) row[1]).intValue());
+        }
         int removed = 0;
         for (Path dir : directories(root)) {
             String name = dir.getFileName().toString();
-            if (DOCUMENT_ID.matcher(name).matches() && !known.contains(name) && olderThan(dir, olderThan)) {
-                removed += tryDelete(dir);
+            if (!DOCUMENT_ID.matcher(name).matches()) {
+                continue;
+            }
+            Integer version = currentVersion.get(name);
+            if (version == null) {
+                if (olderThan(dir, olderThan)) {
+                    removed += tryDelete(dir);
+                }
+                continue;
+            }
+            // Superseded renders of a live document (a replace whose cleanup failed).
+            for (Path child : directories(dir)) {
+                String childName = child.getFileName().toString();
+                boolean staleVersion = childName.matches("v\\d+") && Integer.parseInt(childName.substring(1)) != version;
+                boolean staleLegacyPage = version > 0 && childName.startsWith("page-");
+                if ((staleVersion || staleLegacyPage) && olderThan(child, olderThan)) {
+                    removed += tryDelete(child);
+                }
             }
         }
         Path staging = root.resolve(TileGenerationService.STAGING_DIR);

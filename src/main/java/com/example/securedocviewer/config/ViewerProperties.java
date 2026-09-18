@@ -15,7 +15,7 @@ import org.springframework.validation.annotation.Validated;
 public class ViewerProperties {
 
     private String storageRoot = "./storage";
-    private int tileSize = 256;
+    private int tileSize = 512;
     private int renderDpi = 150;
     /**
      * HMAC key for tile tokens and session-derived values. Supplied via the
@@ -30,11 +30,14 @@ public class ViewerProperties {
     private int maxPages = 500;
     /** Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs. */
     private long maxPagePixels = 40_000_000L;
+    /** PDFs rendered at once; further uploads wait up to renderQueueTimeoutSeconds, then get 503. */
+    private int maxConcurrentRenders = 2;
+    private long renderQueueTimeoutSeconds = 30;
     /** Watermark ink opacity, 0.05-0.6. Lower is easier to read through; higher survives recompression better. */
     private float watermarkOpacity = 0.2f;
     /** Gap between watermark copies, as a multiple of the text height. Larger is lighter on the page. */
     private double watermarkSpacing = 1.5;
-    private int tileRateLimitPerWindow = 120;
+    private int tileRateLimitPerWindow = 180;
     private long tileRateLimitWindowSeconds = 60;
 
     public String getStorageRoot() {
@@ -91,6 +94,22 @@ public class ViewerProperties {
 
     public void setMaxPagePixels(long maxPagePixels) {
         this.maxPagePixels = maxPagePixels;
+    }
+
+    public int getMaxConcurrentRenders() {
+        return maxConcurrentRenders;
+    }
+
+    public void setMaxConcurrentRenders(int maxConcurrentRenders) {
+        this.maxConcurrentRenders = maxConcurrentRenders;
+    }
+
+    public long getRenderQueueTimeoutSeconds() {
+        return renderQueueTimeoutSeconds;
+    }
+
+    public void setRenderQueueTimeoutSeconds(long renderQueueTimeoutSeconds) {
+        this.renderQueueTimeoutSeconds = renderQueueTimeoutSeconds;
     }
 
     public float getWatermarkOpacity() {

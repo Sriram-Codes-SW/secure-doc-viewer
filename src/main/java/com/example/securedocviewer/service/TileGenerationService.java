@@ -2,9 +2,11 @@ package com.example.securedocviewer.service;
 
 import com.example.securedocviewer.config.ViewerProperties;
 import com.example.securedocviewer.exception.BadRequestException;
-import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.model.PageInfo;
+import com.example.securedocviewer.exception.ServiceBusyException;
+import com.example.securedocviewer.exception.TileGoneException;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -22,6 +24,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * Turns an uploaded PDF into a directory of per-tile PNGs, one subfolder per
@@ -34,7 +39,14 @@ import java.util.UUID;
  * upload never leaves tiles behind, and replacing a document's PDF swaps the
  * whole tile set at once.
  *
- * <p>Layout on disk: {@code {storageRoot}/{documentId}/page-{n}/tile-{row}_{col}.png}
+ * <p>Layout on disk: {@code {storageRoot}/{documentId}/v{version}/page-{n}/tile-{row}_{col}.png}.
+ * Every render gets a new version directory and the document row points at
+ * the committed one, so replacing a PDF never mixes old and new tiles.
+ * Version 0 is the original unversioned layout ({@code {documentId}/page-{n}}).
+ *
+ * <p>Rendering is CPU- and memory-heavy, so at most
+ * {@code max-concurrent-renders} run at once; PDFBox buffers into temp files
+ * rather than the heap and subsamples oversized embedded images.
  */
 @Service
 public class TileGenerationService {
@@ -47,9 +59,11 @@ public class TileGenerationService {
     }
 
     private final ViewerProperties properties;
+    private final Semaphore renderPermits;
 
     public TileGenerationService(ViewerProperties properties) {
         this.properties = properties;
+        this.renderPermits = new Semaphore(Math.max(1, properties.getMaxConcurrentRenders()), true);
     }
 
     /**
@@ -60,6 +74,27 @@ public class TileGenerationService {
      * page is rendered. On any failure the staging directory is removed.
      */
     public RenderedDocument render(InputStream pdf) throws IOException {
+        acquireRenderPermit();
+        try {
+            return renderWithPermit(pdf);
+        } finally {
+            renderPermits.release();
+        }
+    }
+
+    private void acquireRenderPermit() {
+        try {
+            if (!renderPermits.tryAcquire(properties.getRenderQueueTimeoutSeconds(), TimeUnit.SECONDS)) {
+                throw new ServiceBusyException("The server is busy rendering other documents. Try again shortly.",
+                        properties.getRenderQueueTimeoutSeconds());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ServiceBusyException("Upload interrupted. Try again.", 5);
+        }
+    }
+
+    private RenderedDocument renderWithPermit(InputStream pdf) throws IOException {
         Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
         Files.createDirectories(stagingDir);
         Path source = stagingDir.resolve("upload.pdf");
@@ -70,6 +105,8 @@ public class TileGenerationService {
             try (PDDocument document = loadPdf(source)) {
                 requireWithinLimits(document);
                 PDFRenderer renderer = new PDFRenderer(document);
+                // Decode huge embedded images at reduced resolution instead of in full.
+                renderer.setSubsamplingAllowed(true);
                 for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) {
                     BufferedImage rendered = renderer.renderImageWithDPI(pageIndex, properties.getRenderDpi());
                     pages.add(tileAndSave(stagingDir.resolve("page-" + pageIndex), pageIndex, rendered));
@@ -90,26 +127,33 @@ public class TileGenerationService {
     }
 
     /**
-     * Moves a render into place as {@code documentId}'s tiles, replacing any
-     * existing tiles for that document.
+     * Moves a render into place as version {@code version} of the document.
+     * The target directory is always new, so a failed or partial move can
+     * never mix tiles with an existing render; the document row is switched
+     * to the new version by the caller, in the same transaction.
      */
-    public void commit(RenderedDocument rendered, String documentId) throws IOException {
-        Path target = documentRoot(documentId);
-        Path previous = null;
+    public void commit(RenderedDocument rendered, String documentId, int version) throws IOException {
+        Path target = versionRoot(documentId, version);
         if (Files.exists(target)) {
-            previous = Path.of(properties.getStorageRoot(), STAGING_DIR, documentId + "-replaced-" + UUID.randomUUID());
-            FileOperations.moveDirectory(target, previous);
+            throw new IOException("Tile version already exists: " + target);
         }
-        try {
-            FileOperations.moveDirectory(rendered.stagingDir(), target);
-        } catch (IOException e) {
-            if (previous != null) {
-                FileOperations.moveDirectory(previous, target);
+        Files.createDirectories(target.getParent());
+        FileOperations.moveDirectory(rendered.stagingDir(), target);
+    }
+
+    /** Removes one superseded render. */
+    public void deleteVersion(String documentId, int version) throws IOException {
+        if (version > 0) {
+            FileOperations.deleteDirectory(versionRoot(documentId, version));
+            return;
+        }
+        Path root = documentRoot(documentId);
+        if (Files.isDirectory(root)) {
+            try (Stream<Path> children = Files.list(root)) {
+                for (Path page : children.filter(p -> p.getFileName().toString().startsWith("page-")).toList()) {
+                    FileOperations.deleteDirectory(page);
+                }
             }
-            throw e;
-        }
-        if (previous != null) {
-            FileOperations.deleteDirectory(previous);
         }
     }
 
@@ -149,13 +193,14 @@ public class TileGenerationService {
      * Watermarking happens afterward, per-request, in {@code WatermarkService} —
      * this method never returns a copy that's safe to serve directly.
      */
-    public BufferedImage loadRawTile(String documentId, int page, int row, int col) throws IOException {
-        Path tilePath = documentRoot(documentId)
+    public BufferedImage loadRawTile(String documentId, int version, int page, int row, int col) throws IOException {
+        Path tilePath = versionRoot(documentId, version)
                 .resolve("page-" + page)
                 .resolve("tile-" + row + "_" + col + ".png");
 
         if (!Files.exists(tilePath)) {
-            throw new DocumentNotFoundException("Tile not found.");
+            // The URL was issued for a render that has since been replaced.
+            throw new TileGoneException();
         }
 
         return ImageIO.read(tilePath.toFile());
@@ -198,7 +243,8 @@ public class TileGenerationService {
 
     private static PDDocument loadPdf(Path file) {
         try {
-            return Loader.loadPDF(file.toFile());
+            // Temp-file stream cache: large PDFs are buffered on disk, not in the heap.
+            return Loader.loadPDF(file.toFile(), "", null, null, IOUtils.createTempFileOnlyStreamCache());
         } catch (IOException e) {
             // Covers non-PDF content, truncated files and password-protected PDFs.
             throw new BadRequestException("The file is not a readable PDF.");
@@ -207,5 +253,9 @@ public class TileGenerationService {
 
     private Path documentRoot(String documentId) {
         return Path.of(properties.getStorageRoot(), documentId);
+    }
+
+    Path versionRoot(String documentId, int version) {
+        return version == 0 ? documentRoot(documentId) : documentRoot(documentId).resolve("v" + version);
     }
 }

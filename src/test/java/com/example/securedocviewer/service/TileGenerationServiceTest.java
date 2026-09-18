@@ -57,12 +57,12 @@ class TileGenerationServiceTest {
 
         TileGenerationService service = new TileGenerationService(properties);
         TileGenerationService.RenderedDocument rendered = service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf()));
-        service.commit(rendered, "doc-1");
+        service.commit(rendered, "doc-1", 1);
         PageInfo page = rendered.pages().get(0);
 
         for (int row = 0; row < page.rows(); row++) {
             for (int col = 0; col < page.cols(); col++) {
-                BufferedImage tile = service.loadRawTile("doc-1", page.page(), row, col);
+                BufferedImage tile = service.loadRawTile("doc-1", 1, page.page(), row, col);
                 assertNotNull(tile);
                 assertTrue(tile.getWidth() > 0 && tile.getHeight() > 0);
                 // Edge tiles are cropped shorter/narrower than tileSize; interior tiles are full-size.
@@ -87,24 +87,69 @@ class TileGenerationServiceTest {
     }
 
     @Test
-    void committingOverAnExistingDocumentReplacesItsTiles(@TempDir Path tempDir) throws IOException {
+    void eachRenderIsCommittedToItsOwnVersionAndOldVersionsCanBeRemoved(@TempDir Path tempDir) throws IOException {
         ViewerProperties properties = new ViewerProperties();
         properties.setStorageRoot(tempDir.toString());
         properties.setTileSize(200);
         properties.setRenderDpi(72);
         TileGenerationService service = new TileGenerationService(properties);
 
-        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1");
-        Path stalePage = tempDir.resolve("doc-1").resolve("page-7");
-        Files.createDirectories(stalePage); // stands in for a page the new PDF no longer has
+        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 1);
+        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 2);
+        assertNotNull(service.loadRawTile("doc-1", 1, 0, 0, 0));
+        assertNotNull(service.loadRawTile("doc-1", 2, 0, 0, 0));
 
-        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1");
+        service.deleteVersion("doc-1", 1);
 
-        assertFalse(Files.exists(stalePage), "old tiles survived the replace");
-        assertNotNull(service.loadRawTile("doc-1", 0, 0, 0));
+        assertFalse(Files.exists(tempDir.resolve("doc-1").resolve("v1")), "superseded version survived");
+        assertThrows(com.example.securedocviewer.exception.TileGoneException.class,
+                () -> service.loadRawTile("doc-1", 1, 0, 0, 0));
+        assertNotNull(service.loadRawTile("doc-1", 2, 0, 0, 0));
+        // A version directory is never reused, so a partial move can't mix tiles.
+        assertThrows(IOException.class, () -> service.commit(
+                service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 2));
         try (var staged = Files.list(tempDir.resolve(TileGenerationService.STAGING_DIR))) {
-            assertEquals(0, staged.count(), "replace left staging debris behind");
+            assertEquals(1, staged.count(), "the refused render stays in staging for discard/janitor");
         }
+    }
+
+    @Test
+    void rendersBeyondTheConcurrencyLimitAreTurnedAwayWithRetryAfter(@TempDir Path tempDir) throws Exception {
+        ViewerProperties properties = new ViewerProperties();
+        properties.setStorageRoot(tempDir.toString());
+        properties.setMaxConcurrentRenders(1);
+        properties.setRenderQueueTimeoutSeconds(1);
+        TileGenerationService service = new TileGenerationService(properties);
+
+        // Hold the only permit with an upload whose stream never ends until released.
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        java.io.InputStream blocking = new java.io.InputStream() {
+            @Override
+            public int read() throws IOException {
+                try {
+                    release.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return -1;
+            }
+        };
+        Thread holder = new Thread(() -> {
+            try {
+                service.render(blocking);
+            } catch (Exception ignored) {
+                // an empty upload is rejected once released; irrelevant here
+            }
+        });
+        holder.start();
+        Thread.sleep(200);
+
+        com.example.securedocviewer.exception.ServiceBusyException busy = assertThrows(
+                com.example.securedocviewer.exception.ServiceBusyException.class,
+                () -> service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())));
+        assertEquals(1, busy.getRetryAfterSeconds());
+        release.countDown();
+        holder.join(5000);
     }
 
     @Test
@@ -114,7 +159,7 @@ class TileGenerationServiceTest {
         properties.setTileSize(200);
         properties.setRenderDpi(72);
         TileGenerationService service = new TileGenerationService(properties);
-        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1");
+        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 1);
 
         service.deleteTiles("doc-1");
 
@@ -155,7 +200,7 @@ class TileGenerationServiceTest {
         properties.setRenderDpi(72);
         TileGenerationService service = new TileGenerationService(properties);
 
-        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1");
+        service.commit(service.render(new java.io.ByteArrayInputStream(onePageLetterSizedPdf())), "doc-1", 1);
 
         try (var files = Files.walk(tempDir.resolve("doc-1"))) {
             assertTrue(files.noneMatch(f -> f.toString().endsWith(".pdf")), "the source PDF was committed with the tiles");

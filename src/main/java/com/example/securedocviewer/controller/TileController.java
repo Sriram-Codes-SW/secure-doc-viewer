@@ -11,6 +11,7 @@ import com.example.securedocviewer.audit.AuditLogService;
 import com.example.securedocviewer.audit.RequestActors;
 import com.example.securedocviewer.config.ViewerProperties;
 import com.example.securedocviewer.document.DocumentService;
+import com.example.securedocviewer.document.TileAccess;
 import com.example.securedocviewer.document.Viewer;
 import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.exception.RateLimitExceededException;
@@ -112,15 +113,16 @@ public class TileController {
         }
 
         // Fourth: the document may have been unshared or deleted since the URL was issued.
-        String title = documents.titleIfViewable(payload.documentId(), Viewer.of(authentication))
+        TileAccess access = documents.tileAccessIfViewable(payload.documentId(), Viewer.of(authentication))
                 .orElseThrow(() -> {
                     auditLogService.recordAtMostEvery(Duration.ofSeconds(5), "denied:" + username,
                             AuditEventType.ACCESS_DENIED, actor, Subject.document(payload.documentId(), null, "tile"));
                     return new DocumentNotFoundException("Document not found.");
                 });
 
+        String title = access.title();
         BufferedImage rawTile = tileGenerationService.loadRawTile(
-                payload.documentId(), payload.page(), payload.row(), payload.col());
+                payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
 
         // First 6 characters of the session's admin handle: enough to single out one sign-in
         // in the audit log's session column, too short to be of any other use.

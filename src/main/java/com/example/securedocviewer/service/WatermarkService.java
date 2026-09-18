@@ -89,7 +89,8 @@ public class WatermarkService {
             String stamp = TIMESTAMP_FORMAT.format(Instant.now());
             String[] lines = {viewerLabel, traceCode == null ? stamp : stamp + " · " + traceCode};
 
-            int fontSize = Math.max(MIN_FONT_SIZE, Math.min(width, height) / FONT_DIVISOR);
+            // Sized from a 256 px reference so bigger tiles get more copies, not bigger text.
+            int fontSize = Math.max(MIN_FONT_SIZE, Math.min(Math.min(width, height), 256) / FONT_DIVISOR);
             g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, fontSize));
             Layout layout = Layout.of(g.getFontMetrics(), lines, spacing);
 

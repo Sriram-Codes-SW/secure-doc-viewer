@@ -25,7 +25,9 @@ secure-doc-viewer:
 
   # Pixel size of each square tile. Smaller tiles = more requests but each one
   # is useless in isolation, which is the point.
-  tile-size: 256
+  # 512 px tiles: a 150-DPI letter page is ~12 tiles instead of ~35, so normal
+  # skimming stays well inside the rate limit below.
+  tile-size: 512
 
   # DPI used when rasterizing PDF pages to images before tiling.
   render-dpi: 150
@@ -43,6 +45,11 @@ secure-doc-viewer:
   max-pages: 500
   max-page-pixels: 40000000
 
+  # At most this many PDFs render at once (rendering is CPU- and memory-heavy);
+  # further uploads wait up to render-queue-timeout-seconds, then get 503.
+  max-concurrent-renders: 2
+  render-queue-timeout-seconds: 30
+
   # Watermark look: ink opacity (0.05-0.6) and gap between copies as a multiple
   # of the text height. Each mark shows the viewer, a UTC timestamp and a short
   # trace code matching the session column of the audit log.
@@ -53,9 +60,9 @@ secure-doc-viewer:
   # This is what stands between "read the pages you're viewing" and
   # "script every tile of every page in one burst" — a valid signature,
   # unexpired token, and live session still only get throttled access.
-  # A 150-DPI letter page is ~35 tiles, so 120 lets a reader turn ~3 pages a
-  # minute without waiting while still keeping a full-document scrape slow.
-  tile-rate-limit-per-window: 120
+  # With 512 px tiles a 150-DPI letter page is ~12 tiles, so 180 lets a reader
+  # skim ~15 pages a minute without waiting while still bounding a scrape.
+  tile-rate-limit-per-window: 180
 
   # Width of the rolling window the limit above applies to.
   tile-rate-limit-window-seconds: 60
