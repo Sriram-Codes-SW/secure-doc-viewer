@@ -143,4 +143,162 @@ import { buildTileViewModels, TileViewModel } from './tile-view-model';
 
 The path after `from` is where the code lives: `./` is "this folder" and `../` is "one folder up". Modules replace Java's `package` and `import` pair with a single mechanism where the file path is the address.
 
-<!-- WRITER NOTE: sections 19.4 (async/promises/observables), 19.5 (reading errors), the Intermediate and Advanced tiers, In this project, Try it, Summary, Further reading are still to write. See book/_team/progress/writer-frontend.md. -->
+### 19.4 `async`, promises and observables (only what the app uses)
+
+A browser must never freeze while it waits for the network. So operations that take time don't return their result; they return a stand-in for it. TypeScript has two stand-ins that matter here.
+
+A **Promise** stands for one result that will arrive later, or fail. An `async` function returns a promise, and inside it the keyword `await` pauses that function (not the browser) until the promise settles. Think of ordering at a coffee counter: you get a buzzer immediately, keep talking with friends, and collect the drink when the buzzer goes off.
+
+**Where the analogy breaks down:** a buzzer goes off once, and so does a promise. But a promise can also end in failure, and a real buzzer has no such state. In code, a failed `await` throws an exception, which you catch with the `try`/`catch` you know from Java (Chapter 5).
+
+An **Observable** stands for a *stream* of results over time: zero, one, or many values. It comes from a library called RxJS, which Angular's `HttpClient` uses (Chapter 22). You start it by calling `.subscribe(...)` with functions for "a value arrived" and "it failed". The project's rule of thumb: Angular's `HttpClient` gives Observables; the browser's `fetch()` gives Promises. You see the Promise side in `viewer.component.ts`:
+
+**Listing 19.4 — `viewer.component.ts` (book-m6-final, excerpt: fetching one tile inside `fetchPendingTiles`)**
+
+```typescript
+        let response: Response;
+        try {
+          response = await fetch(tile.url, { signal, cache: 'no-store' });
+        } catch {
+          if (signal.aborted) {
+            return;
+          }
+          this.updateTile(tile.key, { status: 'failed' });
+          continue;
+        }
+```
+
+*Path: `frontend/src/app/features/viewer/viewer.component.ts`*
+
+`fetch(...)` returns a promise of a `Response`. `await` waits for it. If the network fails, the promise is rejected and the `catch` block runs. `signal` is an `AbortSignal`, which lets the viewer cancel every in-flight request at once when the reader turns the page, so a cancelled fetch is not treated as an error. The annotation `let response: Response` is needed because the value is assigned inside `try`.
+
+Several `await` loops can also run side by side. The viewer starts a fixed number of "workers" and waits for all of them:
+
+```typescript
+await Promise.all(Array.from({ length: MAX_CONCURRENT_TILE_FETCHES }, () => worker()));
+```
+
+`Array.from({ length: 6 }, () => worker())` creates six calls to `worker()`, each returning a promise (the constant is 6). `Promise.all` gives back one promise that settles when all six are done. Chapter 22 explains why a small pool.
+
+Where a function can only pass a value on later, callers can convert. `session.service.ts` uses `firstValueFrom(...)` to turn an HTTP Observable into a Promise, because Angular's startup hook (`provideAppInitializer`, Chapter 22) waits for a promise.
+
+### 19.5 Reading TypeScript errors
+
+The compiler's messages look intimidating, but they follow a pattern: a code (such as `TS2322`), a sentence saying what it found versus what it expected, and often extra lines drilling into why. Read the first line and the last line; the middle is detail.
+
+**Example 19.2 — A typical error and how to read it**
+
+```text
+error TS2322: Type '"PUBLIC"' is not assignable to type 'Visibility'.
+```
+
+Read it as: "you gave me `'PUBLIC'`, but this place accepts only a `Visibility`, and `'PUBLIC'` isn't one." The fix is on the line the error names: either the value is a typo, or the union (Listing 19.1) needs a new alternative, which then makes the compiler point at every place that must handle it.
+
+The project turns on a few extra checks in `tsconfig.json` (Chapter 20, Section 20.5). Two are worth knowing now: `noImplicitReturns` (a function whose branches sometimes return a value and sometimes don't is an error) and `noFallthroughCasesInSwitch` (a `switch` case that runs into the next one is an error).
+
+> **Note:** This project's `tsconfig.json` does not set `"strict": true`, the umbrella switch many TypeScript projects use. It sets individual checks instead. Don't assume every strictness check is on when you add code.
+
+### 19.6 Types that mirror the API
+
+The backend (Part II) sends JSON. The frontend describes what it expects with interfaces, one per response shape, kept in `*.models.ts` files. `DocumentDetail` in `document.models.ts`, for example, lists the fields the viewer needs: the page list, the `tileVersion`, and `canManage`.
+
+Two rules keep these honest:
+
+- **Field names and types must match the backend's response exactly.** `createdAtEpochSeconds: number` is a number of seconds since 1970 because that is what the backend sends; the frontend converts it for display (`new Date(epochSeconds * 1000)` in `document-list.component.ts`). When the backend changes a field, the interface must change in the same commit.
+- **Nullable on the wire means `| null` in the type.** `sharedWithCount: number | null` exists because the count is only present when the reader can manage the document.
+
+Now the limit promised in Section 19.1: these interfaces are a promise, not a check. `this.http.get<DocumentSummary[]>(this.base)` tells the compiler what to expect; nothing verifies the actual JSON at run time. If the backend sent a different shape, the compiler would stay silent and the page would break in front of a user. That is why the project's tests (Chapter 24) feed realistic JSON to the components, and why the server, not the frontend, is the authority on what is allowed (Chapter 23).
+
+## Intermediate tier: Generics and small type tools in real code
+
+*On a first read you can skip to "In this project"; Part IV comes back to this.*
+
+### 19.7 Generics: one function, many types
+
+You met generics in Java (`List<String>`, Chapter 5). TypeScript's are the same idea. `HttpClient.get<T>` returns `Observable<T>`, and `signal<T>` (Chapter 21) holds a `T`. The project also defines one. In `manage.component.ts`, several server actions need the same busy flag and error notice, so one helper handles them:
+
+**Listing 19.5 — `manage.component.ts` (book-m6-final, excerpt: method `run`)**
+
+```typescript
+  private run<T>(request: Observable<T>, onSuccess: (value: T) => void): void {
+    this.busy.set(true);
+    this.notice.set(null);
+    request.subscribe({
+      next: (value) => {
+        this.busy.set(false);
+        onSuccess(value);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.confirmingDelete.set(false);
+        this.notice.set({ kind: 'error', text: err.error?.error ?? 'Something went wrong.' });
+      },
+    });
+  }
+```
+
+*Path: `frontend/src/app/features/documents/manage.component.ts`*
+
+`<T>` is a placeholder filled in at each call: for `unshare` the request is an `Observable<string[]>`, so `T` is `string[]` and `onSuccess` must accept a `string[]`; for `replaceFile` it's `DocumentDetail`. The compiler checks each call separately.
+
+### 19.8 Small type tools the app uses
+
+- `Partial<TileState>` means "an object with any subset of `TileState`'s properties". `updateTile(key, patch)` in the viewer uses it so callers can change just `{ status: 'failed' }`.
+- `Record<string, () => void>` means "an object whose keys are strings and whose values are functions taking nothing". The viewer's keyboard handler (Chapter 23) uses it to map key names to actions.
+- `as const` on the audit event list in `admin.models.ts` freezes an array into exact literal types, and `(typeof AUDIT_EVENT_TYPES)[number]` derives a union of its entries, so the list and the type can't drift apart.
+- `interface TileState extends TileViewModel` adds two properties (`src`, `status`) to an existing shape, as Java's `extends` does.
+
+## Advanced tier: What types can't prevent
+
+*On a first read you can skip to "In this project"; Part IV comes back to this.*
+
+### 19.9 Stale answers: guarding async code with a generation counter
+
+Types can't prevent a whole class of bugs that async code invites: an answer arriving after it has stopped being relevant. A reader flips from page 3 to page 4 while page 3's tiles are still downloading. If page 3's late responses were allowed to write into the page state, page 4 would show page 3's pixels.
+
+The viewer prevents this with a plain counter, `loadGeneration`, incremented on every page change. Each fetch remembers the value it started with and drops its result if the value has moved on (`if (generation !== this.loadGeneration) { return; }`). It also aborts the old requests through the `AbortController` and revokes the temporary blob URLs of old tiles so memory isn't leaked (`resetPageState`). The code comments in `viewer.component.ts` give the reason: outstanding requests would otherwise keep spending the reader's rate-limit budget (Chapter 22). Nothing here is enforced by the compiler; it takes discipline, and `viewer.component.spec.ts` (Chapter 24) checks the visible consequences.
+
+### 19.10 Why `fetch()` for tiles and not `HttpClient` or plain image URLs
+
+The obvious alternatives are to let the browser load tiles itself from an image URL, or to use `HttpClient` like every other call. The comment above `MAX_CONCURRENT_TILE_FETCHES` gives the project's reason: only `fetch()` exposes the response status, and a throttled (429) or expired (401) tile is otherwise indistinguishable from a blank one, so the page silently renders with holes. Chapter 22 shows the outcome handling; the point here is that these language choices (Promise-based `fetch`, `AbortSignal`) follow from what information the code needs.
+
+## In this project
+
+| File | First appears | What it shows |
+|---|---|---|
+| `frontend/src/app/features/documents/document.models.ts` | book-m1-accounts | Interfaces and unions mirroring the API |
+| `frontend/src/app/core/idle.ts` | book-m4-reading | Discriminated union and a pure function |
+| `frontend/src/app/core/session.service.ts` | book-m1-accounts | `Role` union, `Observable`, `firstValueFrom` |
+| `frontend/src/app/features/viewer/viewer.component.ts` | book-m1-accounts | `async`/`await`, `fetch`, `Promise.all`, `AbortController` |
+| `frontend/src/app/features/documents/manage.component.ts` | book-m2-documents | The generic helper `run<T>` |
+| `frontend/src/app/features/admin/admin.models.ts` | book-m1-accounts | `as const` and derived union types |
+
+See any of them at a tag with `git show book-m6-final:frontend/src/app/core/idle.ts`. The viewer grew over the milestones: its fetch loop and `AbortController` exist at book-m1-accounts, while page memory, swipe, and replaced-document handling arrive in later tags.
+
+## Try it
+
+1. ★ In `document.models.ts`, which property of `DocumentDetail` can be `null`, and for whom?
+2. ★ Write a type `Direction` that allows only `'next'` or `'previous'`, and a function `step(current: number, d: Direction): number`.
+3. ★★ In a scratch copy, add a fourth alternative `{ kind: 'paused' }` to `IdleState`. Does the compiler complain anywhere? Why or why not?
+4. ★★ Rewrite the `try`/`catch` in Listing 19.4 as a helper `fetchOrNull(url, signal): Promise<Response | null>`. How can a caller tell an abort from a network failure?
+5. ★★★ Write a generic function `firstWhere<T>(items: T[], test: (item: T) => boolean): T | null` and use it to find the first loaded tile.
+
+Solutions are in `19-typescript.solutions.md`.
+
+## Summary
+
+- TypeScript is JavaScript plus labels that a compiler checks and then erases; the browser runs plain JavaScript.
+- Interfaces describe shapes, and unions restrict a value to a list of alternatives, which the app uses for roles, visibility and idle states.
+- Discriminated unions let the compiler track which fields exist in which state.
+- Promises and `await` handle a single delayed result, Observables handle streams; the app uses Observables for `HttpClient` and Promises for `fetch`.
+- Generics such as `run<T>` share behavior across types while the compiler checks each use.
+- Types mirror the API by agreement only; nothing checks JSON at run time.
+- Async code needs discipline, such as the generation counter, that types can't provide.
+
+Next, Chapter 20 introduces Node and npm, the tools that compile and run all of this.
+
+## Further reading
+
+- TypeScript Handbook, "Everyday Types" and "Narrowing": https://www.typescriptlang.org/docs/handbook/
+- MDN Web Docs, "Using promises" and "Fetch API": https://developer.mozilla.org/
+- RxJS documentation, "Observable": https://rxjs.dev/guide/observable

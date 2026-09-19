@@ -1,9 +1,5 @@
-<!-- chapter: 25 | part: IV | owner: writer-app | tag: book-m0-mvp | status: outline -->
+<!-- chapter: 25 | part: IV | owner: writer-app | tag: book-m0-mvp | status: draft -->
 # Chapter 25: Milestone 0: The tiled viewer
-
-> Draft in progress. Sections 25.1 to 25.3 are written. Sections 25.4 to 25.6, the tier
-> wrapper, Blueprint v0 and Decisions and challenges are still to do
-> (see `_team/progress/writer-app.md`).
 
 ## Learning objectives
 
@@ -174,4 +170,240 @@ why: a tampered or expired token and a revoked session are different failures, a
 checks keep them distinguishable. `TileController` performs the second check (Section 25.5).
 <!-- source: SignedUrlService.java and TileController.java at book-m0-mvp -->
 
-<!-- TODO 25.4 watermark, 25.5 endpoints (TileController: verifyAndDecode, then sessionService.requireValidSession, loadRawTile, applyWatermark, PNG, CacheControl.noStore), 25.6 session service + index.html, tiers wrapper, blueprint v0, decisions -->
+### 25.4 Per-viewer watermarking (`WatermarkService`)
+
+Watermarking could happen at ingest or at serve time. At ingest, every viewer would receive an
+identical copy, so a leak couldn't be traced. Stamping a copy per user up front would store N
+copies of every tile for N viewers. The project stamps on the way out: one stored tile serves
+everyone, and every response is individually attributable.
+<!-- source: WatermarkService Javadoc at book-m0-mvp; dossier/decisions.md#d5 -->
+
+**Listing 25.3 — `WatermarkService.java` (book-m0-mvp, simplified: imports and Javadoc removed)**
+
+```java
+@Service
+public class WatermarkService {
+
+    private static final DateTimeFormatter TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
+
+    public BufferedImage applyWatermark(BufferedImage source, String viewerLabel) {
+        BufferedImage stamped = new BufferedImage(
+                source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g = stamped.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.drawImage(source, 0, 0, null);
+
+            String label = viewerLabel + " · " + TIMESTAMP_FORMAT.format(Instant.now());
+
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.22f));
+            g.setColor(Color.RED);
+            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, Math.max(10, source.getHeight() / 12)));
+            g.rotate(-Math.PI / 6, source.getWidth() / 2.0, source.getHeight() / 2.0);
+            g.drawString(label, -source.getWidth() / 4, source.getHeight() / 2);
+        } finally {
+            g.dispose();
+        }
+
+        return stamped;
+    }
+}
+```
+
+The method copies the tile into a new image, draws the original, then draws one red line of
+text ("viewer name, middle dot, UTC time") at 22 percent opacity, rotated 30 degrees around the
+tile's center. The `finally` block releases the graphics context even if drawing fails. The
+watermark is deliberately simple at this tag. Later milestones make it lighter, two-line and
+spaced by measured text width, and add a trace code (Chapter 29).
+
+The cost is real: every tile request decodes a PNG, draws on it and encodes it again. A later
+review recorded this as a low-severity limitation (`TM-17`).
+<!-- source: WatermarkService.java at book-m0-mvp; scratchpad previous-review-findings.md TM-17; dossier/decisions.md#d5 -->
+
+### 25.5 The endpoints
+
+Four controllers make up the API. Two matter most for the design.
+
+**Asking for tile URLs.** `PageTileUrlController` answers
+`GET /api/documents/{documentId}/pages/{page}/tile-urls`. It checks the session, looks up the
+page's grid in the manifest, and issues one signed token per tile, returning a grid of
+`/api/tiles?token=...` paths. It never returns a page-level or document-level download link.
+<!-- source: PageTileUrlController.java at book-m0-mvp -->
+
+**Redeeming a tile.** `TileController` is the only endpoint that returns pixels.
+
+**Listing 25.4 — `TileController.getTile` (book-m0-mvp, simplified: imports, Javadoc, constructor and fields removed)**
+
+```java
+@GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
+public ResponseEntity<byte[]> getTile(@RequestParam String token) throws IOException {
+    SignedTilePayload payload = signedUrlService.verifyAndDecode(token);
+
+    // Second, independent check: the token's own expiry can still be in
+    // the future while the session it was issued under has since been
+    // logged out or timed out.
+    String username = sessionService.requireValidSession(payload.sessionId());
+
+    BufferedImage rawTile = tileGenerationService.loadRawTile(
+            payload.documentId(), payload.page(), payload.row(), payload.col());
+
+    BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username);
+
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ImageIO.write(watermarked, "png", out);
+
+    return ResponseEntity.ok()
+            // Deliberately not cacheable beyond a moment — a shared cache
+            // holding onto a watermarked-for-someone-else tile would leak it.
+            .cacheControl(CacheControl.noStore())
+            .body(out.toByteArray());
+}
+```
+
+The pipeline has four gates in a fixed order: signature and expiry, live session, tile exists,
+watermark. Even a request that passes all of them gets one tile. `Cache-Control: no-store`
+tells browsers and shared caches not to keep the response, because a copy stamped for one
+person must never reach another.
+
+`DocumentController` handles `POST /api/documents` (upload) and `GET /api/documents/{id}`
+(manifest). Upload requires a valid session, and its Javadoc notes that a real app would also
+check the uploader's role. Chapter 26 adds roles.
+
+#### How ingest stores tiles
+
+`TileGenerationService.ingest` gives the document a random UUID, renders each page with PDFBox
+at the configured DPI, and calls `tileAndSave`, which slices with `TileGrid` and writes
+`{storageRoot}/{documentId}/page-{n}/tile-{row}_{col}.png`. The PDF bytes themselves are not
+written to disk. At this tag `application.yml` sets the tile size to 256 pixels, the render
+resolution to 150 DPI, the signed-URL lifetime to 120 seconds and the session lifetime to
+1,800 seconds.
+<!-- source: TileGenerationService.java, DocumentController.java, TileController.java and application.yml at book-m0-mvp -->
+
+### 25.6 A first session service and a one-page viewer
+
+`SessionService` is a minimal in-memory store: `login(username)` creates a random UUID session
+id with an expiry, `logout` removes it, and `requireValidSession` returns the username or
+throws `SessionExpiredException`. Its own Javadoc calls it a stand-in for a real
+authentication system. Because tokens are bound to the session id, ending a session kills
+every outstanding URL issued under it, even before the URL's own expiry.
+
+Sign-in at this tag takes only a username, and the session id travels in an `X-Session-Id`
+header. The browser side is one static `index.html` that signs in, fetches manifests and tile
+URLs, and draws tiles on a canvas. Documents live in an in-memory `DocumentRegistry`, so a
+restart forgets them while the tiles stay orphaned on disk.
+<!-- source: SessionService.java, git ls-tree at book-m0-mvp; blueprints/v0-mvp.md; previous-review-findings.md TM-8 -->
+
+## In this project
+
+**Table 25.1 — Where the concepts live (at `book-m0-mvp`)**
+
+| Concept | Where |
+|---|---|
+| Tile math | `service/TileGrid.java`, `TileGridTest` |
+| Rendering and storage | `service/TileGenerationService.java` |
+| Signing | `service/SignedUrlService.java`, `SignedUrlServiceTest` |
+| Watermark | `service/WatermarkService.java`, `WatermarkServiceTest` |
+| Endpoints | `DocumentController`, `PageTileUrlController`, `TileController`, `SessionController` |
+| Sessions | `security/SessionService.java`, `SessionServiceTest` |
+
+Table 25.1 lists the files to open in your copy of the repository.
+
+## Try it
+
+1. (★) Compute `tileCount` for a page 1,240 pixels wide and 1,754 tall with 256-pixel tiles.
+   How many columns and rows, and how wide is the last column?
+2. (★★) In your local copy, change one character of a token before the dot and request it.
+   Which exception does `verifyAndDecode` throw, and why does the order of its checks matter?
+3. (★★★) Why does `TileController` not trust the token's expiry alone? Describe a case where
+   a token is valid but the request must still be refused.
+
+## Architecture blueprint v0
+
+Figure 25.1 shows the system at this milestone. It is the diagram from
+`book/blueprints/v0-mvp.md`.
+
+```mermaid
+flowchart LR
+    B["Browser: static index.html, tiles drawn on a canvas"]
+    subgraph API["Spring Boot app"]
+        SC["SessionController: /api/session/login, /logout"]
+        DC["DocumentController: POST and GET /api/documents"]
+        PC["PageTileUrlController: GET .../tile-urls"]
+        TC["TileController: GET /api/tiles"]
+        SS["SessionService (in memory)"]
+        DR["DocumentRegistry (in memory)"]
+        TG["TileGenerationService + TileGrid"]
+        SU["SignedUrlService (HMAC)"]
+        WM["WatermarkService"]
+    end
+    D[("Disk: storage/docId/page-n/tile-row_col.png")]
+    B --> SC --> SS
+    B --> DC --> TG
+    DC --> DR
+    TG -.-> D
+    B --> PC --> SU
+    PC --> SS
+    B --> TC
+    TC --> SU
+    TC --> SS
+    TC --> TG
+    TC --> WM
+```
+
+**Figure 25.1 — Blueprint v0 (`book-m0-mvp`)**
+
+This is the starting point, so nothing changed since a previous version. Signing in takes only
+a username, tile URLs are HMAC-signed and bound to the session id, and documents and sessions
+live in memory.
+
+## Decisions and challenges
+
+#### Decision: tiles plus signed URLs
+
+**The decision.** Never expose the source PDF: rasterize pages at ingest, slice them into
+tiles, deliver tiles through short-lived HMAC-signed URLs bound to a session, and reassemble
+them in the browser. **Why this one.** The first commit records this rationale and isolates
+the grid math in `TileGrid` with a round-trip test. **The options considered.** The
+alternatives weighed at MVP time aren't recorded in the repository history, so this book
+doesn't invent them. **What it costs.** Every tile request does work on the server
+(Section 25.4), and the design stays a deterrent rather than a guarantee.
+<!-- source: commit b6aef4e; dossier/decisions.md#d4 -->
+
+#### Decision: watermark at serve time
+
+**The decision.** Stamp the viewer's identity onto each tile when it is served, not at ingest.
+**Why.** One stored tile serves every viewer while each response stays traceable. **What it
+costs.** A decode, draw and encode per request, recorded later as a low-severity limitation.
+<!-- source: commit b6aef4e; dossier/decisions.md#d5 -->
+
+#### Challenge: the MVP was a demo, and a review said so
+
+**The problem.** This version signed anyone in who typed a username. Later, independent
+reviews found that login accepted any username with no password (`TM-2`), that admin
+endpoints needed only a valid session and listed every live session id (`TM-1`), that the
+tile token contained the session id, so a leaked URL leaked a credential (`TM-4`), and that
+the signing secret was committed in `application.yml` (`TM-6`; the file at this tag holds a
+visibly demo-only value). **How it was found.** The reviews ran against the working product
+after the MVP and a first Angular baseline existed. **The fix.** Milestone 1 (Chapter 26)
+addressed these: real accounts, roles, a keyed session binding in tokens, and a secret
+supplied through the environment. **The lesson.** A stand-in is fine while you learn the
+shape of a system, but write down what it stands in for. The MVP's own Javadoc did that,
+which turned the later findings into a to-do list instead of a surprise.
+<!-- source: scratchpad previous-review-findings.md; PR #1 body; SessionService Javadoc and application.yml at book-m0-mvp -->
+
+## Summary
+
+- The viewer never serves the PDF: pages become tiles, and tiles leave the server one at a time.
+- `TileGrid` isolates the math so a test can prove tiles rebuild a page exactly.
+- A token is a signed statement, `payload.signature`; verify the signature first, then parse.
+- Two independent checks guard every tile: the token, and the session behind it.
+- The watermark is applied per request, so one stored tile serves all viewers traceably.
+
+## Further reading
+
+- *Java Platform SE API*, `javax.crypto.Mac` and `java.security.MessageDigest`. https://docs.oracle.com/en/java/javase/25/docs/api/
+- *RFC 2104*, "HMAC: Keyed-Hashing for Message Authentication." https://www.rfc-editor.org/rfc/rfc2104
+- *RFC 4648*, section 5, "Base 64 Encoding with URL and Filename Safe Alphabet." https://www.rfc-editor.org/rfc/rfc4648
+- *Apache PDFBox documentation.* https://pdfbox.apache.org/

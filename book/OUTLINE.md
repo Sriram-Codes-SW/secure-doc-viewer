@@ -265,7 +265,7 @@ Tag: `book-m1-accounts`. Assumes: 19, 20.
 - 21.3 Reactivity: signals and change detection (as used in the app)
 - 21.4 Component inputs and outputs
 - 21.5 Styling, light and dark themes, and accessibility basics
-- 21.6 Drawing on a `<canvas>` and CSS backgrounds (how tiles are painted)
+- 21.6 Painting tiles: absolutely positioned `<div>`s with CSS `background-image` from `blob:` URLs (the Angular viewer does not use a canvas; the m0 page did, see Chapter 25)
 
 ### Chapter 22: Talking to the backend (`22-http-client-and-services.md`)
 Tag: `book-m1-accounts`, `book-m5-platform`. Assumes: 8, 12, 19, 21.
@@ -306,7 +306,7 @@ Tag: `book-m0-mvp`. Blueprint: v0. Assumes: 3–6, 8, 11, 12, 17. (Boot 3.3.4 / 
 - 25.3 Signed URLs (`SignedUrlService`)
 - 25.4 Per-viewer watermarking (`WatermarkService`)
 - 25.5 The endpoints (`DocumentController`, `PageTileUrlController`, `TileController`)
-- 25.6 A first session service and a one-page viewer
+- 25.6 A first session service and a one-page viewer (static `index.html`; this page does draw on a `<canvas>`)
 - Ends with: Blueprint v0; Decisions and challenges
 
 ### Chapter 26: Milestone 1: Accounts, roles and sessions (`26-m1-accounts.md`)
@@ -316,7 +316,7 @@ Tag: `book-m1-accounts`. Blueprint: v1. Assumes: 14–16, 19–23, 25.
 - 26.3 Binding tile tokens to a session (`SessionKeys`)
 - 26.4 Rate limiting and sign-in lockout (`TileRateLimiter`, `LoginThrottle`)
 - 26.5 Admin: sessions, users, audit (`AdminController`)
-- 26.6 The Angular frontend appears
+- 26.6 The Angular frontend appears (tiles now painted as positioned divs with CSS backgrounds instead of a canvas)
 - 26.7 First Docker Compose file (MySQL) and migration V1
 - Ends with: Blueprint v1; Decisions and challenges
 

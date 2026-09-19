@@ -300,6 +300,7 @@ Example:
 | Signed tile URL | Concert wristband with a hologram and a date | Chapter 25 |
 | Session cookie | Coat-check ticket | Chapter 8 |
 | Database table | Spreadsheet with strict columns | Chapter 9 |
+| Type checking | Doctor's-office form with typed fields | Chapter 19 |
 
 Writers: propose additions through `requests.md`. Chapter numbers follow `book/OUTLINE.md`.
 

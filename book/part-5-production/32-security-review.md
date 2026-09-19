@@ -2,8 +2,7 @@
 
 Tag: `book-m5-platform`. Prerequisites: Chapters 15, 16, and 30.
 
-> **Draft status:** sections 32.1 to 32.4 are written; 32.5 and the exercises are next. Review
-> IDs (TM, PO) come from the pull request descriptions (PR #1 to #5).
+> Review IDs (TM, PO) come from the pull request descriptions (PR #1 to #5).
 
 ## Learning objectives
 
@@ -15,7 +14,7 @@ By the end of this chapter you can:
 - state plainly what the app does not defend against, and why;
 - run a small review of your own on a feature you build.
 
-## Beginner tier: thinking like an attacker
+## 32.1 Beginner tier: thinking like an attacker
 
 ### The analogy
 
@@ -54,7 +53,7 @@ per minute with a script.
 Every row is a claim you can test. Chapters 15 and 16 built most of these controls; this chapter
 asks the harder question of whether they hold under attack.
 
-## Intermediate tier: the review rounds this project went through
+## 32.2 Intermediate tier: the review rounds this project went through
 
 The project did not get its security in one pass. Two independent reviewers, whose findings carry
 the IDs TM (Senior Technical Manager) and PO (Product Owner), read the app in rounds, and each
@@ -97,7 +96,7 @@ a 72-byte password limit (BCrypt's maximum), a render timeout, a session lifetim
 tile tokens, bounded renders, a tile work cap, and Tomcat CVE updates. Round 3 follow-ups added a
 queue-free render pool and a refund of the rate-limit slot when the server was busy.
 
-## Advanced tier: classes of finding
+## 32.3 Advanced tier: classes of finding
 
 Reviews find the same shapes of bug repeatedly. Learn the shapes and you can find them in your own code.
 
@@ -166,12 +165,95 @@ The README's Limitations section is part of the security review, not an apology.
 - **Right-click blocking** in the browser stops nothing that DevTools cannot undo. It was added as friction, on purpose.
 - **No text layer**, so screen readers get nothing from a page image.
 
+## Reading the filter chain that enforces it (advanced tier, continued)
+
+Most of Table 32.1 comes together in one file. Read the listing below with the table beside you.
+
+**Listing 32.2 — `SecurityConfig.java`, `book-m5-platform` (simplified: imports, the session-lifetime filters, and the bean methods for the password encoder and session registry are left out)**
+
+```java
+http
+    .csrf(csrf -> csrf
+            .csrfTokenRepository(csrfTokenRepository)
+            .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
+    .sessionManagement(session -> session
+            .sessionFixation(fixation -> fixation.changeSessionId())
+            .maximumSessions(-1)
+            .sessionRegistry(sessionRegistry)
+            .expiredSessionStrategy(errors))
+    .headers(headers -> headers
+            .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"))
+            .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+            .permissionsPolicyHeader(permissions -> permissions.policy(
+                    "camera=(), microphone=(), geolocation=(), payment=()")))
+    .authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/actuator/prometheus")
+                    .access(fromAddresses(properties.getMetricsAllowedAddresses()))
+            .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/documents").hasAnyRole("PUBLISHER", "ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/documents/*/file").hasAnyRole("PUBLISHER", "ADMIN")
+            .requestMatchers("/api/users/**").hasAnyRole("PUBLISHER", "ADMIN")
+            .requestMatchers("/api/**").authenticated()
+            .requestMatchers("/error").permitAll()
+            .anyRequest().denyAll())
+    .formLogin(AbstractHttpConfigurer::disable)
+    .httpBasic(AbstractHttpConfigurer::disable)
+    .logout(AbstractHttpConfigurer::disable);
+```
+
+Five details deserve a second look:
+
+1. **The last rule is `denyAll()`.** A URL nobody thought about is refused, not allowed. Rules are checked top to bottom and the first match wins, so specific rules come first.
+2. **CSRF uses a cookie that JavaScript may read** (`withHttpOnlyFalse()` in the same file), because Angular must copy it into the `X-XSRF-TOKEN` header. The session cookie is the httpOnly one. The CSRF cookie is also `SameSite=Strict`.
+3. **Session fixation protection** (`changeSessionId`) gives you a new session id at sign-in, so an id planted before sign-in is worthless afterward.
+4. **`maximumSessions(-1)` means unlimited sessions, but registered ones.** The registry is what lets an administrator list and revoke them.
+5. **The CSP is `default-src 'none'`.** The API returns only JSON and PNG tiles, so nothing it serves needs to run a script or be framed. The Angular app has its own, different policy set by nginx (Chapter 33).
+
+The session is a server-side HTTP session in a cookie. The dossier records no debate about
+alternatives such as tokens kept in the browser; the outcome is what matters here, and Chapter 37
+weighs it.
+
+## 32.5 Doing your own review
+
+You don't need a security team to start. Take one feature and ask these five questions in order.
+
+1. **What is the asset, and who is allowed to touch it?** Write both down. If you can't, you can't review it.
+2. **Where does input come from, and which of it can the caller forge?** Include headers, cookies, file names, and file contents, not only form fields.
+3. **What does the code check, and where?** Find the check for *every* path that reaches the asset. The app checks document access on the list, the manifest, URL issuing, and every tile request; a check missing from one path is the classic bug.
+4. **What happens if two requests arrive at once, or a thousand?** Look for check-then-act sequences and for work that has no upper bound.
+5. **What does a failure reveal?** Compare the response for "doesn't exist" and "not allowed", and read error messages for paths, SQL, and stack traces.
+
+Then write a test for each answer that surprised you, and make it go through the real front door
+(the same lesson as the incident in the intermediate tier).
+
 ## In this project
 
-- Controls: `SecurityConfig.java`, `LoginThrottle.java`, `SessionKeys.java`, and the nginx configuration under `deploy/` and `frontend/`.
+- Controls: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`, `LoginThrottle.java`, `SessionKeys.java`, and the nginx configuration in `deploy/` and the frontend image.
 - Tests: the security integration tests, the concurrency tests, `MySqlIntegrationTest`, and the Playwright test that goes through nginx.
 - Tag: `book-m5-platform`.
 
-*To finish in this chapter:* 32.5 "Doing your own review" (a checklist), a verified `SecurityConfig`
-listing for CSRF, CSP, and headers, Try it exercises, Summary, and Further reading. File paths in
-"In this project" still need checking against the tag.
+## Try it
+
+1. ★ Open Table 32.1. For each row, name the file in the repository that holds the control, and one test that would fail if the control were removed.
+2. ★★ In `SecurityConfig`, move `.anyRequest().denyAll()` to the top of the rules in a scratch copy. Predict which requests fail, then run the tests and check your prediction.
+3. ★★ Write a one-paragraph threat model for a new feature "download a document's audit history as CSV": assets, actors, entry points, and two controls.
+4. ★★★ Explain why the project's first account-wide lockout (all addresses) was itself a vulnerability, and describe what an attacker gains from the replacement's trade-off. Suggest one mitigation that isn't in the app.
+
+Solutions are compiled by the editor into the solutions appendix.
+
+## Summary
+
+- A threat model lists assets, actors, entry points, threats, and controls; Table 32.1 is this app's.
+- The project needed several rounds because fixes create new bugs: the forwarded-address fix came from a mistaken claim, and the first lockout let anyone lock out any user.
+- Four classes recur: forged inputs, races, resource exhaustion, and information leaks.
+- The app states what it does not defend against: screenshots, a patient user with a valid session, and (today) missing MFA.
+- Claims about security need tests that try to break them through the real entry point.
+
+## Further reading
+
+- OWASP Application Security Verification Standard (ASVS), owasp.org.
+- Spring Security reference documentation: servlet authorization, CSRF, and session management.
+- OWASP Cheat Sheet Series: Cross-Site Request Forgery Prevention.

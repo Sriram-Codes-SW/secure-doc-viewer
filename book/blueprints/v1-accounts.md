@@ -56,5 +56,5 @@ flowchart LR
 - New `account/` package (`AppUser`, `Role`, `UserAccountService`, `BootstrapAdmin`) and the first Flyway migration, `V1__create_app_user.sql`.
 - Admin endpoints for users, sessions, per-user rate-limit usage and the audit log.
 - `LoginThrottle` and `TileRateLimiter`; `SessionKeys` binds tokens to the session without exposing its id.
-- The static page is replaced by the Angular frontend; `docker-compose.yml` starts MySQL.
+- The static page (canvas) is replaced by the Angular frontend, which paints tiles as absolutely positioned divs with CSS background images; `docker-compose.yml` starts MySQL.
 - Documents are still held in memory (`DocumentRegistry`).

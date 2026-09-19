@@ -89,6 +89,95 @@ The constructor lists two parameters. When Spring builds the controller, it look
 
 Dependencies form a chain. `DocumentService` in turn asks for a `DocumentRepository`, an `AppUserRepository`, a `TileGenerationService`, an `AuditLogService` and a `PlatformTransactionManager`. Spring works out the order and builds them from the bottom up. If one can't be found, the program refuses to start and names the missing type, so a wiring mistake shows up at startup and never in front of a user.
 
-**Where the analogy breaks down.** Handing over parts like a stock room suggests Spring picks by name. It picks by type. If two beans of the same type exist, Spring can't choose without more information, and startup fails. `KnownDevices` shows one related detail: it has two constructors (one public for Spring, one package-private for tests that supply a fixed clock), so the public one carries an explicit `@Autowired` label to say "use this one".
+**A note on how Spring chooses.** Spring picks a dependency by type, not by name. If two beans of the same type exist, Spring can't choose without more information, and startup fails. `KnownDevices` shows a related detail: it has two constructors (one public for Spring, one package-private for tests that supply a fixed clock), so the public one carries an explicit `@Autowired` label to say "use this one".
 
-<!-- Sections 11.4 to 11.6, the Intermediate and Advanced tiers, In this project, Try it, Summary and Further reading are still to be written. -->
+## Intermediate tier: Configuring the program from outside
+
+### 11.4 Configuration files: `application.yml`, profiles, environment variables
+
+Some values must change between your laptop and a real server: the database address, a secret key, whether cookies require HTTPS. Hard-coding them would mean rebuilding the program for every machine. Spring Boot reads them from outside the code, mainly from `src/main/resources/application.yml`, a file in the YAML format (indented `key: value` lines, where indentation means nesting).
+
+Listing 11.3 shows two excerpts.
+
+**Listing 11.3 — `application.yml` (`book-m6-final`, simplified: two excerpts, comments trimmed)**
+
+```yaml
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        name: SDV_SESSION
+        http-only: true
+        same-site: strict
+        secure: ${SESSION_COOKIE_SECURE:false}
+
+spring:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+```
+
+Two things to notice. First, `${SESSION_COOKIE_SECURE:false}` is a **property placeholder**: use the environment variable `SESSION_COOKIE_SECURE` if it exists, otherwise `false`. The same file therefore works on a laptop (plain HTTP, the default) and in production (the variable set to `true`). Second, keys like `server.servlet.session.timeout` are ones Spring Boot defines itself; you set them and the framework obeys. The project's own settings live under the `secure-doc-viewer:` block, which [Chapter 13](13-validation-and-errors.md) turns into a typed Java class (`ViewerProperties`).
+
+A **profile** is a named set of extra settings. The tests use one: `@ActiveProfiles("test")` makes Spring also read `application-test.yml`, which points the datasource at an in-memory H2 database instead of MySQL ([Chapter 14](14-jpa-and-flyway.md) and [Chapter 18](18-testing-the-backend.md) cover why). Real environment variables win over the file, and a git-ignored `.env` file is imported for local development with `spring.config.import: optional:file:.env[.properties]`. That is why secrets such as `SIGNING_SECRET` never appear in the repository.
+
+### 11.5 Starters and auto-configuration
+
+Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-starter-webmvc`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa` and `spring-boot-starter-flyway`. A **starter** is a single dependency that pulls in a matched set of libraries for one job. Adding `spring-boot-starter-security` brings Spring Security and what it needs, at versions known to work together. A comment in the project's `pom.xml` notes that Spring Boot 4 splits the old all-in-one starters into focused ones, which is why the web starter is named `webmvc`.
+
+**Auto-configuration** is the second half of the trick. When Spring Boot starts, it looks at what is on the classpath and at your settings, and creates sensible beans for you. With the JPA starter and a MySQL driver present and `spring.datasource.url` set, it builds the database connection pool and the transaction manager without you writing a line. If you define your own bean of the same kind, yours takes priority. `SecurityConfig` does this when it declares its own `PasswordEncoder` and `SecurityFilterChain` ([Chapter 15](15-spring-security-authentication.md)).
+
+We simplify here: the full list of what is auto-configured is long and changes between versions. You don't need to memorize it; you need to know it exists, so that when a bean appears that you never wrote, you know where it came from.
+
+### 11.6 Logging and startup output
+
+A running server has no screen to show what it's doing, so it writes **log** lines to the console. Spring Boot configures logging by default, and the project writes to it through SLF4J, a common logging interface. Two real examples from the code: `BootstrapAdmin` logs a message at `info` level when it creates the first administrator, and `GlobalExceptionHandler` logs unexpected failures at `error` level with a short reference code, so a support report can be matched to a log line ([Chapter 13](13-validation-and-errors.md)).
+
+This book doesn't reproduce a startup log, because its exact text depends on your machine and versions. When you run the app, read the output from the top: the framework reports the port it listens on and any bean that failed to build. If startup fails, the last error message near the bottom usually names the missing bean or setting.
+
+## Advanced tier: Failing early, and where the seams are
+
+### 11.7 Fail at startup, not at the first request
+
+The most useful property of this wiring is that mistakes surface when the program starts. A missing dependency stops startup with an error naming the type. `ViewerProperties` goes further: its signing secret must be present and at least 32 characters, or the application refuses to start (Chapter 13 shows how). The comment in the source states the reason: startup should fail "rather than failing on the first tile". A server that started with a broken secret would only fail later, in front of a user.
+
+### 11.8 Annotations are read by the framework, so calls matter
+
+Annotations such as `@Transactional` work because Spring wraps the bean in a proxy that adds behavior around your methods. The wrapper only runs when the call comes from outside the bean, a consequence Chapter 14 returns to. The project's `DocumentService` doesn't use the annotation; it manages transactions explicitly, because rendering a PDF is slow and must run outside any database transaction (Chapter 14).
+
+## In this project
+
+**Table 11.1 — Where Chapter 11's ideas live (`book-m6-final`)**
+
+| Idea | File |
+|---|---|
+| Entry point, scheduling switch | `src/main/java/com/example/securedocviewer/SecureDocViewerApplication.java` |
+| Constructor injection | `controller/DocumentController.java` and the other controllers |
+| Settings, placeholders | `src/main/resources/application.yml` |
+| Test profile | `src/test/resources/application-test.yml` |
+| Starters | `pom.xml` |
+
+## Try it
+
+1. (★) Open `application.yml` and find the session cookie name. Which line makes the cookie unreadable to JavaScript?
+2. (★) In `DocumentController`, list every dependency injected by the constructor.
+3. (★★) `BootstrapAdmin` reads two settings with `@Value` rather than `ViewerProperties`. Find them and their default values.
+4. (★★★) Explain why `KnownDevices` needs `@Autowired` on one constructor while the project's other classes don't.
+
+## Summary
+
+- A framework calls your code; a library is called by it.
+- `@SpringBootApplication` starts component scanning and auto-configuration; `SpringApplication.run` starts everything.
+- Managed objects are beans, held in the application context and supplied to each other by constructor injection, matched by type.
+- `application.yml`, environment variables and profiles let one build run in many places; `${NAME:default}` placeholders bridge them.
+- Starters bundle dependencies; auto-configuration builds beans from what it finds, and your own beans take priority.
+- Mistakes in wiring or required settings stop the program at startup, which is where you want them.
+
+## Further reading
+
+- *Spring Boot Reference Documentation*, "Externalized Configuration." https://docs.spring.io/spring-boot/reference/features/external-config.html
+- *Spring Framework Reference Documentation*, "The IoC Container." https://docs.spring.io/spring-framework/reference/core/beans.html
+- *Spring Boot Reference Documentation*, "Auto-configuration." https://docs.spring.io/spring-boot/reference/using/auto-configuration.html

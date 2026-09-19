@@ -3,27 +3,34 @@
 ```mermaid
 flowchart LR
     subgraph FE["Angular app"]
-        V["Viewer: deep links, keyboard, resume"]
-        ID["core/idle.ts: idle warning"]
-        SI["session.interceptor + SessionService"]
+        V["Viewer: ?page deep link, keyboard, resume"]
+        ID["core/idle.ts + app.ts: idle warning"]
+        SS["SessionService: reads sessionTimeoutSeconds"]
+        AA["Admin page: trace filter"]
     end
     subgraph API["Spring Boot app"]
-        AC["AuthController"]
+        AC["AuthController: /me returns sessionTimeoutSeconds"]
         TC["TileController"]
-        WM["WatermarkService: lighter, configurable, trace code"]
-        AU["AuditLogService: trace filter"]
-        AD["AdminController"]
+        SK["SessionKeys: admin handle in Crockford base32"]
+        WM["WatermarkService: viewer, UTC time, trace code"]
+        AD["AdminController: audit and export take trace"]
+        AU["AuditLogService: session_handle prefix match"]
+        VP["ViewerProperties: watermark-opacity, watermark-spacing"]
     end
-    V --> SI --> TC
-    ID --> SI
-    SI --> AC
+    M[("MySQL: audit events")]
+    V --> TC
+    ID --> SS --> AC
+    TC --> SK
     TC --> WM
-    TC --> AU
-    AD --> AU
+    WM --> VP
+    AA --> AD --> AU
+    AU -.-> M
 ```
 
-*Figure: Blueprint v4. Text description: the frontend adds idle warnings and page navigation; on the server the watermark gains a readable trace code that links a capture to a sign-in in the audit log.*
+*Figure: Blueprint v4. Text description: the server tells the browser how long the session may sit idle so it can warn the reader; each watermark carries a short trace code derived from the session, and the audit log can be searched by that code.*
 
 ## What changed since v3
-- Frontend: page deep links, keyboard navigation, resume reading (`viewer`), an idle-timeout warning (`core/idle.ts`), changes in `SessionService` and the interceptor.
-- Backend: `WatermarkService` reworked (opacity and spacing configurable in `ViewerProperties`); `SessionKeys`, `AuthController`, `AuditLogService` and `AdminController` touched to support the trace code. The Actuator dependency is present in the pom at this tag.
+- `AuthController`'s current-user answer gains `sessionTimeoutSeconds`, which the frontend uses for the idle warning (`core/idle.ts`, `session.service.ts`, `app.ts`).
+- The viewer supports page deep links, keyboard navigation and resuming where you stopped.
+- `SessionKeys.adminHandle` is now a Crockford base32 string; the first six characters become the trace code stamped on each tile, and `AuditLogService.Query` gains `traceCode`, matched as a prefix of `session_handle`. `AdminController` audit search and CSV export accept a `trace` parameter.
+- `WatermarkService` takes the trace code and reads `watermark-opacity` (default 0.2) and `watermark-spacing` (default 1.5) from `ViewerProperties`.

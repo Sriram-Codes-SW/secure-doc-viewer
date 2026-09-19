@@ -4,7 +4,7 @@ Stack at this tag: Spring Boot 3.3.4, Java 21, PDFBox; no database, no accounts.
 
 ```mermaid
 flowchart LR
-    B["Browser: static index.html with a canvas"]
+    B["Browser: static index.html, tiles drawn on a canvas"]
     subgraph API["Spring Boot app"]
         SC["SessionController: /api/session/login, /logout"]
         DC["DocumentController: POST and GET /api/documents"]
