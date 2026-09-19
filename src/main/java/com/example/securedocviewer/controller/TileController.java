@@ -1,5 +1,8 @@
 package com.example.securedocviewer.controller;
 
+import com.example.securedocviewer.exception.ServiceBusyException;
+import com.example.securedocviewer.exception.TileGoneException;
+import com.example.securedocviewer.service.TileWorkLimiter;
 import com.example.securedocviewer.model.SignedTilePayload;
 import com.example.securedocviewer.exception.InvalidTokenException;
 import com.example.securedocviewer.security.SessionKeys;
@@ -11,11 +14,13 @@ import com.example.securedocviewer.audit.AuditLogService;
 import com.example.securedocviewer.audit.RequestActors;
 import com.example.securedocviewer.config.ViewerProperties;
 import com.example.securedocviewer.document.DocumentService;
+import com.example.securedocviewer.document.TileAccess;
 import com.example.securedocviewer.document.Viewer;
 import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.exception.RateLimitExceededException;
 import com.example.securedocviewer.service.SignedUrlService;
 import com.example.securedocviewer.service.TileGenerationService;
+import com.example.securedocviewer.service.ViewerMetrics;
 import com.example.securedocviewer.service.WatermarkService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -47,6 +52,8 @@ import java.time.Duration;
 @RestController
 public class TileController {
 
+    static final Duration PAGE_VIEW_AUDIT_INTERVAL = Duration.ofMinutes(10);
+
     private final SignedUrlService signedUrlService;
     private final SessionKeys sessionKeys;
     private final TileRateLimiter tileRateLimiter;
@@ -56,6 +63,8 @@ public class TileController {
     private final DocumentService documents;
     private final RequestActors actors;
     private final ViewerProperties properties;
+    private final ViewerMetrics metrics;
+    private final TileWorkLimiter tileWork;
 
     public TileController(SignedUrlService signedUrlService,
                            SessionKeys sessionKeys,
@@ -65,7 +74,9 @@ public class TileController {
                            AuditLogService auditLogService,
                            DocumentService documents,
                            RequestActors actors,
-                           ViewerProperties properties) {
+                           ViewerProperties properties,
+                           ViewerMetrics metrics,
+                           TileWorkLimiter tileWork) {
         this.signedUrlService = signedUrlService;
         this.sessionKeys = sessionKeys;
         this.tileRateLimiter = tileRateLimiter;
@@ -75,12 +86,36 @@ public class TileController {
         this.documents = documents;
         this.actors = actors;
         this.properties = properties;
+        this.metrics = metrics;
+        this.tileWork = tileWork;
+    }
+
+    /**
+     * A missing tile means "replaced" (410, the viewer reloads) only if the
+     * document really has moved on to a newer render. A missing tile of the
+     * current render is damage on the server (e.g. a mismatched restore): that
+     * is a 500, never a 410 that would make the viewer reload the same thing forever.
+     */
+    private BufferedImage loadTile(SignedTilePayload payload, TileAccess access, Authentication authentication)
+            throws IOException {
+        try {
+            return tileGenerationService.loadRawTile(
+                    payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
+        } catch (TileGoneException gone) {
+            int current = documents.tileAccessIfViewable(payload.documentId(), Viewer.of(authentication))
+                    .map(TileAccess::tileVersion).orElse(-1);
+            if (current == access.tileVersion()) {
+                throw new IllegalStateException("Tile file missing for the current render of document "
+                        + payload.documentId() + " (version " + current + ", page " + payload.page() + ")");
+            }
+            throw gone;
+        }
     }
 
     @GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getTile(@RequestParam String token,
                                           Authentication authentication,
-                                          HttpServletRequest request) throws IOException {
+                                          HttpServletRequest request) throws Exception {
         SignedTilePayload payload = signedUrlService.verifyAndDecode(token);
 
         // Second, independent check: the request must come from the very
@@ -100,9 +135,11 @@ public class TileController {
         // page. Enforced after auth so unauthenticated requests can't burn
         // a legitimate user's allowance, and before the disk read/render
         // so a throttled request doesn't pay that cost.
+        java.time.Instant counted;
         try {
-            tileRateLimiter.recordAndEnforce(username);
+            counted = tileRateLimiter.recordAndEnforce(username);
         } catch (RateLimitExceededException e) {
+            metrics.tileRateLimited();
             auditLogService.recordAtMostEvery(Duration.ofSeconds(properties.getTileRateLimitWindowSeconds()),
                     "rate-limited:" + username, AuditEventType.RATE_LIMITED, actor,
                     Subject.document(payload.documentId(), null));
@@ -110,31 +147,51 @@ public class TileController {
         }
 
         // Fourth: the document may have been unshared or deleted since the URL was issued.
-        String title = documents.titleIfViewable(payload.documentId(), Viewer.of(authentication))
+        TileAccess access = documents.tileAccessIfViewable(payload.documentId(), Viewer.of(authentication))
                 .orElseThrow(() -> {
-                    auditLogService.record(AuditEventType.ACCESS_DENIED, actor,
-                            Subject.document(payload.documentId(), null, "tile"));
+                    auditLogService.recordAtMostEvery(Duration.ofSeconds(5), "denied:" + username,
+                            AuditEventType.ACCESS_DENIED, actor, Subject.document(payload.documentId(), null, "tile"));
                     return new DocumentNotFoundException("Document not found.");
                 });
 
-        BufferedImage rawTile = tileGenerationService.loadRawTile(
-                payload.documentId(), payload.page(), payload.row(), payload.col());
-
+        // Issued for an earlier render: the document was replaced since. Serving the
+        // current render's tile here would mix old and new tiles on one page.
+        if (payload.tileVersion() != access.tileVersion()) {
+            throw new TileGoneException();
+        }
+        String title = access.title();
         // First 6 characters of the session's admin handle: enough to single out one sign-in
         // in the audit log's session column, too short to be of any other use.
         String traceCode = sessionKeys.adminHandle(session.getId()).substring(0, 6);
-        BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode);
+        byte[] png;
+        try {
+            png = tileWork.run(() -> {
+            BufferedImage rawTile = loadTile(payload, access, authentication);
+            // Sized from the document's full tile size, so cropped edge tiles get the same mark.
+            BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode, access.tileSize());
+            ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+            ImageIO.write(watermarked, "png", encoded);
+            return encoded.toByteArray();
+            });
+        } catch (ServiceBusyException busy) {
+            // The server was busy, not the reader too fast: don't charge their allowance.
+            tileRateLimiter.refund(username, counted);
+            throw busy;
+        }
 
-        auditLogService.record(AuditEventType.TILE_VIEWED, actor, Subject.tile(
-                payload.documentId(), title, payload.page(), payload.row(), payload.col()));
+        // One event per page view rather than per tile: a page is ~35 tiles, and
+        // per-tile rows buried everything else in the audit log.
+        auditLogService.recordAtMostEvery(PAGE_VIEW_AUDIT_INTERVAL,
+                "page:" + actor.sessionHandle() + "|" + payload.documentId() + "|" + payload.page(),
+                AuditEventType.PAGE_VIEWED, actor,
+                new Subject(payload.documentId(), title, payload.page(), null, null, null));
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(watermarked, "png", out);
+        metrics.tileServed();
 
         return ResponseEntity.ok()
                 // Deliberately not cacheable beyond a moment — a shared cache
                 // holding onto a watermarked-for-someone-else tile would leak it.
                 .cacheControl(CacheControl.noStore())
-                .body(out.toByteArray());
+                .body(png);
     }
 }

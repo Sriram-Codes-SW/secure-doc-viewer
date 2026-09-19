@@ -1,5 +1,6 @@
 package com.example.securedocviewer.account;
 
+import com.example.securedocviewer.exception.WrongPasswordException;
 import com.example.securedocviewer.exception.BadRequestException;
 import com.example.securedocviewer.exception.ResourceNotFoundException;
 import com.example.securedocviewer.exception.UsernameTakenException;
@@ -23,21 +24,36 @@ public class UserAccountService {
     private static final Pattern USERNAME = Pattern.compile("[a-z0-9._-]{3,32}");
     static final int MIN_PASSWORD_LENGTH = 12;
     static final int MAX_PASSWORD_LENGTH = 128;
+    /** BCrypt uses at most 72 bytes of a password and refuses longer ones. */
+    public static final int MAX_PASSWORD_BYTES = 72;
+
+    public static boolean fitsBcrypt(String password) {
+        return password == null || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= MAX_PASSWORD_BYTES;
+    }
 
     private final AppUserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final com.example.securedocviewer.security.KnownDevices knownDevices;
 
-    public UserAccountService(AppUserRepository repository, PasswordEncoder passwordEncoder) {
+    public UserAccountService(AppUserRepository repository, PasswordEncoder passwordEncoder,
+                              com.example.securedocviewer.security.KnownDevices knownDevices) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.knownDevices = knownDevices;
     }
 
     public static String normalizeUsername(String username) {
         return username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
     }
 
+    /** An account an admin creates must choose its own password at first sign-in. */
     @Transactional
     public UserSummary create(String rawUsername, String password, Role role) {
+        return create(rawUsername, password, role, true);
+    }
+
+    @Transactional
+    public UserSummary create(String rawUsername, String password, Role role, boolean mustChangePassword) {
         String username = normalizeUsername(rawUsername);
         if (!USERNAME.matcher(username).matches()) {
             throw new BadRequestException(
@@ -50,7 +66,9 @@ public class UserAccountService {
         if (repository.existsByUsername(username)) {
             throw new UsernameTakenException(username);
         }
-        return UserSummary.of(repository.save(new AppUser(username, passwordEncoder.encode(password), role)));
+        AppUser user = new AppUser(username, passwordEncoder.encode(password), role);
+        user.setMustChangePassword(mustChangePassword);
+        return UserSummary.of(repository.save(user));
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +100,9 @@ public class UserAccountService {
         }
         if (enabled != null) {
             user.setEnabled(enabled);
+            if (!enabled) {
+                knownDevices.forget(user.getUsername());
+            }
         }
         return UserSummary.of(user);
     }
@@ -89,20 +110,43 @@ public class UserAccountService {
     @Transactional
     public void resetPassword(String rawUsername, String newPassword) {
         requireAcceptablePassword(newPassword);
-        require(rawUsername).setPasswordHash(passwordEncoder.encode(newPassword));
+        AppUser user = require(rawUsername);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(true);
+        knownDevices.forget(user.getUsername());
     }
 
     @Transactional
     public void changeOwnPassword(String username, String currentPassword, String newPassword) {
         AppUser user = require(username);
-        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new BadRequestException("Current password is incorrect.");
+        if (currentPassword == null || !fitsBcrypt(currentPassword)
+                || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new WrongPasswordException();
         }
         if (currentPassword.equals(newPassword)) {
             throw new BadRequestException("New password must differ from the current one.");
         }
         requireAcceptablePassword(newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
+        knownDevices.forget(user.getUsername());
+    }
+
+    @Transactional
+    public boolean recordSignIn(String username) {
+        AppUser user = require(username);
+        user.setLastSignInAt(java.time.Instant.now());
+        return user.isMustChangePassword();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean mustChangePassword(String username) {
+        return require(username).isMustChangePassword();
+    }
+
+    @Transactional(readOnly = true)
+    public void requireExists(String rawUsername) {
+        require(rawUsername);
     }
 
     private AppUser require(String rawUsername) {
@@ -115,6 +159,10 @@ public class UserAccountService {
         if (password == null || password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
             throw new BadRequestException("Password must be " + MIN_PASSWORD_LENGTH + "-" + MAX_PASSWORD_LENGTH
                     + " characters long.");
+        }
+        if (!fitsBcrypt(password)) {
+            throw new BadRequestException("Password is too long: at most " + MAX_PASSWORD_BYTES
+                    + " bytes (fewer characters if it uses accents, non-Latin letters or emoji).");
         }
         if (password.isBlank()) {
             throw new BadRequestException("Password can't be only whitespace.");

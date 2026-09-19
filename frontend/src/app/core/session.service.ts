@@ -10,6 +10,8 @@ export interface CurrentUser {
   role: Role;
   /** Server-side idle timeout; every API request (including tile fetches) resets it. */
   sessionTimeoutSeconds: number;
+  /** Password was set by an admin: the server refuses everything else until it is changed. */
+  mustChangePassword: boolean;
 }
 
 /** Shared by every tab, so activity in one tab keeps the others from warning. Not sensitive. */
@@ -35,6 +37,7 @@ export class SessionService {
   readonly isLoggedIn = computed(() => this.current() !== null);
   readonly isAdmin = computed(() => this.current()?.role === 'ADMIN');
   readonly canUpload = computed(() => this.hasAnyRole('PUBLISHER', 'ADMIN'));
+  readonly mustChangePassword = computed(() => this.current()?.mustChangePassword ?? false);
 
   constructor(private readonly http: HttpClient) {
     window.addEventListener('storage', (event) => {
@@ -87,7 +90,14 @@ export class SessionService {
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
-    return this.http.post<void>(`${API_BASE_URL}/api/auth/password`, { currentPassword, newPassword });
+    return this.http.post<void>(`${API_BASE_URL}/api/auth/password`, { currentPassword, newPassword }).pipe(
+      tap(() => {
+        const user = this.current();
+        if (user) {
+          this.current.set({ ...user, mustChangePassword: false });
+        }
+      }),
+    );
   }
 
   hasAnyRole(...roles: Role[]): boolean {

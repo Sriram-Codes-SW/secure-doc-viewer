@@ -46,8 +46,9 @@ public class PageTileUrlController {
             Authentication authentication,
             HttpServletRequest request) {
 
-        PageInfo pageInfo = documents.requirePage(documentId, page,
+        DocumentService.IssuablePage issuable = documents.requirePage(documentId, page,
                 Viewer.of(authentication), actors.of(request, authentication));
+        PageInfo pageInfo = issuable.info();
 
         // Tokens carry a keyed binding to this session, never its id, so a
         // tile URL can be logged or leaked without leaking the credential.
@@ -56,11 +57,11 @@ public class PageTileUrlController {
         String[][] urls = new String[pageInfo.rows()][pageInfo.cols()];
         for (int row = 0; row < pageInfo.rows(); row++) {
             for (int col = 0; col < pageInfo.cols(); col++) {
-                String token = signedUrlService.issueToken(documentId, page, row, col, sessionBinding);
+                String token = signedUrlService.issueToken(documentId, page, row, col, issuable.tileVersion(), sessionBinding);
                 urls[row][col] = "/api/tiles?token=" + token;
             }
         }
 
-        return ResponseEntity.ok(new TileUrlGrid(page, pageInfo.rows(), pageInfo.cols(), pageInfo.tileSize(), urls));
+        return ResponseEntity.ok(new TileUrlGrid(page, pageInfo.rows(), pageInfo.cols(), pageInfo.tileSize(), issuable.tileVersion(), urls));
     }
 }

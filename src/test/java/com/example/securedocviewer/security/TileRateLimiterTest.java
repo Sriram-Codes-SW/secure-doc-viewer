@@ -123,4 +123,17 @@ class TileRateLimiterTest {
 
         assertEquals(0, limiter.getUsage("session-1").used());
     }
+
+    @Test
+    void aRefundedRequestDoesNotCountAgainstTheReader() {
+        ViewerProperties properties = new ViewerProperties();
+        properties.setTileRateLimitPerWindow(2);
+        TileRateLimiter limiter = new TileRateLimiter(properties);
+        limiter.recordAndEnforce("rita");
+        java.time.Instant busy = limiter.recordAndEnforce("rita");
+        limiter.refund("rita", busy); // the server was busy: not the reader's fault
+        assertDoesNotThrow(() -> limiter.recordAndEnforce("rita"));
+        assertThrows(com.example.securedocviewer.exception.RateLimitExceededException.class,
+                () -> limiter.recordAndEnforce("rita"));
+    }
 }

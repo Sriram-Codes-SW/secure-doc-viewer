@@ -31,21 +31,42 @@ class StorageJanitorTest {
         Path notADocument = dir(root.resolve("backups"), old);
         Path oldStaging = dir(root.resolve(TileGenerationService.STAGING_DIR).resolve("abandoned"), old);
         Path activeStaging = dir(root.resolve(TileGenerationService.STAGING_DIR).resolve("in-progress"), Instant.now());
+        Path currentVersion = dir(root.resolve(KNOWN).resolve("v2"), old);
+        Path supersededVersion = dir(root.resolve(KNOWN).resolve("v1"), old);
+        Path legacyPage = dir(root.resolve(KNOWN).resolve("page-0"), old);
 
         ViewerProperties properties = new ViewerProperties();
         properties.setStorageRoot(root.toString());
         DocumentRepository documents = mock(DocumentRepository.class);
-        when(documents.findAllIds()).thenReturn(List.of(KNOWN));
+        when(documents.findAllTileVersions()).thenReturn(List.<Object[]>of(new Object[] {KNOWN, 2}));
 
         int removed = new StorageJanitor(properties, documents).removeOrphans(Instant.now().minus(StorageJanitor.MIN_AGE));
 
-        assertEquals(2, removed);
+        assertEquals(4, removed);
+        assertTrue(Files.exists(currentVersion), "the committed version must never be removed");
+        assertFalse(Files.exists(supersededVersion), "a superseded version should be removed");
+        assertFalse(Files.exists(legacyPage), "legacy unversioned pages of a versioned document should be removed");
         assertFalse(Files.exists(orphan), "old orphan should be removed");
         assertFalse(Files.exists(oldStaging), "abandoned staging render should be removed");
         assertTrue(Files.exists(known), "a document's tiles must never be removed");
         assertTrue(Files.exists(freshOrphan), "a very recent directory may be an upload in flight");
         assertTrue(Files.exists(notADocument), "directories that aren't document ids are left alone");
         assertTrue(Files.exists(activeStaging), "a render in progress must not be removed");
+    }
+
+    @Test
+    void keepsEveryVersionWhenTheCurrentOneIsMissing(@TempDir Path root) throws IOException {
+        // e.g. a database restored from before a replace, with tiles archived after it
+        Instant old = Instant.now().minus(StorageJanitor.MIN_AGE).minusSeconds(60);
+        Path onlySurvivor = dir(root.resolve(KNOWN).resolve("v3"), old);
+
+        ViewerProperties properties = new ViewerProperties();
+        properties.setStorageRoot(root.toString());
+        DocumentRepository documents = mock(DocumentRepository.class);
+        when(documents.findAllTileVersions()).thenReturn(List.<Object[]>of(new Object[] {KNOWN, 2}));
+
+        assertEquals(0, new StorageJanitor(properties, documents).removeOrphans(Instant.now()));
+        assertTrue(Files.exists(onlySurvivor), "the only tiles left must be kept for recovery");
     }
 
     private static Path dir(Path path, Instant modified) throws IOException {

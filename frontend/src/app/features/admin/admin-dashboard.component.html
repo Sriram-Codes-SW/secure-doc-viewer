@@ -23,30 +23,59 @@
       <p [class]="message.kind" role="status">{{ message.text }}</p>
     }
 
+    <div class="user-filters">
+      <input class="user-search" type="search" placeholder="Search users" aria-label="Search users"
+             [ngModel]="userQuery()" (ngModelChange)="userQuery.set($event)" />
+      <label class="checkbox">
+        <input type="checkbox" [ngModel]="showDisabled()" (ngModelChange)="showDisabled.set($event)" />
+        Show disabled users
+        @if (hiddenDisabledCount()) {
+          <span class="muted">({{ hiddenDisabledCount() }} hidden)</span>
+        }
+      </label>
+    </div>
+
     <table>
       <thead>
         <tr>
           <th>Username</th>
           <th>Role</th>
           <th>Status</th>
-          <th>Created</th>
+          <th>Last sign-in</th>
+          <th>Owns</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
-        @for (user of users(); track user.username) {
+        @for (user of filteredUsers(); track user.username) {
           <tr [class.disabled-row]="!user.enabled">
-            <td>{{ user.username }}</td>
             <td>
-              <select [ngModel]="user.role" (ngModelChange)="changeRole(user, $event)"
-                      [attr.aria-label]="'Role for ' + user.username">
+              {{ user.username }}
+              @if (user.locked) {
+                <span class="tag danger-tag">locked</span>
+              }
+              @if (user.mustChangePassword) {
+                <span class="tag" title="Must choose a new password at next sign-in">temp password</span>
+              }
+            </td>
+            <td>
+              <select [ngModel]="pendingRole()?.username === user.username ? pendingRole()!.role : user.role"
+                      (ngModelChange)="requestRoleChange(user, $event)" [attr.aria-label]="'Role for ' + user.username">
                 @for (role of roles; track role) {
                   <option [value]="role">{{ role }}</option>
                 }
               </select>
+              @if (pendingRole()?.username === user.username) {
+                <div class="confirm-row" role="alert">
+                  Make {{ user.username }} {{ pendingRole()!.role }}? Their sessions will end.
+                  <button class="danger" (click)="confirmRoleChange(user)">Confirm</button>
+                  <button (click)="cancelRoleChange()">Cancel</button>
+                </div>
+              }
             </td>
             <td>{{ user.enabled ? 'Active' : 'Disabled' }}</td>
-            <td>{{ formatTime(user.createdAtEpochSeconds) }}</td>
+            <td>{{ user.lastSignInEpochSeconds ? formatTime(user.lastSignInEpochSeconds) : 'Never' }}</td>
+            <td>{{ user.ownedDocuments }} doc{{ user.ownedDocuments === 1 ? '' : 's' }}</td>
             <td class="actions-cell">
               <div class="actions">
                 @if (resettingUser() === user.username) {
@@ -56,9 +85,24 @@
                   <button (click)="resettingUser.set(null)">Cancel</button>
                 } @else {
                   <button (click)="startReset(user)">Reset password</button>
-                  <button (click)="toggleEnabled(user)">{{ user.enabled ? 'Disable' : 'Enable' }}</button>
+                  @if (user.locked) {
+                    <button (click)="unlock(user)" title="Clear sign-in lockout">Unlock</button>
+                  }
+                  <button (click)="signOutEverywhere(user)" [class.danger]="confirmingSignOut() === user.username"
+                          title="End all of this user's sessions">
+                    {{ confirmingSignOut() === user.username ? 'Confirm sign out' : 'Sign out everywhere' }}
+                  </button>
+                  <button (click)="toggleEnabled(user)" [class.danger]="confirmingDisable() === user.username">
+                    {{ user.enabled ? (confirmingDisable() === user.username ? 'Confirm disable' : 'Disable') : 'Enable' }}
+                  </button>
                 }
               </div>
+              @if (confirmingDisable() === user.username && user.ownedDocuments > 0) {
+                <p class="warning-text">
+                  {{ user.username }} owns {{ user.ownedDocuments }} document{{ user.ownedDocuments === 1 ? '' : 's' }}.
+                  They stay readable; transfer ownership from each document's Manage page.
+                </p>
+              }
             </td>
           </tr>
         }
@@ -75,6 +119,8 @@
         <thead>
           <tr>
             <th>User</th>
+            <th>Device &amp; IP</th>
+            <th>Signed in</th>
             <th>Last active</th>
             <th></th>
           </tr>
@@ -88,6 +134,13 @@
                   <span class="tag">you</span>
                 }
               </td>
+              <td>
+                {{ session.device ?? 'Unknown device' }}
+                @if (session.clientIp) {
+                  <span class="mono muted"> · {{ session.clientIp }}</span>
+                }
+              </td>
+              <td>{{ session.startedAtEpochSeconds ? formatTime(session.startedAtEpochSeconds) : '—' }}</td>
               <td>{{ formatTime(session.lastActiveEpochSeconds) }}</td>
               <td class="actions-cell">
                 <div class="actions">

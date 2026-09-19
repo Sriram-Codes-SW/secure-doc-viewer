@@ -7,6 +7,8 @@ import com.example.securedocviewer.exception.InvalidTokenException;
 import com.example.securedocviewer.exception.LoginLockedException;
 import com.example.securedocviewer.exception.RateLimitExceededException;
 import com.example.securedocviewer.exception.ResourceNotFoundException;
+import com.example.securedocviewer.exception.ServiceBusyException;
+import com.example.securedocviewer.exception.TileGoneException;
 import com.example.securedocviewer.exception.UsernameTakenException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -71,6 +73,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<Map<String, String>> handleForbidden(ForbiddenException e) {
         return error(HttpStatus.FORBIDDEN, e.getMessage());
+    }
+
+    @ExceptionHandler(TileGoneException.class)
+    public ResponseEntity<Map<String, String>> handleTileGone(TileGoneException e) {
+        return error(HttpStatus.GONE, e.getMessage());
+    }
+
+    @ExceptionHandler(ServiceBusyException.class)
+    public ResponseEntity<Map<String, String>> handleBusy(ServiceBusyException e) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(e.getRetryAfterSeconds()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)
@@ -153,7 +168,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, String>> handleUploadTooLarge(MaxUploadSizeExceededException e) {
-        return error(HttpStatus.PAYLOAD_TOO_LARGE, "The file is too large (limit " + MAX_UPLOAD_MB + " MB).");
+        return error(HttpStatus.CONTENT_TOO_LARGE, "The file is too large (limit " + MAX_UPLOAD_MB + " MB).");
     }
 
     @ExceptionHandler(UsernameTakenException.class)

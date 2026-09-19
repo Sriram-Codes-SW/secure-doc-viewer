@@ -27,6 +27,9 @@ public class DocumentController {
     public record UpdateDocumentRequest(String title, Visibility visibility) {
     }
 
+    public record TransferOwnershipRequest(String username) {
+    }
+
     private final DocumentService documents;
     private final RequestActors actors;
 
@@ -85,6 +88,14 @@ public class DocumentController {
                                        HttpServletRequest request) {
         documents.delete(documentId, Viewer.of(authentication), actors.of(request, authentication));
         return ResponseEntity.noContent().build();
+    }
+
+    /** Admin only (enforced in DocumentService). */
+    @PutMapping("/{documentId}/owner")
+    public DocumentDetail transferOwnership(@PathVariable String documentId, @RequestBody TransferOwnershipRequest body,
+                                            Authentication authentication, HttpServletRequest request) {
+        return documents.transferOwnership(documentId, body.username(), Viewer.of(authentication),
+                actors.of(request, authentication));
     }
 
     @GetMapping("/{documentId}/shares")

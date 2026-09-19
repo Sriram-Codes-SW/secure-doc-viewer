@@ -6,6 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
+import java.util.List;
+
 /**
  * Binds the {@code secure-doc-viewer.*} block from application.yml.
  */
@@ -15,7 +18,7 @@ import org.springframework.validation.annotation.Validated;
 public class ViewerProperties {
 
     private String storageRoot = "./storage";
-    private int tileSize = 256;
+    private int tileSize = 512;
     private int renderDpi = 150;
     /**
      * HMAC key for tile tokens and session-derived values. Supplied via the
@@ -30,12 +33,59 @@ public class ViewerProperties {
     private int maxPages = 500;
     /** Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs. */
     private long maxPagePixels = 40_000_000L;
+    /** PDFs rendered at once; further uploads wait up to renderQueueTimeoutSeconds, then get 503. */
+    private int maxConcurrentRenders = 2;
+    private long renderQueueTimeoutSeconds = 30;
+    /** A PDF that takes longer than this to render is rejected, so a hostile file can't hold a render slot. */
+    private Duration renderTimeout = Duration.ofMinutes(3);
+    /** Tiles watermarked at once across all users; 0 = twice the CPU count. Excess requests get 503. */
+    private int maxConcurrentTileRenders = 0;
+
+    public int getMaxConcurrentTileRenders() {
+        return maxConcurrentTileRenders;
+    }
+
+    public void setMaxConcurrentTileRenders(int maxConcurrentTileRenders) {
+        this.maxConcurrentTileRenders = maxConcurrentTileRenders;
+    }
+
+    /** Sessions end this long after sign-in regardless of activity. */
+    private Duration sessionMaxLifetime = Duration.ofHours(12);
+
+    public Duration getRenderTimeout() {
+        return renderTimeout;
+    }
+
+    public void setRenderTimeout(Duration renderTimeout) {
+        this.renderTimeout = renderTimeout;
+    }
+
+    public Duration getSessionMaxLifetime() {
+        return sessionMaxLifetime;
+    }
+
+    public void setSessionMaxLifetime(Duration sessionMaxLifetime) {
+        this.sessionMaxLifetime = sessionMaxLifetime;
+    }
     /** Watermark ink opacity, 0.05-0.6. Lower is easier to read through; higher survives recompression better. */
     private float watermarkOpacity = 0.2f;
     /** Gap between watermark copies, as a multiple of the text height. Larger is lighter on the page. */
     private double watermarkSpacing = 1.5;
-    private int tileRateLimitPerWindow = 120;
+    private int tileRateLimitPerWindow = 180;
     private long tileRateLimitWindowSeconds = 60;
+    /**
+     * Addresses (CIDR) allowed to scrape /actuator/prometheus. nginx never
+     * proxies it; this stops anything else on the network reading it directly.
+     */
+    private List<String> metricsAllowedAddresses = List.of("127.0.0.1/32", "::1/128");
+
+    public List<String> getMetricsAllowedAddresses() {
+        return metricsAllowedAddresses;
+    }
+
+    public void setMetricsAllowedAddresses(List<String> metricsAllowedAddresses) {
+        this.metricsAllowedAddresses = metricsAllowedAddresses;
+    }
 
     public String getStorageRoot() {
         return storageRoot;
@@ -91,6 +141,22 @@ public class ViewerProperties {
 
     public void setMaxPagePixels(long maxPagePixels) {
         this.maxPagePixels = maxPagePixels;
+    }
+
+    public int getMaxConcurrentRenders() {
+        return maxConcurrentRenders;
+    }
+
+    public void setMaxConcurrentRenders(int maxConcurrentRenders) {
+        this.maxConcurrentRenders = maxConcurrentRenders;
+    }
+
+    public long getRenderQueueTimeoutSeconds() {
+        return renderQueueTimeoutSeconds;
+    }
+
+    public void setRenderQueueTimeoutSeconds(long renderQueueTimeoutSeconds) {
+        this.renderQueueTimeoutSeconds = renderQueueTimeoutSeconds;
     }
 
     public float getWatermarkOpacity() {

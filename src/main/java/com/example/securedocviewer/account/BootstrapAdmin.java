@@ -41,7 +41,8 @@ public class BootstrapAdmin implements ApplicationRunner {
         }
         boolean generated = configuredPassword == null || configuredPassword.isBlank();
         String password = generated ? randomPassword() : configuredPassword;
-        accounts.create(username, password, Role.ADMIN);
+        // A generated password was printed to a log: it must be replaced at first sign-in.
+        accounts.create(username, password, Role.ADMIN, generated);
         if (generated) {
             log.warn("\n\nCreated initial admin account '{}' with generated password: {}\n"
                     + "Sign in and change it (or set BOOTSTRAP_ADMIN_PASSWORD before first start).\n", username, password);

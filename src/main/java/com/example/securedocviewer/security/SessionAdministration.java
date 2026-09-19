@@ -23,10 +23,12 @@ public class SessionAdministration {
 
     private final SessionRegistry registry;
     private final SessionKeys sessionKeys;
+    private final SessionMetadata metadata;
 
-    public SessionAdministration(SessionRegistry registry, SessionKeys sessionKeys) {
+    public SessionAdministration(SessionRegistry registry, SessionKeys sessionKeys, SessionMetadata metadata) {
         this.registry = registry;
         this.sessionKeys = sessionKeys;
+        this.metadata = metadata;
     }
 
     public List<SessionSummary> list(String currentSessionId) {
@@ -42,12 +44,16 @@ public class SessionAdministration {
                     .findFirst()
                     .orElse("");
             for (SessionInformation session : registry.getAllSessions(principal, false)) {
+                SessionMetadata.Info info = metadata.get(session.getSessionId());
                 summaries.add(new SessionSummary(
                         sessionKeys.adminHandle(session.getSessionId()),
                         user.getUsername(),
                         role,
                         session.getLastRequest().toInstant().getEpochSecond(),
-                        session.getSessionId().equals(currentSessionId)));
+                        session.getSessionId().equals(currentSessionId),
+                        info == null ? null : info.clientIp(),
+                        info == null ? null : info.device(),
+                        info == null ? null : info.startedAt().getEpochSecond()));
             }
         }
         summaries.sort(Comparator.comparingLong(SessionSummary::lastActiveEpochSeconds).reversed());

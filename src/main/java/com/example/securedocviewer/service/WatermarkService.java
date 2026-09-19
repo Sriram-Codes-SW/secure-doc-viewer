@@ -76,6 +76,14 @@ public class WatermarkService {
      *                  just to a username. May be null.
      */
     public BufferedImage applyWatermark(BufferedImage source, String viewerLabel, String traceCode) {
+        return applyWatermark(source, viewerLabel, traceCode, Math.max(source.getWidth(), source.getHeight()));
+    }
+
+    /**
+     * @param nominalTileSize the document's full tile edge; cropped edge tiles are
+     *                        smaller, but their mark must match the rest of the page
+     */
+    public BufferedImage applyWatermark(BufferedImage source, String viewerLabel, String traceCode, int nominalTileSize) {
         int width = source.getWidth();
         int height = source.getHeight();
         BufferedImage stamped = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -89,7 +97,8 @@ public class WatermarkService {
             String stamp = TIMESTAMP_FORMAT.format(Instant.now());
             String[] lines = {viewerLabel, traceCode == null ? stamp : stamp + " · " + traceCode};
 
-            int fontSize = Math.max(MIN_FONT_SIZE, Math.min(width, height) / FONT_DIVISOR);
+            // Sized from a 256 px reference so bigger tiles get more copies, not bigger text.
+            int fontSize = Math.max(MIN_FONT_SIZE, Math.min(nominalTileSize, 256) / FONT_DIVISOR);
             g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, fontSize));
             Layout layout = Layout.of(g.getFontMetrics(), lines, spacing);
 
@@ -105,11 +114,14 @@ public class WatermarkService {
             // within stepX keeps every row's first copy inside the drawn
             // range. Steps come from the measured text block plus a gap, so
             // neighbouring copies never overprint each other.
+            // The grid is anchored at the tile origin (rows and columns at fixed
+            // multiples of the steps), so a cropped edge tile carries exactly the
+            // top-left part of a full tile's pattern, at the same size.
             int span = width + height;
-            int rowIndex = 0;
-            for (int y = -span; y < span; y += layout.stepY(), rowIndex++) {
-                int rowOffset = (rowIndex % 2 == 0) ? 0 : layout.stepX() / 2;
-                for (int x = -span + rowOffset; x < span; x += layout.stepX()) {
+            for (int y = Math.floorDiv(-span, layout.stepY()) * layout.stepY(); y < span; y += layout.stepY()) {
+                int rowOffset = (Math.floorDiv(y, layout.stepY()) % 2 == 0) ? 0 : layout.stepX() / 2;
+                int firstX = Math.floorDiv(-span - rowOffset, layout.stepX()) * layout.stepX() + rowOffset;
+                for (int x = firstX; x < span; x += layout.stepX()) {
                     for (int i = 0; i < lines.length; i++) {
                         g.drawString(lines[i], x, y + i * layout.lineHeight());
                     }

@@ -1,4 +1,10 @@
-@if (manifest(); as doc) {
+@if (accessLost()) {
+  <div class="access-lost" role="alert">
+    <h1>This document is no longer available to you</h1>
+    <p class="muted">Its owner may have stopped sharing it, or it was deleted.</p>
+    <a class="button" routerLink="/documents">Back to Documents</a>
+  </div>
+} @else if (manifest(); as doc) {
   <div class="viewer-header">
     <div>
       <a class="back-link" routerLink="/documents">&larr; Documents</a>
@@ -55,6 +61,15 @@
     </p>
   }
 
+  @if (updatedNotice()) {
+    <p class="notice" role="status">
+      This document was updated while you were reading — you're now seeing the latest version.
+      <button class="secondary" (click)="updatedNotice.set(false)">Dismiss</button>
+    </p>
+  }
+
+  <!-- Scrolls on its own when zoomed in, so the page itself never scrolls sideways. -->
+  <div class="stage-scroll" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)">
   <div class="stage-wrapper" [ngStyle]="stageWrapperStyle()">
     @if (loading()) {
       <div class="stage-loading">Loading page…</div>
@@ -77,11 +92,11 @@
       }
     </div>
   </div>
+  </div>
 
   <p class="hint">
-    Keys: &larr;/&rarr; or PgUp/PgDn to turn pages, Home/End for first/last, +/&minus; to zoom.
-    Every tile is watermarked with your username and fetched once through a short-lived signed URL.
-    Tile requests are rate-limited per session, so flipping through many pages quickly will pause briefly.
+    Turn pages with &larr;/&rarr;, PgUp/PgDn or by swiping; Home/End for first/last; +/&minus; to zoom.
+    Every page carries your name and a trace code. Reading very fast may pause briefly.
   </p>
 } @else if (errorMessage()) {
   <a class="back-link" routerLink="/documents">&larr; Documents</a>

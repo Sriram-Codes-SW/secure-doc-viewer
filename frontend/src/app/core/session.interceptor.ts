@@ -27,6 +27,9 @@ export const sessionInterceptor: HttpInterceptorFn = (req, next) => {
     }),
     catchError((error: unknown) => {
       const isAuthProbe = AUTH_PROBES.some((path) => req.url.endsWith(path));
+      if (error instanceof HttpErrorResponse && error.status === 403 && error.error?.passwordChangeRequired) {
+        router.navigate(['/account'], { queryParams: { required: 1 } });
+      }
       if (!isAuthProbe && error instanceof HttpErrorResponse && error.status === 401) {
         sessionService.forceLogout();
         // Same returnUrl contract as authGuard, so signing back in lands

@@ -10,6 +10,9 @@ public record SessionSummary(
         String username,
         String role,
         long lastActiveEpochSeconds,
-        boolean current
+        boolean current,
+        String clientIp,
+        String device,
+        Long startedAtEpochSeconds
 ) {
 }

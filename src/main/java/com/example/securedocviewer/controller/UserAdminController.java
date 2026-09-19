@@ -1,5 +1,6 @@
 package com.example.securedocviewer.controller;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import com.example.securedocviewer.account.Role;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.account.UserSummary;
@@ -7,6 +8,8 @@ import com.example.securedocviewer.audit.AuditEvent.Subject;
 import com.example.securedocviewer.audit.AuditEventType;
 import com.example.securedocviewer.audit.AuditLogService;
 import com.example.securedocviewer.audit.RequestActors;
+import com.example.securedocviewer.document.DocumentRepository;
+import com.example.securedocviewer.security.LoginThrottle;
 import com.example.securedocviewer.security.SessionAdministration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -44,22 +47,60 @@ public class UserAdminController {
     public record ResetPasswordRequest(@NotBlank String password) {
     }
 
+    /** The admin list also shows how many documents each user owns (e.g. before disabling them). */
+    public record AdminUserView(String username, com.example.securedocviewer.account.Role role, boolean enabled,
+                                long createdAtEpochSeconds, Long lastSignInEpochSeconds, boolean mustChangePassword,
+                                long ownedDocuments, boolean locked) {
+    }
+
     private final UserAccountService accounts;
     private final SessionAdministration sessions;
     private final AuditLogService audit;
     private final RequestActors actors;
+    private final LoginThrottle loginThrottle;
+    private final DocumentRepository documents;
 
     public UserAdminController(UserAccountService accounts, SessionAdministration sessions,
-                               AuditLogService audit, RequestActors actors) {
+                               AuditLogService audit, RequestActors actors, LoginThrottle loginThrottle,
+                               DocumentRepository documents) {
         this.accounts = accounts;
         this.sessions = sessions;
         this.audit = audit;
         this.actors = actors;
+        this.loginThrottle = loginThrottle;
+        this.documents = documents;
     }
 
     @GetMapping
-    public List<UserSummary> list() {
-        return accounts.list();
+    public List<AdminUserView> list() {
+        return accounts.list().stream()
+                .map(u -> new AdminUserView(u.username(), u.role(), u.enabled(), u.createdAtEpochSeconds(),
+                        u.lastSignInEpochSeconds(), u.mustChangePassword(),
+                        documents.countByOwner_Username(u.username()), loginThrottle.isLocked(u.username())))
+                .toList();
+    }
+
+    /** Clears the account's sign-in lockout counters (not other accounts' or per-address ones). */
+    /** Ends every session of the user (except the admin's own, if they target themselves). */
+    @DeleteMapping("/{username}/sessions")
+    public ResponseEntity<Void> signOutEverywhere(@PathVariable String username, Authentication authentication,
+                                                  HttpServletRequest request) {
+        String target = UserAccountService.normalizeUsername(username);
+        accounts.requireExists(target);
+        sessions.revokeAllFor(target, request.getSession().getId());
+        audit.record(AuditEventType.SESSION_REVOKED, actors.of(request, authentication),
+                Subject.detail("all sessions of " + target));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{username}/unlock")
+    public ResponseEntity<Void> unlock(@PathVariable String username, Authentication authentication,
+                                       HttpServletRequest request) {
+        String normalized = UserAccountService.normalizeUsername(username);
+        accounts.requireExists(normalized);
+        loginThrottle.unlock(normalized);
+        audit.record(AuditEventType.USER_UNLOCKED, actors.of(request, authentication), Subject.detail(normalized));
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping

@@ -2,13 +2,18 @@ package com.example.securedocviewer.service;
 
 import com.example.securedocviewer.config.ViewerProperties;
 import com.example.securedocviewer.exception.BadRequestException;
-import com.example.securedocviewer.exception.DocumentNotFoundException;
 import com.example.securedocviewer.model.PageInfo;
+import com.example.securedocviewer.exception.ServiceBusyException;
+import com.example.securedocviewer.exception.TileGoneException;
+import io.micrometer.core.instrument.Timer;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -22,6 +27,22 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * Turns an uploaded PDF into a directory of per-tile PNGs, one subfolder per
@@ -34,7 +55,14 @@ import java.util.UUID;
  * upload never leaves tiles behind, and replacing a document's PDF swaps the
  * whole tile set at once.
  *
- * <p>Layout on disk: {@code {storageRoot}/{documentId}/page-{n}/tile-{row}_{col}.png}
+ * <p>Layout on disk: {@code {storageRoot}/{documentId}/v{version}/page-{n}/tile-{row}_{col}.png}.
+ * Every render gets a new version directory and the document row points at
+ * the committed one, so replacing a PDF never mixes old and new tiles.
+ * Version 0 is the original unversioned layout ({@code {documentId}/page-{n}}).
+ *
+ * <p>Rendering is CPU- and memory-heavy, so at most
+ * {@code max-concurrent-renders} run at once; PDFBox buffers into temp files
+ * rather than the heap and subsamples oversized embedded images.
  */
 @Service
 public class TileGenerationService {
@@ -47,9 +75,33 @@ public class TileGenerationService {
     }
 
     private final ViewerProperties properties;
+    private static final Logger log = LoggerFactory.getLogger(TileGenerationService.class);
 
-    public TileGenerationService(ViewerProperties properties) {
+    private final Semaphore renderPermits;
+    private final ViewerMetrics metrics;
+    /**
+     * Renders run here so the request thread can give up on one that takes too
+     * long. Bounded by the render permits: a permit is held until its render
+     * thread has actually stopped, so abandoned renders still count against
+     * {@code max-concurrent-renders} and can't pile up CPU or heap behind it.
+     */
+    private final ExecutorService renderThreads;
+    /** Renders the request gave up on that haven't reached their next page boundary yet. */
+    private final AtomicInteger abandonedRunning = new AtomicInteger();
+
+    private enum RenderState { RUNNING, DONE, ABANDONED }
+
+    public TileGenerationService(ViewerProperties properties, ViewerMetrics metrics) {
         this.properties = properties;
+        this.metrics = metrics;
+        int slots = Math.max(1, properties.getMaxConcurrentRenders());
+        this.renderPermits = new Semaphore(slots, true);
+        // No queue: a render either gets a thread at once or is refused (503). Twice
+        // the slots is enough threads, because a thread that has just freed its slot
+        // may still be finishing up while the next render starts.
+        this.renderThreads = new ThreadPoolExecutor(0, 2 * slots, 60, TimeUnit.SECONDS, new SynchronousQueue<>(),
+                Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
+        metrics.abandonedRendersRunning(abandonedRunning::get);
     }
 
     /**
@@ -60,17 +112,150 @@ public class TileGenerationService {
      * page is rendered. On any failure the staging directory is removed.
      */
     public RenderedDocument render(InputStream pdf) throws IOException {
-        Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
-        Files.createDirectories(stagingDir);
-        Path source = stagingDir.resolve("upload.pdf");
+        acquireRenderPermit();
+        Timer.Sample timing = metrics.renderStarted();
+        boolean handedToRenderThread = false;
         try {
-            Files.copy(pdf, source);
+            Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
+            Files.createDirectories(stagingDir);
+            Path source = stagingDir.resolve("upload.pdf");
+            try {
+                Files.copy(pdf, source);
+            } catch (IOException | RuntimeException e) {
+                discardStaging(stagingDir, e);
+                throw e;
+            }
+            AtomicBoolean cancelled = new AtomicBoolean();
+            AtomicReference<RenderState> state = new AtomicReference<>(RenderState.RUNNING);
+            AtomicBoolean started = new AtomicBoolean();
+            FutureTask<RenderedDocument> job = new FutureTask<>(() -> {
+                started.set(true);
+                RenderedDocument rendered = renderStaged(stagingDir, source, cancelled);
+                if (!state.compareAndSet(RenderState.RUNNING, RenderState.DONE)) {
+                    // Finished just after the request gave up: nobody will commit it.
+                    discardStaging(stagingDir, new CancellationException("abandoned"));
+                    throw new CancellationException("Render abandoned after render-timeout");
+                }
+                return rendered;
+            });
+            try {
+                // The slot is freed by this wrapper rather than inside the task, so it is
+                // freed even if the task was cancelled before it got to run.
+                renderThreads.execute(() -> {
+                    try {
+                        job.run();
+                    } finally {
+                        if (!started.get()) {
+                            discardStaging(stagingDir, new CancellationException("cancelled before starting"));
+                        }
+                        if (state.get() == RenderState.ABANDONED) {
+                            abandonedRunning.decrementAndGet();
+                        }
+                        renderPermits.release();
+                        metrics.renderFinished(timing);
+                    }
+                });
+            } catch (RejectedExecutionException e) {
+                discardStaging(stagingDir, e);
+                throw new ServiceBusyException("The server is busy rendering other documents. Try again shortly.", 5);
+            }
+            handedToRenderThread = true;
+            try {
+                return job.get(properties.getRenderTimeout().toMillis(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                if (!state.compareAndSet(RenderState.RUNNING, RenderState.ABANDONED)) {
+                    return awaitFinished(job); // it finished in the meantime: use it
+                }
+                // The render stops at its next page boundary, cleans up and only
+                // then frees its slot; new uploads wait for (or 503 on) that slot.
+                abandonedRunning.incrementAndGet();
+                cancelled.set(true);
+                job.cancel(true);
+                metrics.renderTimedOut();
+                log.warn("Rendering took longer than {}; abandoned {}", properties.getRenderTimeout(), stagingDir);
+                throw new BadRequestException("This PDF took too long to prepare. Try a smaller or simpler file.");
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof IOException io) {
+                    throw io;
+                }
+                if (cause instanceof RuntimeException runtime) {
+                    throw runtime;
+                }
+                if (cause instanceof Error error) {
+                    throw error;
+                }
+                throw new IOException(cause);
+            } catch (InterruptedException e) {
+                // Treated like a timeout: nobody will commit this render, so it cleans up after itself.
+                if (state.compareAndSet(RenderState.RUNNING, RenderState.ABANDONED)) {
+                    abandonedRunning.incrementAndGet();
+                }
+                cancelled.set(true);
+                job.cancel(true);
+                Thread.currentThread().interrupt();
+                throw new ServiceBusyException("Upload interrupted. Try again.", 5);
+            }
+        } finally {
+            if (!handedToRenderThread) {
+                renderPermits.release();
+                metrics.renderFinished(timing);
+            }
+        }
+    }
+
+    /** Free render slots right now (tests and diagnostics). */
+    int availableRenderSlots() {
+        return renderPermits.availablePermits();
+    }
+
+    int abandonedRendersRunning() {
+        return abandonedRunning.get();
+    }
+
+    private static RenderedDocument awaitFinished(Future<RenderedDocument> job) throws IOException {
+        try {
+            return job.get();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException io) {
+                throw io;
+            }
+            if (e.getCause() instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            throw new IOException(e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ServiceBusyException("Upload interrupted. Try again.", 5);
+        }
+    }
+
+    private void acquireRenderPermit() {
+        try {
+            if (!renderPermits.tryAcquire(properties.getRenderQueueTimeoutSeconds(), TimeUnit.SECONDS)) {
+                metrics.renderRejected();
+                throw new ServiceBusyException("The server is busy rendering other documents. Try again shortly.",
+                        properties.getRenderQueueTimeoutSeconds());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ServiceBusyException("Upload interrupted. Try again.", 5);
+        }
+    }
+
+    private RenderedDocument renderStaged(Path stagingDir, Path source, AtomicBoolean cancelled) throws IOException {
+        try {
             requirePdfSignature(source);
             List<PageInfo> pages = new ArrayList<>();
             try (PDDocument document = loadPdf(source)) {
                 requireWithinLimits(document);
                 PDFRenderer renderer = new PDFRenderer(document);
+                // Decode huge embedded images at reduced resolution instead of in full.
+                renderer.setSubsamplingAllowed(true);
                 for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) {
+                    if (cancelled.get() || Thread.currentThread().isInterrupted()) {
+                        throw new CancellationException("Render abandoned after render-timeout");
+                    }
                     BufferedImage rendered = renderer.renderImageWithDPI(pageIndex, properties.getRenderDpi());
                     pages.add(tileAndSave(stagingDir.resolve("page-" + pageIndex), pageIndex, rendered));
                 }
@@ -79,37 +264,48 @@ public class TileGenerationService {
             Files.delete(source);
             return new RenderedDocument(stagingDir, properties.getTileSize(), pages);
         } catch (IOException | RuntimeException e) {
-            try {
-                FileOperations.deleteDirectory(stagingDir);
-            } catch (IOException cleanupFailure) {
-                // Never mask the real error (e.g. "not a readable PDF"); StorageJanitor removes it later.
-                e.addSuppressed(cleanupFailure);
-            }
+            discardStaging(stagingDir, e);
             throw e;
         }
     }
 
-    /**
-     * Moves a render into place as {@code documentId}'s tiles, replacing any
-     * existing tiles for that document.
-     */
-    public void commit(RenderedDocument rendered, String documentId) throws IOException {
-        Path target = documentRoot(documentId);
-        Path previous = null;
-        if (Files.exists(target)) {
-            previous = Path.of(properties.getStorageRoot(), STAGING_DIR, documentId + "-replaced-" + UUID.randomUUID());
-            FileOperations.moveDirectory(target, previous);
-        }
+    private static void discardStaging(Path stagingDir, Exception cause) {
         try {
-            FileOperations.moveDirectory(rendered.stagingDir(), target);
-        } catch (IOException e) {
-            if (previous != null) {
-                FileOperations.moveDirectory(previous, target);
-            }
-            throw e;
+            FileOperations.deleteDirectory(stagingDir);
+        } catch (IOException cleanupFailure) {
+            // Never mask the real error (e.g. "not a readable PDF"); StorageJanitor removes it later.
+            cause.addSuppressed(cleanupFailure);
         }
-        if (previous != null) {
-            FileOperations.deleteDirectory(previous);
+    }
+
+    /**
+     * Moves a render into place as version {@code version} of the document.
+     * The target directory is always new, so a failed or partial move can
+     * never mix tiles with an existing render; the document row is switched
+     * to the new version by the caller, in the same transaction.
+     */
+    public void commit(RenderedDocument rendered, String documentId, int version) throws IOException {
+        Path target = versionRoot(documentId, version);
+        if (Files.exists(target)) {
+            throw new IOException("Tile version already exists: " + target);
+        }
+        Files.createDirectories(target.getParent());
+        FileOperations.moveDirectory(rendered.stagingDir(), target);
+    }
+
+    /** Removes one superseded render. */
+    public void deleteVersion(String documentId, int version) throws IOException {
+        if (version > 0) {
+            FileOperations.deleteDirectory(versionRoot(documentId, version));
+            return;
+        }
+        Path root = documentRoot(documentId);
+        if (Files.isDirectory(root)) {
+            try (Stream<Path> children = Files.list(root)) {
+                for (Path page : children.filter(p -> p.getFileName().toString().startsWith("page-")).toList()) {
+                    FileOperations.deleteDirectory(page);
+                }
+            }
         }
     }
 
@@ -149,13 +345,14 @@ public class TileGenerationService {
      * Watermarking happens afterward, per-request, in {@code WatermarkService} —
      * this method never returns a copy that's safe to serve directly.
      */
-    public BufferedImage loadRawTile(String documentId, int page, int row, int col) throws IOException {
-        Path tilePath = documentRoot(documentId)
+    public BufferedImage loadRawTile(String documentId, int version, int page, int row, int col) throws IOException {
+        Path tilePath = versionRoot(documentId, version)
                 .resolve("page-" + page)
                 .resolve("tile-" + row + "_" + col + ".png");
 
         if (!Files.exists(tilePath)) {
-            throw new DocumentNotFoundException("Tile not found.");
+            // The URL was issued for a render that has since been replaced.
+            throw new TileGoneException();
         }
 
         return ImageIO.read(tilePath.toFile());
@@ -198,7 +395,8 @@ public class TileGenerationService {
 
     private static PDDocument loadPdf(Path file) {
         try {
-            return Loader.loadPDF(file.toFile());
+            // Temp-file stream cache: large PDFs are buffered on disk, not in the heap.
+            return Loader.loadPDF(file.toFile(), "", null, null, IOUtils.createTempFileOnlyStreamCache());
         } catch (IOException e) {
             // Covers non-PDF content, truncated files and password-protected PDFs.
             throw new BadRequestException("The file is not a readable PDF.");
@@ -207,5 +405,9 @@ public class TileGenerationService {
 
     private Path documentRoot(String documentId) {
         return Path.of(properties.getStorageRoot(), documentId);
+    }
+
+    Path versionRoot(String documentId, int version) {
+        return version == 0 ? documentRoot(documentId) : documentRoot(documentId).resolve("v" + version);
     }
 }

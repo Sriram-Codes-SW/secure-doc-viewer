@@ -1,6 +1,7 @@
 package com.example.securedocviewer.document;
 
 import com.example.securedocviewer.account.AppUser;
+import com.example.securedocviewer.account.Role;
 import com.example.securedocviewer.account.AppUserRepository;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.audit.AuditEvent.Actor;
@@ -33,7 +34,9 @@ import java.util.UUID;
  *   <li><b>view</b> — the owner, users it is shared with, everyone if its
  *       visibility is EVERYONE, and admins;</li>
  *   <li><b>manage</b> (rename, change visibility, share, replace, delete) —
- *       the owner and admins.</li>
+ *       admins, and the owner while they still hold the PUBLISHER role (a
+ *       publisher demoted to reader keeps read access but can no longer
+ *       share, replace or re-publish what they uploaded).</li>
  * </ul>
  * A document the user can't view is reported as not found, never as
  * forbidden, so its existence isn't revealed.
@@ -46,6 +49,7 @@ public class DocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
     private static final int MAX_TITLE_LENGTH = 200;
+    static final java.time.Duration DENIAL_AUDIT_INTERVAL = java.time.Duration.ofSeconds(5);
 
     private final DocumentRepository documents;
     private final AppUserRepository users;
@@ -78,14 +82,18 @@ public class DocumentService {
         return tx.execute(status -> detail(requireViewable(documentId, viewer, actor), viewer));
     }
 
+    /** One page's grid and the render it belongs to, for issuing tile URLs. */
+    public record IssuablePage(PageInfo info, int tileVersion) {
+    }
+
     /** The grid of one page, for issuing tile URLs. */
-    public PageInfo requirePage(String documentId, int page, Viewer viewer, Actor actor) {
+    public IssuablePage requirePage(String documentId, int page, Viewer viewer, Actor actor) {
         return tx.execute(status -> {
             Document document = requireViewable(documentId, viewer, actor);
             return document.getPages().stream()
                     .filter(p -> p.getPageIndex() == page)
                     .findFirst()
-                    .map(p -> pageInfo(p, document.getTileSize()))
+                    .map(p -> new IssuablePage(pageInfo(p, document.getTileSize()), document.getTileVersion()))
                     .orElseThrow(() -> new DocumentNotFoundException("No such page."));
         });
     }
@@ -95,10 +103,10 @@ public class DocumentService {
      * deleting a document cuts off even tile URLs that were already issued.
      * Returns the title for the audit record.
      */
-    public Optional<String> titleIfViewable(String documentId, Viewer viewer) {
+    public Optional<TileAccess> tileAccessIfViewable(String documentId, Viewer viewer) {
         return viewer.admin()
-                ? documents.findTitle(documentId)
-                : documents.findTitleIfVisible(documentId, viewer.username(), Visibility.EVERYONE);
+                ? documents.findTileAccess(documentId)
+                : documents.findTileAccessIfVisible(documentId, viewer.username(), Visibility.EVERYONE);
     }
 
     public DocumentDetail upload(String rawTitle, String originalFilename, InputStream pdf, Visibility visibility,
@@ -106,14 +114,23 @@ public class DocumentService {
         String title = validTitle(rawTitle == null || rawTitle.isBlank() ? titleFromFilename(originalFilename) : rawTitle);
         RenderedDocument rendered = tiles.render(pdf);
         String documentId = UUID.randomUUID().toString();
-        tiles.commit(rendered, documentId);
+        try {
+            tiles.commit(rendered, documentId, 1);
+        } catch (IOException | RuntimeException e) {
+            tiles.discard(rendered);
+            throw e;
+        }
         try {
             DocumentDetail created = tx.execute(status -> {
+                // Rendering can take a while: the uploader may have been demoted or disabled meanwhile.
+                if (!currentRoles(viewer).publisher()) {
+                    throw new ForbiddenException("Only publishers and admins can upload documents.");
+                }
                 AppUser owner = users.findByUsername(viewer.username())
                         .orElseThrow(() -> new ResourceNotFoundException("No such user."));
                 Document document = documents.save(new Document(documentId, title, owner,
                         visibility == null ? Visibility.PRIVATE : visibility,
-                        rendered.tileSize(), toPages(rendered)));
+                        1, rendered.tileSize(), toPages(rendered)));
                 return detail(document, viewer);
             });
             audit.record(AuditEventType.DOCUMENT_UPLOADED, actor,
@@ -125,17 +142,51 @@ public class DocumentService {
         }
     }
 
-    /** Swaps in a new PDF; the document keeps its id, title, visibility and shares. */
+    /**
+     * Swaps in a new PDF; the document keeps its id, title, visibility and
+     * shares. Rendering happens outside any transaction; then, under a row
+     * lock, the new render is moved into a fresh version directory and the
+     * row switched to it in one transaction. The previous version is removed
+     * only after that commits, so readers never see a mix of old and new
+     * tiles and concurrent replaces/deletes are serialised.
+     */
     public DocumentDetail replaceFile(String documentId, InputStream pdf, Viewer viewer, Actor actor) throws IOException {
         tx.executeWithoutResult(status -> requireManageable(documentId, viewer, actor));
         RenderedDocument rendered = tiles.render(pdf);
-        tiles.commit(rendered, documentId);
-        DocumentDetail updated = tx.execute(status -> {
-            Document document = documents.findById(documentId)
-                    .orElseThrow(() -> new DocumentNotFoundException("No such document."));
-            document.replacePages(rendered.tileSize(), toPages(rendered));
-            return detail(document, viewer);
-        });
+        int[] previousVersion = new int[1];
+        DocumentDetail updated;
+        try {
+            updated = tx.execute(status -> {
+                Document document = documents.findByIdForUpdate(documentId)
+                        .orElseThrow(() -> new DocumentNotFoundException("Document not found."));
+                // Rendering can take a while: the owner may have been demoted or disabled,
+                // or the document handed to someone else, since the check above.
+                if (!canManage(document, currentRoles(viewer))) {
+                    recordDenied(actor, viewer, Subject.document(documentId, document.getTitle(), "manage"));
+                    throw new ForbiddenException("Only the owner (as a publisher) or an admin can change this document.");
+                }
+                previousVersion[0] = document.getTileVersion();
+                int nextVersion = document.getTileVersion() + 1;
+                try {
+                    // Under the row lock nothing committed points past the current version,
+                    // so anything already at the next one is debris from a failed replace.
+                    tiles.deleteVersion(documentId, nextVersion);
+                    tiles.commit(rendered, documentId, nextVersion);
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+                document.replacePages(nextVersion, rendered.tileSize(), toPages(rendered));
+                return detail(document, viewer);
+            });
+        } catch (RuntimeException e) {
+            tiles.discard(rendered);
+            throw e;
+        }
+        try {
+            tiles.deleteVersion(documentId, previousVersion[0]);
+        } catch (IOException e) {
+            log.warn("Could not remove superseded tiles of {}; the storage janitor will retry", documentId, e);
+        }
         audit.record(AuditEventType.DOCUMENT_REPLACED, actor,
                 Subject.document(documentId, updated.title(), updated.pageCount() + " pages"));
         return updated;
@@ -160,7 +211,10 @@ public class DocumentService {
 
     public void delete(String documentId, Viewer viewer, Actor actor) {
         String title = tx.execute(status -> {
-            Document document = requireManageable(documentId, viewer, actor);
+            requireManageable(documentId, viewer, actor);
+            // Lock the row so a replace can't commit new tiles into a document being deleted.
+            Document document = documents.findByIdForUpdate(documentId)
+                    .orElseThrow(() -> new DocumentNotFoundException("Document not found."));
             documents.delete(document);
             return document.getTitle();
         });
@@ -171,6 +225,33 @@ public class DocumentService {
             log.warn("Could not delete tiles for deleted document {}; the storage janitor will retry", documentId, e);
         }
         audit.record(AuditEventType.DOCUMENT_DELETED, actor, Subject.document(documentId, title));
+    }
+
+    /**
+     * Admin only: hands a document to another publisher (e.g. its owner left
+     * or was demoted). The new owner must be an enabled PUBLISHER or ADMIN.
+     */
+    public DocumentDetail transferOwnership(String documentId, String rawUsername, Viewer viewer, Actor actor) {
+        if (!viewer.admin()) {
+            throw new ForbiddenException("Only an admin can change a document's owner.");
+        }
+        String username = UserAccountService.normalizeUsername(rawUsername);
+        String[] previousOwner = new String[1];
+        DocumentDetail updated = tx.execute(status -> {
+            Document document = requireViewable(documentId, viewer, actor);
+            AppUser newOwner = users.findByUsername(username)
+                    .orElseThrow(() -> new BadRequestException("No user named '" + username + "'."));
+            if (!newOwner.isEnabled() || newOwner.getRole() == com.example.securedocviewer.account.Role.READER) {
+                throw new BadRequestException("The new owner must be an enabled publisher or admin.");
+            }
+            previousOwner[0] = document.getOwner().getUsername();
+            document.getSharedWith().removeIf(u -> u.getId().equals(newOwner.getId()));
+            document.setOwner(newOwner);
+            return detail(document, viewer);
+        });
+        audit.record(AuditEventType.DOCUMENT_OWNER_CHANGED, actor,
+                Subject.document(documentId, updated.title(), previousOwner[0] + " -> " + username));
+        return updated;
     }
 
     public List<String> shares(String documentId, Viewer viewer, Actor actor) {
@@ -186,6 +267,9 @@ public class DocumentService {
                     .orElseThrow(() -> new BadRequestException("No user named '" + username + "'."));
             if (user.getId().equals(document.getOwner().getId())) {
                 throw new BadRequestException("The owner always has access.");
+            }
+            if (!user.isEnabled()) {
+                throw new BadRequestException("'" + username + "' is disabled and can't be given access.");
             }
             document.getSharedWith().add(user);
             document.touch();
@@ -213,7 +297,7 @@ public class DocumentService {
     private Document requireViewable(String documentId, Viewer viewer, Actor actor) {
         Document document = documents.findById(documentId).orElse(null);
         if (document == null || !canView(document, viewer)) {
-            audit.record(AuditEventType.ACCESS_DENIED, actor, Subject.document(documentId, null, "view"));
+            recordDenied(actor, viewer, Subject.document(documentId, null, "view"));
             throw new DocumentNotFoundException("Document not found.");
         }
         return document;
@@ -222,10 +306,20 @@ public class DocumentService {
     private Document requireManageable(String documentId, Viewer viewer, Actor actor) {
         Document document = requireViewable(documentId, viewer, actor);
         if (!canManage(document, viewer)) {
-            audit.record(AuditEventType.ACCESS_DENIED, actor, Subject.document(documentId, document.getTitle(), "manage"));
-            throw new ForbiddenException("Only the owner or an admin can change this document.");
+            recordDenied(actor, viewer, Subject.document(documentId, document.getTitle(), "manage"));
+            throw new ForbiddenException("Only the owner (as a publisher) or an admin can change this document.");
         }
         return document;
+    }
+
+    /**
+     * At most one denial per user every few seconds: enough to show probing in
+     * the audit trail, without letting any signed-in user grow the audit table
+     * at request rate by asking for made-up ids.
+     */
+    private void recordDenied(Actor actor, Viewer viewer, Subject subject) {
+        audit.recordAtMostEvery(DENIAL_AUDIT_INTERVAL, "denied:" + viewer.username(),
+                AuditEventType.ACCESS_DENIED, actor, subject);
     }
 
     private static boolean canView(Document document, Viewer viewer) {
@@ -235,8 +329,18 @@ public class DocumentService {
                 || document.getSharedWith().stream().anyMatch(u -> u.getUsername().equals(viewer.username()));
     }
 
+    /** The viewer's roles as they are in the database now, not as they were at sign-in. */
+    private Viewer currentRoles(Viewer viewer) {
+        return users.findByUsername(viewer.username())
+                .filter(AppUser::isEnabled)
+                .map(user -> new Viewer(user.getUsername(), user.getRole() == Role.ADMIN,
+                        user.getRole() == Role.ADMIN || user.getRole() == Role.PUBLISHER))
+                .orElse(new Viewer(viewer.username(), false, false));
+    }
+
     private static boolean canManage(Document document, Viewer viewer) {
-        return viewer.admin() || document.getOwner().getUsername().equals(viewer.username());
+        return viewer.admin()
+                || (viewer.publisher() && document.getOwner().getUsername().equals(viewer.username()));
     }
 
     private static DocumentSummary summary(Document d, Viewer viewer) {
@@ -251,7 +355,7 @@ public class DocumentService {
         List<PageInfo> pages = d.getPages().stream().map(p -> pageInfo(p, d.getTileSize())).toList();
         return new DocumentDetail(d.getId(), d.getTitle(), d.getPageCount(), d.getOwner().getUsername(),
                 d.getVisibility(), d.getCreatedAt().getEpochSecond(), d.getUpdatedAt().getEpochSecond(),
-                manage, manage ? sharedWith(d) : null, pages);
+                manage, manage ? sharedWith(d) : null, pages, d.getTileVersion());
     }
 
     private static List<String> sharedWith(Document d) {

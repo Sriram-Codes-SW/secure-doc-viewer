@@ -41,7 +41,8 @@ public class TileRateLimiter {
      * Records one tile request for the user and throws if that pushes
      * them over their allowance for the current rolling window.
      */
-    public void recordAndEnforce(String username) {
+    /** @return the counted request, for {@link #refund} if it ends up not being served */
+    public Instant recordAndEnforce(String username) {
         Window window = windowsByUser.computeIfAbsent(username, id -> new Window());
         Instant now = Instant.now();
         Instant cutoff = now.minusSeconds(properties.getTileRateLimitWindowSeconds());
@@ -62,6 +63,32 @@ public class TileRateLimiter {
             }
             window.timestamps.addLast(now);
         }
+        return now;
+    }
+
+    /** Hands back a counted request that was refused for reasons that aren't the reader's (server busy). */
+    public void refund(String username, Instant counted) {
+        Window window = windowsByUser.get(username);
+        if (window != null) {
+            synchronized (window) {
+                window.timestamps.removeLastOccurrence(counted);
+            }
+        }
+    }
+
+    /** Drops windows with no requests left in them, so the map can't grow without bound. */
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 300_000)
+    public void sweep() {
+        Instant cutoff = Instant.now().minusSeconds(properties.getTileRateLimitWindowSeconds());
+        windowsByUser.entrySet().removeIf(entry -> {
+            synchronized (entry.getValue()) {
+                Deque<Instant> timestamps = entry.getValue().timestamps;
+                while (!timestamps.isEmpty() && timestamps.peekFirst().isBefore(cutoff)) {
+                    timestamps.pollFirst();
+                }
+                return timestamps.isEmpty();
+            }
+        });
     }
 
     /** Drops tracking for a user, so memory doesn't grow forever. */

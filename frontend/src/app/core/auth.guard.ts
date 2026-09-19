@@ -7,6 +7,10 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const router = inject(Router);
 
   if (sessionService.isLoggedIn()) {
+    // An admin-set password must be replaced first; the server enforces the same rule.
+    if (sessionService.mustChangePassword() && !state.url.startsWith('/account')) {
+      return router.createUrlTree(['/account'], { queryParams: { required: 1, returnUrl: state.url } });
+    }
     return true;
   }
   return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });

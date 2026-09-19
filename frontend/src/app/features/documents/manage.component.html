@@ -14,7 +14,7 @@
   </div>
 
   @if (justUploaded()) {
-    <p class="notice" role="status">Uploaded. It’s {{ doc.visibility === 'EVERYONE' ? 'visible to everyone' : 'private' }} — share it below if others need it.</p>
+    <p class="notice" role="status">Uploaded — {{ doc.pageCount }} page{{ doc.pageCount === 1 ? '' : 's' }} ready. It’s {{ doc.visibility === 'EVERYONE' ? 'visible to everyone' : 'private' }} — share it below if others need it.</p>
   }
   @if (notice(); as n) {
     <p [class]="n.kind" role="status">{{ n.text }}</p>
@@ -55,7 +55,13 @@
         @for (username of doc.sharedWith; track username) {
           <li>
             <span>{{ username }}</span>
-            <button class="secondary" (click)="unshare(username)" [disabled]="busy()">Remove</button>
+            <button class="secondary" [class.danger]="confirmingUnshare() === username"
+                    (click)="unshare(username)" [disabled]="busy()">
+              {{ confirmingUnshare() === username ? 'Confirm remove' : 'Remove' }}
+            </button>
+            @if (confirmingUnshare() === username) {
+              <button class="link" (click)="confirmingUnshare.set(null)">Cancel</button>
+            }
           </li>
         }
       </ul>
@@ -78,7 +84,22 @@
       </datalist>
       <button type="submit" [disabled]="busy() || !shareWith.trim()">Share</button>
     </form>
+    @if (shareError()) {
+      <p class="error" role="alert">{{ shareError() }}</p>
+    }
+    <p class="muted hint">Type at least two letters for suggestions.</p>
   </section>
+
+  @if (sessionService.isAdmin()) {
+    <section class="panel">
+      <h2>Owner</h2>
+      <p class="muted">Currently <strong>{{ doc.owner }}</strong>. Hand the document to another publisher, e.g. when its owner leaves.</p>
+      <form class="inline" (ngSubmit)="transferOwnership()">
+        <input name="newOwner" [(ngModel)]="newOwner" placeholder="new owner's username" aria-label="New owner" autocomplete="off" />
+        <button type="submit" [disabled]="busy() || !newOwner.trim()">Transfer</button>
+      </form>
+    </section>
+  }
 
   <section class="panel">
     <h2>Replace PDF</h2>

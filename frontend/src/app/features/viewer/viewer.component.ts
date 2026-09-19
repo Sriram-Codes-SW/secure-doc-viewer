@@ -11,7 +11,12 @@ import { buildTileViewModels, TileViewModel } from './tile-view-model';
 
 const MAX_ZOOM = 2;
 const MIN_ZOOM = 0.4;
-const FIT_WIDTH_PX = 900;
+/** Pages are shown at most this wide at 100% zoom; narrower screens fit the page to the screen. */
+const MAX_FIT_WIDTH_PX = 900;
+/** Horizontal room taken by the page's own padding around the viewer. */
+const SIDE_GUTTER_PX = 48;
+/** A horizontal swipe must travel this far, and mostly sideways, to turn the page. */
+const SWIPE_MIN_PX = 50;
 
 /**
  * Tiles are fetched here rather than handed to the browser as CSS image
@@ -49,6 +54,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   private loadGeneration = 0;
   private abortController = new AbortController();
   private gridSub: Subscription | null = null;
+  private reloadSub: Subscription | null = null;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -61,6 +67,15 @@ export class ViewerComponent implements OnInit, OnDestroy {
   readonly pageInputError = signal<string | null>(null);
   /** Seconds until throttled tiles are retried; null when not throttled. */
   readonly throttledSeconds = signal<number | null>(null);
+  /** Access was removed (unshared/deleted) while the document was open. */
+  readonly accessLost = signal(false);
+  /** Shown once after the PDF was replaced while it was open. */
+  readonly updatedNotice = signal(false);
+  private readonly viewportWidth = signal(typeof window === 'undefined' ? 1200 : window.innerWidth);
+  private readonly fitWidth = computed(() =>
+    Math.max(200, Math.min(MAX_FIT_WIDTH_PX, this.viewportWidth() - SIDE_GUTTER_PX)),
+  );
+  private touchStart: { x: number; y: number } | null = null;
 
   readonly pageInfo = computed(() => this.manifest()?.pages[this.currentPage()] ?? null);
   readonly loadedTileCount = computed(() => this.tiles().filter((t) => t.status === 'loaded').length);
@@ -71,7 +86,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
     if (!info) {
       return {};
     }
-    const fitScale = Math.min(1, FIT_WIDTH_PX / info.pageWidthPx);
+    const fitScale = Math.min(1, this.fitWidth() / info.pageWidthPx);
     const scale = fitScale * this.zoom();
     return {
       width: `${info.pageWidthPx}px`,
@@ -86,7 +101,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
     if (!info) {
       return {};
     }
-    const fitScale = Math.min(1, FIT_WIDTH_PX / info.pageWidthPx);
+    const fitScale = Math.min(1, this.fitWidth() / info.pageWidthPx);
     const scale = fitScale * this.zoom();
     return {
       width: `${info.pageWidthPx * scale}px`,
@@ -137,6 +152,35 @@ export class ViewerComponent implements OnInit, OnDestroy {
     this.requestGrid(page, this.loadGeneration, true);
   }
 
+  @HostListener('window:resize')
+  onResize(): void {
+    this.viewportWidth.set(window.innerWidth);
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    const touch = event.touches[0];
+    this.touchStart = event.touches.length === 1 && touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+
+  /** Swipe left/right to turn pages; ignored when zoomed in, where a swipe pans instead. */
+  onTouchEnd(event: TouchEvent): void {
+    const start = this.touchStart;
+    const touch = event.changedTouches[0];
+    this.touchStart = null;
+    if (!start || !touch || this.zoom() > 1) {
+      return;
+    }
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > 2 * Math.abs(dy)) {
+      if (dx < 0) {
+        this.nextPage();
+      } else {
+        this.prevPage();
+      }
+    }
+  }
+
   /**
    * Keyboard navigation, ignored while typing in a field or with modifier
    * keys held (so browser shortcuts like Ctrl+Plus still work).
@@ -144,7 +188,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
-    if (event.ctrlKey || event.metaKey || event.altKey || !this.manifest()
+    if (event.ctrlKey || event.metaKey || event.altKey || !this.manifest() || this.accessLost()
         || (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) || target?.isContentEditable) {
       return;
     }
@@ -268,6 +312,11 @@ export class ViewerComponent implements OnInit, OnDestroy {
         if (generation !== this.loadGeneration) {
           return;
         }
+        if (grid.tileVersion !== this.manifest()?.tileVersion) {
+          // Replaced since we loaded the page list: its pages may differ too.
+          this.reloadDocument(page);
+          return;
+        }
         const existing = new Map(this.tiles().map((t) => [t.key, t]));
         this.tiles.set(
           buildTileViewModels(grid, info, API_BASE_URL).map((fresh) => {
@@ -278,12 +327,16 @@ export class ViewerComponent implements OnInit, OnDestroy {
         this.loading.set(false);
         void this.fetchPendingTiles(page, generation, allowUrlReissue);
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         if (generation !== this.loadGeneration) {
           return;
         }
-        this.errorMessage.set('Could not load this page.');
         this.loading.set(false);
+        if (err.status === 404) {
+          this.loseAccess();
+        } else {
+          this.errorMessage.set('Could not load this page.');
+        }
       },
     });
   }
@@ -291,7 +344,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   private async fetchPendingTiles(page: number, generation: number, allowUrlReissue: boolean): Promise<void> {
     const queue = this.tiles().filter((t) => t.status !== 'loaded');
     const { signal } = this.abortController;
-    const outcome = { retryAfterSeconds: null as number | null, unauthorized: false, accessRevoked: false };
+    const outcome = { retryAfterSeconds: null as number | null, unauthorized: false, accessRevoked: false, replaced: false };
 
     const worker = async (): Promise<void> => {
       // Once any request is throttled, stop issuing new ones: every further
@@ -318,13 +371,17 @@ export class ViewerComponent implements OnInit, OnDestroy {
             return;
           }
           this.updateTile(tile.key, { status: 'loaded', src: URL.createObjectURL(blob) });
-        } else if (response.status === 429) {
+        } else if (response.status === 429 || response.status === 503) {
+          // Over this reader's limit, or the server is briefly busy: wait and resume.
           outcome.retryAfterSeconds = parseRetryAfter(response.headers.get('Retry-After'));
         } else if (response.status === 401) {
           outcome.unauthorized = true;
         } else if (response.status === 404) {
           // Unshared or deleted while open: access is re-checked on every tile.
           outcome.accessRevoked = true;
+        } else if (response.status === 410) {
+          // The PDF was replaced while open: these URLs point at the old render.
+          outcome.replaced = true;
         } else {
           this.updateTile(tile.key, { status: 'failed' });
         }
@@ -337,7 +394,9 @@ export class ViewerComponent implements OnInit, OnDestroy {
     }
 
     if (outcome.accessRevoked) {
-      this.errorMessage.set('You no longer have access to this document.');
+      this.loseAccess();
+    } else if (outcome.replaced) {
+      this.reloadDocument(page, this.manifest()?.tileVersion);
     } else if (outcome.retryAfterSeconds !== null) {
       this.startThrottleCountdown(page, generation, outcome.retryAfterSeconds);
     } else if (outcome.unauthorized && allowUrlReissue) {
@@ -349,6 +408,40 @@ export class ViewerComponent implements OnInit, OnDestroy {
       this.tiles.update((tiles) => tiles.map((t) => (t.status === 'pending' ? { ...t, status: 'failed' } : t)));
       this.errorMessage.set('Some parts of this page could not be loaded.');
     }
+  }
+
+  private loseAccess(): void {
+    this.resetPageState();
+    this.accessLost.set(true);
+  }
+
+  /** The owner replaced the PDF: fetch the new page list and show the same page (or the last one). */
+  /**
+   * @param staleVersion when set, the reload was triggered by tiles of this version being gone:
+   *   if the document still has that version, reloading can't help, so stop instead of looping.
+   */
+  private reloadDocument(page: number, staleVersion?: number): void {
+    const generation = this.loadGeneration;
+    this.reloadSub?.unsubscribe();
+    this.reloadSub = this.documentsService.get(this.documentId).subscribe({
+      next: (manifest) => {
+        if (generation !== this.loadGeneration) {
+          return; // the reader moved on (or left) meanwhile
+        }
+        if (staleVersion !== undefined && manifest.tileVersion === staleVersion) {
+          this.errorMessage.set('Some parts of this page could not be loaded.');
+          return;
+        }
+        this.manifest.set(manifest);
+        this.updatedNotice.set(true);
+        this.loadPage(Math.min(page, manifest.pageCount - 1));
+      },
+      error: (err: HttpErrorResponse) => {
+        if (generation === this.loadGeneration) {
+          err.status === 404 ? this.loseAccess() : this.errorMessage.set('Could not load this page.');
+        }
+      },
+    });
   }
 
   private startThrottleCountdown(page: number, generation: number, seconds: number): void {
@@ -385,6 +478,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
     this.abortController.abort();
     this.abortController = new AbortController();
     this.gridSub?.unsubscribe();
+    this.reloadSub?.unsubscribe();
     this.clearThrottle();
     for (const tile of this.tiles()) {
       if (tile.src) {

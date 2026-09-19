@@ -47,6 +47,9 @@ public class Document {
     @Column(name = "tile_size", nullable = false)
     private int tileSize;
 
+    @Column(name = "tile_version", nullable = false)
+    private int tileVersion;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -67,17 +70,19 @@ public class Document {
     protected Document() {
     }
 
-    public Document(String id, String title, AppUser owner, Visibility visibility, int tileSize, List<DocumentPage> pages) {
+    public Document(String id, String title, AppUser owner, Visibility visibility, int tileVersion, int tileSize,
+                    List<DocumentPage> pages) {
         this.id = id;
         this.title = title;
         this.owner = owner;
         this.visibility = visibility;
         this.createdAt = Instant.now();
-        replacePages(tileSize, pages);
+        replacePages(tileVersion, tileSize, pages);
     }
 
-    /** Swaps in a newly rendered set of pages, e.g. after the PDF is replaced. */
-    public void replacePages(int tileSize, List<DocumentPage> newPages) {
+    /** Points the document at a newly rendered version, e.g. after the PDF is replaced. */
+    public void replacePages(int tileVersion, int tileSize, List<DocumentPage> newPages) {
+        this.tileVersion = tileVersion;
         this.tileSize = tileSize;
         this.pages.clear();
         this.pages.addAll(newPages);
@@ -117,6 +122,15 @@ public class Document {
 
     public int getPageCount() {
         return pageCount;
+    }
+
+    public int getTileVersion() {
+        return tileVersion;
+    }
+
+    public void setOwner(AppUser owner) {
+        this.owner = owner;
+        touch();
     }
 
     public int getTileSize() {

@@ -62,6 +62,15 @@ export class AdminService {
     return this.http.patch<UserSummary>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}`, change);
   }
 
+  /** Ends every session the user has (they must sign in again everywhere). */
+  signOutEverywhere(username: string): Observable<void> {
+    return this.http.delete<void>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}/sessions`);
+  }
+
+  unlock(username: string): Observable<void> {
+    return this.http.post<void>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}/unlock`, null);
+  }
+
   resetPassword(username: string, password: string): Observable<void> {
     return this.http.post<void>(`${API_BASE_URL}/api/admin/users/${encodeURIComponent(username)}/password`, {
       password,

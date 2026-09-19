@@ -1,0 +1,37 @@
+# Weekly dependency update PRs, grouped per ecosystem so they arrive as a few
+# reviewable PRs rather than dozens. CI runs the full suite on each.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      maven:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      angular:
+        patterns: ['@angular/*', '@angular-devkit/*']
+      npm-other:
+        patterns: ['*']
+        exclude-patterns: ['@angular/*', '@angular-devkit/*']
+
+  - package-ecosystem: docker
+    directories: [/, /frontend]
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

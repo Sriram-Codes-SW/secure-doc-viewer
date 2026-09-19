@@ -1,12 +1,23 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription, interval, startWith, switchMap } from 'rxjs';
+import { EMPTY, Subscription, catchError, filter, interval, startWith, switchMap } from 'rxjs';
 import { Role } from '../../core/session.service';
 import { AdminService } from './admin.service';
 import { AUDIT_EVENT_TYPES, AuditEvent, AuditFilter, RateLimitStatus, SessionSummary, UserSummary } from './admin.models';
 
 const REFRESH_MS = 5_000;
+/** Background refreshes stop after this long without any input on the page. */
+export const POLL_IDLE_MS = 2 * 60_000;
+
+/**
+ * Whether to refresh the sessions list in the background. An unattended admin
+ * page must not keep polling: every poll would count as activity and keep the
+ * most privileged session alive past its idle timeout.
+ */
+export function shouldPoll(now: number, lastInputAt: number, hidden: boolean): boolean {
+  return !hidden && now - lastInputAt < POLL_IDLE_MS;
+}
 const MIN_PASSWORD_LENGTH = 12;
 const AUDIT_PAGE_SIZE = 50;
 
@@ -33,6 +44,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly confirmingRevoke = signal<string | null>(null);
   /** Username whose inline password-reset form is open. */
   readonly resettingUser = signal<string | null>(null);
+  /** A role change waiting for confirmation (nothing is sent until confirmed). */
+  readonly pendingRole = signal<{ username: string; role: Role } | null>(null);
+  /** Username awaiting a second click to confirm disabling. */
+  readonly confirmingDisable = signal<string | null>(null);
+  readonly userQuery = signal('');
+  readonly showDisabled = signal(false);
+  readonly filteredUsers = computed(() => {
+    const q = this.userQuery().trim().toLowerCase();
+    return this.users().filter(
+      (u) => (this.showDisabled() || u.enabled) && (!q || u.username.includes(q)),
+    );
+  });
+  readonly hiddenDisabledCount = computed(() =>
+    this.showDisabled() ? 0 : this.users().filter((u) => !u.enabled).length,
+  );
   readonly usersMessage = signal<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   selectedUsername = '';
@@ -41,6 +67,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   resetPasswordValue = '';
 
   private sessionsSub: Subscription | null = null;
+  private lastInputAt = Date.now();
   private auditSub: Subscription | null = null;
 
   constructor(private readonly adminService: AdminService) {}
@@ -48,13 +75,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.sessionsSub = interval(REFRESH_MS)
       .pipe(
+        filter(() => shouldPoll(Date.now(), this.lastInputAt, document.hidden)),
         startWith(0),
-        switchMap(() => this.adminService.getSessions()),
+        // One failed refresh must not end the polling for good.
+        switchMap(() => this.adminService.getSessions().pipe(catchError(() => EMPTY))),
       )
       .subscribe((sessions) => this.sessions.set(sessions));
 
     this.loadUsers();
     this.refreshAudit();
+  }
+
+  @HostListener('document:pointerdown')
+  @HostListener('document:keydown')
+  @HostListener('document:wheel')
+  @HostListener('document:touchstart')
+  onUserInput(): void {
+    this.lastInputAt = Date.now();
   }
 
   ngOnDestroy(): void {
@@ -112,6 +149,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   describe(event: AuditEvent): string {
     const doc = event.documentTitle ?? (event.documentId ? event.documentId.slice(0, 8) + '…' : '');
     switch (event.type) {
+      case 'PAGE_VIEWED':
+        return `${doc} — page ${(event.page ?? 0) + 1}`;
       case 'TILE_VIEWED':
         return `${doc} — page ${(event.page ?? 0) + 1}, tile (${event.tileRow}, ${event.tileCol})`;
       case 'ACCESS_DENIED':
@@ -125,8 +164,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return ['SIGN_IN_FAILED', 'SIGN_IN_LOCKED', 'ACCESS_DENIED', 'RATE_LIMITED', 'SESSION_REVOKED'].includes(event.type);
   }
 
+  /** UTC, to match the watermark timestamp and the CSV export. */
   formatMillis(epochMillis: number): string {
-    return new Date(epochMillis).toLocaleString();
+    return new Date(epochMillis).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
   }
 
   createUser(): void {
@@ -145,7 +185,53 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  changeRole(user: UserSummary, role: Role): void {
+  /** Selecting a new role only stages it; confirmRoleChange applies it. */
+  requestRoleChange(user: UserSummary, role: Role): void {
+    this.pendingRole.set(role === user.role ? null : { username: user.username, role });
+  }
+
+  cancelRoleChange(): void {
+    this.pendingRole.set(null);
+    this.loadUsers(); // puts the select back to the saved role
+  }
+
+  confirmRoleChange(user: UserSummary): void {
+    const pending = this.pendingRole();
+    if (!pending || pending.username !== user.username) {
+      return;
+    }
+    this.pendingRole.set(null);
+    this.changeRole(user, pending.role);
+  }
+
+  readonly confirmingSignOut = signal<string | null>(null);
+
+  signOutEverywhere(user: UserSummary): void {
+    if (this.confirmingSignOut() !== user.username) {
+      this.confirmingSignOut.set(user.username);
+      return;
+    }
+    this.confirmingSignOut.set(null);
+    this.adminService.signOutEverywhere(user.username).subscribe({
+      next: () => {
+        this.usersMessage.set({ kind: 'success', text: `${user.username} was signed out everywhere.` });
+        this.adminService.getSessions().subscribe((sessions) => this.sessions.set(sessions));
+      },
+      error: (err: HttpErrorResponse) => this.showUsersError(err),
+    });
+  }
+
+  unlock(user: UserSummary): void {
+    this.adminService.unlock(user.username).subscribe({
+      next: () => {
+        this.usersMessage.set({ kind: 'success', text: `${user.username} can sign in again (lockout cleared).` });
+        this.loadUsers();
+      },
+      error: (err: HttpErrorResponse) => this.showUsersError(err),
+    });
+  }
+
+  private changeRole(user: UserSummary, role: Role): void {
     this.adminService.updateUser(user.username, { role }).subscribe({
       next: () => {
         this.usersMessage.set({ kind: 'success', text: `${user.username} is now ${role}; their sessions were ended.` });
@@ -159,6 +245,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   toggleEnabled(user: UserSummary): void {
+    // Disabling takes two clicks; the first shows what it affects.
+    if (user.enabled && this.confirmingDisable() !== user.username) {
+      this.confirmingDisable.set(user.username);
+      return;
+    }
+    this.confirmingDisable.set(null);
     this.adminService.updateUser(user.username, { enabled: !user.enabled }).subscribe({
       next: () => {
         this.usersMessage.set({
@@ -191,8 +283,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Same format as the audit log and the watermark: UTC, to the minute. */
   formatTime(epochSeconds: number): string {
-    return new Date(epochSeconds * 1000).toLocaleString();
+    return new Date(epochSeconds * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
   }
 
   usagePercent(status: RateLimitStatus): number {

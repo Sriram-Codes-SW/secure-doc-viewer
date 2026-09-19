@@ -43,6 +43,11 @@ export class DocumentsService {
     return this.http.put<DocumentDetail>(`${this.base}/${encodeURIComponent(documentId)}/file`, formData);
   }
 
+  /** Admin only. */
+  transferOwnership(documentId: string, username: string): Observable<DocumentDetail> {
+    return this.http.put<DocumentDetail>(`${this.base}/${encodeURIComponent(documentId)}/owner`, { username });
+  }
+
   delete(documentId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${encodeURIComponent(documentId)}`);
   }

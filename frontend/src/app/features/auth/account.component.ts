@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SessionService } from '../../core/session.service';
 
 const MIN_PASSWORD_LENGTH = 12;
@@ -12,6 +13,11 @@ const MIN_PASSWORD_LENGTH = 12;
   template: `
     <div class="auth-card">
       <h1>Your account</h1>
+      @if (required) {
+        <p class="notice" role="alert">
+          Your password was set by an administrator. Choose your own password to continue.
+        </p>
+      }
       <p class="subtitle">
         Signed in as <strong>{{ sessionService.username() }}</strong> ({{ sessionService.role() }}).
       </p>
@@ -53,7 +59,18 @@ export class AccountComponent {
   readonly saved = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  constructor(readonly sessionService: SessionService) {}
+  readonly required: boolean;
+  private readonly returnUrl: string;
+
+  constructor(
+    readonly sessionService: SessionService,
+    private readonly router: Router,
+    route: ActivatedRoute,
+  ) {
+    this.required = route.snapshot.queryParamMap.has('required') || sessionService.mustChangePassword();
+    const returnUrl = route.snapshot.queryParamMap.get('returnUrl');
+    this.returnUrl = returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/documents';
+  }
 
   submit(): void {
     this.saved.set(false);
@@ -72,6 +89,9 @@ export class AccountComponent {
         this.saving.set(false);
         this.saved.set(true);
         this.currentPassword = this.newPassword = this.confirmPassword = '';
+        if (this.required) {
+          this.router.navigateByUrl(this.returnUrl);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);

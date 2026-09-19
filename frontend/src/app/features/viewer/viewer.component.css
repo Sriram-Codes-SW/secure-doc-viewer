@@ -85,6 +85,12 @@ button.secondary {
   text-align: center;
 }
 
+.stage-scroll {
+  max-width: 100%;
+  overflow: auto;
+  touch-action: pan-y pinch-zoom;
+}
+
 .stage-wrapper {
   position: relative;
   margin: 0 auto;
@@ -146,4 +152,35 @@ button.secondary {
   font-size: 0.8rem;
   color: var(--muted);
   text-align: center;
+}
+
+.access-lost {
+  max-width: 480px;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+/* Phones: stack the header, let the controls wrap, keep tap targets usable. */
+@media (max-width: 640px) {
+  .viewer-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .controls .divider {
+    display: none;
+  }
+
+  .controls button {
+    padding: 0.45rem 0.7rem;
+  }
+
+  .page-jump input {
+    width: 3.25rem;
+  }
 }

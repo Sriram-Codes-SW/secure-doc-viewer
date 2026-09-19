@@ -18,6 +18,8 @@ public record DocumentDetail(
         long updatedAtEpochSeconds,
         boolean canManage,
         List<String> sharedWith,
-        List<PageInfo> pages
+        List<PageInfo> pages,
+        /** Bumped each time the PDF is replaced; the viewer compares it with its tile URL grids. */
+        int tileVersion
 ) {
 }

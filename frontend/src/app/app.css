@@ -72,3 +72,15 @@ main {
 .idle-banner button {
   padding: 0.3rem 0.8rem;
 }
+
+@media (max-width: 640px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    padding: 0.6rem 1rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}
