@@ -36,6 +36,8 @@ export interface DocumentDetail {
   /** Only present when canManage is true. */
   sharedWith: string[] | null;
   pages: PageInfo[];
+  /** Bumped each time the PDF is replaced. */
+  tileVersion: number;
 }
 
 export interface TileUrlGrid {
@@ -43,5 +45,7 @@ export interface TileUrlGrid {
   rows: number;
   cols: number;
   tileSize: number;
+  /** The render these URLs belong to; differs from the document's once it is replaced. */
+  tileVersion: number;
   tileUrls: string[][];
 }

@@ -2,10 +2,13 @@
   --bg: #f6f7f9;
   --surface: #ffffff;
   --fg: #16181d;
-  --muted: #6b7280;
+  /* Text colours meet WCAG AA (4.5:1) on both --bg and --surface. */
+  --muted: #5d6470;
   --border: #e2e4e9;
-  --accent: #2f6fed;
-  --danger: #d7373f;
+  --accent: #2458d6;
+  /* Text on an --accent background. */
+  --on-accent: #ffffff;
+  --danger: #c1272f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,6 +19,7 @@
     --muted: #9aa0aa;
     --border: #2a2d33;
     --accent: #5b8dfd;
+    --on-accent: #0b1020;
     --danger: #f0787e;
   }
 }
@@ -58,7 +62,7 @@ button,
   border: 1px solid var(--accent);
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 0.9rem;
   text-decoration: none;
   cursor: pointer;

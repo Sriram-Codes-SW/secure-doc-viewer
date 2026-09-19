@@ -35,6 +35,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -73,14 +75,25 @@ public class TileGenerationService {
 
     private final Semaphore renderPermits;
     private final ViewerMetrics metrics;
-    /** Renders run here so the request thread can give up on one that takes too long. */
-    private final ExecutorService renderThreads =
-            Executors.newCachedThreadPool(Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
+    /**
+     * Renders run here so the request thread can give up on one that takes too
+     * long. Bounded by the render permits: a permit is held until its render
+     * thread has actually stopped, so abandoned renders still count against
+     * {@code max-concurrent-renders} and can't pile up CPU or heap behind it.
+     */
+    private final ExecutorService renderThreads;
+    /** Renders the request gave up on that haven't reached their next page boundary yet. */
+    private final AtomicInteger abandonedRunning = new AtomicInteger();
+
+    private enum RenderState { RUNNING, DONE, ABANDONED }
 
     public TileGenerationService(ViewerProperties properties, ViewerMetrics metrics) {
         this.properties = properties;
         this.metrics = metrics;
-        this.renderPermits = new Semaphore(Math.max(1, properties.getMaxConcurrentRenders()), true);
+        int slots = Math.max(1, properties.getMaxConcurrentRenders());
+        this.renderPermits = new Semaphore(slots, true);
+        this.renderThreads = Executors.newFixedThreadPool(slots, Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
+        metrics.abandonedRendersRunning(abandonedRunning::get);
     }
 
     /**
@@ -93,6 +106,7 @@ public class TileGenerationService {
     public RenderedDocument render(InputStream pdf) throws IOException {
         acquireRenderPermit();
         Timer.Sample timing = metrics.renderStarted();
+        boolean handedToRenderThread = false;
         try {
             Path stagingDir = Path.of(properties.getStorageRoot(), STAGING_DIR, UUID.randomUUID().toString());
             Files.createDirectories(stagingDir);
@@ -104,12 +118,34 @@ public class TileGenerationService {
                 throw e;
             }
             AtomicBoolean cancelled = new AtomicBoolean();
-            Future<RenderedDocument> job = renderThreads.submit(() -> renderStaged(stagingDir, source, cancelled));
+            AtomicReference<RenderState> state = new AtomicReference<>(RenderState.RUNNING);
+            Future<RenderedDocument> job = renderThreads.submit(() -> {
+                try {
+                    RenderedDocument rendered = renderStaged(stagingDir, source, cancelled);
+                    if (!state.compareAndSet(RenderState.RUNNING, RenderState.DONE)) {
+                        // Finished just after the request gave up: nobody will commit it.
+                        discardStaging(stagingDir, new CancellationException("abandoned"));
+                        throw new CancellationException("Render abandoned after render-timeout");
+                    }
+                    return rendered;
+                } finally {
+                    if (state.get() == RenderState.ABANDONED) {
+                        abandonedRunning.decrementAndGet();
+                    }
+                    renderPermits.release();
+                    metrics.renderFinished(timing);
+                }
+            });
+            handedToRenderThread = true;
             try {
                 return job.get(properties.getRenderTimeout().toMillis(), TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
-                // The render stops at its next page and cleans up after itself; the
-                // slot is freed now so one hostile PDF can't hold it indefinitely.
+                if (!state.compareAndSet(RenderState.RUNNING, RenderState.ABANDONED)) {
+                    return awaitFinished(job); // it finished in the meantime: use it
+                }
+                // The render stops at its next page boundary, cleans up and only
+                // then frees its slot; new uploads wait for (or 503 on) that slot.
+                abandonedRunning.incrementAndGet();
                 cancelled.set(true);
                 job.cancel(true);
                 metrics.renderTimedOut();
@@ -134,8 +170,27 @@ public class TileGenerationService {
                 throw new ServiceBusyException("Upload interrupted. Try again.", 5);
             }
         } finally {
-            renderPermits.release();
-            metrics.renderFinished(timing);
+            if (!handedToRenderThread) {
+                renderPermits.release();
+                metrics.renderFinished(timing);
+            }
+        }
+    }
+
+    private static RenderedDocument awaitFinished(Future<RenderedDocument> job) throws IOException {
+        try {
+            return job.get();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof IOException io) {
+                throw io;
+            }
+            if (e.getCause() instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            throw new IOException(e.getCause());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ServiceBusyException("Upload interrupted. Try again.", 5);
         }
     }
 

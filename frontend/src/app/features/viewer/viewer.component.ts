@@ -311,6 +311,11 @@ export class ViewerComponent implements OnInit, OnDestroy {
         if (generation !== this.loadGeneration) {
           return;
         }
+        if (grid.tileVersion !== this.manifest()?.tileVersion) {
+          // Replaced since we loaded the page list: its pages may differ too.
+          this.reloadDocument(page);
+          return;
+        }
         const existing = new Map(this.tiles().map((t) => [t.key, t]));
         this.tiles.set(
           buildTileViewModels(grid, info, API_BASE_URL).map((fresh) => {
@@ -365,7 +370,8 @@ export class ViewerComponent implements OnInit, OnDestroy {
             return;
           }
           this.updateTile(tile.key, { status: 'loaded', src: URL.createObjectURL(blob) });
-        } else if (response.status === 429) {
+        } else if (response.status === 429 || response.status === 503) {
+          // Over this reader's limit, or the server is briefly busy: wait and resume.
           outcome.retryAfterSeconds = parseRetryAfter(response.headers.get('Retry-After'));
         } else if (response.status === 401) {
           outcome.unauthorized = true;

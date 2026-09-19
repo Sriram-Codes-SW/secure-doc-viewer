@@ -82,14 +82,18 @@ public class DocumentService {
         return tx.execute(status -> detail(requireViewable(documentId, viewer, actor), viewer));
     }
 
+    /** One page's grid and the render it belongs to, for issuing tile URLs. */
+    public record IssuablePage(PageInfo info, int tileVersion) {
+    }
+
     /** The grid of one page, for issuing tile URLs. */
-    public PageInfo requirePage(String documentId, int page, Viewer viewer, Actor actor) {
+    public IssuablePage requirePage(String documentId, int page, Viewer viewer, Actor actor) {
         return tx.execute(status -> {
             Document document = requireViewable(documentId, viewer, actor);
             return document.getPages().stream()
                     .filter(p -> p.getPageIndex() == page)
                     .findFirst()
-                    .map(p -> pageInfo(p, document.getTileSize()))
+                    .map(p -> new IssuablePage(pageInfo(p, document.getTileSize()), document.getTileVersion()))
                     .orElseThrow(() -> new DocumentNotFoundException("No such page."));
         });
     }
@@ -342,7 +346,7 @@ public class DocumentService {
         List<PageInfo> pages = d.getPages().stream().map(p -> pageInfo(p, d.getTileSize())).toList();
         return new DocumentDetail(d.getId(), d.getTitle(), d.getPageCount(), d.getOwner().getUsername(),
                 d.getVisibility(), d.getCreatedAt().getEpochSecond(), d.getUpdatedAt().getEpochSecond(),
-                manage, manage ? sharedWith(d) : null, pages);
+                manage, manage ? sharedWith(d) : null, pages, d.getTileVersion());
     }
 
     private static List<String> sharedWith(Document d) {

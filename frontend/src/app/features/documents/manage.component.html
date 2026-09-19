@@ -55,7 +55,13 @@
         @for (username of doc.sharedWith; track username) {
           <li>
             <span>{{ username }}</span>
-            <button class="secondary" (click)="unshare(username)" [disabled]="busy()">Remove</button>
+            <button class="secondary" [class.danger]="confirmingUnshare() === username"
+                    (click)="unshare(username)" [disabled]="busy()">
+              {{ confirmingUnshare() === username ? 'Confirm remove' : 'Remove' }}
+            </button>
+            @if (confirmingUnshare() === username) {
+              <button class="link" (click)="confirmingUnshare.set(null)">Cancel</button>
+            }
           </li>
         }
       </ul>

@@ -88,6 +88,10 @@
                   @if (user.locked) {
                     <button (click)="unlock(user)" title="Clear sign-in lockout">Unlock</button>
                   }
+                  <button (click)="signOutEverywhere(user)" [class.danger]="confirmingSignOut() === user.username"
+                          title="End all of this user's sessions">
+                    {{ confirmingSignOut() === user.username ? 'Confirm sign out' : 'Sign out everywhere' }}
+                  </button>
                   <button (click)="toggleEnabled(user)" [class.danger]="confirmingDisable() === user.username">
                     {{ user.enabled ? (confirmingDisable() === user.username ? 'Confirm disable' : 'Disable') : 'Enable' }}
                   </button>

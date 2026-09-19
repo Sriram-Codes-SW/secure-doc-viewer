@@ -25,6 +25,9 @@
     <properties>
         <java.version>25</java.version>
         <pdfbox.version>3.0.8</pdfbox.version>
+        <!-- Boot 4.1.1 ships Tomcat 11.0.24 (GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6,
+             GHSA-h3x4-894j-xpx5, all critical). Drop this once Boot manages 11.0.25+. -->
+        <tomcat.version>11.0.26</tomcat.version>
     </properties>
 
     <dependencies>

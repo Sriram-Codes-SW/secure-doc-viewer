@@ -1,5 +1,7 @@
 package com.example.securedocviewer.controller;
 
+import com.example.securedocviewer.exception.TileGoneException;
+import com.example.securedocviewer.service.TileWorkLimiter;
 import com.example.securedocviewer.model.SignedTilePayload;
 import com.example.securedocviewer.exception.InvalidTokenException;
 import com.example.securedocviewer.security.SessionKeys;
@@ -61,6 +63,7 @@ public class TileController {
     private final RequestActors actors;
     private final ViewerProperties properties;
     private final ViewerMetrics metrics;
+    private final TileWorkLimiter tileWork;
 
     public TileController(SignedUrlService signedUrlService,
                            SessionKeys sessionKeys,
@@ -71,7 +74,8 @@ public class TileController {
                            DocumentService documents,
                            RequestActors actors,
                            ViewerProperties properties,
-                           ViewerMetrics metrics) {
+                           ViewerMetrics metrics,
+                           TileWorkLimiter tileWork) {
         this.signedUrlService = signedUrlService;
         this.sessionKeys = sessionKeys;
         this.tileRateLimiter = tileRateLimiter;
@@ -82,12 +86,13 @@ public class TileController {
         this.actors = actors;
         this.properties = properties;
         this.metrics = metrics;
+        this.tileWork = tileWork;
     }
 
     @GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getTile(@RequestParam String token,
                                           Authentication authentication,
-                                          HttpServletRequest request) throws IOException {
+                                          HttpServletRequest request) throws Exception {
         SignedTilePayload payload = signedUrlService.verifyAndDecode(token);
 
         // Second, independent check: the request must come from the very
@@ -125,14 +130,24 @@ public class TileController {
                     return new DocumentNotFoundException("Document not found.");
                 });
 
+        // Issued for an earlier render: the document was replaced since. Serving the
+        // current render's tile here would mix old and new tiles on one page.
+        if (payload.tileVersion() != access.tileVersion()) {
+            throw new TileGoneException();
+        }
         String title = access.title();
-        BufferedImage rawTile = tileGenerationService.loadRawTile(
-                payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
-
         // First 6 characters of the session's admin handle: enough to single out one sign-in
         // in the audit log's session column, too short to be of any other use.
         String traceCode = sessionKeys.adminHandle(session.getId()).substring(0, 6);
-        BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode);
+        byte[] png = tileWork.run(() -> {
+            BufferedImage rawTile = tileGenerationService.loadRawTile(
+                    payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
+            // Sized from the document's full tile size, so cropped edge tiles get the same mark.
+            BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode, access.tileSize());
+            ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+            ImageIO.write(watermarked, "png", encoded);
+            return encoded.toByteArray();
+        });
 
         // One event per page view rather than per tile: a page is ~35 tiles, and
         // per-tile rows buried everything else in the audit log.
@@ -141,14 +156,12 @@ public class TileController {
                 AuditEventType.PAGE_VIEWED, actor,
                 new Subject(payload.documentId(), title, payload.page(), null, null, null));
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ImageIO.write(watermarked, "png", out);
         metrics.tileServed();
 
         return ResponseEntity.ok()
                 // Deliberately not cacheable beyond a moment — a shared cache
                 // holding onto a watermarked-for-someone-else tile would leak it.
                 .cacheControl(CacheControl.noStore())
-                .body(out.toByteArray());
+                .body(png);
     }
 }

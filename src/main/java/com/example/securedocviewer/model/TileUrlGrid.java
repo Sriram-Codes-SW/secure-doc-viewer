@@ -11,6 +11,8 @@ public record TileUrlGrid(
         int rows,
         int cols,
         int tileSize,
+        /** Which render these URLs belong to; differs from the document's once it is replaced. */
+        int tileVersion,
         String[][] tileUrls
 ) {
 }

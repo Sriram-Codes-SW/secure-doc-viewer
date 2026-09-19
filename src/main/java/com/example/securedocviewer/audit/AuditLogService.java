@@ -89,21 +89,27 @@ public class AuditLogService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordAtMostEvery(Duration interval, String key, AuditEventType type, Actor actor, Subject subject) {
         Instant now = Instant.now();
-        Throttled state = throttled.computeIfAbsent(key, k -> new Throttled());
-        int suppressedBefore;
-        synchronized (state) {
-            if (state.lastWritten != null && state.lastWritten.plus(interval).isAfter(now)) {
-                state.suppressed++;
-                return;
+        // Decided inside compute(), which is atomic per key (including against the
+        // sweep below), so parallel callers can't both write within one interval.
+        int[] suppressedBefore = {-1};
+        throttled.compute(key, (k, state) -> {
+            Throttled current = state == null ? new Throttled() : state;
+            if (current.lastWritten != null && current.lastWritten.plus(interval).isAfter(now)) {
+                current.suppressed++;
+            } else {
+                current.lastWritten = now;
+                suppressedBefore[0] = current.suppressed;
+                current.suppressed = 0;
             }
-            state.lastWritten = now;
-            suppressedBefore = state.suppressed;
-            state.suppressed = 0;
+            return current;
+        });
+        if (suppressedBefore[0] < 0) {
+            return;
         }
         // Say how many similar events were dropped since the last one, so volume isn't hidden.
-        Subject withCount = suppressedBefore == 0 ? subject : new Subject(subject.documentId(), subject.documentTitle(),
+        Subject withCount = suppressedBefore[0] == 0 ? subject : new Subject(subject.documentId(), subject.documentTitle(),
                 subject.page(), subject.tileRow(), subject.tileCol(),
-                (subject.detail() == null ? "" : subject.detail() + " ") + "(+" + suppressedBefore + " similar suppressed)");
+                (subject.detail() == null ? "" : subject.detail() + " ") + "(+" + suppressedBefore[0] + " similar suppressed)");
         record(type, actor, withCount);
     }
 
@@ -111,11 +117,10 @@ public class AuditLogService {
     @Scheduled(fixedDelay = 3_600_000)
     public void sweepThrottled() {
         Instant cutoff = Instant.now().minus(Duration.ofHours(1));
-        throttled.entrySet().removeIf(e -> {
-            synchronized (e.getValue()) {
-                return e.getValue().lastWritten == null || e.getValue().lastWritten.isBefore(cutoff);
-            }
-        });
+        for (String key : throttled.keySet()) {
+            throttled.computeIfPresent(key, (k, state) ->
+                    state.lastWritten == null || state.lastWritten.isBefore(cutoff) ? null : state);
+        }
     }
 
     public Page search(Query query, int page, int size) {

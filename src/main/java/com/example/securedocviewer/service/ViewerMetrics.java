@@ -22,6 +22,7 @@ public class ViewerMetrics {
     private final Counter tilesRateLimited;
     private final Counter rendersRejected;
     private final Counter rendersTimedOut;
+    private final Counter tilesBusy;
     private final Timer renderTime;
 
     public ViewerMetrics(MeterRegistry registry) {
@@ -32,6 +33,8 @@ public class ViewerMetrics {
                 .description("Tile requests refused by the per-user rate limit").register(registry);
         this.rendersRejected = Counter.builder("sdv.render.rejected")
                 .description("Uploads refused with 503 because every render slot stayed busy").register(registry);
+        this.tilesBusy = Counter.builder("sdv.tiles.busy")
+                .description("Tile requests refused with 503 because the server-wide tile limit was reached").register(registry);
         this.rendersTimedOut = Counter.builder("sdv.render.timed_out")
                 .description("Uploads rejected because rendering exceeded render-timeout").register(registry);
         this.renderTime = Timer.builder("sdv.render")
@@ -52,6 +55,16 @@ public class ViewerMetrics {
 
     public void renderRejected() {
         rendersRejected.increment();
+    }
+
+    /** Renders abandoned after render-timeout that are still stopping (each still holds a render slot). */
+    public void abandonedRendersRunning(java.util.function.Supplier<Number> count) {
+        io.micrometer.core.instrument.Gauge.builder("sdv.render.abandoned_running", count)
+                .description("Abandoned renders still stopping; each holds a render slot").register(registry);
+    }
+
+    public void tileBusy() {
+        tilesBusy.increment();
     }
 
     public void renderTimedOut() {

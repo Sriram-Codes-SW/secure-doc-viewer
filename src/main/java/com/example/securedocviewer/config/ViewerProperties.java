@@ -38,6 +38,17 @@ public class ViewerProperties {
     private long renderQueueTimeoutSeconds = 30;
     /** A PDF that takes longer than this to render is rejected, so a hostile file can't hold a render slot. */
     private Duration renderTimeout = Duration.ofMinutes(3);
+    /** Tiles watermarked at once across all users; 0 = twice the CPU count. Excess requests get 503. */
+    private int maxConcurrentTileRenders = 0;
+
+    public int getMaxConcurrentTileRenders() {
+        return maxConcurrentTileRenders;
+    }
+
+    public void setMaxConcurrentTileRenders(int maxConcurrentTileRenders) {
+        this.maxConcurrentTileRenders = maxConcurrentTileRenders;
+    }
+
     /** Sessions end this long after sign-in regardless of activity. */
     private Duration sessionMaxLifetime = Duration.ofHours(12);
 

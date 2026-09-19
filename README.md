@@ -19,7 +19,7 @@ protection here is structural instead — it lives on the server, where the clie
 | Concern | How it is handled |
 |---|---|
 | "Save the PDF" | The PDF stops existing as a servable file after ingest. Only disconnected PNG tiles remain on disk. There is no endpoint that returns a whole page, let alone a whole document. |
-| "Copy the tile URL" | Every tile URL carries an HMAC-SHA256 signature over document + page + row + col + session binding + expiry. Change any field and the signature fails. |
+| "Copy the tile URL" | Every tile URL carries an HMAC-SHA256 signature over document + page + row + col + render version + session binding + expiry. After a PDF is replaced, URLs for the old render answer `410` (so a page is never a mix of old and new tiles) and the viewer reloads the new one with an "updated" notice. Change any field and the signature fails. |
 | "Reuse the URL later" | Tokens expire (default 120s). Expiry is inside the signed payload, so it cannot be edited. |
 | "Share the URL with someone else" | Tokens carry a keyed hash of the issuing session (never the session id itself), and a tile request must also present that session's httpOnly cookie. A URL pasted into another browser or account gets 401. |
 | "Keep using URLs after logout" | The session is checked on every tile request, independently of token expiry, so signing out — or an admin revoking the session — kills every outstanding URL immediately. |
@@ -115,7 +115,9 @@ docker compose --profile full up -d --build   # MySQL + API + nginx-served app a
 ```
 
 Only the web container is published (on 127.0.0.1); the API and database are reachable only
-inside the compose network. nginx serves the app with its own strict CSP and proxies `/api`, so the
+inside the compose network. nginx runs as a non-root user (the unprivileged image, listening on
+8080 inside the network). Base images and GitHub Actions are pinned by digest / commit SHA, and
+Dependabot proposes updates. nginx serves the app with its own strict CSP and proxies `/api`, so the
 browser sees a single origin.
 
 **Development** (JDK 25+, Node 24, Docker for MySQL):
@@ -189,6 +191,7 @@ All under `secure-doc-viewer.*` in `application.yml`; secrets come from the envi
 | `tile-rate-limit-per-window` | `180` | Max tile requests a user may make per window |
 | `tile-rate-limit-window-seconds` | `60` | Width of that rolling window |
 | `max-concurrent-renders` / `render-queue-timeout-seconds` | `2` / `30` | PDFs rendered at once; further uploads wait this long, then get `503` + `Retry-After` |
+| `max-concurrent-tile-renders` | `0` (2 × CPUs) | Tiles watermarked at once across all users; beyond it tile requests get `503` + `Retry-After` and the viewer retries |
 | `render-timeout` | `3m` | A PDF that takes longer to render is rejected (`400`) and its render slot freed |
 | `session-max-lifetime` | `12h` | Sessions end this long after sign-in, however active (on top of the 30-minute idle timeout) |
 | `audit-retention-days` | `180` | Audit events older than this are purged nightly |
@@ -316,11 +319,14 @@ cd frontend && npx ng test --watch=false   # frontend unit tests
 cd frontend && E2E_ADMIN_USER=admin E2E_ADMIN_PASSWORD=… npx playwright test
 ```
 
-GitHub Actions runs all of this on every pull request — backend, frontend, then the Playwright
-journey against a freshly built Docker stack with throwaway secrets — and Dependabot opens weekly
+GitHub Actions runs all of this on every pull request — backend, frontend, a known-vulnerability
+scan of every Maven and npm dependency (OSV; fails the build on any published advisory), then the
+Playwright journey against a freshly built Docker stack with throwaway secrets — and Dependabot opens weekly
 grouped update PRs for Maven, npm, Docker images and Actions.
 
-The end-to-end test creates a publisher, a reader and an outsider; the publisher uploads a PDF and
+The end-to-end test checks each screen (sign-in, admin, upload, manage, document list, viewer)
+with axe-core for WCAG 2.1 A/AA violations in both light and dark themes, and disables the
+accounts it created when it finishes. It creates a publisher, a reader and an outsider; the publisher uploads a PDF and
 shares it with the reader, who must see every tile load and turn pages by keyboard, while the
 outsider is told the document doesn't exist.
 
@@ -337,6 +343,11 @@ payload-splicing rejection, expiry, malformed tokens, the rate limiter, watermar
 distinctness between viewers, and tile-grid math. The grid tests include a round-trip property check: slicing an image and reassembling
 every tile at its offset must reproduce the source pixel-for-pixel, so edge tiles are proven to
 be cropped rather than padded or dropped.
+
+Concurrency is tested directly: parallel wrong passwords get exactly the allowed number of tries;
+readers pulling tiles while the owner replaces or deletes the PDF only ever get the tile, `410` or
+`404` (never an error or a mixed page); the audit throttle writes one event per interval under
+parallel callers; a timed-out render frees its slot and cleans up.
 
 `MySqlIntegrationTest` runs against a real MySQL 8.4 (skipped without Docker; CI has it): all
 Flyway migrations, two concurrent PDF replacements serialised by the row lock, and timestamps
@@ -369,10 +380,10 @@ Stated plainly, because the honest framing matters more than the feature list:
 - Publishers can discover non-admin usernames through the share picker (two-character prefix
   search), by design: they need it to share.
 - Pages are images, so screen readers get no text; there is no text layer by design.
-- A render that overruns `render-timeout` is abandoned at its next page boundary; a single
-  pathological page can keep one CPU busy until it finishes, but no longer blocks other uploads.
-- Docker base images and GitHub Actions are pinned by version tag, not digest; Dependabot keeps
-  them current.
+- A render that overruns `render-timeout` is rejected and abandoned at its next page boundary.
+  It keeps its render slot until it has actually stopped (so abandoned renders can't pile up CPU
+  or memory), which means one pathological page can hold one slot until it finishes; watch
+  `sdv_render_abandoned_running`.
 - Tiles are stored on local disk. Object storage (S3) plus a CDN with signed URLs is the
   production shape; `SignedUrlService` deliberately mirrors the presigned-URL pattern so it maps
   onto CloudFront signed URLs with little change.

@@ -29,14 +29,14 @@ public interface DocumentRepository extends JpaRepository<Document, String> {
      * may see the document, empty otherwise. One indexed query, no entity loading.
      */
     @Query("""
-            select new com.example.securedocviewer.document.TileAccess(d.title, d.tileVersion) from Document d
+            select new com.example.securedocviewer.document.TileAccess(d.title, d.tileVersion, d.tileSize) from Document d
             where d.id = :id and (d.visibility = :everyone or d.owner.username = :username
                    or :username in (select s.username from d.sharedWith s))
             """)
     Optional<TileAccess> findTileAccessIfVisible(@Param("id") String id, @Param("username") String username,
                                                  @Param("everyone") Visibility everyone);
 
-    @Query("select new com.example.securedocviewer.document.TileAccess(d.title, d.tileVersion) from Document d where d.id = :id")
+    @Query("select new com.example.securedocviewer.document.TileAccess(d.title, d.tileVersion, d.tileSize) from Document d where d.id = :id")
     Optional<TileAccess> findTileAccess(@Param("id") String id);
 
     /** Row lock for replace/delete, so concurrent changes to one document are serialised. */

@@ -35,9 +35,9 @@ public class SignedUrlService {
         this.properties = properties;
     }
 
-    public String issueToken(String documentId, int page, int row, int col, String sessionBinding) {
+    public String issueToken(String documentId, int page, int row, int col, int tileVersion, String sessionBinding) {
         long expiresAt = Instant.now().getEpochSecond() + properties.getUrlTtlSeconds();
-        SignedTilePayload payload = new SignedTilePayload(documentId, page, row, col, sessionBinding, expiresAt);
+        SignedTilePayload payload = new SignedTilePayload(documentId, page, row, col, tileVersion, sessionBinding, expiresAt);
         String payloadEncoded = base64Url(payload.canonicalString().getBytes(StandardCharsets.UTF_8));
         String signature = base64Url(hmac(payload.canonicalString()));
         return payloadEncoded + "." + signature;
@@ -83,7 +83,7 @@ public class SignedUrlService {
 
     private SignedTilePayload parseCanonical(String canonical) {
         String[] fields = canonical.split("\\|");
-        if (fields.length != 6) {
+        if (fields.length != 7) {
             throw new InvalidTokenException("Malformed token payload fields");
         }
         try {
@@ -92,8 +92,9 @@ public class SignedUrlService {
                     Integer.parseInt(fields[1]),
                     Integer.parseInt(fields[2]),
                     Integer.parseInt(fields[3]),
-                    fields[4],
-                    Long.parseLong(fields[5])
+                    Integer.parseInt(fields[4]),
+                    fields[5],
+                    Long.parseLong(fields[6])
             );
         } catch (NumberFormatException e) {
             throw new InvalidTokenException("Malformed token payload numbers");

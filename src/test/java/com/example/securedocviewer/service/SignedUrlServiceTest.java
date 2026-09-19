@@ -23,7 +23,7 @@ class SignedUrlServiceTest {
 
     @Test
     void issuedTokenRoundTripsToTheSamePayload() {
-        String token = service.issueToken("doc-1", 2, 3, 4, "session-abc");
+        String token = service.issueToken("doc-1", 2, 3, 4, 1, "session-abc");
 
         SignedTilePayload payload = service.verifyAndDecode(token);
 
@@ -36,7 +36,7 @@ class SignedUrlServiceTest {
 
     @Test
     void tamperedSignatureIsRejected() {
-        String token = service.issueToken("doc-1", 0, 0, 0, "session-abc");
+        String token = service.issueToken("doc-1", 0, 0, 0, 1, "session-abc");
         String[] parts = token.split("\\.", 2);
         // Flip the last character of the signature — payload is untouched.
         char[] sig = parts[1].toCharArray();
@@ -48,10 +48,10 @@ class SignedUrlServiceTest {
 
     @Test
     void tamperedPayloadIsRejectedEvenIfSignatureFormatLooksValid() {
-        String token = service.issueToken("doc-1", 0, 0, 0, "session-abc");
+        String token = service.issueToken("doc-1", 0, 0, 0, 1, "session-abc");
         String[] parts = token.split("\\.", 2);
         // Re-issue a token for a different tile but splice in the original signature.
-        String otherToken = service.issueToken("doc-1", 0, 0, 1, "session-abc");
+        String otherToken = service.issueToken("doc-1", 0, 0, 1, 1, "session-abc");
         String otherPayload = otherToken.split("\\.", 2)[0];
         String frankenToken = otherPayload + "." + parts[1];
 
@@ -61,7 +61,7 @@ class SignedUrlServiceTest {
     @Test
     void expiredTokenIsRejected() {
         properties.setUrlTtlSeconds(-1); // already in the past the moment it's issued
-        String token = service.issueToken("doc-1", 0, 0, 0, "session-abc");
+        String token = service.issueToken("doc-1", 0, 0, 0, 1, "session-abc");
 
         InvalidTokenException ex = assertThrows(InvalidTokenException.class, () -> service.verifyAndDecode(token));
         assertTrue(ex.getMessage().toLowerCase().contains("expired"));

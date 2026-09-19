@@ -172,4 +172,38 @@ class WatermarkServiceTest {
 
         assertTrue(anyPixelDiffers, "expected different viewer labels to render differently");
     }
+
+    @Test
+    void aCroppedEdgeTileCarriesExactlyTheTopLeftOfAFullTilesMark() {
+        WatermarkService service = new WatermarkService(0.2f, 1.5);
+        for (int attempt = 0; attempt < 2; attempt++) { // retry once if the minute ticks over in between
+            BufferedImage full = service.applyWatermark(blank(512, 512), "alice", "ABC123", 512);
+            BufferedImage edge = service.applyWatermark(blank(512, 100), "alice", "ABC123", 512);
+            BufferedImage corner = service.applyWatermark(blank(90, 70), "alice", "ABC123", 512);
+            if (sameRegion(full, edge) && sameRegion(full, corner)) {
+                return;
+            }
+        }
+        fail("edge tiles are not marked like the matching part of a full tile");
+    }
+
+    private static BufferedImage blank(int width, int height) {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = image.createGraphics();
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, width, height);
+        g.dispose();
+        return image;
+    }
+
+    private static boolean sameRegion(BufferedImage full, BufferedImage part) {
+        for (int y = 0; y < part.getHeight(); y++) {
+            for (int x = 0; x < part.getWidth(); x++) {
+                if (full.getRGB(x, y) != part.getRGB(x, y)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

@@ -182,6 +182,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.changeRole(user, pending.role);
   }
 
+  readonly confirmingSignOut = signal<string | null>(null);
+
+  signOutEverywhere(user: UserSummary): void {
+    if (this.confirmingSignOut() !== user.username) {
+      this.confirmingSignOut.set(user.username);
+      return;
+    }
+    this.confirmingSignOut.set(null);
+    this.adminService.signOutEverywhere(user.username).subscribe({
+      next: () => {
+        this.usersMessage.set({ kind: 'success', text: `${user.username} was signed out everywhere.` });
+        this.adminService.getSessions().subscribe((sessions) => this.sessions.set(sessions));
+      },
+      error: (err: HttpErrorResponse) => this.showUsersError(err),
+    });
+  }
+
   unlock(user: UserSummary): void {
     this.adminService.unlock(user.username).subscribe({
       next: () => {

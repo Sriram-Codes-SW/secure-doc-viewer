@@ -79,6 +79,12 @@ secure-doc-viewer:
   # Width of the rolling window the limit above applies to.
   tile-rate-limit-window-seconds: 60
 
+  # Server-wide: at most this many tiles watermarked at once, across all users
+  # (0 = twice the CPU count). Beyond it tile requests get 503 + Retry-After
+  # and the viewer retries, so many busy readers slow down rather than
+  # starving the CPU.
+  max-concurrent-tile-renders: 0
+
   # How long audit events are kept before the nightly purge deletes them.
   audit-retention-days: 180
 

@@ -127,7 +127,15 @@ export class ManageDocumentComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Removing access takes effect immediately, even for pages already open, so it asks first. */
+  readonly confirmingUnshare = signal<string | null>(null);
+
   unshare(username: string): void {
+    if (this.confirmingUnshare() !== username) {
+      this.confirmingUnshare.set(username);
+      return;
+    }
+    this.confirmingUnshare.set(null);
     this.run(this.documentsService.unshare(this.documentId, username), (sharedWith) => {
       this.patchShares(sharedWith);
       this.notice.set({ kind: 'success', text: `${username} can no longer open it — including pages already open.` });

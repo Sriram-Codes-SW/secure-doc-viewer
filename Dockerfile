@@ -2,7 +2,8 @@
 # Build:  docker build -t secure-doc-viewer-api .
 # Usually run via `docker compose --profile full up -d --build` (see docker-compose.yml).
 
-FROM eclipse-temurin:25-jdk AS build
+# Pinned by digest (Dependabot updates it) so a rebuild gets exactly the reviewed image.
+FROM eclipse-temurin:25-jdk@sha256:97014c4b396021f9ddb7d592a7dbedb0c4e4215c29e03dc01c393558aefb71c2 AS build
 WORKDIR /src
 # Dependencies first, so they stay cached until pom.xml changes.
 COPY mvnw pom.xml ./
@@ -11,7 +12,7 @@ RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
 COPY src src
 RUN ./mvnw -B -q -DskipTests package
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:25-jre@sha256:bb036ed6cfdc57e3da7c22634d15f1b840d2caf76183861c80e81ca4b5104abb
 # The watermark and PDF rendering use Java2D text, which needs real fonts in a headless container.
 # curl is for the compose health check.
 RUN apt-get update \

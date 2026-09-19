@@ -18,6 +18,7 @@ const DOC: DocumentDetail = {
   pages: Array.from({ length: 5 }, (_, page) => ({
     page, rows: 1, cols: 1, tileSize: 256, pageWidthPx: 200, pageHeightPx: 200,
   })),
+  tileVersion: 1,
 };
 
 describe('ViewerComponent navigation', () => {
@@ -116,6 +117,16 @@ describe('ViewerComponent navigation', () => {
     viewer.onTouchEnd({ changedTouches: [touch(150, 205)] } as unknown as TouchEvent);
     expect(viewer.currentPage()).toBe(1);
     http.verify();
+  });
+
+  it('notices a replaced document from its tile URLs and reloads it with a notice', () => {
+    const viewer = create();
+    http.expectOne('/api/documents/doc-1/pages/0/tile-urls')
+      .flush({ page: 0, rows: 1, cols: 1, tileSize: 256, tileVersion: 2, tileUrls: [['/api/tiles?token=x']] });
+    http.expectOne('/api/documents/doc-1').flush({ ...DOC, pageCount: 3, pages: DOC.pages.slice(0, 3), tileVersion: 2 });
+    expect(viewer.updatedNotice()).toBe(true);
+    expect(viewer.manifest()?.tileVersion).toBe(2);
+    expectGridRequestFor(0);
   });
 
   it('shows the access-lost state when the document stops being available mid-read', () => {

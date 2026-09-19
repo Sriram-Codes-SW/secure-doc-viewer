@@ -1,5 +1,6 @@
 package com.example.securedocviewer.controller;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import com.example.securedocviewer.account.Role;
 import com.example.securedocviewer.account.UserAccountService;
 import com.example.securedocviewer.account.UserSummary;
@@ -80,6 +81,18 @@ public class UserAdminController {
     }
 
     /** Clears the account's sign-in lockout counters (not other accounts' or per-address ones). */
+    /** Ends every session of the user (except the admin's own, if they target themselves). */
+    @DeleteMapping("/{username}/sessions")
+    public ResponseEntity<Void> signOutEverywhere(@PathVariable String username, Authentication authentication,
+                                                  HttpServletRequest request) {
+        String target = UserAccountService.normalizeUsername(username);
+        accounts.requireExists(target);
+        sessions.revokeAllFor(target, request.getSession().getId());
+        audit.record(AuditEventType.SESSION_REVOKED, actors.of(request, authentication),
+                Subject.detail("all sessions of " + target));
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{username}/unlock")
     public ResponseEntity<Void> unlock(@PathVariable String username, Authentication authentication,
                                        HttpServletRequest request) {

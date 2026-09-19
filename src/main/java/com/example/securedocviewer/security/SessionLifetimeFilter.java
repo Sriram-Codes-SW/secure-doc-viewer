@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -23,6 +24,9 @@ public class SessionLifetimeFilter extends OncePerRequestFilter {
     /** Set at sign-in by AuthController. */
     public static final String SIGNED_IN_AT = "sdv.signedInAt";
 
+    private static final String SECURITY_CONTEXT =
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
+
     private final Duration maxLifetime;
 
     public SessionLifetimeFilter(Duration maxLifetime) {
@@ -33,10 +37,16 @@ public class SessionLifetimeFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if (session != null && session.getAttribute(SIGNED_IN_AT) instanceof Instant signedInAt
-                && Instant.now().isAfter(signedInAt.plus(maxLifetime))) {
-            session.invalidate();
-            SecurityContextHolder.clearContext();
+        if (session != null) {
+            if (session.getAttribute(SIGNED_IN_AT) instanceof Instant signedInAt) {
+                if (Instant.now().isAfter(signedInAt.plus(maxLifetime))) {
+                    session.invalidate();
+                    SecurityContextHolder.clearContext();
+                }
+            } else if (session.getAttribute(SECURITY_CONTEXT) != null) {
+                // Signed in before this rule existed: its lifetime starts now.
+                session.setAttribute(SIGNED_IN_AT, Instant.now());
+            }
         }
         chain.doFilter(request, response);
     }

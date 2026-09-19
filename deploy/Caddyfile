@@ -20,5 +20,5 @@
 
 	# Caddy replaces (never appends to) X-Forwarded-For with the real client
 	# address, because no upstream proxy is trusted here.
-	reverse_proxy web:80
+	reverse_proxy web:8080
 }

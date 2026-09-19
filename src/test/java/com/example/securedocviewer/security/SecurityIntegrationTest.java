@@ -361,6 +361,32 @@ class SecurityIntegrationTest {
         mvc.perform(get("/api/auth/me").session(session)).andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void anAdminCanSignAUserOutEverywhere() throws Exception {
+        user("everywhere-user", Role.READER);
+        MockHttpSession laptop = login("everywhere-user", PASSWORD);
+        MockHttpSession phone = login("everywhere-user", PASSWORD);
+        MockHttpSession admin = login("admin", "bootstrap-admin-password");
+
+        mvc.perform(delete("/api/admin/users/everywhere-user/sessions").session(laptop).with(csrf()))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete("/api/admin/users/everywhere-user/sessions").session(admin).with(csrf()))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/auth/me").session(laptop)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/auth/me").session(phone)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/auth/me").session(admin)).andExpect(status().isOk());
+    }
+
+    @Test
+    void aSessionFromBeforeTheLifetimeRuleStartsItsClockInsteadOfLivingForever() throws Exception {
+        user("legacy-session-user", Role.READER);
+        MockHttpSession session = login("legacy-session-user", PASSWORD);
+        session.removeAttribute(SessionLifetimeFilter.SIGNED_IN_AT);
+
+        mvc.perform(get("/api/auth/me").session(session)).andExpect(status().isOk());
+        assertNotNull(session.getAttribute(SessionLifetimeFilter.SIGNED_IN_AT), "clock not started");
+    }
+
     /** Tests that cause failures use their own address, so they don't use up 127.0.0.1's allowance. */
     private static org.springframework.test.web.servlet.request.RequestPostProcessor from(String ip) {
         return request -> {
