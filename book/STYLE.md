@@ -86,7 +86,7 @@ vocabulary index-ready.
 | administrator (prose), admin (UI and code) | | The role is `ADMIN` in code font. |
 | backend, frontend | back-end, front end | |
 | browser | web browser (after first use) | |
-| command line, terminal | shell (until Chapter 3 defines it), console | |
+| command line, terminal | shell (until Chapter 2 defines it), console | |
 | database | DB | `DB_PASSWORD` stays as-is in code. |
 | email | e-mail | |
 | filename, file path | file name | |
@@ -297,9 +297,9 @@ Example:
 
 | Concept | Analogy | Introduced in |
 |---|---|---|
-| Signed tile URL | Concert wristband with a hologram and a date | Chapter 25 (planned) |
-| Session cookie | Coat-check ticket | Chapter 6 (planned) |
-| Database table | Spreadsheet with strict columns | Chapter 7 (planned) |
+| Signed tile URL | Concert wristband with a hologram and a date | Chapter 25 |
+| Session cookie | Coat-check ticket | Chapter 8 |
+| Database table | Spreadsheet with strict columns | Chapter 9 |
 
 Writers: propose additions through `requests.md`. Chapter numbers follow `book/OUTLINE.md`.
 
@@ -322,7 +322,7 @@ Writers: propose additions through `requests.md`. Chapter numbers follow `book/O
   sparingly.
 - Code identifiers (class names, methods, config keys) are never bold; they go in code font.
 - Acronyms: spell out at first use with the acronym in parentheses, then use the acronym:
-  "Cross-Site Request Forgery (CSRF)". Exceptions that never need expanding after Chapter 5:
+  "Cross-Site Request Forgery (CSRF)". Exceptions that never need expanding after Chapter 8:
   HTTP, URL, PDF, JSON.
 
 ## 10. Callouts
