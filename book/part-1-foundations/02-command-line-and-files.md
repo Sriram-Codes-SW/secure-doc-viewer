@@ -1,4 +1,4 @@
-<!-- chapter: 2 | part: I | owner: writer-foundations | tag: none | status: draft -->
+<!-- chapter: 2 | part: I | owner: writer-foundations | tag: book-m6-final | status: draft -->
 # Chapter 2: The command line and your files
 
 Nearly every tool in this book is started by typing a command. This chapter teaches the small set of terminal skills you need: moving between folders, working with files, setting environment variables, and understanding what it means for a program to listen on a port. The app uses all of these: its secrets live in environment variables, and its server listens on port 8080.
@@ -26,7 +26,7 @@ Until now you have probably given your computer instructions by clicking. A *ter
 
 Why bother? Clicking can't be written down and repeated. A command can be pasted into a document, run by a teammate, or run by a machine in the middle of the night. The project's build, its tests and its automated checks are all commands.
 
-This book uses `bash` syntax. On macOS and Linux, open the Terminal app. On Windows, install Git for Windows, which includes *Git Bash*, and use that. Where PowerShell differs, the book shows both.
+This book uses `bash` syntax. On macOS and Linux, open the Terminal app. On Windows, install Git for Windows, which includes **Git Bash**, and use that for every command in this book. (Windows also has PowerShell, whose syntax differs; where a PowerShell equivalent matters, the book shows it.)
 
 **Analogy.** A terminal is like a phone call to a very literal assistant: you say exactly what you want, and it does exactly that. The analogy breaks down because the assistant never asks "are you sure?". Commands such as delete run immediately and usually can't be undone.
 
@@ -92,9 +92,16 @@ export GREETING="hello"
 echo $GREETING
 ```
 
-The first line sets `GREETING`. The second prints its value. Variables set this way last only for that terminal window.
+The first line sets `GREETING`. The second prints its value. Variables set this way last only for that terminal window, and only programs started from that window can see them.
 
-Programs use environment variables for settings that change from one computer to another, such as a database address or a password. The app reads several: the file `.env.example` in the repository lists them, with empty values where a secret belongs. Here is an excerpt.
+On Windows (PowerShell):
+
+```powershell
+$env:GREETING = "hello"
+echo $env:GREETING
+```
+
+Programs use environment variables for settings that change from one computer to another, such as a database address or a password. The app reads several: the file `.env.example` in the repository lists them, with empty values where a secret belongs and safe defaults for the rest. Here is an excerpt.
 
 **Listing 2.1 — `.env.example` (book-m6-final, excerpt: the database block)**
 
@@ -118,7 +125,7 @@ One variable deserves special mention. `PATH` is a list of folders. When you typ
 
 A *text file* holds characters. An *encoding* is the rule that maps characters to bytes; the project's files use UTF-8. A *line ending* marks where a line stops: Windows uses two bytes for it (carriage return plus line feed) and macOS and Linux use one (line feed). Git and editors can convert between them, which matters in Chapter 7.
 
-Now the reason for `.env`. The app needs secrets, such as the database password and the key used to sign tile URLs. Secrets must never be committed to version control, because history is permanent and shared. So the project keeps a template, `.env.example`, in the repository, and asks you to copy it to `.env`, which the project's `.gitignore` excludes. The real values stay on your machine. <!-- source: .gitignore and .env.example at book-m6-final -->
+Now the reason for `.env`. The app needs secrets, such as the database password and the key used to sign tile URLs. Secrets must never be committed to version control. **Version control** is a tool that records every change to a project's files so that you can go back to any earlier state; Git is the one this project uses, and [Chapter 7](07-git-and-github.md) teaches it. Its history is permanent and shared, so a secret committed once is exposed for good. So the project keeps a template, `.env.example`, in the repository, and asks you to copy it to `.env`. A file named `.gitignore` lists the files Git must not record, and it lists `.env`. The real values stay on your machine. <!-- source: .gitignore and .env.example at book-m6-final -->
 
 Copying the template is one command:
 
@@ -134,7 +141,7 @@ Then open `.env` in a text editor and fill in the blanks with values you choose.
 
 A running program is a *process*. Your computer can run many at once, and each gets its own number. A *port* is a numbered door on your computer, from 0 to 65535. A server process *listens* on a port: it asks the operating system to hand it any network request addressed to that number.
 
-Two programs can't listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. In this project:
+An *address* here means which network interface the program listens on; the name `localhost` means this computer. Two programs can't listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. In this project:
 
 - The backend listens on `8080` (`server.port` in `application.yml`).
 - MySQL listens on `3306`.
@@ -156,7 +163,7 @@ At `book-m6-final`, the ideas from this chapter appear in:
 
 ### Exercise 2.1 ★ Explore the repository
 
-Open a terminal in your copy of the repository. Use `pwd`, `ls` and `cd` to find `application.yml`, then print it with `cat`. How many levels deep is it below the project folder?
+(Do this after [Chapter 7](07-git-and-github.md) shows you how to get a copy of the repository, or use any folder you have.) Open a terminal in your copy of the repository. Use `pwd`, `ls` and `cd` to find `application.yml`, then print it with `cat`. How many levels deep is it below the project folder?
 
 *Solution:* Appendix C, Exercise 2.1.
 

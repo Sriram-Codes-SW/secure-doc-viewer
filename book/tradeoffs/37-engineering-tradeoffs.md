@@ -1,3 +1,4 @@
+<!-- chapter: 37 | part: trade-offs | owner: writer-production | tag: book-m6-final | status: draft -->
 # Chapter 37: The engineering trade-offs
 
 Tag: `book-m6-final`. Prerequisites: everything before it.
@@ -255,10 +256,18 @@ commit message of `b6aef4e`.
 
 ## Try it
 
-1. ★ Pick three rows of Table 37.1. For each, name the file or README section that shows the project's choice.
-2. ★★ Explain why moving tiles to S3 (37.7) forces you to revisit per-request watermarking (37.2) and session checks (37.4).
-3. ★★ Order the decisions in the sequence you would change them for a first scale-out, and defend the order.
-4. ★★★ Choose one decision and write the "When you'd switch" trigger as a measurable alert, using metrics from Chapter 35.
+### Exercise 37.1 ★ Where is the choice?
+
+Pick three rows of Table 37.1. For each, name the file or README section that shows the project's choice.
+### Exercise 37.2 ★★ Why S3 forces a rethink
+
+Explain why moving tiles to S3 (37.7) forces you to revisit per-request watermarking (37.2) and session checks (37.4).
+### Exercise 37.3 ★★ Order of change
+
+Order the decisions in the sequence you would change them for a first scale-out, and defend the order.
+### Exercise 37.4 ★★★ A switch trigger as an alert
+
+Choose one decision and write the "When you'd switch" trigger as a measurable alert, using metrics from Chapter 35.
 
 ## Summary
 

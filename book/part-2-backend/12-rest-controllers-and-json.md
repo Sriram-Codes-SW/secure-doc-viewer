@@ -28,13 +28,16 @@ Think of a library desk. You don't walk the shelves; you hand the clerk a reques
 
 ### 12.2 A controller method: `@RestController`, `@GetMapping`
 
-**Listing 12.1 — `DocumentController.java` (`book-m6-final`, simplified: the start of the class and one method)**
+**Listing 12.1 — `DocumentController.java` (`book-m6-final`, simplified: the nested records, fields and constructor are omitted, see Listing 11.2; the other methods and the closing brace are left out)**
+
+*`src/main/java/com/example/securedocviewer/controller/DocumentController.java`*
 
 ```java
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {
-    // ... constructor as in Listing 11.2 ...
+
+    // ...
 
     /** Only the documents the caller is allowed to open. */
     @GetMapping
@@ -65,9 +68,11 @@ A request carries data in three places, and each has an annotation.
 | The query string | `/api/tiles?token=...` | `@RequestParam` |
 | The body (JSON) | `{"title": "Q3 report"}` | `@RequestBody` |
 
-Listing 12.2 shows all of them in one class.
+Listing 12.2 shows the path variable and the request body; the query parameter follows in the text after it. Two terms first: the **query string** is the part of a URL after the `?`, and a **JSON array** is a list written in square brackets. `Authentication` and `HttpServletRequest` are objects Spring supplies describing the signed-in user and the raw request; you can ignore them for now, because [Chapter 15](15-spring-security-authentication.md) explains them.
 
-**Listing 12.2 — Excerpts from `DocumentController.java` (`book-m6-final`, simplified: three methods, others omitted)**
+**Listing 12.2 — Excerpts from `DocumentController.java` (`book-m6-final`, simplified: three declarations from different places in the class; everything else omitted)**
+
+*`src/main/java/com/example/securedocviewer/controller/DocumentController.java`*
 
 ```java
 public record UpdateDocumentRequest(String title, Visibility visibility) {

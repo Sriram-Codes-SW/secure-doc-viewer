@@ -1,15 +1,35 @@
 # Review status
 
-Updated: 2026-09-19 (window 2). Counts are open findings. Checklist: `CHECKLIST.md`.
+Updated: 2026-09-19 20:53 IST (window 3). Counts are OPEN findings after re-checks. Checklist: `CHECKLIST.md`.
 
 | Chapter | Review file | State | Blockers | Major | Minor |
 |---|---|---|---|---|---|
-| 01 The big picture | 01-the-big-picture.review.md | reviewed; complete draft | 0 | 1 | 8 |
-| 11 Spring Boot foundations | 11-spring-boot-foundations.review.md | reviewed; partial draft (11.4+ unwritten) | 0 | 2 | 6 |
-| 19 TypeScript | 19-typescript.review.md | reviewed; partial draft (19.4+ unwritten) | 0 | 3 | 6 |
-| 25 M0: The tiled viewer | 25-m0-the-tiled-viewer.review.md | reviewed; complete draft, strongest so far | 0 | 3 | 8 |
-| 32 Security review | 32-security-review.review.md | reviewed; complete draft | 0 | 5 | 8 |
+| 01 The big picture | 01-the-big-picture.review.md | pass 1 done; term-definition major RESOLVED (PDF, URL, session, cache, DevTools, rate limit now defined); minors not re-checked | 0 | 0 | ~7 |
+| 02 Command line and files | 02-command-line-and-files.review.md | reviewed | 0 | 2 | 8 |
+| 03 First Java program | 03-first-java-program.review.md | reviewed; clean | 0 | 0 | 8 |
+| 04 Classes and objects | 04-classes-and-objects.review.md | reviewed; clean | 0 | 0 | 8 |
+| 11 Spring Boot foundations | 11-spring-boot-foundations.review.md | pass 2 done; both majors RESOLVED (chapter complete) | 0 | 0 | 9 |
+| 12 REST controllers and JSON | 12-rest-controllers-and-json.review.md | reviewed; partial (12.4+ unwritten) | 0 | 3 | 4 |
+| 13 Validation and errors | 13-validation-and-errors.review.md | reviewed | 0 | 2 | 7 |
+| 19 TypeScript | 19-typescript.review.md | pass 2 done; all 3 majors RESOLVED (chapter complete; 19.7-19.10 not fully read) | 0 | 0 | 12 |
+| 20 Node, npm, Angular CLI | 20-node-npm-angular-cli.review.md | reviewed; high quality | 0 | 1 | 7 |
+| 25 M0: The tiled viewer | 25-m0-the-tiled-viewer.review.md | prerequisites, scratchpad-citation and base64url/manifest majors RESOLVED; tier headings now present; solutions file and exercise format still open | 0 | 0 | ~8 |
+| 26 M1: Accounts | 26-m1-accounts.review.md | reviewed; strong | 0 | 2 | 8 |
+| 27 M2: Documents and audit | 27-m2-documents.review.md | reviewed; listings verified line by line; strong | 0 | 0 | 9 |
+| 28 M3: Hardening | 28-m3-hardening.review.md | reviewed; listings verified line by line | 0 | 1 | 7 |
+| 29 M4: Reading experience | 29-m4-reading.review.md | reviewed; listings verified line by line | 0 | 0 | 7 |
+| 32 Security review | 32-security-review.review.md | not changed since pass 1 | 0 | 5 | 8 |
+| 37 Engineering trade-offs | 37-engineering-tradeoffs.review.md | reviewed; item 4 downgraded (source deletion is real) | 1 (canvas claim) | 4 | 7 |
 
-Open blockers: none. Every listing checked so far matches its tag; the only listing problems are mislabeled simplifications (Ch 11 Listing 11.2, Ch 32 Listing 32.2).
+## Open blockers
+- Ch 37, 37.1: says the browser reassembles tiles on a `<canvas>`; at book-m6-final the Angular viewer uses positioned divs with CSS backgrounds. Root cause is a stale README line 6 (also a stale Javadoc in `PageInfo.java`). Owner: writer-production; README fix requested via editor.
 
-Not reviewed: `tradeoffs/decisions-evidence.md` (not a chapter). Solutions file for Ch 1 was checked for arithmetic only (correct). Other chapters do not exist yet.
+## Not yet reviewed (files exist)
+05, 06, 07, 08 (Part I); 30, 31 (Part IV; their listings already verified line by line, prose not yet read); `00-part-introduction.md` files; solutions files for 05-08 and later. Next window: start with 30 and 31 prose, then 05-08.
+
+## Cross-cutting patterns to fix everywhere
+1. Bold defined terms (STYLE 9) and file glossary requests with definitions.
+2. Exercises in `### Exercise N.M ★ Title` format with a solutions file.
+3. Figure captions italic below the figure; listings numbered sequentially (no 19.3a / 19.3b).
+4. Reader-facing text must not cite "the dossier" or internal IDs; keep them in `<!-- source -->` comments.
+5. Label every omission in a "simplified" listing; use `// ...` at the actual cut points.

@@ -12,3 +12,17 @@ Verified at book-m6-final: Listing 19.1 matches document.models.ts lines 1-23 (e
 7. **minor** - Doctor's-office analogy: breakdown paragraph is good. Note it is not yet in STYLE 8.1 (editor request already made).
 8. **minor** - "Every interactive web page, including this one" - the reader is reading a book, not a web page; reword ("including the Secure Document Viewer's").
 9. **minor** - Objective 5 ("check that a frontend type matches the JSON the backend sends") needs a backend record for comparison (e.g. DocumentSummary Java record at m6); make sure the eventual section quotes the real one.
+
+---
+## Second pass (window 3, chapter now complete: 19.1 to 19.10, solutions file exists)
+
+Resolved from pass 1: item 1 (`IDLE_WARNING_SECONDS` is now explained after Listing 19.3), item 2 (19.4 to 19.6 and the later sections are written), item 3 (the `app.html` example is now described without Angular syntax and points to Chapter 21).
+Verified new content at book-m6-final: Listing 19.4 matches `viewer.component.ts` lines 354-363 (indentation kept; `MAX_CONCURRENT_TILE_FETCHES = 6` and the `Promise.all(Array.from(...))` line are real, line 391). `SessionService.restore()` returns `firstValueFrom(...)` and `provideAppInitializer(() => inject(SessionService).restore())` exists. Listing 19.3b (`DocumentSummary.java`) matches the record, and the omitted package line and Javadoc are declared. `new Date(epochSeconds * 1000)` exists in `document-list.component.ts`. Chapter 19's "tsconfig has no `strict: true`" note matches `tsconfig.json`. Sections 19.7 to 19.10 and the Try it block were not fully read in this window.
+
+New findings:
+10. **minor** - Listing "19.3b" breaks STYLE 11.2 numbering (Listing N.M sequential per chapter). Renumber (19.4 currently used for the viewer excerpt, so the Java record becomes 19.5 and later listings shift), and update the "Listing 19.1" cross-reference accordingly.
+11. **minor** - 19.4 "the constant is 6" - fine; but the unnumbered `Promise.all` snippet is real code from a different place than Listing 19.4 (line 391 vs 354-363); label it "(same file, later in the method)" or number it.
+12. **minor** - 19.4: `catch { ... }` without a binding and `signal.aborted` need one clause each; the AbortSignal explanation is good but too dense for the beginner tier. Also `let response: Response;` explanation ("assigned inside try") is correct.
+13. **minor** - 19.5: `TS2322` example message is illustrative; label it "Example 19.2 (illustrative output, produced by changing a value in `document.models.ts`)" or run it to confirm the exact text on TypeScript 6.0.
+14. **minor** - 19.6: "the server, not the frontend, is the authority on what is allowed (Chapter 23)" - check Chapter 23 (routing and guards) actually makes this point; otherwise point to Chapter 1 or 16.
+15. **minor** - Still to do in a later pass: read 19.7 to 19.10 and the Try it/solutions against the source (e.g., the `manage.component.ts` helper in 19.7 and the "generation counter" in 19.9, `loadGeneration` exists at viewer.component.ts line 364).

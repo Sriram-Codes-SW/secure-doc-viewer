@@ -16,3 +16,7 @@ Grounded and correct (spot-checked): 512-px tiles, 180 per 60 s, about 15 pages 
 10. **minor** - Try it: exercises are not in `### Exercise 37.N ★` format and there is no solutions file; exercise 4 depends on Chapter 35 metrics (fine, but name the metric: `sdv_tiles_rate_limited_total`).
 11. **minor** - Further reading entries have no URLs and no titles; Spring Session and Flyway docs need links (docs.spring.io, documentation.red-gate.com/flyway or flywaydb.org).
 12. **minor** - Six-heading template repeated 11 times is good for consistency, but 37.10's "When you'd switch: Never for security" and 37.3 "Nothing in this chapter is a mistake" overclaim, given that the same chapter lists real defects found by reviews. Soften to "Each choice was reasonable at the time".
+
+---
+## Correction (window 3, later)
+Item 4 above is too strong. The claim that the source PDF is deleted before the tiles are committed IS supported by code: `TileGenerationService` at book-m3-hardening deletes the staged source (`Files.delete(source)`, preceded by the comment "The PDF itself must never be committed alongside its tiles") and Chapter 28 says the same via PR #3. Downgrade item 4 to **minor**: keep the sentence, but cite the file and comment rather than "PR #3", and use the README's wording for the user-visible guarantee. The corrected count for Chapter 37 is 1 blocker, 4 major, 7 minor.

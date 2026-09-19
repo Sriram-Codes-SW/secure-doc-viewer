@@ -270,7 +270,7 @@ with a persistent one.
 The first commit of this milestone, `32d040f`, adds the Angular frontend: login, document list,
 upload, viewer and admin pages. It replaces the m0 static page. Tiles are painted as absolutely
 positioned elements with CSS background images, not on a canvas (Chapter 21 explains the
-technique). A Vite-style development proxy makes the SPA and the API share one origin.
+technique). An Angular development proxy makes the SPA and the API share one origin.
 `docker-compose.yml` starts MySQL 8.4 bound to 127.0.0.1, and a git-ignored `.env` holds local
 secrets, with `.env.example` as the template.
 <!-- source: dossier/timeline.md (32d040f); PR #1 body; blueprints/v1-accounts.md -->

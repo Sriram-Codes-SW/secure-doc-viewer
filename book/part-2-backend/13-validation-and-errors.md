@@ -171,7 +171,7 @@ The project's `ErrorContractTest` proves this. It adds a controller that throws 
 
 #### A real incident: the handler that failed on images
 
-The comment above `GlobalExceptionHandler` records a subtle bug. Without an explicitly set `Content-Type`, Spring negotiates the error body against the request's `Accept` header. The tile endpoint's callers may accept only images, so a JSON error body was "not acceptable", the handler itself failed, and a clean `401` or `429` turned into a `500`. The fix is visible in the `error(...)` helper, which always sets `MediaType.APPLICATION_JSON` explicitly. The lesson: error paths are code too, and they need tests as much as success paths do. <!-- source: GlobalExceptionHandler class comment at book-m3-hardening; the incident's date and commit are not in this comment: ask research for dossier reference before final -->
+The comment above `GlobalExceptionHandler` records a subtle bug. Without an explicitly set `Content-Type`, Spring negotiates the error body against the request's `Accept` header. The tile endpoint's callers may accept only images, so a JSON error body was "not acceptable", the handler itself failed, and a clean `401` or `429` turned into a `500`. The fix is visible in the `error(...)` helper, which always sets `MediaType.APPLICATION_JSON` explicitly. The lesson: error paths are code too, and they need tests as much as success paths do. <!-- source: dossier/bugs-and-findings.md#A3; dossier/decisions.md; GlobalExceptionHandler class comment at book-m3-hardening; phase 3b commit 335e0b0 -->
 
 ### 13.6 Limits: upload size, page count, decompression bombs
 
