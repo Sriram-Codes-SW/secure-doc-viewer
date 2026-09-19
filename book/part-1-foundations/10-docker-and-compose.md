@@ -135,7 +135,7 @@ The Compose file contains no passwords. It reads `${DB_PASSWORD}` from `.env`, t
 
 For MySQL you used a ready-made image. For the backend, the project builds its own from a **Dockerfile**: a recipe of steps. Each step adds a layer to the image, and Docker reuses layers that haven't changed, which makes rebuilds fast. The project's file has two stages.
 
-**Listing 10.3 — `Dockerfile` (book-m6-final, simplified: digests shortened, comments, font and user setup omitted)**
+**Listing 10.3 — `Dockerfile` (book-m6-final, simplified: image digests replaced by `<digest>`; comments, the font and user setup, and the `JAVA_TOOL_OPTIONS` value of `ENV` omitted)**
 
 ```dockerfile
 FROM eclipse-temurin:25-jdk@sha256:<digest> AS build

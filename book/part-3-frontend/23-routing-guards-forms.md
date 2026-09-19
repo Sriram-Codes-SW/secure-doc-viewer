@@ -15,7 +15,7 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
-- Chapter 8: URLs, query strings.
+- Chapter 8: URLs, including query strings (the `?page=3` part of an address, which carries extra named values).
 - Chapter 16: what the server enforces (authorization on every request).
 - Chapters 21–22: components, signals, services and the interceptor.
 
@@ -70,7 +70,7 @@ export const routes: Routes = [
 
 - `path: ''` with `redirectTo: 'documents'` sends the bare address to the document list. `pathMatch: 'full'` means "only when the path is exactly empty".
 - `:documentId` is a **route parameter**: `viewer/abc123` matches, with `documentId` set to `abc123`. The viewer reads it with `this.route.snapshot.paramMap.get('documentId')`.
-- `loadComponent: () => import(...)` is **lazy loading**: the component's code is downloaded only when someone first visits that route, which keeps the initial download small. The build budget in `angular.json` (Chapter 20) enforces a size limit on it.
+- `loadComponent: () => import(...)` is **lazy loading**. The `() =>` is an arrow function (Chapter 19) that Angular calls only when the route is first needed; inside, `import('./features/...')` asks the browser to download that file then, and `.then((m) => m.LoginComponent)` picks the component class out of it. The effect: the component's code is downloaded only when someone first visits that route, which keeps the initial download small. The build budget in `angular.json` (Chapter 20) enforces a size limit on it.
 - `canActivate: [...]` lists **guards**, covered next.
 
 ## Intermediate tier: Guards, forms and the trust boundary

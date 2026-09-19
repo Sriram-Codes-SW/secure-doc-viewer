@@ -161,7 +161,7 @@ At sign-in, the server creates a **session** (Chapter 1) and sends its identifie
 
 YAML is a settings format where indentation shows nesting. The cookie is named `SDV_SESSION`, and three settings protect it:
 
-- `http-only: true` hides the cookie from JavaScript running in the page, so a script injected into the page can't steal it;
+- `http-only: true` hides the cookie from JavaScript (the programming language that browsers run inside web pages; Part III covers its typed sibling, TypeScript) running in the page, so a script injected into the page can't steal it;
 - `same-site: strict` tells the browser to send it only for requests that start on the app's own site, which blocks a class of forged-request attacks (Chapter 16);
 - `secure` makes the browser send it only over HTTPS. It is `false` by default so that local development over plain HTTP works, and the file's comment says it must be true wherever the app is served over HTTPS.
 
@@ -173,7 +173,7 @@ The `timeout: 30m` line means a session ends after 30 minutes without a request.
 
 An **origin** is the combination of scheme, host and port. `http://localhost:8080` and `http://localhost:4200` are different origins because the ports differ. Browsers apply the **same-origin policy**: a script loaded from one origin may not freely read responses from another. The rule exists because otherwise any web page you visit could silently read your email or your documents using your cookies.
 
-The consequence for this project: the Angular frontend and the backend must appear to the browser as one origin. In development a small proxy forwards `/api` requests to the backend, and in the Docker stack a web server does the same (Chapters 20 and 33). The project avoids opening cross-origin access rather than granting it.
+The consequence for this project: the Angular frontend (the pages you see, built in Part III) and the backend must appear to the browser as one origin. A **proxy** is a program that receives a request on behalf of another server and forwards it. In development a small proxy forwards `/api` requests to the backend, and in the Docker stack a web server does the same (Chapters 20 and 33). The project avoids opening cross-origin access rather than granting it.
 
 ### 8.6 HTTPS and TLS in one page
 

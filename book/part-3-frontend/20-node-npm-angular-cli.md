@@ -25,7 +25,7 @@ By the end of this chapter, you will be able to:
 
 ### 20.1 What Node is; why a frontend needs it
 
-**Node.js** (Node for short) is a program that runs JavaScript outside a browser, on your own computer. Nobody uses Node to show pages to readers. It's used as a workshop: the compiler that turns TypeScript into JavaScript is itself a JavaScript program, so it runs on Node. So do the bundler and the test runner.
+**Node.js** (Node for short) is a program that runs JavaScript outside a browser, on your own computer. Nobody uses Node to show pages to readers. It's used as a workshop: the compiler that turns TypeScript into JavaScript is itself a JavaScript program, so it runs on Node. So do the **bundler**, which gathers your many source files and the libraries they use into a few files a browser can download efficiently, and the test runner.
 
 Think of a print shop. Readers only ever see the finished pamphlet, but to produce it the shop needs presses, cutters and staplers. Node is the electricity that runs the machines. Once the pamphlets are printed, you can switch the machines off.
 
@@ -35,7 +35,7 @@ That is why the project's production image uses two stages (Chapter 10). In the 
 
 ### 20.2 npm, `package.json`, `package-lock.json`
 
-**npm** is Node's package manager: a tool that downloads libraries (**packages**) from a public registry and puts them in a folder called `node_modules/`. It plays the role that Maven played for Java (Chapter 6), and `package.json` is the counterpart of `pom.xml`.
+**npm** is Node's package manager: a tool that downloads libraries (**packages**) from a public **registry** (an online catalog of published packages, at npmjs.com) and puts them in a folder called `node_modules/`. It plays the role that Maven played for Java (Chapter 6), and `package.json` is the counterpart of `pom.xml`.
 
 **Listing 20.1 — `package.json` (book-m6-final)**
 
@@ -100,7 +100,7 @@ npm test        # ng test: run the Vitest specs
 npm run build   # ng build: produce the deployable files under dist/
 ```
 
-`ng serve` compiles the app in memory and serves it with a small **development server**, refreshing the browser whenever you save a file. `ng build` does the same once, with optimization: shrinking and hashing filenames so browsers can cache them for a year (the nginx setup in Chapters 30 and 33 relies on that). The build settings live in `angular.json`, whose `build` target names the entry point (`src/main.ts`), the global stylesheet (`src/styles.css`) and size budgets: in production the initial bundle warns at 500 kB and fails at 1 MB, and any one component's styles warn at 4 kB and fail at 8 kB.
+`ng serve` compiles the app in memory and serves it with a small **development server**, refreshing the browser whenever you save a file. `ng build` does the same once, with optimization: shrinking the code (removing spaces and shortening names) and adding a fingerprint to each filename, such as `main-AB12CD34.js`, so browsers can cache the files for a year and a changed file gets a new name (the nginx setup in Chapters 30 and 33 relies on that). The build settings live in `angular.json`, whose `build` target names the entry point (`src/main.ts`), the global stylesheet (`src/styles.css`) and size **budgets** (limits that turn a warning or an error on when the build output grows too large): in production the initial bundle warns at 500 kB and fails at 1 MB, and any one component's styles warn at 4 kB and fail at 8 kB.
 
 ## Intermediate tier: Same origin in development and production
 
@@ -162,11 +162,11 @@ The project uses `~` on TypeScript because each Angular release supports a narro
 
 ### 20.7 `npm install` versus `npm ci`
 
-`npm install` may update the lock file if ranges allow newer versions. `npm ci` installs exactly what the lock file says and fails if `package.json` and the lock file disagree. The Dockerfile uses `npm ci --no-audit --no-fund`, so an image rebuilt next month contains the same packages that were tested. The base images are also pinned by digest, a fingerprint of the exact image, so a rebuild can't silently pick up a different one.
+`npm install` may update the lock file if ranges allow newer versions. `npm ci` installs exactly what the lock file says and fails if `package.json` and the lock file disagree. The Dockerfile uses `npm ci --no-audit --no-fund`, so an image rebuilt next month contains the same packages that were tested. The base images are also pinned by **digest**, a fingerprint (hash) of the exact image contents, so a rebuild can't silently pick up a different one.
 
 ### 20.8 Automated updates, deliberately limited
 
-Dependencies age, and old ones carry known security problems. The project uses GitHub's Dependabot (`.github/dependabot.yml`) to open weekly pull requests: Angular packages grouped together, other npm packages grouped as minor and patch updates, and major upgrades as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular, and it ignores Node's non-LTS lines (per the file's own comment, odd-numbered Node releases never become LTS). The history shows this working: the Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes, and because they arrived in those pull requests, after `book-m5-platform`, Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
+Dependencies age, and old ones carry known security problems. The project uses GitHub's Dependabot (`.github/dependabot.yml`) to open weekly pull requests: Angular packages grouped together, other npm packages grouped as minor and patch updates, and major upgrades as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular, and it ignores Node's non-LTS lines (LTS, "long-term support", marks the releases that receive fixes for years; Node 25, 27 and 29 are skipped by rule) (per the file's own comment, odd-numbered Node releases never become LTS). The history shows this working: the Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes, and because they arrived in those pull requests, after `book-m5-platform`, Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
 
 ## In this project
 
@@ -183,11 +183,25 @@ Try `git show book-m6-final:frontend/package.json`, and compare it with `git sho
 
 ## Try it
 
-1. ★ Which of the six `scripts` in Listing 20.1 needs a running stack besides Node? (Hint: read `frontend/playwright.config.ts`.)
-2. ★ What range of versions does `^22.1.8` accept? Would 22.9.0 be accepted? 23.0.0?
-3. ★★ Explain in your own words why `"secure": false` in Listing 20.2 is acceptable in development but would be a concern for a production proxy.
-4. ★★ Run `npm ci` in `frontend/`, then `npm run build`. What folder appears, and what do the filenames inside look like?
-5. ★★★ Suppose `package.json` says `~6.0.2` but the lock file is deleted. Explain what `npm install` may now do and why `npm ci` refuses to run.
+### Exercise 20.1 ★
+
+Which of the six `scripts` in Listing 20.1 needs a running stack besides Node? (Hint: read `frontend/playwright.config.ts`.)
+
+### Exercise 20.2 ★
+
+What range of versions does `^22.1.8` accept? Would 22.9.0 be accepted? 23.0.0?
+
+### Exercise 20.3 ★★
+
+Explain in your own words why `"secure": false` in Listing 20.2 is acceptable in development but would be a concern for a production proxy.
+
+### Exercise 20.4 ★★
+
+Install Node 24 and npm as described in the setup chapter (front matter), then run `npm ci` in `frontend/` and `npm run build`. What folder appears, and what do the filenames inside look like?
+
+### Exercise 20.5 ★★★
+
+Suppose `package.json` says `~6.0.2` but the lock file is deleted. Explain what `npm install` may now do and why `npm ci` refuses to run.
 
 Solutions are in `20-node-npm-angular-cli.solutions.md`.
 

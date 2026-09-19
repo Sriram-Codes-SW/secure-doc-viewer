@@ -124,7 +124,7 @@ Explain what could go wrong if `actions/checkout` were referenced by tag and the
 
 ### Exercise 36.3 ★★★ Write a rule
 
-Angular 23 requires TypeScript 6.1. Describe how the project's Dependabot rules would treat TypeScript 6.1 today, and what a person would do at the Angular upgrade.
+This is a hypothetical: suppose a future Angular release accepted a newer TypeScript minor version than the one the project uses. Describe how the `typescript` rule in Table 36.2 (ignore minor and major updates) would treat that newer version when Dependabot finds it, and what a person would do when upgrading Angular.
 
 ## Summary
 

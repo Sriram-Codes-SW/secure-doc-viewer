@@ -60,6 +60,8 @@ The math lives in its own class so it can be tested without any PDF library. Two
 
 **Listing 25.1 — `TileGrid.java` (book-m0-mvp, simplified: Javadoc and imports removed)**
 
+*File: `src/main/java/com/example/securedocviewer/service/TileGrid.java`*
+
 ```java
 public final class TileGrid {
 
@@ -118,6 +120,8 @@ authentication code) mixes a secret key into a hash, so only a holder of the key
 matching signature. Change any field of the payload and the signature no longer matches.
 
 **Listing 25.2 — `SignedUrlService.java` (book-m0-mvp, simplified: Javadoc, `parseCanonical` and the private helpers removed)**
+
+*File: `src/main/java/com/example/securedocviewer/service/SignedUrlService.java`*
 
 ```java
 public String issueToken(String documentId, int page, int row, int col, String sessionId) {
@@ -186,6 +190,8 @@ everyone, and every response is individually attributable.
 
 **Listing 25.3 — `WatermarkService.java` (book-m0-mvp, simplified: imports and Javadoc removed)**
 
+*File: `src/main/java/com/example/securedocviewer/service/WatermarkService.java`*
+
 ```java
 @Service
 public class WatermarkService {
@@ -241,6 +247,8 @@ page's grid in the **manifest** (the record of a document's title, page count an
 **Redeeming a tile.** `TileController` is the only endpoint that returns pixels.
 
 **Listing 25.4 — `TileController.getTile` (book-m0-mvp, simplified: imports, Javadoc, constructor and fields removed)**
+
+*File: `src/main/java/com/example/securedocviewer/controller/TileController.java`*
 
 ```java
 @GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
@@ -323,13 +331,23 @@ Table 25.1 lists the files to open in your copy of the repository.
 
 ## Try it
 
-1. (★) Compute `tileCount` for a page 1,240 pixels wide and 1,754 tall with 256-pixel tiles.
-   How many columns and rows, and how wide is the last column?
-2. (★★) Run `book-m0-mvp` locally, change one character of a token before the dot and request it.
-   `verifyAndDecode` throws `InvalidTokenException`; check `GlobalExceptionHandler` to find the
-   HTTP status the client sees, and explain why the order of the checks matters.
-3. (★★★) Why does `TileController` not trust the token's expiry alone? Describe a case where
-   a token is valid but the request must still be refused.
+Solutions are in `25-m0-the-tiled-viewer.solutions.md`.
+
+### Exercise 25.1 ★ Count the tiles
+
+A page is 1,240 pixels wide and 1,754 pixels tall, and tiles are 256 pixels. How many columns and
+rows does `TileGrid.tileCount` give, and how wide is the last column?
+
+### Exercise 25.2 ★★ Tamper with a token
+
+Run `book-m0-mvp` on your own machine. Sign in, request tile URLs, and change one character of a
+token before the dot. Request it. Which HTTP status comes back, and why does `verifyAndDecode`
+check the signature before it parses the payload?
+
+### Exercise 25.3 ★★★ Two independent checks
+
+Why does `TileController` not trust the token's expiry alone? Describe a case where a token is
+valid but the request must still be refused.
 
 ## Architecture blueprint v0
 
@@ -400,7 +418,7 @@ the signing secret was committed in `application.yml` (`TM-6`; the file at this 
 visibly demo-only value). **How it was found.** The reviews ran against the working product
 after the MVP and a first Angular baseline existed. **The fix.** Milestone 1 (Chapter 26)
 addressed these: real accounts, roles, a keyed session binding in tokens, and a secret
-supplied through the environment. **The lesson.** A stand-in is fine while you learn the
+supplied through the environment. **Where it goes next.** Chapter 26 walks through the fixes, and Chapter 32 collects the whole review record. **The lesson.** A stand-in is fine while you learn the
 shape of a system, but write down what it stands in for. The MVP's own Javadoc did that,
 which turned the later findings into a to-do list instead of a surprise.
 <!-- source: dossier/reviews.md; dossier/bugs-and-findings.md; SessionService Javadoc and application.yml at book-m0-mvp -->

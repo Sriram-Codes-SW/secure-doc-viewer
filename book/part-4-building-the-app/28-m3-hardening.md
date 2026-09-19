@@ -167,9 +167,19 @@ Table 28.1 lists the files to open at this tag. The backend tests grow to 66.
 
 ## Try it
 
-1. (★) Which status code does an upload of 60 MB return, and what does the body look like?
-2. (★★) Why does the catch-all error include a reference but no exception message?
-3. (★★★) On your own copy at `book-m3-hardening`, fetch `/actuator/health`, then stop MySQL and fetch it again. What changes, and why is `/actuator/env` still closed?
+Solutions are in `28-m3-hardening.solutions.md`.
+
+### Exercise 28.1 ★ A 60 MB upload
+
+Which status code does an upload of 60 MB return, and what does the body look like?
+
+### Exercise 28.2 ★★ Reference, not message
+
+Why does the catch-all error include a reference but no exception message?
+
+### Exercise 28.3 ★★★ Health and env
+
+On your own copy at `book-m3-hardening`, fetch `/actuator/health`, then stop MySQL and fetch it again. What changes, and why is `/actuator/env` still closed?
 
 ## Architecture blueprint v3
 

@@ -277,7 +277,7 @@ Chapter 20 showed the development proxy. In production, `frontend/nginx.conf` do
 
 *Path: `frontend/nginx.conf`*
 
-The comment records a real security fix (project dossier, `bugs-and-findings.md`, finding D1 / TM2-1; fix commit `2d82253`, PR 1). During a live test through nginx, the reviewer found that the proxy appended to a client-supplied `X-Forwarded-For` header and the backend trusted it, so changing the header on each attempt reset the sign-in throttle. The fix made nginx overwrite the header with the real peer address. An end-to-end test in `e2e/secure-viewing.spec.ts` now sends six wrong passwords with different spoofed addresses and expects the sixth to be refused with 429 (Chapter 24). The same file sets a Content-Security-Policy for the app's pages that allows images only from `'self'`, `blob:` and `data:`; the `blob:` allowance is exactly what the viewer's tiles need.
+The comment records a real security fix (fix commit `2d82253`, pull request 1). During a live test through nginx, one of the project's AI review agents found that the proxy appended to a client-supplied `X-Forwarded-For` header and the backend trusted it, so changing the header on each attempt reset the sign-in throttle. The fix made nginx overwrite the header with the real peer address. An end-to-end test in `e2e/secure-viewing.spec.ts` now sends six wrong passwords with different spoofed addresses and expects the sixth to be refused with 429 (Chapter 24). The same file sets a Content-Security-Policy for the app's pages that allows images only from `'self'`, `blob:` and `data:`; the `blob:` allowance is exactly what the viewer's tiles need.
 
 ### 22.8 Polling that must not keep a session alive
 
@@ -305,7 +305,7 @@ The doc comment above it says why: "An unattended admin page must not keep polli
 | `frontend/src/app/core/session.interceptor.ts` | book-m1-accounts (activity and 403 handling later) | 401 handling |
 | `frontend/src/app/app.config.ts` | book-m1-accounts | Providers: router, HttpClient, startup restore |
 | `frontend/src/app/features/documents/documents.service.ts` | book-m1-accounts (grew in m2) | Document API calls |
-| `frontend/src/app/features/viewer/viewer.component.ts` | book-m1-accounts | Tile fetch pool, throttle countdown, 401/404/410 handling (later ones from m5) |
+| `frontend/src/app/features/viewer/viewer.component.ts` | book-m1-accounts | Tile fetch pool, throttle countdown (429) and 401 handling from m1; tile 404 handling by m4; 410 Gone and replaced-document reload from m5 |
 | `frontend/src/app/core/idle.ts` | book-m4-reading | Idle-timeout arithmetic |
 | `frontend/nginx.conf` | book-m5-platform | Production same-origin proxy and headers |
 

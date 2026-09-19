@@ -1,0 +1,6 @@
+# Review: 33-deployment-and-tls.md (window 5, LISTING PASS ONLY; prose not reviewed)
+
+Listing 33.1 (`frontend/nginx.conf` at book-m5-platform) matches the real file except: (a) the `proxy_read_timeout 300s;` line lost its trailing comment in the listing (harmless; say "comments trimmed"), and (b) the `Content-Security-Policy` header value is abbreviated with `...` inside the string (`"default-src 'self'; script-src 'self'; ..."`); the real value is much longer (style-src, img-src blob: data:, connect-src, font-src, object-src, base-uri, form-action, frame-ancestors ...). The caption lists other omissions but not this one.
+
+1. **major** - Listing 33.1 shortens the CSP value with an authored `...` and does not say so. A reader copying it would deploy a weaker/different policy than the project's. Fix: show the full header (it is one line) or state in the caption "the Content-Security-Policy value is shortened; the full policy is in `frontend/nginx.conf`" and explain each directive the chapter relies on.
+2. Not reviewed: prose, terms (reverse proxy, TLS, certificate, HSTS, Caddy, ACME), the second listing, exercises, source comments. Chapter 34 listings 34.1 and 34.2 are quoted from `README.md`, which has two candidate paths (root and `book/README.md`); confirm they point to the root README at the stated tag.

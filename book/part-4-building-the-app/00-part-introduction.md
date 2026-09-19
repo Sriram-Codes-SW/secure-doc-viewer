@@ -23,8 +23,8 @@ architecture blueprint for that milestone, and the decisions and challenges of t
 
 ## How the history was gathered
 
-The history in this part comes from the repository (its commits, tags and pull requests) and from a
-research dossier compiled from them and from the recorded build conversation. Two independent
+The history in this part comes from the repository (its commits, tags and pull requests) and from the
+recorded conversation in which the app was built. Two independent
 reviewers examined the product between milestones. They were AI review agents playing a product
 owner and a senior technical manager, and the book refers to their findings by ID (for example
 `TM-1` or `PO-3`) in code font, with a plain explanation each time.

@@ -10,4 +10,4 @@ Git tags can be moved by whoever controls the action's repository. If `actions/c
 
 ### Exercise 36.3 ★★★ Write a rule
 
-Today the `typescript` rule ignores minor and major updates, so Dependabot would not propose 6.1 at all (Angular 22 accepts only `>=6.0 <6.1`). At the Angular 23 upgrade a person would upgrade Angular first (or together with TypeScript) by hand, follow Angular's supported version range, and then update the ignore rule so it matches the new range, for example allowing patches of the new minor. The rule exists so that TypeScript moves in step with Angular, never ahead of it.
+The exercise is hypothetical. The `typescript` rule ignores minor and major updates, so Dependabot would not propose the newer minor version at all; the project's Angular 22 accepts only `>=6.0 <6.1`. When a person upgrades Angular, they would upgrade Angular and TypeScript together by hand, following the supported range in the new Angular release's notes, and then adjust the ignore rule to match, for example allowing patches of the new minor. The rule exists so that TypeScript moves in step with Angular, never ahead of it.

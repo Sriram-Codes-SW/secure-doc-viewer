@@ -5,20 +5,20 @@ Definitions of terms bolded at first use. Generated from `book/GLOSSARY.md`.
 | Term | Definition | First defined |
 |---|---|---|
 | **annotation (Java)** | A marker such as `@Service` placed on code that tells a framework or the compiler something about it. | Ch 4, used in Ch 11 |
-| **application context** | Spring's container: the object that creates, holds and wires together all of the app's beans. | Ch 11 |
+| **application context** | The box that holds all of the app's beans. | Ch 11 |
 | **arrow function** | A short way to write a function in JavaScript and TypeScript, using `=>`. | Ch 19 |
-| **audit trail** | A permanent record of who did what and when, kept so events can be investigated later. | Ch 27  |
+| **audit trail** | An append-only record, kept in the database, of important actions such as sign-ins, uploads, views and denied requests. | Ch 27  |
 | **authentication** | Proving who you are, for example with a username and password. | Ch 15  |
 | **authorization** | Deciding what an authenticated person is allowed to do. | Ch 15  |
 | **auto-configuration** | Spring Boot's habit of setting up sensible defaults for the libraries it finds on the classpath. | Ch 11 |
 | **backend** | The part of an application that runs on a server and holds the data and rules. | Ch 1  |
 | **Bean Validation** | The Java standard for declaring input rules with annotations such as `@NotBlank`. | Ch 13 |
-| **bean** | An object created and managed by Spring. | Ch 11 |
+| **bean** | An object Spring creates and manages, from a class labeled with annotations such as `@Component`, `@Service` or `@RestController`. | Ch 11 |
 | **browser** | The program (Chrome, Firefox, Safari, Edge) that requests web pages and runs their code. | Ch 19 |
 | **build tool** | A program that compiles code, runs tests and packages the result; Maven for this project's Java. | Ch 6  |
 | **bytecode** | The compact instructions the Java compiler produces, which the JVM runs. | Ch 3 |
 | **cache** | A place where a copy of something is kept so it can be served again faster. | Ch 1 |
-| **client** | The program that asks for something over a network; for this app, the browser. | Ch 1 |
+| **client** | A program that asks for things over a network; your browser is a client. | Ch 1 |
 | **compiler** | A program that checks source code and translates it into a form a machine can run. | Ch 19 |
 | **component scanning** | Spring searching your packages for annotated classes and registering them as beans. | Ch 11 |
 | **constructor injection** | Dependency injection where an object receives its dependencies as constructor parameters. | Ch 11 |
@@ -31,7 +31,7 @@ Definitions of terms bolded at first use. Generated from `book/GLOSSARY.md`.
 | **developer tools** | The inspection panel built into browsers that shows requests, code and errors. | Ch 1 |
 | **discriminated union** | A TypeScript union of object types that each carry a fixed tag field, so code can tell them apart. | Ch 19 |
 | **DPI** | Dots per inch: how many pixels represent one inch of a page when it is rendered as an image. | Ch 1 |
-| **encoding** | The rule that maps characters to the bytes stored in a file (UTF-8 is the common one). | Ch 2 |
+| **encoding** | The rule that maps characters to bytes; the project's files use UTF-8. | Ch 2 |
 | **entity** | A Java class whose objects are stored as rows in a database table. | Ch 14  |
 | **environment variable** | A named setting, such as `DB_PASSWORD`, that the operating system hands to every program it starts. | Ch 2 |
 | **exception handler** | A method that turns a particular exception into a controlled HTTP response. | Ch 13 |
@@ -49,7 +49,7 @@ Definitions of terms bolded at first use. Generated from `book/GLOSSARY.md`.
 | **JDK** | The Java Development Kit: the compiler and tools needed to build Java programs. | Ch 3  |
 | **JSON** | A text format for structured data made of objects, lists, strings, numbers and booleans. | Ch 8  |
 | **JVM** | The Java Virtual Machine: the program that runs compiled Java. | Ch 3  |
-| **line ending** | The invisible character or characters that mark the end of a line of text; Windows and Unix differ. | Ch 2 |
+| **line ending** | The mark for where a line stops: Windows uses two bytes (carriage return plus line feed), macOS and Linux use one (line feed). | Ch 2 |
 | **localhost** | The name a computer uses for itself; requests to it never leave the machine. | Ch 2 |
 | **method** | A named block of code that does one job and can be called by name. | Ch 3 |
 | **migration** | A versioned change to a database schema, applied once and in order. | Ch 9  |
@@ -58,32 +58,33 @@ Definitions of terms bolded at first use. Generated from `book/GLOSSARY.md`.
 | **naive viewer** | A viewer that only hides its download button in the browser, so anyone can still fetch the file. | Ch 1 |
 | **operator** | A symbol such as `+` or `==` that combines or compares values. | Ch 3 |
 | **parameter** | A named input a method declares; the values passed in are its arguments. | Ch 3 |
-| **path** | The written address of a file or folder, such as `src/main/resources/application.yml`. | Ch 2 |
+| **path** | The address of a file or folder, written with slashes between the folder names. | Ch 2 |
 | **PDF** | Portable Document Format: a file type that describes pages so they look the same everywhere. | Ch 1 |
-| **port** | A numbered door on a computer at which a program listens for network connections, such as 8080. | Ch 2 |
-| **process** | A running instance of a program. | Ch 2 |
-| **profile (Spring)** | A named set of configuration that is switched on for a particular environment. | Ch 11 |
+| **port** | A numbered door on your computer, from 0 to 65535, at which a server process listens for network requests addressed to that number. | Ch 2 |
+| **process** | A running program; each one gets its own number. | Ch 2 |
+| **profile (Spring)** | A named set of extra settings switched on for a purpose, such as the test profile that points the datasource at an in-memory H2 database. | Ch 11 |
 | **program** | A list of instructions a computer follows. | Ch 3 |
 | **prompt** | The text a shell shows to say it is ready for your next command. | Ch 2 |
 | **property placeholder** | A `${NAME:default}` marker in configuration that Spring replaces with an environment or file value. | Ch 11 |
 | **rasterize** | To turn a page description (such as a PDF page) into a grid of pixels. | Ch 1 |
 | **rate limit** | A cap on how many requests a user may make in a period. | Ch 26  |
-| **record (Java)** | A compact class for immutable plain data. | Ch 4  |
+| **record (Java)** | A one-line way to declare a class that only carries data; Java generates the constructor and read methods. | Ch 4  |
 | **relaxed binding** | Spring's rule that `signing-secret`, `SIGNING_SECRET` and `signingSecret` all name the same setting. | Ch 11 |
 | **resource** | A thing a REST API exposes at a URL, such as a document. | Ch 12 |
 | **REST** | A style of web API built around URLs for things and HTTP methods for actions. | Ch 12  |
 | **return value** | The result a method hands back to the code that called it. | Ch 3 |
 | **serialization** | Turning an object into text or bytes, such as JSON, so it can be sent or stored. | Ch 12 |
 | **server** | The program that answers requests from clients; here, the Spring Boot app. | Ch 1 |
-| **session** | The server's memory of a signed-in visitor across several requests. | Ch 8  |
+| **session** | The server's record that a particular browser has proven who it is, so the browser does not have to send the password again with every request. | Ch 1 (in depth: Ch 8) |
 | **shell** | The program inside a terminal that reads your commands and runs them (for example Bash or PowerShell). | Ch 2 |
 | **signature** | A value computed from data and a secret key that proves the data was not changed. | Ch 1 |
 | **signed URL** | A URL carrying a signature the server can verify, so it cannot be altered or forged. | Ch 25  |
 | **source code** | The human-readable text of a program, before it is compiled. | Ch 3 |
 | **SQL** | The language used to query and change a relational database. | Ch 9  |
 | **stack trace** | The list of method calls that were active when an exception occurred, printed to help find the cause. | Ch 3 |
-| **starter (Spring Boot)** | A single dependency that pulls in a matched set of libraries for one purpose. | Ch 11 |
+| **starter (Spring Boot)** | A single dependency that pulls in a matched set of libraries for one job, for example `spring-boot-starter-security`. | Ch 11 |
 | **string** | A sequence of characters; text. | Ch 3 |
+| **text file** | A file that holds characters (rather than, say, an image). | Ch 2 |
 | **terminal** | A window in which you type commands to the computer instead of clicking. | Ch 2 |
 | **tile** | One small square piece of a rendered page image. | Ch 1  |
 | **TLS** | The protocol that encrypts traffic between browser and server (the "S" in HTTPS). | Ch 8  |

@@ -26,7 +26,7 @@ An **Angular** component is one reusable piece of screen. Think of a name badge 
 
 **Where the analogy breaks down:** a badge holder is passive, and you swap the card by hand. A component watches its data and redraws itself when the data changes.
 
-A component has three parts: a **class** (the data and actions, in TypeScript), a **template** (the HTML that shows them), and a **stylesheet** (CSS that decorates them). The top-level component of the app is short enough to read whole:
+A component has three parts: a **class** (the data and actions, in TypeScript), a **template** (the HTML that shows them; HTML is the markup language that describes the structure of a web page, such as headings, buttons and links), and a **stylesheet** (CSS, the language that sets colors, spacing and layout, that decorates them). The top-level component of the app is short enough to read whole:
 
 **Listing 21.1 — `app.ts` (book-m6-final, excerpt: imports and decorator)**
 
@@ -55,7 +55,7 @@ Line by line:
 - `@Component({ ... })` is a **decorator**: a label attached to the class below it that tells Angular "this class is a component, configured like so".
 - `selector: 'app-root'` is the custom HTML tag that shows this component. `src/index.html` contains `<app-root></app-root>`, and that is where the whole application appears.
 - `standalone: true` means the component lists its own dependencies rather than relying on a shared module. (Angular 22 treats components as standalone by default; the project states it explicitly.)
-- `imports: [...]` lists the other components, directives and pipes that this component's template uses. If the template uses `routerLink` but `RouterLink` isn't listed here, the compiler complains.
+- `imports: [...]` lists the other building blocks that this component's template uses: other components, pipes (formatters, Section 21.2), and directives (extra behavior attached to an element, such as `routerLink`, which turns an ordinary link into an in-app one). If the template uses `routerLink` but `RouterLink` isn't listed here, the compiler complains.
 - `templateUrl` and `styleUrl` point to the files `app.html` and `app.css` beside it.
 - `export class App implements OnInit, OnDestroy` defines the class. `OnInit` and `OnDestroy` are **lifecycle hooks**: methods (`ngOnInit`, `ngOnDestroy`) that Angular calls when the component appears and when it is removed. `App` starts a one-second timer in the first and stops it in the second.
 - `readonly idle = signal<IdleState>(...)` is a piece of reactive data; Section 21.3 explains it.

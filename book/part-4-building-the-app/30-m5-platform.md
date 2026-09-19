@@ -193,9 +193,19 @@ Table 30.1 lists the places to look at this tag.
 
 ## Try it
 
-1. (★) Why must a backend only trust `X-Forwarded-For` from one proxy address?
-2. (★★) Explain how the account-wide lockout rule let an attacker lock out a victim, and how the recognised-device rule stops that.
-3. (★★★) In Listing 30.2, why is the tile version part of the signed fields rather than a separate query parameter?
+Solutions are in `30-m5-platform.solutions.md`.
+
+### Exercise 30.1 ★ Forwarded header
+
+Why must a backend only trust `X-Forwarded-For` from one proxy address?
+
+### Exercise 30.2 ★★ Lockout abuse
+
+Explain how the account-wide lockout rule let an attacker lock out a victim, and how the recognised-device rule stops that.
+
+### Exercise 30.3 ★★★ Version inside the token
+
+In Listing 30.2, why is the tile version part of the signed fields rather than a separate query parameter?
 
 ## Architecture blueprint v5
 

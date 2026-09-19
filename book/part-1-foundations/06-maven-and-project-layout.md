@@ -53,7 +53,7 @@ A `pom.xml` is written in **XML**, a format where information sits between named
 
 Every Maven project or library is identified by three values, its **coordinates**: a `groupId` (who made it, in the reverse-domain style from Chapter 4), an `artifactId` (its name), and a `version`. This project is `com.example:secure-doc-viewer:0.1.0`.
 
-The `<parent>` block says "start from the settings of `spring-boot-starter-parent` version 4.1.1". A parent supplies sensible defaults: compiler settings, and, importantly, a tested list of matching library versions. That is why most dependencies below need no version number. Spring Boot is the framework Part II teaches.
+The `<parent>` block says "start from the settings of `spring-boot-starter-parent` version 4.1.1". A parent supplies sensible defaults: compiler settings, and, importantly, a tested list of matching library versions. That is why most dependencies below need no version number. Spring Boot is the **framework** Part II teaches: a large library that supplies the structure of a web application so you write only the parts specific to yours.
 
 Next come the properties.
 
@@ -71,7 +71,7 @@ Next come the properties.
 
 *Path: `pom.xml`*
 
-**Properties** are named values used elsewhere. `java.version` tells Maven to compile for Java 25. `pdfbox.version` names the version of the library that reads PDFs. `tomcat.version` is a real decision: the project overrides the web server version that Spring Boot chose because the chosen one had critical security advisories, and the comment says when to remove the override. This is normal practice: state the reason next to the pin. <!-- source: pom.xml comment at book-m6-final -->
+**Properties** are named values used elsewhere. `java.version` tells Maven to compile for Java 25. `pdfbox.version` names the version of the library that reads PDFs. `tomcat.version` is a real decision: the project overrides the web server version that Spring Boot chose because the chosen one had critical security advisories (published reports of exploitable flaws, each with an identifier such as `GHSA-...`), and the comment says when to remove the override. This is normal practice: state the reason next to the pin. <!-- source: pom.xml comment at book-m6-final -->
 
 ### 6.3 Dependencies and where they come from
 
@@ -137,7 +137,7 @@ Maven runs a fixed sequence of **phases**. Asking for a phase runs it and every 
 | `./mvnw compile` | Compiles the source code |
 | `./mvnw test` | Compiles, then runs the unit tests |
 | `./mvnw package` | Also bundles the app into `target/secure-doc-viewer.jar` |
-| `./mvnw verify` | Also runs the integration checks; this is what continuous integration runs |
+| `./mvnw verify` | Also runs the integration checks; this is what **continuous integration** (CI, a service that builds and tests every proposed change automatically) runs |
 
 *Table 6.1 — Maven phases you'll use*
 

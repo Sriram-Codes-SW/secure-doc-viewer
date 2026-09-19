@@ -184,9 +184,19 @@ Table 29.1 maps the milestone onto the source tree. Tests grow to 68 backend and
 
 ## Try it
 
-1. (★) What does `idleState` return for a 30-minute timeout when 10 minutes remain?
-2. (★★) Why does the viewer ignore arrow keys while you are typing in the page-number box?
-3. (★★★) Change `spacing` in `WatermarkService` on your own copy. What does the clamp do to a value of 20?
+Solutions are in `29-m4-reading.solutions.md`.
+
+### Exercise 29.1 ★ Idle state
+
+What does `idleState` return for a 30-minute timeout when 10 minutes remain?
+
+### Exercise 29.2 ★★ Keys while typing
+
+Why does the viewer ignore arrow keys while you type in the page-number box?
+
+### Exercise 29.3 ★★★ Clamped spacing
+
+Change `spacing` in `WatermarkService` on your own copy. What does the clamp do to a value of 20?
 
 ## Architecture blueprint v4
 

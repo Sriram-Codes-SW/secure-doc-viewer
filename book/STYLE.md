@@ -565,6 +565,9 @@ The advanced tiers and Part IV's "Decisions and challenges" use real events. Rul
   hash or a PR number. Never cite the coordinator's scratchpad or temporary folders, agent
   identifiers, or the raw conversation file, in the book text or in source comments. If the
   dossier lacks a fact, ask `research` through `requests.md`.
+  Source comments (HTML comments) may name dossier files; the visible text never mentions "the
+  dossier", agent identifiers, review-finding IDs without a plain-words explanation, or any
+  internal file. Reviewers are described as AI agents.
 
 ## 15. Cross-references and links
 

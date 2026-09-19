@@ -123,9 +123,19 @@ Table 31.1 lists what changed since Chapter 30.
 
 ## Try it
 
-1. (★) Why doesn't the polling loop in Listing 31.1 make a passing test slower?
-2. (★★) A dependency update fails to install because of a peer-dependency range. What should you check first?
-3. (★★★) Draft a Dependabot `ignore` rule that keeps a library on its current major version.
+Solutions are in `31-m6-final.solutions.md`.
+
+### Exercise 31.1 ★ Polling loop
+
+Why doesn't the polling loop in Listing 31.1 make a passing test slower?
+
+### Exercise 31.2 ★★ Peer range
+
+A dependency update fails to install because of a peer-dependency range. What should you check first?
+
+### Exercise 31.3 ★★★ Ignore rule
+
+Draft a Dependabot `ignore` rule that keeps a library on its current major version.
 
 ## Architecture blueprint v6
 

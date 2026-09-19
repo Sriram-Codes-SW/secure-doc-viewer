@@ -111,6 +111,7 @@ in the source.
 | `/api/admin/**` | ADMIN |
 | `POST /api/documents` (upload) | PUBLISHER, ADMIN |
 | any other `/api/**` | any signed-in user |
+| `/error` (Spring's error page) | anyone |
 | anything else | nobody (`denyAll`) |
 
 **Listing 26.2 — `SecurityConfig.securityFilterChain` (book-m1-accounts, simplified: Javadoc and the other beans removed)**
@@ -263,7 +264,7 @@ lockout rules after a reviewer shows they can be abused.
 `AdminController` and `UserAdminController` sit behind the `ADMIN` rule. An admin can list
 sessions (by opaque handle, never by id) and revoke them, create accounts, change roles,
 disable accounts and reset passwords. Changing a user's role or password ends that user's
-sessions. At this tag the audit log is still a small in-memory list; Chapter 27 replaces it
+sessions. At this tag the audit log is still a small in-memory list (a 500-entry buffer); Chapter 27 replaces it
 with a persistent one.
 <!-- source: PR #1 body; git diff --stat book-m0-mvp book-m1-accounts -->
 
@@ -312,10 +313,23 @@ Table 26.2 is a map for reading the repository at this tag.
 
 ## Try it
 
-1. (★) In Table 26.1, which role can call `POST /api/documents`, and what does a READER get back?
-2. (★★) Explain in your own words why `denyAll()` is the last rule and not `permitAll()`.
-3. (★★★) On your own copy at `book-m1-accounts`, sign in and inspect the cookies in your
-   browser's developer tools. Which cookie is readable by JavaScript, and why must it be?
+Solutions are in `26-m1-accounts.solutions.md`.
+
+### Exercise 26.1 ★ Who may upload?
+
+In Table 26.1, which roles may call `POST /api/documents`? What does a READER receive?
+
+### Exercise 26.2 ★★ Why deny by default
+
+Explain in your own words why `anyRequest().denyAll()` is the last rule in Listing 26.2 and not
+`permitAll()`.
+
+### Exercise 26.3 ★★★ Inspect the cookies
+
+On your own copy at `book-m1-accounts`, start the app (the first admin's password comes from your
+`.env` file, or from a one-time password printed at startup if you left it unset; never copy a real
+password into notes or screenshots). Sign in and inspect the cookies in your browser's developer
+tools. Which cookie can JavaScript read, and why must it be readable?
 
 ## Architecture blueprint v1
 
@@ -368,7 +382,7 @@ flowchart LR
     TC -.-> D
 ```
 
-**Figure 26.1 — Blueprint v1 (`book-m1-accounts`)**
+*Figure 26.1 — Blueprint v1 (`book-m1-accounts`)*
 
 What changed since v0:
 

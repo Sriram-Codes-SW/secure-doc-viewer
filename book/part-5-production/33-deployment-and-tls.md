@@ -153,7 +153,7 @@ Why two proxies? nginx already serves the app. Caddy's strength is certificates:
 The compose file gives the network a fixed subnet, `172.28.0.0/24`, `web` the address `172.28.0.10`, and `tls` the address `172.28.0.11`. This is not decoration. The app sets `FORWARD_HEADERS_STRATEGY: native` and `TRUSTED_PROXY_REGEX: '172\.28\.0\.10'`, so it believes `X-Forwarded-For` only from nginx; nginx believes a forwarded address only from Caddy. The chain of belief is one link at a time, and every link is pinned to an address that cannot change.
 
 <!-- source: dossier/decisions.md D11, D12; PR #5 body "Operations" (TM2-6) -->
-The fixed subnet came from a review finding (TM2-6): without pinned addresses, "trust the proxy" could not be expressed safely. The 18-check live test in Chapter 32 verified the chain.
+The fixed subnet came from a finding by the Senior Technical Manager review agent (Chapter 32): without pinned addresses, "trust the proxy" could not be expressed safely. The 18-check live test in Chapter 32 verified the chain.
 
 ### 33.9 Secrets and configuration
 

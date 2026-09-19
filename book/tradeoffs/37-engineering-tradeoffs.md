@@ -25,6 +25,8 @@ outcome but not the reasoning, the text says so and marks the reasoning as the b
 
 ## 37.1 Server-side tiles vs. sending the PDF
 
+<!-- source: README "Why this design"; commit b6aef4e; dossier/decisions.md D4 -->
+
 **The decision.** How do you show a document to someone without handing them the file?
 
 **What the project chose.** The server rasterizes each page, slices it into 512-pixel PNG tiles,
@@ -86,6 +88,8 @@ commit message of `b6aef4e`.
 
 ## 37.4 App-issued HMAC tokens vs. cloud-signed URLs
 
+<!-- source: README "Why this design", Limitations; commit f682716; dossier/decisions.md D8 -->
+
 **The decision.** Who signs the URL that lets a browser fetch a tile?
 
 **What the project chose.** The app signs it with HMAC-SHA256 over document, page, row, column, render version, session binding, and expiry, with a 120-second lifetime. `SignedUrlService` deliberately mirrors the presigned-URL pattern (README, Limitations). The render version was added to the signed payload after a probe found old URLs silently serving the new render (`f682716`).
@@ -124,6 +128,7 @@ commit message of `b6aef4e`.
 
 ## 37.6 Built-in authentication vs. an identity provider
 
+<!-- source: PR #1 body; README Limitations; build transcript (the user's choice of built-in accounts) -->
 **The decision.** Who owns accounts and passwords?
 
 **What the project chose.** Built-in accounts: BCrypt passwords in MySQL, roles READER, PUBLISHER, and ADMIN, created by an administrator with no self-signup. Both reviewers had suggested an identity provider (OIDC or SSO); the product owner chose built-in accounts when asked (PR #1). The recorded outcome is sourced; the reasoning is the book's reading: a self-contained app with no external service to depend on.
@@ -134,7 +139,7 @@ commit message of `b6aef4e`.
 
 **Cons.**
 - The app now owns password storage, lockout, and reset. Reviews found real defects here (the lockout that let anyone lock out any user; the 72-byte BCrypt limit).
-- No MFA, including for admins, and no single sign-on across the organization (README, Limitations).
+- No MFA (multi-factor authentication: a second proof of identity beyond a password), including for admins (README, Limitations). Accounts also exist only inside this app, so there is no single sign-on (SSO: one company login that works across many apps).
 - Every new user needs an administrator.
 
 **The enterprise alternative.** An identity provider through OIDC (OpenID Connect, a standard for signing in through a separate identity service), which is how the reviewers suggested fixing sign-in and which typically supplies single sign-on (SSO) and multi-factor authentication (MFA). Naming specific vendors is beyond what the project recorded. The app would then take identity from the verified principal and keep only roles and ownership.
@@ -142,6 +147,8 @@ commit message of `b6aef4e`.
 **When you'd switch.** When people already have company accounts, when MFA becomes a requirement, or when administrators cannot keep up with accounts.
 
 ## 37.7 Local disk tiles vs. object storage
+
+<!-- source: README "Backup and restore", Limitations; commits cd0f5c2, 66f7152; dossier/decisions.md D8 -->
 
 **The decision.** Where do the tiles live?
 
@@ -161,6 +168,8 @@ commit message of `b6aef4e`.
 **When you'd switch.** When you need more than one instance (37.11), when the volume outgrows one disk, or when backups need to run without stopping the app.
 
 ## 37.8 Per-user rate limits vs. per-document sensitivity
+
+<!-- source: README Limitations; commits a51674c, 51ea941; dossier/decisions.md D6 -->
 
 **The decision.** How fast may a viewer pull tiles, and is the same limit right for every document?
 
@@ -278,7 +287,10 @@ Choose one decision and write the "When you'd switch" trigger as a measurable al
 
 ## Further reading
 
-- Spring Session and Spring Security reference documentation.
-- Amazon S3 and CloudFront documentation on presigned and signed URLs.
-- Flyway and MySQL 8.4 reference manuals.
-- OpenID Connect Core specification.
+- Spring Session reference: https://docs.spring.io/spring-session/reference/
+- Spring Security reference: https://docs.spring.io/spring-security/reference/
+- Amazon S3, presigned URLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html
+- Amazon CloudFront, signed URLs: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html
+- Flyway documentation: https://documentation.red-gate.com/flyway
+- MySQL 8.4 reference manual: https://dev.mysql.com/doc/refman/8.4/en/
+- OpenID Connect Core specification: https://openid.net/specs/openid-connect-core-1_0.html

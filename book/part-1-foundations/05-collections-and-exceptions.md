@@ -183,7 +183,7 @@ The resource in parentheses, the uploaded file's stream of bytes, is closed when
 
 An **Instant** is a single point on the timeline, independent of time zones. **UTC** (Coordinated Universal Time) is the world's reference time, with no daylight-saving changes. The app stores every timestamp as an instant, and the database columns hold UTC. Why?
 
-A server in Docker runs in UTC, while a developer's laptop may run in local time. If they disagreed about what "9:00" means, the same stored value would be read as different moments. The datasource setting `connectionTimeZone=UTC` and the Hibernate setting `hibernate.jdbc.time_zone: UTC` fix that. Watermarks also show a UTC timestamp for the same reason. <!-- source: application.yml comment at book-m6-final; commit 2d82253 "Fix review findings: ... UTC" -->
+A server in a Docker container (Chapter 10) runs in UTC, while a developer's laptop may run in local time. If they disagreed about what "9:00" means, the same stored value would be read as different moments. Two settings in `application.yml` fix that: `connectionTimeZone=UTC` in the database connection address, and `hibernate.jdbc.time_zone: UTC` for Hibernate, the library that moves Java objects in and out of the database (Chapter 14). Watermarks also show a UTC timestamp for the same reason. <!-- source: application.yml comment at book-m6-final; commit 2d82253 "Fix review findings: ... UTC" -->
 
 You saw `Instant.now()` in `AppUser`'s constructor (Listing 4.1). Expiry checks compare instants, and expiry values are stored as whole seconds since 1970 (`expiresAtEpochSeconds` in Listing 4.3), which is a plain number and therefore unambiguous.
 

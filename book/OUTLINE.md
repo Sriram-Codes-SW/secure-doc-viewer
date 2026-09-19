@@ -348,7 +348,7 @@ Tag: `book-m4-reading`. Blueprint: v4. Assumes: 28, 21–23.
 - 29.4 Audit-log trace filter
 - Ends with: Blueprint v4; Decisions and challenges
 
-### Chapter 30: Milestone 5: The platform (`30-m5-platform.md`)
+### Chapter 30: Milestone 5: The platform and the review rounds (`30-m5-platform.md`)
 Tag: `book-m5-platform`. Blueprint: v5. Assumes: 29, 10, 24.
 - 30.1 Upgrading to Spring Boot 4 and Java 25 (what changed)
 - 30.2 The full Docker stack (API, nginx, MySQL) and the Dockerfiles
@@ -359,7 +359,7 @@ Tag: `book-m5-platform`. Blueprint: v5. Assumes: 29, 10, 24.
 - 30.7 Frontend: mobile viewer, access-lost and replaced states
 - Ends with: Blueprint v5; Decisions and challenges
 
-### Chapter 31: Milestone 6: The finished app (`31-m6-final.md`)
+### Chapter 31: Milestone 6: The final state and keeping it healthy (`31-m6-final.md`)
 Tag: `book-m6-final`. Blueprint: v6. Assumes: 25–30.
 - 31.1 What changed after m5 (dependency updates, flaky-test fix, Dependabot policy)
 - 31.2 A guided tour of the finished repository

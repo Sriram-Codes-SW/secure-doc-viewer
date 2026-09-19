@@ -161,10 +161,12 @@ admin. A user who can't even see the document gets 404 first.
 
 ### 27.5 Sharing and the share picker
 
-`UserDirectoryController` supplies user suggestions for the sharing box on the Manage page, so an
-owner types part of a name and picks a user. Unknown names are rejected with a "No such user."
-error from the service.
-<!-- source: dossier/milestone-briefs.md#m2 key files; DocumentService.java at book-m2-documents -->
+`UserDirectoryController` (`GET /api/users?q=...`) supplies the suggestions for the sharing box on the
+Manage page. Its Javadoc states the safeguards: it is limited to PUBLISHER and ADMIN in
+`SecurityConfig` (readers never share), returns usernames only, returns at most 20 per query so it
+can't dump account details, matches by name prefix among enabled accounts, and leaves out the caller.
+Sharing with an unknown name is rejected by the service with a "No such user." error.
+<!-- source: UserDirectoryController.java, DocumentService.java at book-m2-documents -->
 
 ### 27.6 The audit trail
 
@@ -238,9 +240,19 @@ Table 27.1 is the map for the source tree at this tag.
 
 ## Try it
 
-1. (★) Why does the tile endpoint answer 404 for a document you may not see?
-2. (★★) In Listing 27.3, which three conditions make a document visible to a non-admin?
-3. (★★★) Sign in as a reader on your own copy, open a shared document, and have the owner unshare it. What happens to the next tile request, and why?
+Solutions are in `27-m2-documents.solutions.md`.
+
+### Exercise 27.1 ★ Why 404
+
+Why does the tile endpoint answer 404, not 403, for a document you may not see?
+
+### Exercise 27.2 ★★ Three ways to see a document
+
+In Listing 27.3, which three conditions make a document visible to a non-admin?
+
+### Exercise 27.3 ★★★ Unshare while reading
+
+On your own copy at `book-m2-documents`, sign in as a reader, open a shared document, and have the owner unshare it. What happens to the next tile request, and why?
 
 ## Architecture blueprint v2
 

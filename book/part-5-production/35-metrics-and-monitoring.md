@@ -61,7 +61,7 @@ Why status only? Detailed health output can reveal database names, disk paths, a
 allows a request only from the CIDR ranges in `metrics-allowed-addresses` (setting `METRICS_ALLOWED_ADDRESSES`), judged by the real connection address; the default is loopback. nginx never proxies this path, so from outside the compose network it is unreachable. In production you set the setting to your Prometheus server's address.
 
 <!-- source: PR #5 body "Operations" (TM-12); README "Configuration" -->
-The endpoint came from a review finding (TM-12), which asked for operational visibility without exposing it to the world.
+The endpoint came from a finding by the Senior Technical Manager review agent (Chapter 32), which asked for operational visibility without exposing it to the world.
 
 ### 35.5 The `sdv_*` counters
 

@@ -30,13 +30,49 @@ Why pictures at all? A PDF in the browser can be saved, copied and searched. A s
 
 ### 17.2 Reading and rendering a PDF
 
-Turning a PDF page into a `BufferedImage` is called **rasterizing**. The project uses the Apache PDFBox library (version 3.0.8, from `pom.xml`), which can open a PDF and draw a page at a chosen DPI. This book doesn't reproduce the rendering code here; `TileGenerationService` in `src/main/java/com/example/securedocviewer/service/` does the work, and the limits placed around it (page count, pixel count, timeout) are the subject of Section 17.6 and Chapter 13.
+Turning a PDF page into a `BufferedImage` is called **rasterizing**. The project uses the Apache PDFBox library (version 3.0.8, from `pom.xml`), which can open a PDF and draw a page at a chosen DPI. `TileGenerationService` does the work. Listing 17.1 shows the heart of it, and the checks that guard it.
+
+**Listing 17.1 — `TileGenerationService.java` (`book-m6-final`, simplified: the surrounding methods, error handling and the tile-saving helper are omitted; the two excerpts are from different places in the class)**
+
+*`src/main/java/com/example/securedocviewer/service/TileGenerationService.java`*
+
+```java
+try (PDDocument document = loadPdf(source)) {
+    requireWithinLimits(document);
+    PDFRenderer renderer = new PDFRenderer(document);
+    // Decode huge embedded images at reduced resolution instead of in full.
+    renderer.setSubsamplingAllowed(true);
+    for (int pageIndex = 0; pageIndex < document.getNumberOfPages(); pageIndex++) {
+        if (cancelled.get() || Thread.currentThread().isInterrupted()) {
+            throw new CancellationException("Render abandoned after render-timeout");
+        }
+        BufferedImage rendered = renderer.renderImageWithDPI(pageIndex, properties.getRenderDpi());
+        pages.add(tileAndSave(stagingDir.resolve("page-" + pageIndex), pageIndex, rendered));
+    }
+}
+
+// ... elsewhere in the class ...
+
+private void requireWithinLimits(PDDocument document) {
+    int pageCount = document.getNumberOfPages();
+    if (pageCount == 0) {
+        throw new BadRequestException("The PDF has no pages.");
+    }
+    if (pageCount > properties.getMaxPages()) {
+        throw new BadRequestException("The PDF has " + pageCount + " pages; the limit is "
+                + properties.getMaxPages() + ".");
+    }
+    // ... a per-page pixel-size check follows ...
+}
+```
+
+The method opens the PDF, checks it against the limits before drawing anything, and creates a `PDFRenderer`. Then it loops over the pages: `renderImageWithDPI(pageIndex, properties.getRenderDpi())` draws one page as a `BufferedImage` at 150 DPI, and `tileAndSave` (not shown) slices it with `TileGrid` and writes the tiles into a per-page directory in a staging area. The `try (...)` closes the PDF when the loop ends, even on error. Before each page the loop checks a `cancelled` flag, so a render that exceeds `render-timeout` can be abandoned and free its slot (Section 17.6). Two further limits appear in the source. `requireWithinLimits` rejects a PDF with no pages or more than `max-pages`, and, in the part omitted here, a page whose rendered size would exceed `max-page-pixels`; each failure is a `BadRequestException`, which Chapter 13's handler turns into a `400`. And the PDF is loaded with a temporary-file cache (a comment in `loadPdf` says: "large PDFs are buffered on disk, not in the heap").
 
 ### 17.3 Slicing an image into a grid
 
 Serving a whole page as one image would hand over everything in one request. Tiles are small: `tile-size: 512` pixels square at the final tag. `TileGrid` is the pure arithmetic, kept separate so it can be tested without any PDF.
 
-**Listing 17.1 — `TileGrid.java` (`book-m0-mvp`, identical at `book-m6-final`; imports and the class comment are omitted)**
+**Listing 17.2 — `TileGrid.java` (`book-m0-mvp`, identical at `book-m6-final`; imports and the class comment are omitted)**
 
 *`src/main/java/com/example/securedocviewer/service/TileGrid.java`*
 
@@ -72,7 +108,42 @@ public final class TileGrid {
 
 ### 17.4 Drawing text on an image (watermarks)
 
-A **watermark** is text drawn into the picture. Here it shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log, so a leaked screenshot points back to a sign-in (comment in `application.yml`). Its look is configurable: `watermark-opacity: 0.2` and `watermark-spacing: 1.5`, the gap between copies as a multiple of the text height. The drawing code is in `WatermarkService` (not reproduced here), and the watermark is applied to each tile at request time (`TileController`, Chapter 12), so each viewer receives different pixels.
+A **watermark** is text drawn into the picture. Here it shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log, so a leaked screenshot points back to a sign-in (comment in `application.yml`). Its look is configurable: `watermark-opacity: 0.2` and `watermark-spacing: 1.5`, the gap between copies as a multiple of the text height. `WatermarkService` does the drawing, and `TileController` applies it to each tile at request time (Chapter 12). The class comment gives the reason for stamping on the way out rather than during upload: "one stored tile serves every viewer, and every response is still individually traceable back to who requested it and when."
+
+**Listing 17.3 — `WatermarkService.applyWatermark` (`book-m6-final`, simplified: the long explanatory comments, the tile-sizing lines and the closing lines are omitted)**
+
+*`src/main/java/com/example/securedocviewer/service/WatermarkService.java`*
+
+```java
+public BufferedImage applyWatermark(BufferedImage source, String viewerLabel, String traceCode, int nominalTileSize) {
+    int width = source.getWidth();
+    int height = source.getHeight();
+    BufferedImage stamped = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+    Graphics2D g = stamped.createGraphics();
+    try {
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.drawImage(source, 0, 0, null);
+
+        String stamp = TIMESTAMP_FORMAT.format(Instant.now());
+        String[] lines = {viewerLabel, traceCode == null ? stamp : stamp + " · " + traceCode};
+        // ... choose the font size and compute the spacing (Layout) ...
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+        g.setColor(Color.RED);
+        g.rotate(-Math.PI / 6);
+        // ... a loop draws each line at every step of a brick pattern ...
+    } finally {
+        g.dispose();
+    }
+
+    return stamped;
+}
+```
+
+Reading it through: the method creates a new image the same size as the tile and gets a `Graphics2D`, Java's drawing object. It first draws the original tile onto it, then builds two lines of text, the viewer's name and the UTC time (plus the trace code when one is given). It sets a translucent red ink (`opacity`, 0.2 by default in `application.yml`) and rotates the drawing surface by 30 degrees (`-Math.PI / 6` radians). A loop, left out here, repeats the two lines across the whole tile in a brick pattern. The `finally` calls `g.dispose()` to release the drawing resources even if something fails.
+
+The repetition is deliberate. Edge tiles are cropped shorter than full ones (Section 17.3), so a single centered mark could land entirely outside a small tile. The source comment explains: repeating the mark "so every tile carries some of it — and a full-size tile carries at least one complete, readable copy". The settings are also clamped inside the service (opacity between 0.05 and 0.6, spacing between 0.5 and 6.0), so a mistaken configuration can't make the mark invisible or overwhelming.
 
 ## Intermediate tier: Proving a link wasn't altered
 
@@ -80,9 +151,9 @@ A **watermark** is text drawn into the picture. Here it shows the viewer, a UTC 
 
 The browser asks for tiles by URL, and anyone could type a different tile or document id into it. The server needs a way to hand out links only it can create. The tool is an **HMAC** (hash-based message authentication code): a fixed-length fingerprint computed from a message and a secret key with a hash function (HmacSHA256 here). Without the key, nobody can produce the right fingerprint for a message, and change one character of the message and the fingerprint changes completely.
 
-The project's **signed token** is the message plus its fingerprint. `SignedUrlService` issues and verifies it (Listing 17.2).
+The project's **signed token** is the message plus its fingerprint. `SignedUrlService` issues and verifies it (Listing 17.4).
 
-**Listing 17.2 — `SignedUrlService.java` (`book-m6-final`, simplified: `parseCanonical`, the helper methods and comments are omitted)**
+**Listing 17.4 — `SignedUrlService.java` (`book-m6-final`, simplified: `parseCanonical`, the helper methods and comments are omitted)**
 
 *`src/main/java/com/example/securedocviewer/service/SignedUrlService.java`*
 
@@ -125,7 +196,7 @@ Two details matter. `constantTimeEquals` compares with `MessageDigest.isEqual`, 
 
 Watermarking and encoding a tile uses CPU. The per-user rate limit (Chapter 16's cousin, `TileRateLimiter`) bounds each reader, but many readers together could still starve the server. `TileWorkLimiter` caps work across everyone with a **semaphore**, a counter of permits: a task must take a permit to run and returns it when done.
 
-**Listing 17.3 — `TileWorkLimiter.run` (`book-m6-final`, class comment and imports omitted)**
+**Listing 17.5 — `TileWorkLimiter.run` (`book-m6-final`, class comment and imports omitted)**
 
 *`src/main/java/com/example/securedocviewer/service/TileWorkLimiter.java`*
 
