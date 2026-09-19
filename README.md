@@ -55,9 +55,11 @@ heavier mark made dense pages (code, tables) hard to read.
 
 What it is meant to guarantee is attribution, not deterrence by ugliness:
 
-- Every full tile carries at least one complete copy (viewer, UTC time, trace code), and the
-  pattern continues seamlessly across tile edges, so any capture larger than about one tile still
-  names the viewer. A screenshot small enough to miss every copy is too small to be much use.
+- Every full tile carries at least one complete copy (viewer, UTC time, trace code), and every
+  tile, including the cropped ones at the page edges, carries the pattern at the same size. The
+  pattern is laid out per tile, so copies do not line up across tile boundaries, but any capture
+  of more than a small fragment of the page includes some of the mark, and any capture that
+  contains a whole tile includes a complete copy.
 - The trace code leads to the exact sign-in in the audit log, so even a partly legible mark is
   enough.
 - It can't be switched off by the reader: it is burned into the pixels on the server.
