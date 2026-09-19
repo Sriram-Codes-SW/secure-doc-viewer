@@ -30,8 +30,6 @@ A request names *what* the client wants and *how*; the response says whether tha
 
 Figure 8.1 shows one exchange, written out the way it travels.
 
-**Figure 8.1 — One request and its response (teaching example, abbreviated)**
-
 ```text
 GET /api/documents HTTP/1.1
 Host: localhost:8080
@@ -43,6 +41,8 @@ Content-Type: application/json
 
 [{"documentId":"...","title":"Quarterly report"}]
 ```
+
+*Figure 8.1 — One request and its response (teaching example, abbreviated)*
 
 The top block is the request: a **request line** (method, path, protocol version), then **headers**, one per line. The bottom is the response: a **status line**, headers, an empty line, and the **body**. The id and title values are placeholders for illustration.
 
@@ -58,8 +58,6 @@ A URL has parts. Take `https://docs.example.com:8080/api/tiles?token=<signed-tok
 
 The **method** says what the client wants to do. Table 8.1 lists the ones the app uses, with real examples from `DocumentController`.
 
-**Table 8.1 — HTTP methods in the app**
-
 | Method | Meaning | Example in the app |
 |---|---|---|
 | `GET` | Read something; changes nothing | `GET /api/documents` lists your documents |
@@ -68,11 +66,11 @@ The **method** says what the client wants to do. Table 8.1 lists the ones the ap
 | `PATCH` | Change part of something | `PATCH /api/documents/{id}` renames it |
 | `DELETE` | Remove something | `DELETE /api/documents/{id}` |
 
+*Table 8.1 — HTTP methods in the app*
+
 <!-- source: DocumentController.java at book-m6-final -->
 
 The response's **status code** is a three-digit number telling the client what happened. They come in families: 2xx success, 3xx redirect, 4xx the client's request was wrong, 5xx the server failed. Table 8.2 lists the codes this app produces, each taken from its error handler.
-
-**Table 8.2 — Status codes the app uses**
 
 | Code | Name | When the app sends it |
 |---|---|---|
@@ -88,6 +86,8 @@ The response's **status code** is a three-digit number telling the client what h
 | `429` | Too Many Requests | Rate limit or sign-in lockout, with a `Retry-After` header |
 | `500` | Internal Server Error | An unexpected failure on the server |
 | `503` | Service Unavailable | The server is busy rendering; retry |
+
+*Table 8.2 — Status codes the app uses*
 
 <!-- source: GlobalExceptionHandler.java at book-m6-final -->
 

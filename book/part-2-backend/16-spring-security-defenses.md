@@ -14,6 +14,8 @@ By the end of this chapter, you will be able to:
 - Explain why `X-Forwarded-For` is trusted only from a proxy.
 - Explain what `SessionLifetimeFilter` and `PasswordChangeRequiredFilter` enforce.
 
+**A note on versions.** All listings are quoted from `book-m6-final`, where these defenses are complete. `SpaCsrfTokenRequestHandler.java` is identical at `book-m1-accounts`; the throttling, session-lifetime and forced-password-change code arrived in later milestones, and `SecurityConfig` differs from its milestone 1 form.
+
 ## Prerequisites
 
 - Chapter 8: how the web works (headers, cookies)

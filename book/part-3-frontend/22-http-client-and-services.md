@@ -277,7 +277,7 @@ Chapter 20 showed the development proxy. In production, `frontend/nginx.conf` do
 
 *Path: `frontend/nginx.conf`*
 
-The comment records a real security fix: an early proxy configuration appended to a client-supplied `X-Forwarded-For` header, and because the backend trusted it, changing the header on each attempt could reset the sign-in throttle. An end-to-end test in `e2e/secure-viewing.spec.ts` now sends six wrong passwords with different spoofed addresses and expects the sixth to be refused with 429 (Chapter 24). The same file sets a Content-Security-Policy for the app's pages that allows images only from `'self'`, `blob:` and `data:`; the `blob:` allowance is exactly what the viewer's tiles need.
+The comment records a real security fix (project dossier, `bugs-and-findings.md`, finding D1 / TM2-1; fix commit `2d82253`, PR 1). During a live test through nginx, the reviewer found that the proxy appended to a client-supplied `X-Forwarded-For` header and the backend trusted it, so changing the header on each attempt reset the sign-in throttle. The fix made nginx overwrite the header with the real peer address. An end-to-end test in `e2e/secure-viewing.spec.ts` now sends six wrong passwords with different spoofed addresses and expects the sixth to be refused with 429 (Chapter 24). The same file sets a Content-Security-Policy for the app's pages that allows images only from `'self'`, `blob:` and `data:`; the `blob:` allowance is exactly what the viewer's tiles need.
 
 ### 22.8 Polling that must not keep a session alive
 

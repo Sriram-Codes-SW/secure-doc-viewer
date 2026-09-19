@@ -132,14 +132,14 @@ The `distributionUrl` names Maven 3.9.16. Run Maven by typing `./mvnw` instead o
 
 Maven runs a fixed sequence of **phases**. Asking for a phase runs it and every phase before it. Table 6.1 lists the ones you'll use.
 
-**Table 6.1 — Maven phases you'll use**
-
 | Command | What happens |
 |---|---|
 | `./mvnw compile` | Compiles the source code |
 | `./mvnw test` | Compiles, then runs the unit tests |
 | `./mvnw package` | Also bundles the app into `target/secure-doc-viewer.jar` |
 | `./mvnw verify` | Also runs the integration checks; this is what continuous integration runs |
+
+*Table 6.1 — Maven phases you'll use*
 
 A **JAR** file is a zip of compiled classes. Because the project uses the Spring Boot plugin, the JAR it builds is **executable**: it contains the web server too, so you start the whole app with `java -jar target/secure-doc-viewer.jar`. The output name comes from `<finalName>secure-doc-viewer</finalName>` in the `pom.xml`. <!-- source: pom.xml and Dockerfile at book-m6-final -->
 
@@ -151,8 +151,6 @@ Everything Maven produces lands in a folder called `target/`, which the project'
 
 Maven relies on **convention over configuration**: if you put files where it expects them, it needs no instructions. Table 6.2 shows the layout at `book-m6-final`.
 
-**Table 6.2 — Where things live**
-
 | Path | Holds |
 |---|---|
 | `pom.xml` | The build description |
@@ -163,6 +161,8 @@ Maven relies on **convention over configuration**: if you put files where it exp
 | `target/` | Build output (ignored by Git) |
 | `frontend/` | The Angular application (Part III) |
 | `Dockerfile`, `docker-compose.yml` | Packaging (Chapter 10) |
+
+*Table 6.2 — Where things live*
 
 Splitting `src/main` from `src/test` matters: test code and test libraries never enter the packaged application. Chapter 18 covers the tests themselves.
 

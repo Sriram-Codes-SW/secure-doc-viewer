@@ -107,8 +107,6 @@ You recognize the class and `main`. The `package` and `import` lines and the `@`
 
 A **variable** is a named place to keep a value. Java is **statically typed**: every variable has a **type** that says what kind of value it holds, and the compiler checks that you use it correctly. Table 3.1 lists the types you'll meet most.
 
-**Table 3.1 — Basic types**
-
 | Type | Holds | Example |
 |---|---|---|
 | `int` | Whole numbers (about -2 billion to 2 billion) | `512` |
@@ -116,6 +114,8 @@ A **variable** is a named place to keep a value. Java is **statically typed**: e
 | `double` | Decimal numbers | `1.5` |
 | `boolean` | `true` or `false` | `true` |
 | `String` | Text | `"admin"` |
+
+*Table 3.1 — Basic types*
 
 Example 3.2 declares some variables using names from the app's configuration.
 

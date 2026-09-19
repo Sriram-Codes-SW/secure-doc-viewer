@@ -22,7 +22,7 @@ By the end of this chapter, you will be able to:
 
 ### 2.1 What a terminal and a shell are
 
-Until now you have probably given your computer instructions by clicking. A *terminal* is a window where you type instructions instead. A *shell* is the program inside the terminal that reads what you type, runs it, and prints the result. The shell shows a *prompt*, a short line of text that says it is ready.
+Until now you have probably given your computer instructions by clicking. A **terminal** is a window where you type instructions instead. A **shell** is the program inside the terminal that reads what you type, runs it, and prints the result. The shell shows a **prompt**, a short line of text that says it is ready.
 
 Why bother? Clicking can't be written down and repeated. A command can be pasted into a document, run by a teammate, or run by a machine in the middle of the night. The project's build, its tests and its automated checks are all commands.
 
@@ -32,11 +32,9 @@ This book uses `bash` syntax. On macOS and Linux, open the Terminal app. On Wind
 
 ### 2.2 Folders, paths and moving around
 
-Your files live in *folders* (also called directories) that nest inside each other. A *path* is the address of a file or folder. Paths use forward slashes in `bash`: `/c/dev/secure-doc-viewer` on Git Bash for Windows, or `/Users/you/dev/secure-doc-viewer` on macOS.
+Your files live in **folders** (also called directories) that nest inside each other. A **path** is the address of a file or folder. Paths use forward slashes in `bash`: `/c/dev/secure-doc-viewer` on Git Bash for Windows, or `/Users/you/dev/secure-doc-viewer` on macOS.
 
-The shell is always "in" one folder, called the *working directory*. Table 2.1 lists the commands you use to look around.
-
-**Table 2.1 — Navigation commands**
+The shell is always "in" one folder, called the **working directory**. Table 2.1 lists the commands you use to look around.
 
 | Command | What it does |
 |---|---|
@@ -46,7 +44,9 @@ The shell is always "in" one folder, called the *working directory*. Table 2.1 l
 | `cd ..` | Move up one level |
 | `cd ~` | Move to your home folder |
 
-A path is *absolute* if it starts from the top (`/c/dev/...`) and *relative* if it starts from where you are (`src/main`). The name `.` means "this folder" and `..` means "the folder above".
+*Table 2.1 — Navigation commands*
+
+A path is **absolute** if it starts from the top (`/c/dev/...`) and **relative** if it starts from where you are (`src/main`). The name `.` means "this folder" and `..` means "the folder above".
 
 Example 2.1 shows a short session. The lines starting with `#` are comments for you; the shell ignores them.
 
@@ -64,8 +64,6 @@ cd ../../..              # back up three levels
 
 Table 2.2 gives the essential file commands.
 
-**Table 2.2 — File commands**
-
 | Command | What it does |
 |---|---|
 | `mkdir notes` | Create a folder |
@@ -75,6 +73,8 @@ Table 2.2 gives the essential file commands.
 | `rm b.txt` | Delete a file, permanently |
 | `rm -r notes` | Delete a folder and everything in it |
 
+*Table 2.2 — File commands*
+
 `rm` doesn't use a recycle bin. Read a delete command twice before pressing <kbd>Enter</kbd>.
 
 Two shortcuts save time: press <kbd>Tab</kbd> to complete a name, and <kbd>↑</kbd> to bring back the previous command.
@@ -83,7 +83,7 @@ Two shortcuts save time: press <kbd>Tab</kbd> to complete a name, and <kbd>↑</
 
 ### 2.4 Environment variables and the PATH
 
-An *environment variable* is a named value that the operating system hands to every program it starts. You can set and read one in the shell:
+An **environment variable** is a named value that the operating system hands to every program it starts. You can set and read one in the shell:
 
 **Example 2.2 — An environment variable**
 
@@ -123,7 +123,7 @@ One variable deserves special mention. `PATH` is a list of folders. When you typ
 
 ### 2.5 Text files, encodings and line endings (why `.env` files exist)
 
-A *text file* holds characters. An *encoding* is the rule that maps characters to bytes; the project's files use UTF-8. A *line ending* marks where a line stops: Windows uses two bytes for it (carriage return plus line feed) and macOS and Linux use one (line feed). Git and editors can convert between them, which matters in Chapter 7.
+A **text file** holds characters. An **encoding** is the rule that maps characters to bytes; the project's files use UTF-8. A **line ending** marks where a line stops: Windows uses two bytes for it (carriage return plus line feed) and macOS and Linux use one (line feed). Git and editors can convert between them, which matters in Chapter 7.
 
 Now the reason for `.env`. The app needs secrets, such as the database password and the key used to sign tile URLs. Secrets must never be committed to version control. **Version control** is a tool that records every change to a project's files so that you can go back to any earlier state; Git is the one this project uses, and [Chapter 7](07-git-and-github.md) teaches it. Its history is permanent and shared, so a secret committed once is exposed for good. So the project keeps a template, `.env.example`, in the repository, and asks you to copy it to `.env`. A file named `.gitignore` lists the files Git must not record, and it lists `.env`. The real values stay on your machine. <!-- source: .gitignore and .env.example at book-m6-final -->
 
@@ -139,9 +139,9 @@ Then open `.env` in a text editor and fill in the blanks with values you choose.
 
 ### 2.6 Ports and processes (what "listening on 8080" means)
 
-A running program is a *process*. Your computer can run many at once, and each gets its own number. A *port* is a numbered door on your computer, from 0 to 65535. A server process *listens* on a port: it asks the operating system to hand it any network request addressed to that number.
+A running program is a **process**. Your computer can run many at once, and each gets its own number. A **port** is a numbered door on your computer, from 0 to 65535. A server process **listens** on a port: it asks the operating system to hand it any network request addressed to that number.
 
-An *address* here means which network interface the program listens on; the name `localhost` means this computer. Two programs can't listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. In this project:
+An **address** here means which network interface the program listens on; the name `localhost` means this computer. Two programs can't listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. In this project:
 
 - The backend listens on `8080` (`server.port` in `application.yml`).
 - MySQL listens on `3306`.

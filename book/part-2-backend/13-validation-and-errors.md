@@ -14,6 +14,10 @@ By the end of this chapter, you will be able to:
 - Explain why the catch-all handler returns a reference code rather than the exception message.
 - Name three limits the project sets on uploads.
 
+**A note on versions.** Most listings in this chapter are quoted at `book-m3-hardening` (Spring Boot 3.3.4, Java 21), where these features were added. Listing 13.1 and the paging snippet come from `book-m6-final` (Spring Boot 4.1.1, Java 25). At `book-m6-final`, `ViewerProperties` has more settings and different defaults (for example `tileRateLimitPerWindow` is 180, not 120), and `GlobalExceptionHandler` has extra handlers, but the parts quoted here are unchanged.
+
+Terms used here and explained where they appear: **`Accept` header** (the request header naming the content types the caller can receive; Chapter 8), **stack trace** (the list of method calls at the moment of an exception; Chapter 3), **log** (Chapter 11), **`Retry-After`** (a response header telling the client how many seconds to wait; Chapter 12), and **UUID** (a randomly generated identifier, used here only to make a short reference code). CSRF is the subject of [Chapter 16](16-spring-security-defenses.md).
+
 ## Prerequisites
 
 - Chapter 5: exceptions
@@ -51,7 +55,7 @@ public ResponseEntity<CurrentUser> login(@Valid @RequestBody LoginRequest body,
                                          HttpServletResponse response) {
 ```
 
-`@NotBlank` rejects a missing value, an empty string and one made only of spaces. `@Size(max = 64)` caps the length. `@Valid` on the parameter tells Spring to check these rules before the method body runs; if a rule fails, the method is never called and Spring raises a `MethodArgumentNotValidException`. Section 13.4 shows where that becomes a `400` response.
+`@NotBlank` rejects a missing value, an empty string and one made only of spaces. `@Size(max = 64)` caps the length. `@Valid` on the parameter tells Spring to check these rules before the method body runs; if a rule fails, the method is never called and Spring raises a `MethodArgumentNotValidException`. Section 13.4 shows where that becomes a `400` response: its handler takes the first field error and returns `field: message`. Spring uses three related exception types depending on where the rule sits: `MethodArgumentNotValidException` for a validated request body, `HandlerMethodValidationException` for rules on individual parameters (as below), and Jakarta's `ConstraintViolationException` for rules checked elsewhere in the code. The handler class has one method for each, so all three give the same `400` shape.
 
 Rules also work on individual query parameters. `AdminController.audit` restricts its paging inputs:
 
@@ -148,7 +152,7 @@ The same shape is used for errors raised before a request even reaches a control
 
 ### 13.5 Not leaking internals (generic 500 with a reference)
 
-The most dangerous message is the helpful one. An unhandled exception might say `SELECT * FROM ... WHERE path='C:/internal'`, which tells an attacker the database, table and file layout. Listing 13.4 is the last-resort handler.
+A helpful error message can be dangerous. An unhandled exception might say `SELECT * FROM ... WHERE path='C:/internal'`, which tells an attacker the database, table and file layout. Listing 13.4 is the last-resort handler.
 
 **Listing 13.4 — The catch-all handler (`book-m3-hardening`)**
 
@@ -178,8 +182,8 @@ The comment above `GlobalExceptionHandler` records a subtle bug. Without an expl
 Validation isn't only about shape; it's about size. A PDF can be small on disk and enormous once drawn, a **decompression bomb**. The project sets three separate limits, all in configuration:
 
 - **File size.** `spring.servlet.multipart.max-file-size: 50MB`. Exceeding it raises `MaxUploadSizeExceededException`, which the handler turns into `413` with the message "The file is too large (limit 50 MB)." A comment in `application.yml` says to keep this in step with `GlobalExceptionHandler.MAX_UPLOAD_MB` and the frontend check, three places that must agree.
-- **Page count.** `max-pages: 500`: "Uploads with more pages are rejected before anything is rendered."
-- **Page size in pixels.** `max-page-pixels: 40000000`: the largest rendered page allowed, which "stops decompression-bomb PDFs".
+- **Page count.** `max-pages: 500`. The comment on this field in `ViewerProperties.java` says: "Uploads with more pages are rejected before anything is rendered."
+- **Page size in pixels.** `max-page-pixels: 40000000`. The comment on this field in `ViewerProperties.java` says: "Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs."
 
 Each limit is checked before the expensive work begins, which is the point: rejecting cheaply protects the CPU and memory that rendering would otherwise consume. Chapter 17 shows the rendering side.
 

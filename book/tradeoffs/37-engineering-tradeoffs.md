@@ -1,7 +1,7 @@
 <!-- chapter: 37 | part: trade-offs | owner: writer-production | tag: book-m6-final | status: draft -->
 # Chapter 37: The engineering trade-offs
 
-Tag: `book-m6-final`. Prerequisites: everything before it.
+Tag: `book-m6-final`. Prerequisites: Chapters 15, 16, 25 to 31, and 32 to 36. Terms such as CDN (a network of servers that delivers files from near the reader), Redis (an in-memory data store shared between servers), and presigned URL (a temporary signed link to a stored file) are glossed where they first appear or in the chapters named.
 
 ## Learning objectives
 
@@ -14,8 +14,8 @@ By the end of this chapter you can:
 
 ## How to read this chapter
 
-A trade-off is a decision where getting one good thing means giving up another. Nothing in this
-chapter is a mistake. Each choice was reasonable for a small, single-server app with one team, and
+A trade-off is a decision where getting one good thing means giving up another. Each choice below was
+reasonable for a small, single-server app with one team, and
 each has a point where it stops being reasonable.
 
 Every decision below uses the same six headings: **The decision**, **What the project chose**,
@@ -28,9 +28,9 @@ outcome but not the reasoning, the text says so and marks the reasoning as the b
 **The decision.** How do you show a document to someone without handing them the file?
 
 **What the project chose.** The server rasterizes each page, slices it into 512-pixel PNG tiles,
-and deletes the source PDF after ingest. Only disconnected tiles remain, and no endpoint returns a
-page or document (README, "Why this design"; PR #3 deletes the source before the tiles commit).
-The browser reassembles the tiles on a `<canvas>`. The reasoning at MVP time survives only in the
+and, in the README's words, the PDF "stops existing as a servable file after ingest". Only disconnected tiles remain, and no endpoint returns a
+page or document (README, "Why this design"; the ingest code deletes the staged source PDF, `TileGenerationService`).
+The browser paints the tiles as absolutely positioned elements with CSS background images built from `blob:` URLs (Chapter 21). The reasoning at MVP time survives only in the
 commit message of `b6aef4e`.
 
 **Pros.**
@@ -43,7 +43,7 @@ commit message of `b6aef4e`.
 - Pages are images, so there is no text layer: screen readers get nothing, and users cannot search or copy text (README, Limitations).
 - It cannot stop screenshots or photographs, and a patient user with a valid session can fetch every tile.
 
-**The enterprise alternative.** Commercial readers use this same pattern, often with a document-rights service, and add a text layer for accessibility that is served only when policy allows. Where the real requirement is legal control rather than deterrence, teams use a managed digital rights management (DRM) product.
+**The enterprise alternative.** The README says this is "the architecture commercial e-magazine and flipbook readers use". Beyond that the project recorded no alternative. As general industry practice, not something the project recorded: a stricter requirement is often met with a digital rights management (DRM) product, and accessibility with a text layer served under policy.
 
 **When you'd switch.** When accessibility is a hard requirement (add a controlled text layer), or when the content's value justifies a DRM vendor's cost.
 
@@ -61,7 +61,7 @@ commit message of `b6aef4e`.
 - A decode, draw, and PNG encode on every tile request. The reviewer recorded this as a documented limitation on a single node.
 - Tile responses must be `Cache-Control: no-store`, because a shared cache holding a tile stamped for someone else would leak it. That gives up shared caching.
 
-**The enterprise alternative.** Watermark at a coarser granularity, or cache per (tile, viewer) with a short lifetime (both named in the README's Limitations). Larger systems move stamping to an image service at the edge.
+**The enterprise alternative.** Watermark at a coarser granularity, or cache per (tile, viewer) with a short lifetime (both named in the README's Limitations). Anything beyond those two options is general industry practice, not something the project recorded.
 
 **When you'd switch.** When tile CPU becomes the bottleneck. The metric that shows it first is `sdv_tiles_served_total` next to CPU use and `503` responses from the tile work cap.
 
@@ -80,7 +80,7 @@ commit message of `b6aef4e`.
 - A light mark deters less than a heavy one, and a determined person can crop or retouch a fragment.
 - The pattern is laid out per tile, so copies do not line up across tile boundaries (commit `f468678` states this exactly in the README).
 
-**The enterprise alternative.** Layered marks: a visible one for deterrence plus an invisible forensic one that survives cropping and recompression, supplied by a specialist library or service.
+**The enterprise alternative.** The README's own lever is turning the mark up (`watermark-opacity`, `watermark-spacing`). General industry practice, not recorded by the project: adding an invisible forensic mark alongside the visible one.
 
 **When you'd switch.** When leaks happen and the visible trace code is not enough evidence, or when different documents need different strength (see 37.8).
 
@@ -126,7 +126,7 @@ commit message of `b6aef4e`.
 
 **The decision.** Who owns accounts and passwords?
 
-**What the project chose.** Built-in accounts: BCrypt passwords in MySQL, roles READER, PUBLISHER, and ADMIN, created by an administrator with no self-signup. Both reviewers had suggested an identity provider (OIDC or SSO); the user chose built-in accounts after being asked (dossier D1). The recorded outcome is sourced; the reasoning is the book's reading: a self-contained app with no external service to depend on.
+**What the project chose.** Built-in accounts: BCrypt passwords in MySQL, roles READER, PUBLISHER, and ADMIN, created by an administrator with no self-signup. Both reviewers had suggested an identity provider (OIDC or SSO); the product owner chose built-in accounts when asked (PR #1). The recorded outcome is sourced; the reasoning is the book's reading: a self-contained app with no external service to depend on.
 
 **Pros.**
 - Nothing outside the stack to set up, and full control of the rules: three lockout counters, recognised devices, forced first-password change, and an unlock action.
@@ -137,7 +137,7 @@ commit message of `b6aef4e`.
 - No MFA, including for admins, and no single sign-on across the organization (README, Limitations).
 - Every new user needs an administrator.
 
-**The enterprise alternative.** An identity provider through OIDC (Keycloak, Microsoft Entra ID, Okta and similar), which supplies SSO, MFA, and central offboarding. The app would then take identity from the verified principal and keep only roles and ownership.
+**The enterprise alternative.** An identity provider through OIDC (OpenID Connect, a standard for signing in through a separate identity service), which is how the reviewers suggested fixing sign-in and which typically supplies single sign-on (SSO) and multi-factor authentication (MFA). Naming specific vendors is beyond what the project recorded. The app would then take identity from the verified principal and keep only roles and ownership.
 
 **When you'd switch.** When people already have company accounts, when MFA becomes a requirement, or when administrators cannot keep up with accounts.
 
@@ -164,7 +164,7 @@ commit message of `b6aef4e`.
 
 **The decision.** How fast may a viewer pull tiles, and is the same limit right for every document?
 
-**What the project chose.** One per-user limit: 180 tile requests per 60-second window with 512-pixel tiles, about 15 pages a minute. The history: the limit and tile size moved from 256 pixels and 120 a minute to 512 and 180 after readers saw blank pages (PO-7, PO2-1). The reviewer noted that a 500-page harvest then takes about 33 minutes instead of about 2.4 hours. The product owner accepted this on September 19, 2026 (commit `51ea941`) and asked how sensitive documents could differ; per-document sensitivity levels are listed as a possible follow-up.
+**What the project chose.** One per-user limit: 180 tile requests per 60-second window with 512-pixel tiles, about 15 pages a minute. The history: the limit and tile size moved from 256 pixels and 120 a minute to 512 and 180 after readers saw blank pages (raised by the AI product-owner review agent; see Chapter 32). The reviewer noted that a 500-page harvest then takes about 33 minutes instead of about 2.4 hours. The product owner accepted this on September 19, 2026 (commit `51ea941`) and asked how sensitive documents could differ; per-document sensitivity levels are listed as a possible follow-up.
 
 **Pros.**
 - Reading feels normal, and bulk harvesting is slow and boundable instead of instant.
@@ -175,7 +175,7 @@ commit message of `b6aef4e`.
 - It treats a public brochure and a confidential contract the same.
 - Counters are in memory (37.5).
 
-**The enterprise alternative.** Sensitivity labels on documents that select limits, watermark strength, and access rules, plus anomaly detection on the pattern "every page fetched back to back" rather than a flat cap (both in the README's next steps).
+**The enterprise alternative.** The README names two follow-ups: "per-document sensitivity levels with tighter limits" (Limitations) and logging or alerting on "every tile-urls page fetched back-to-back" rather than only a flat per-minute cap (Possible next steps).
 
 **When you'd switch.** When one deployment holds documents of very different value, or when the rate-limited counter shows readers are being hurt.
 
@@ -183,7 +183,7 @@ commit message of `b6aef4e`.
 
 **The decision.** Which database, and how does its structure change over time?
 
-**What the project chose.** MySQL 8.4 in Docker, with schema changes as Flyway migrations. The user chose MySQL over H2 and Postgres (dossier D2). Unit tests use H2 in MySQL mode; `MySqlIntegrationTest` runs on real MySQL 8.4 through Testcontainers because the reviewer asked for it (TM2-8). Dependabot is set to stay on the 8.4 LTS line (PR #10).
+**What the project chose.** MySQL 8.4 in Docker, with schema changes as Flyway migrations. The product owner chose MySQL over H2 and Postgres. Unit tests use H2 in MySQL mode; `MySqlIntegrationTest` runs on real MySQL 8.4 through Testcontainers because the technical-manager review agent asked for it (Chapter 32). Dependabot is set to stay on the 8.4 LTS line (PR #10).
 
 **Pros.**
 - A real server database from the start, with row locks that the PDF-replace design depends on.
@@ -195,7 +195,7 @@ commit message of `b6aef4e`.
 - A major upgrade (8.4 to the next LTS) is a deliberate project with its own migration test.
 - One database server is a single point of failure until you add replication.
 
-**The enterprise alternative.** A managed database (RDS, Cloud SQL) with automated backups, point-in-time recovery, and replicas. Postgres is a common equal choice; the trade is mostly team familiarity, not capability.
+**The enterprise alternative.** A managed database (RDS, Cloud SQL) with automated backups, point-in-time recovery, and replicas. The project considered H2 and Postgres and chose MySQL; the record does not say why Postgres lost.
 
 **When you'd switch.** When you can't afford the restore time of a dump (move to a managed service with point-in-time recovery), or when the team's skills favor another database.
 
@@ -215,7 +215,7 @@ commit message of `b6aef4e`.
 
 **The enterprise alternative.** The same friction in commercial readers, sitting on top of server-side controls, never in place of them.
 
-**When you'd switch.** Never for security. Remove it if it harms usability, for example for assistive technology users.
+**When you'd switch.** It was never meant as a control. Remove it if it harms usability, for example for assistive technology users.
 
 ## 37.11 One instance vs. scale-out
 
@@ -232,7 +232,7 @@ commit message of `b6aef4e`.
 - The backup runbook stops the app for its duration.
 - Capacity means a bigger machine, not more machines.
 
-**The enterprise alternative.** Several stateless instances behind a load balancer, with shared sessions (Redis), shared tile storage (S3 and a CDN), a managed database, and orchestration such as Kubernetes. The reverse proxy layer changes too: nginx and Caddy in compose give way to a cloud load balancer that terminates TLS.
+**The enterprise alternative.** Several stateless instances behind a load balancer, with shared sessions (Redis), shared tile storage (S3 and a CDN), a managed database, The README names shared sessions (Spring Session and Redis) and shared tile storage as the requirements. Container orchestration and a cloud load balancer in place of nginx and Caddy are general industry practice, not something the project recorded.
 
 **When you'd switch.** When you need availability that one machine can't give, or capacity beyond a bigger machine. Do 37.5 and 37.7 first; scaling out before them does not work.
 

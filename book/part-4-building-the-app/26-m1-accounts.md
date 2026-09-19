@@ -30,7 +30,7 @@ session id, and the id was the only credential (`TM-1`, `PO-2`): a user could re
 user's session id and act as them.
 <!-- source: dossier/bugs-and-findings.md#B; dossier/reviews.md -->
 
-The dossier records that the reviewers suggested a real identity provider (OpenID Connect). The
+The reviewers suggested delegating sign-in to a real identity provider through **OpenID Connect (OIDC)**, a standard that lets a service such as Google or Keycloak vouch for who a user is; this is often called single sign-on (SSO). The
 product owner, asked directly, chose **built-in accounts**: Spring Security, BCrypt passwords,
 three roles (READER, PUBLISHER, ADMIN), an httpOnly session cookie, login throttling and a
 seeded first admin. The option offered alongside was described as needing an external
@@ -53,11 +53,13 @@ frontend tests.
 - A **session** is the server's memory that you signed in. The browser holds only a small
   cookie that points at it.
 - A **cookie** is a small value the server asks the browser to send back on every request.
+- **httpOnly** marks a cookie that page JavaScript can't read, so an injected script can't steal it.
+- **SameSite=Strict** tells the browser to send a cookie only for requests that start on this site, not from links or forms on other sites.
 
 **Analogy.** A session cookie is a coat-check ticket. You show the ticket, and the attendant
 fetches your coat without asking who you are. **Where the analogy breaks down:** a stolen
-ticket is worse than a stolen coat ticket, because it can be used to act as you until the
-session ends. So the ticket must never be shown to anyone else, which drives most of this
+coat-check ticket gets one coat back, while a stolen session cookie lets someone act as you
+until the session ends. So the ticket must never be shown to anyone else, which drives most of this
 chapter.
 
 **Listing 26.1 — `V1__create_app_user.sql` (book-m1-accounts)**
@@ -97,7 +99,7 @@ Security to the controllers, and shows why the project used a cookie session.*
 
 ### 26.3 Spring Security configuration (`SecurityConfig`)
 
-Every request now passes through a chain of filters before it reaches a controller. Table 26.1
+Every request now passes through a **filter chain**, a row of checks that each request must pass in order, before it reaches a controller. Table 26.1
 summarizes the authorization rules that `SecurityConfig` declares, and Listing 26.2 shows them
 in the source.
 
@@ -180,9 +182,9 @@ Three settings deserve a sentence each.
 #### Why a cookie session and not a token in JavaScript
 
 At m0 the session id lived in an `X-Session-Id` header and, in the first Angular baseline, in
-`sessionStorage`, where any injected script can read it (`TM-15`). The dossier records the
-outcome (a server-side session in an httpOnly cookie) but no recorded debate about JSON Web
-Tokens, so the book does not describe one.
+`sessionStorage`, where any injected script can read it (`TM-15`). The project's record shows the
+outcome (a server-side session in an httpOnly cookie) but no debate about JSON Web Tokens, so the
+book does not describe one.
 <!-- source: dossier/decisions.md#d3; dossier/bugs-and-findings.md#B -->
 
 ### 26.4 Binding tile tokens to a session (`SessionKeys`)
@@ -395,9 +397,8 @@ logic itself (Chapters 30 and 32).
 
 **The decision.** MySQL 8.4 through Docker, chosen by the product owner against the
 implementer's H2 recommendation. **Why.** The product owner said they wanted to work with
-MySQL. **What it costs.** Docker Desktop had to be installed first, which the dossier records
-took several steps on the product owner's Windows machine (an update to the Windows Subsystem
-for Linux and enabling virtualization in the BIOS).
+MySQL. **What it costs.** Docker Desktop had to be installed first, which took several steps
+on the product owner's Windows machine.
 <!-- source: dossier/decisions.md#d2 -->
 
 #### Incident: signing in deleted the CSRF cookie

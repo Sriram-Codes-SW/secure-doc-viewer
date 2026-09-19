@@ -123,11 +123,13 @@ Every API response now carries strict headers. Listing 28.3 shows the configurat
 - **Referrer-Policy: no-referrer** matters here in particular: tile URLs carry signed tokens, and
   a `Referer` header could hand a token to another site.
 - **Permissions-Policy** switches off camera, microphone, geolocation and payment features.
-- The PR also lists `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff`.
+- `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff` are not configured explicitly in the
+  listing; they are part of Spring Security's default headers, and `SecurityHeadersTest` at this tag
+  asserts both.
 
 `/actuator/health` is public and reports status only. It returns 503 when the database is down.
 Every other Actuator endpoint is closed.
-<!-- source: SecurityConfig.java at book-m3-hardening; PR #3 body -->
+<!-- source: SecurityConfig.java and SecurityHeadersTest.java at book-m3-hardening; PR #3 body -->
 
 ## Advanced tier: Secrets, limits and what was deferred
 
@@ -136,11 +138,11 @@ this milestone did not do.*
 
 ### 28.5 Secrets and configuration hygiene
 
-The signing secret was already moved out of the source in milestone 1: it comes from the
-`SIGNING_SECRET` environment variable, and `ViewerProperties` validates it at startup (a
-minimum of 32 characters, visible as `@Size(min = 32, ...)` in the diff). The old placeholder
-remains in git history, which the dossier records as informational.
-<!-- source: dossier/bugs-and-findings.md#b (TM-6); ViewerProperties diff at book-m3-hardening -->
+The signing secret was moved out of the source in milestone 1 (`68b4945`, PR #1): it comes from the
+`SIGNING_SECRET` environment variable, and `ViewerProperties` has validated it at startup since then,
+with `@NotBlank` and `@Size(min = 32)` (the same annotations are in the file at `book-m1-accounts`).
+Milestone 3 doesn't change that rule. The old placeholder remains in git history.
+<!-- source: ViewerProperties.java at book-m1-accounts; PR #1 body; dossier/bugs-and-findings.md#b (TM-6) -->
 
 ### 28.6 What was deferred
 

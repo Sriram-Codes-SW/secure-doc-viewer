@@ -16,7 +16,7 @@ Chapters 26–29 (the earlier milestones), 10 (Docker), 24 (end-to-end tests)
 and 16 (Spring Security), as listed in `book/OUTLINE.md`. The code is at `book-m5-platform`, the
 merge of PR #5. It is the largest milestone: 15 commits, `2d10e07` to `51ea941`. Versions at this
 tag differ from the earlier chapters: Spring Boot 4.1.1, Java 25, PDFBox 3.0.8, Maven wrapper
-3.9.16 (`dossier/milestone-briefs.md`; check `pom.xml` at the tag).
+3.9.16 (check `pom.xml` at the tag).
 <!-- source: dossier/milestone-briefs.md#m5; dossier/timeline.md -->
 
 ## Beginner tier: From a program on one machine to a stack
@@ -116,7 +116,7 @@ against the victim. The final design, in commit `82c24b6`, uses a 15-minute wind
 - address: 20 failures, always applies;
 - account-wide: 20 failures, applies only to **unrecognised devices**.
 
-A device is recognised after a successful sign-in within 30 days. Its address (IPv6 by /64) is
+A device is recognised after a successful sign-in within 30 days (`KnownDevices.RETENTION`). Its address (IPv6 by /64) is
 stored only as an HMAC hash and forgotten on password change, reset and disable. The rule that fired
 is audited. An admin can unlock an account, and admin-set passwords must be changed at first
 sign-in, enforced by the server (`403 passwordChangeRequired`).
@@ -157,7 +157,7 @@ edited without invalidating the token.
 
 ### 30.8 Bounded work
 
-Rendering has a concurrency cap (at most 2 concurrent renders, answering 503 with `Retry-After` when
+Rendering has a concurrency cap (by default at most 2 concurrent renders, set by `max-concurrent-renders`, answering 503 with `Retry-After` when
 busy), a time limit and memory settings. Render slots are held until a render actually stops, with
 no queue, so no slot leaks. A server-wide cap on concurrent tile work refunds the reader's allowance
 when it answers busy. Tile size went from 256 to 512 pixels and the limit to 180 per minute; the
@@ -258,7 +258,7 @@ into a weapon against the victim. Ask who can trigger it.
 Each round's findings came from probes or tests and were fixed (PR #5 body):
 
 - A sign-in race let 9 parallel guesses through a limit of 5; the throttle is now atomic and allows exactly 5.
-- Passwords over 72 bytes caused a 500 (BCrypt reads only 72 bytes), so they are rejected cleanly.
+- Passwords over 72 bytes caused a 500 (BCrypt uses at most 72 bytes and refuses longer input; `UserAccountService.MAX_PASSWORD_BYTES = 72`), so they are rejected cleanly.
 - Tomcat 11.0.24 carried 3 critical CVEs; it is pinned to 11.0.26.
 - A missing current-render tile caused an endless 410 reload loop in the viewer, found by a `/code-review high` dry run.
 - The audit throttle became atomic and stops using a database connection when it suppresses.

@@ -15,6 +15,7 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
+- Chapter 10: containers and Docker (images and build stages).
 - Chapter 2: the command line (you will type commands).
 - Chapter 6: Maven and project layout (npm plays the same role as Maven for the frontend).
 - Chapter 8: how the web works (origins, cookies).
@@ -99,7 +100,7 @@ npm test        # ng test: run the Vitest specs
 npm run build   # ng build: produce the deployable files under dist/
 ```
 
-`ng serve` compiles the app in memory and serves it with a small **development server**, refreshing the browser whenever you save a file. `ng build` does the same once, with optimization: shrinking and hashing filenames so browsers can cache them for a year (the nginx setup in Chapter 22 relies on that). The build settings live in `angular.json`, whose `build` target names the entry point (`src/main.ts`), the global stylesheet (`src/styles.css`) and size budgets: in production the initial bundle warns at 500 kB and fails at 1 MB, and any one component's styles warn at 4 kB and fail at 8 kB.
+`ng serve` compiles the app in memory and serves it with a small **development server**, refreshing the browser whenever you save a file. `ng build` does the same once, with optimization: shrinking and hashing filenames so browsers can cache them for a year (the nginx setup in Chapters 30 and 33 relies on that). The build settings live in `angular.json`, whose `build` target names the entry point (`src/main.ts`), the global stylesheet (`src/styles.css`) and size budgets: in production the initial bundle warns at 500 kB and fails at 1 MB, and any one component's styles warn at 4 kB and fail at 8 kB.
 
 ## Intermediate tier: Same origin in development and production
 
@@ -128,7 +129,7 @@ In development the pieces run on two ports: `ng serve` on 4200 and Spring Boot o
 
 `angular.json` points the dev server at this file (`"proxyConfig": "proxy.conf.json"`). `target` is where Spring Boot listens; `secure: false` means it doesn't insist on a valid HTTPS certificate for the target (it's plain HTTP on your own machine); `changeOrigin: false` leaves the `Host` header as the browser sent it.
 
-The frontend code itself stays free of this: `core/config.ts` sets `API_BASE_URL = ''`, so every call is a relative URL such as `/api/documents`. In production the same job is done by nginx, whose `location ^~ /api/` block forwards to the backend (Chapter 22). The same code therefore works unchanged in both places.
+The frontend code itself stays free of this: `core/config.ts` sets `API_BASE_URL = ''`, so every call is a relative URL such as `/api/documents`. In production the same job is done by nginx, whose `location ^~ /api/` block forwards to the backend (Chapters 30 and 33). The same code therefore works unchanged in both places.
 
 ### 20.5 Project layout and tsconfig
 
@@ -165,7 +166,7 @@ The project uses `~` on TypeScript because each Angular release supports a narro
 
 ### 20.8 Automated updates, deliberately limited
 
-Dependencies age, and old ones carry known security problems. The project uses GitHub's Dependabot (`.github/dependabot.yml`) to open weekly pull requests: Angular packages grouped together, other npm packages grouped as minor and patch updates, and major upgrades as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular, and it ignores Node's non-LTS lines (per the file's own comment, odd-numbered Node releases never become LTS). The history shows this working: the Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes, which is why Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
+Dependencies age, and old ones carry known security problems. The project uses GitHub's Dependabot (`.github/dependabot.yml`) to open weekly pull requests: Angular packages grouped together, other npm packages grouped as minor and patch updates, and major upgrades as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular, and it ignores Node's non-LTS lines (per the file's own comment, odd-numbered Node releases never become LTS). The history shows this working: the Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes, and because they arrived in those pull requests, after `book-m5-platform`, Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
 
 ## In this project
 
@@ -176,7 +177,7 @@ Dependencies age, and old ones carry known security problems. The project uses G
 | `frontend/proxy.conf.json` | book-m1-accounts | Dev-time forwarding of `/api` |
 | `frontend/tsconfig.json`, `tsconfig.app.json`, `tsconfig.spec.json` | book-m1-accounts | Compiler settings |
 | `frontend/Dockerfile` | book-m5-platform | Node build stage, nginx serving stage, `npm ci` |
-| `.github/dependabot.yml` | see Chapter 36 | Weekly grouped update pull requests |
+| `.github/dependabot.yml` | book-m5-platform (see Chapter 36) | Weekly grouped update pull requests |
 
 Try `git show book-m6-final:frontend/package.json`, and compare it with `git show book-m1-accounts:frontend/package.json` to see what testing added.
 

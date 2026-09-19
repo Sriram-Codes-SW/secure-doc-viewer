@@ -58,7 +58,7 @@ If any code can change `a.failedAttempts`, then any bug anywhere can corrupt it.
 
 The app's real account class follows this pattern. Here it is, shortened to the parts we need.
 
-**Listing 4.1 — `AppUser.java` (book-m6-final, simplified: imports, four fields and their accessors omitted)**
+**Listing 4.1 — `AppUser.java` (book-m6-final, simplified: imports, the fields `enabled`, `createdAt`, `mustChangePassword` and `lastSignInAt`, and the accessors of `role`, `enabled` and those fields omitted; the `// ...` lines mark the cuts)**
 
 ```java
 @Entity
@@ -152,6 +152,8 @@ public record PageInfo(
 
 *Path: `src/main/java/com/example/securedocviewer/model/PageInfo.java`*
 
+A note on the comment: it mentions a `<canvas>`, a drawing surface in the browser. That comment dates from the first milestone, whose static page drew tiles on a canvas. The Angular viewer in the finished app instead positions plain `div` elements and paints each tile as a CSS background image (Chapter 21), so the comment is stale in the repository; the record itself is unaffected. <!-- source: editor's note on OUTLINE 21.6; requests.md -->
+
 You create one with `new PageInfo(1, 4, 3, 512, 1275, 1650)` and read it with `info.rows()`. Note that the read method is `rows()`, not `getRows()`. Listing 3.2 in Chapter 3 used exactly this: `pageInfo.rows()` and `pageInfo.cols()`.
 
 A record can also contain methods. The signed-URL payload adds one that joins its fields into the text that gets signed.
@@ -231,7 +233,7 @@ Code that takes a `TileStore` works with either. A test can hand it the fake, so
 
 The project uses interfaces heavily, often without writing the implementation itself. Look at how the app declares its access to documents.
 
-**Listing 4.5 — `DocumentRepository.java` (book-m6-final, simplified: imports and six methods omitted)**
+**Listing 4.5 — `DocumentRepository.java` (book-m6-final, simplified: imports, Javadoc comments and six of the eight query methods omitted; four are cut at the `// ...` marker, one (`findVisibleTo`) before the first shown method and one (`findAllIds`) after the last)**
 
 ```java
 public interface DocumentRepository extends JpaRepository<Document, String> {
@@ -257,8 +259,6 @@ A large program has hundreds of classes. **Packages** group them, like folders. 
 
 Table 4.1 shows the app's packages under `com.example.securedocviewer`.
 
-**Table 4.1 — The app's packages (book-m6-final)**
-
 | Package | Holds |
 |---|---|
 | `account` | Users, roles, the account service |
@@ -270,6 +270,8 @@ Table 4.1 shows the app's packages under `com.example.securedocviewer`.
 | `model` | Plain data records such as `PageInfo` |
 | `security` | Sign-in, sessions, throttling |
 | `service` | Tile rendering, signing, watermarking |
+
+*Table 4.1 — The app's packages (book-m6-final)*
 
 <!-- source: git ls-tree of src/main/java at book-m6-final -->
 

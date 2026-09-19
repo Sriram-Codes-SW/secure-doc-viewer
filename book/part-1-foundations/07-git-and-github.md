@@ -74,8 +74,6 @@ git show 2d10e07 --stat
 
 A **tag** is a permanent name for one commit. The project has seven, and they are this book's checkpoints (Table 7.1).
 
-**Table 7.1 — The milestone tags**
-
 | Tag | Milestone |
 |---|---|
 | `book-m0-mvp` | Tiled viewer with signed URLs and watermarks |
@@ -85,6 +83,8 @@ A **tag** is a permanent name for one commit. The project has seven, and they ar
 | `book-m4-reading` | Reading experience, deep links, idle warning, watermark |
 | `book-m5-platform` | Spring Boot 4, Docker, CI, production hardening |
 | `book-m6-final` | The finished app |
+
+*Table 7.1 — The milestone tags*
 
 <!-- source: book/README.md milestone table -->
 

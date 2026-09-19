@@ -36,7 +36,7 @@ The Secure Document Viewer is a small web application built to reach those three
 
 ### 1.2 Why hiding a button doesn't protect anything
 
-The obvious way to build a "protected" viewer is to send the PDF to the browser, then use the browser to hide the download button and block the right-click menu. Call this the *naive viewer*.
+The obvious way to build a "protected" viewer is to send the PDF to the browser, then use the browser to hide the download button and block the right-click menu. Call this the **naive viewer**.
 
 Here is why it fails. Your browser is a program running on *your* computer, under *your* control. Every instruction the site sends it, including "hide this button", is a request that the browser happens to honor. A person who opens the browser's **developer tools** (DevTools, a panel built into every browser that lets you inspect and change the page you're viewing) can undo the hiding in seconds. Even without that, the PDF already arrived on their machine, so it sits in the browser's **cache** (the folder where a browser keeps copies of files it has downloaded) waiting to be copied.
 
@@ -60,8 +60,6 @@ A US letter page (8.5 by 11 inches) at 150 DPI is 1,275 by 1,650 pixels. Divided
 
 Figure 1.1 shows the flow.
 
-**Figure 1.1 — From PDF to tiles to screen**
-
 ```mermaid
 flowchart LR
     U[Publisher uploads PDF] --> R[Server rasterizes each page]
@@ -70,6 +68,8 @@ flowchart LR
     D --> W[Server watermarks a tile when asked]
     W --> B[Browser draws tiles on screen]
 ```
+
+*Figure 1.1 — From PDF to tiles to screen*
 
 Three more ingredients complete the design. Each gets its own chapter later; here is the one-line version.
 
@@ -92,8 +92,6 @@ Nearly everything on the web is a conversation between two kinds of programs.
 
 Figure 1.2 shows one exchange in this app.
 
-**Figure 1.2 — A browser asks for a tile**
-
 ```mermaid
 sequenceDiagram
     participant Browser
@@ -106,6 +104,8 @@ sequenceDiagram
     Server-->>Browser: Watermarked tile image
 ```
 
+*Figure 1.2 — A browser asks for a tile*
+
 The *Database* in the figure is a separate program that stores the app's accounts, documents and permissions on disk so they survive a restart; [Chapter 9](09-sql-and-mysql.md) teaches it. Two rules follow, and the rest of the book depends on them:
 
 - The client is under the user's control, so the server treats everything it sends as untrusted until checked.
@@ -117,14 +117,14 @@ The *Database* in the figure is a separate program that stores the app's account
 
 The app has four moving parts, and this book has a part for each layer of tooling around them. Table 1.1 is the map.
 
-**Table 1.1 — The parts of the app and the tools that build them**
-
 | Part of the app | What it does | Main tools | Where you learn it |
 |---|---|---|---|
 | Backend | Renders tiles, checks permissions, signs URLs, stores data | Java 25, Spring Boot 4, Maven | Chapters 3–6 and Part II |
 | Database | Stores accounts, documents, shares and the audit trail | MySQL 8.4, Flyway | Chapter 9 and Chapter 14 |
 | Frontend | The pages you see in the browser | TypeScript, Angular 22, Node | Part III |
 | Packaging and delivery | Runs everything the same way on any machine | Docker, Git, GitHub Actions | Chapters 7 and 10, Part V |
+
+*Table 1.1 — The parts of the app and the tools that build them*
 
 The source code is in this repository. You will follow it through seven checkpoints, one per milestone, marked with Git tags from `book-m0-mvp` to `book-m6-final`. [Chapter 7](07-git-and-github.md) shows you how to look at any of them.
 

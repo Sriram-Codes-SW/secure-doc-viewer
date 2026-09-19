@@ -14,6 +14,8 @@ By the end of this chapter, you will be able to:
 - Read `DatabaseUserDetailsService` and the three roles.
 - Explain why sign-in reveals nothing about which accounts exist.
 
+**A note on versions.** The chapter belongs to milestone 1 (`book-m1-accounts`), but the listings are labeled with the tag they were copied from. `Role.java` and `DatabaseUserDetailsService.java` are identical at `book-m1-accounts` and `book-m6-final`; the password encoder bean has the same logic at both. The 72-byte check (`fitsBcrypt`), the sign-in code in `AuthController` and the `SecurityConfig` chain shown in Listing 15.1 are quoted from `book-m6-final`: at `book-m1-accounts` the `fitsBcrypt` check does not exist yet, and those files differ.
+
 ## Prerequisites
 
 - Chapter 8: how the web works (cookies, headers)
