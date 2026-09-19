@@ -213,11 +213,25 @@ A `DATETIME` column has no time zone. If a laptop in one zone and a container in
 
 ## Try it
 
-1. (★) Which annotation stores the role as text, and why is that safer than a number?
-2. (★) Find the migration that creates `audit_event`. Which indexes does it define?
-3. (★★) `findByUsername` has no SQL. Where does the query come from?
-4. (★★) Explain why `DocumentService` uses `TransactionTemplate` rather than `@Transactional`.
-5. (★★★) An admin edits a migration that already ran. Predict what happens at the next startup and how to make the change correctly.
+### Exercise 14.1 ★ Store roles as text
+
+Which annotation stores the role as text, and why is that safer than a number?
+
+### Exercise 14.2 ★ Indexes on the audit table
+
+Find the migration that creates `audit_event`. Which indexes does it define?
+
+### Exercise 14.3 ★★ A query with no SQL
+
+`findByUsername` has no SQL. Where does the query come from?
+
+### Exercise 14.4 ★★ TransactionTemplate versus @Transactional
+
+Explain why `DocumentService` uses `TransactionTemplate` rather than `@Transactional`.
+
+### Exercise 14.5 ★★★ Editing a migration that already ran
+
+An admin edits a migration that already ran. Predict what happens at the next startup and how to make the change correctly.
 
 ## Summary
 

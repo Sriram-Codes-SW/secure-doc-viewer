@@ -1,11 +1,11 @@
 <!-- chapter: 19 | part: III | owner: writer-frontend | solutions -->
 # Chapter 19 solutions
 
-### Exercise 19.1
+### Exercise 19.1 ★ The nullable property
 
 In `DocumentDetail`, `sharedWith: string[] | null` is `null` for anyone who can't manage the document (the comment: "Only present when canManage is true"). It is the only nullable property in that interface. (`DocumentSummary` has the matching `sharedWithCount: number | null`.)
 
-### Exercise 19.2
+### Exercise 19.2 ★ A Direction type
 
 Example solution:
 
@@ -19,11 +19,11 @@ Example solution:
 
    `step(3, 'back')` is a compile error.
 
-### Exercise 19.3
+### Exercise 19.3 ★★ Extend IdleState
 
 In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative simply falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
 
-### Exercise 19.4
+### Exercise 19.4 ★★ A fetchOrNull helper
 
 Example solution:
 
@@ -39,7 +39,7 @@ Example solution:
 
    An aborted request also gives `null`, so the caller must check `signal.aborted` to tell the two apart, as the viewer does.
 
-### Exercise 19.5
+### Exercise 19.5 ★★★ A generic firstWhere
 
 Example solution:
 

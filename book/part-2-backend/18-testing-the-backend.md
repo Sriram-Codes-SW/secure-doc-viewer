@@ -156,11 +156,25 @@ All live in `src/test/java/com/example/securedocviewer/`.
 
 ## Try it
 
-1. (★) Run `mvn test`. Which test classes ran, and which was skipped if Docker is off?
-2. (★) Add a case to `tileCountRoundsUpForPartialTiles` for 512 pixels with 512-pixel tiles. Predict the answer first.
-3. (★★) Write a `MockMvc` test that `GET /api/documents` without signing in returns `401`. Compare it with `apiRequiresSignIn`.
-4. (★★) Why does `CsrfCookieFlowTest` need its own fresh context?
-5. (★★★) In the burst test, replace `start.await()` with nothing. Explain why the result might still pass, and why that makes the test weaker.
+### Exercise 18.1 ★ Run the backend tests
+
+Run `mvn test`. Which test classes ran, and which was skipped if Docker is off?
+
+### Exercise 18.2 ★ Extend a tile-count test
+
+Add a case to `tileCountRoundsUpForPartialTiles` for 512 pixels with 512-pixel tiles. Predict the answer first.
+
+### Exercise 18.3 ★★ Test the sign-in requirement
+
+Write a `MockMvc` test that `GET /api/documents` without signing in returns `401`. Compare it with `apiRequiresSignIn`.
+
+### Exercise 18.4 ★★ A fresh context for CSRF
+
+Why does `CsrfCookieFlowTest` need its own fresh context?
+
+### Exercise 18.5 ★★★ Removing the start latch
+
+In the burst test, replace `start.await()` with nothing. Explain why the result might still pass, and why that makes the test weaker.
 
 ## Summary
 

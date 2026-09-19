@@ -202,11 +202,25 @@ Each limit is checked before the expensive work begins, which is the point: reje
 
 ## Try it
 
-1. (★) Which annotations stop a sign-in request with a 200-character username?
-2. (★) What JSON does the server return for an unexpected exception? Which parts are safe to show a user?
-3. (★★) Add a new exception class `ConflictException` and map it to `409` in the handler. Where does the message text come from?
-4. (★★) Start the application without `SIGNING_SECRET` set. Read the startup error. Which line of `ViewerProperties` produced it?
-5. (★★★) Explain why the upload limit appears in three places, and what a user would experience if the frontend limit were 100 MB while the server's stayed 50 MB.
+### Exercise 13.1 ★ Stop an oversized username
+
+Which annotations stop a sign-in request with a 200-character username?
+
+### Exercise 13.2 ★ The unexpected-error response
+
+What JSON does the server return for an unexpected exception? Which parts are safe to show a user?
+
+### Exercise 13.3 ★★ Add a 409 exception
+
+Add a new exception class `ConflictException` and map it to `409` in the handler. Where does the message text come from?
+
+### Exercise 13.4 ★★ Start without a secret
+
+Start the application without `SIGNING_SECRET` set. Read the startup error. Which line of `ViewerProperties` produced it?
+
+### Exercise 13.5 ★★★ Why the upload limit appears three times
+
+Explain why the upload limit appears in three places, and what a user would experience if the frontend limit were 100 MB while the server's stayed 50 MB.
 
 ## Summary
 

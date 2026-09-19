@@ -168,10 +168,21 @@ Annotations such as `@Transactional` work because Spring wraps the bean in a pro
 
 ## Try it
 
-1. (★) Open `application.yml` and find the session cookie name. Which line makes the cookie unreadable to JavaScript?
-2. (★) In `DocumentController`, list every dependency injected by the constructor.
-3. (★★) `BootstrapAdmin` reads two settings with `@Value` rather than `ViewerProperties`. Find them and their default values.
-4. (★★★) Explain why `KnownDevices` needs `@Autowired` on one constructor while the project's other classes don't.
+### Exercise 11.1 ★ Find the session cookie
+
+Open `application.yml` and find the session cookie name. Which line makes the cookie unreadable to JavaScript?
+
+### Exercise 11.2 ★ List a constructor's dependencies
+
+In `DocumentController`, list every dependency injected by the constructor.
+
+### Exercise 11.3 ★★ Settings read with @Value
+
+`BootstrapAdmin` reads two settings with `@Value` rather than `ViewerProperties`. Find them and their default values.
+
+### Exercise 11.4 ★★★ Why one constructor needs @Autowired
+
+Explain why `KnownDevices` needs `@Autowired` on one constructor while the project's other classes don't.
 
 ## Summary
 

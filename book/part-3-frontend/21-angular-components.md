@@ -281,23 +281,23 @@ View one with `git show book-m6-final:frontend/src/styles.css`.
 
 ## Try it
 
-### Exercise 21.1 ★
+### Exercise 21.1 ★ The Admin link condition
 
 In `app.html`, which condition decides whether the Admin link appears? Which class property does it read?
 
-### Exercise 21.2 ★
+### Exercise 21.2 ★ Change the accent colour
 
 Change the accent color in a scratch copy of `styles.css` and reload `ng serve`. Which screens change?
 
-### Exercise 21.3 ★★
+### Exercise 21.3 ★★ Toggle a signal
 
 Add a signal `showHint` to a scratch component with a button that toggles it (`update((v) => !v)`) and an `@if` that shows a paragraph.
 
-### Exercise 21.4 ★★
+### Exercise 21.4 ★★ Check colour contrast
 
 Use a contrast checker to compute the ratio of `--muted` on `--surface` in both themes. Does each pass 4.5:1?
 
-### Exercise 21.5 ★★★
+### Exercise 21.5 ★★★ Why track by id
 
 Explain why `track doc.documentId` is better than tracking by position when the list is filtered.
 

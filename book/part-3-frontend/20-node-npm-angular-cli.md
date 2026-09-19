@@ -183,23 +183,23 @@ Try `git show book-m6-final:frontend/package.json`, and compare it with `git sho
 
 ## Try it
 
-### Exercise 20.1 ★
+### Exercise 20.1 ★ Which script needs a stack
 
 Which of the six `scripts` in Listing 20.1 needs a running stack besides Node? (Hint: read `frontend/playwright.config.ts`.)
 
-### Exercise 20.2 ★
+### Exercise 20.2 ★ What ^22.1.8 accepts
 
 What range of versions does `^22.1.8` accept? Would 22.9.0 be accepted? 23.0.0?
 
-### Exercise 20.3 ★★
+### Exercise 20.3 ★★ Why secure false is fine in development
 
 Explain in your own words why `"secure": false` in Listing 20.2 is acceptable in development but would be a concern for a production proxy.
 
-### Exercise 20.4 ★★
+### Exercise 20.4 ★★ Install and build
 
 Install Node 24 and npm as described in the setup chapter (front matter), then run `npm ci` in `frontend/` and `npm run build`. What folder appears, and what do the filenames inside look like?
 
-### Exercise 20.5 ★★★
+### Exercise 20.5 ★★★ Delete the lock file
 
 Suppose `package.json` says `~6.0.2` but the lock file is deleted. Explain what `npm install` may now do and why `npm ci` refuses to run.
 

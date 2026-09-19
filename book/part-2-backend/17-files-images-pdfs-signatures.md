@@ -237,11 +237,25 @@ Cleanup can itself fail, so a scheduled `StorageJanitor` (Chapter 14) removes di
 
 ## Try it
 
-1. (★) How many 512-pixel tiles cover a 1,000-pixel-wide page? Check with `TileGrid.tileCount`.
-2. (★) Why does `sliceTile` crop edge tiles instead of padding them?
-3. (★★) Alter one character of a token's payload and send it (to your own local copy of the app). Which exception and status result?
-4. (★★) Why does `TileWorkLimiter` release its permit in a `finally` block?
-5. (★★★) A token is valid for 120 seconds and is copied to a friend's browser within that time. Name two independent checks in the app that still refuse it.
+### Exercise 17.1 ★ Count the tiles
+
+How many 512-pixel tiles cover a 1,000-pixel-wide page? Check with `TileGrid.tileCount`.
+
+### Exercise 17.2 ★ Cropping edge tiles
+
+Why does `sliceTile` crop edge tiles instead of padding them?
+
+### Exercise 17.3 ★★ Tamper with a token
+
+Alter one character of a token's payload and send it (to your own local copy of the app). Which exception and status result?
+
+### Exercise 17.4 ★★ Release in a finally block
+
+Why does `TileWorkLimiter` release its permit in a `finally` block?
+
+### Exercise 17.5 ★★★ Two checks on a copied link
+
+A token is valid for 120 seconds and is copied to a friend's browser within that time. Name two independent checks in the app that still refuse it.
 
 ## Summary
 

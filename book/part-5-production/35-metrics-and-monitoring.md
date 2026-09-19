@@ -100,7 +100,7 @@ Metrics say something happened; the audit log says who. `PAGE_VIEWED` is recorde
 
 | Path | First appears | What it does |
 |---|---|---|
-| `src/main/java/com/example/securedocviewer/security/SecurityConfig.java` | `book-m5-platform` | Health public, metrics by address |
+| `src/main/java/com/example/securedocviewer/security/SecurityConfig.java` | file from `book-m1-accounts`; public health rule in `book-m3-hardening`; metrics-by-address in `book-m5-platform` | Health public, metrics by address |
 | `frontend/nginx.conf` | `book-m5-platform` | Forwards only `/actuator/health` |
 | `docker-compose.yml` | `book-m5-platform` | Container health checks |
 | `README.md` ("Configuration") | `book-m5-platform` | `metrics-allowed-addresses` and the `sdv_*` list |

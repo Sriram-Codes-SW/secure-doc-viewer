@@ -313,23 +313,23 @@ See one with `git show book-m6-final:frontend/src/app/core/session.interceptor.t
 
 ## Try it
 
-### Exercise 22.1 ★
+### Exercise 22.1 ★ The HTTP methods
 
 Which HTTP methods does `DocumentsService` use, and which one sends a file?
 
-### Exercise 22.2 ★
+### Exercise 22.2 ★ The interceptor and a 401
 
 What does the interceptor do with a 401 from `/api/auth/login`? Why?
 
-### Exercise 22.3 ★★
+### Exercise 22.3 ★★ Find the CSRF header
 
 Open the browser's developer tools, Network tab, sign in, then make any `POST`. Find the `X-XSRF-TOKEN` request header and the `XSRF-TOKEN` cookie. Do the values match?
 
-### Exercise 22.4 ★★
+### Exercise 22.4 ★★ The fallback retry time
 
 In a scratch copy, change `FALLBACK_RETRY_AFTER_SECONDS`. Which situation does it affect?
 
-### Exercise 22.5 ★★★
+### Exercise 22.5 ★★★ A reload without the version check
 
 Explain what could go wrong if the viewer, after a 410, reloaded the document without the `staleVersion` check.
 

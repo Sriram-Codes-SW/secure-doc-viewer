@@ -276,23 +276,23 @@ See one with `git show book-m4-reading:frontend/src/app/features/viewer/viewer.c
 
 ## Try it
 
-### Exercise 23.1 ★
+### Exercise 23.1 ★ Admin-only routes
 
 Which routes require the `ADMIN` role? Which only require being signed in?
 
-### Exercise 23.2 ★
+### Exercise 23.2 ★ The sign-out redirect
 
 What URL does a signed-out visitor to `/documents` get redirected to?
 
-### Exercise 23.3 ★★
+### Exercise 23.3 ★★ Guards are not security
 
 Explain why deleting `authGuard` from a route would not let a reader see a document they aren't allowed to see.
 
-### Exercise 23.4 ★★
+### Exercise 23.4 ★★ Add a lazy route
 
 Add a route `about` (lazy-loaded, no guard) for a scratch component that shows a paragraph.
 
-### Exercise 23.5 ★★★
+### Exercise 23.5 ★★★ Typing a page number
 
 The viewer ignores key presses when the target is an input. Describe what would go wrong for someone typing a page number if it didn't.
 

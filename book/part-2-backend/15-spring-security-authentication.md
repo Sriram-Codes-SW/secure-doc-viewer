@@ -201,11 +201,25 @@ We simplify here: an attacker could still compare response times, and the full d
 
 ## Try it
 
-1. (★) Which setting makes the session cookie unreadable to JavaScript? Which file holds it?
-2. (★) What does the database store instead of a password?
-3. (★★) A password of 30 emoji is 30 characters. Will `fitsBcrypt` accept it? Why?
-4. (★★) What is the role string Spring builds from `.roles("PUBLISHER")`?
-5. (★★★) Compare a session cookie with a token stored in the browser. Give one advantage of each and say which the project chose and why.
+### Exercise 15.1 ★ The unreadable session cookie
+
+Which setting makes the session cookie unreadable to JavaScript? Which file holds it?
+
+### Exercise 15.2 ★ What the database stores
+
+What does the database store instead of a password?
+
+### Exercise 15.3 ★★ Thirty emoji versus 72 bytes
+
+A password of 30 emoji is 30 characters. Will `fitsBcrypt` accept it? Why?
+
+### Exercise 15.4 ★★ The role string Spring builds
+
+What is the role string Spring builds from `.roles("PUBLISHER")`?
+
+### Exercise 15.5 ★★★ Cookie or browser token
+
+Compare a session cookie with a token stored in the browser. Give one advantage of each and say which the project chose and why.
 
 ## Summary
 

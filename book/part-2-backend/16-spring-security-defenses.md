@@ -206,11 +206,25 @@ if (session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ATTRIBUT
 
 ## Try it
 
-1. (★) What does `anyRequest().denyAll()` do to a new endpoint you forget to list?
-2. (★) Why must the `XSRF-TOKEN` cookie be readable by JavaScript when the session cookie must not be?
-3. (★★) Why does `LoginThrottle.reserve` count before the password is checked?
-4. (★★) A reader asks for a document id that belongs to someone else. Which status does the server return, and why?
-5. (★★★) Explain what would go wrong if `FORWARD_HEADERS_STRATEGY` were `native` on a server directly reachable from the internet.
+### Exercise 16.1 ★ The deny-all default
+
+What does `anyRequest().denyAll()` do to a new endpoint you forget to list?
+
+### Exercise 16.2 ★ Why the CSRF cookie is readable
+
+Why must the `XSRF-TOKEN` cookie be readable by JavaScript when the session cookie must not be?
+
+### Exercise 16.3 ★★ Count before checking
+
+Why does `LoginThrottle.reserve` count before the password is checked?
+
+### Exercise 16.4 ★★ Someone else's document
+
+A reader asks for a document id that belongs to someone else. Which status does the server return, and why?
+
+### Exercise 16.5 ★★★ Trusting forwarded headers
+
+Explain what would go wrong if `FORWARD_HEADERS_STRATEGY` were `native` on a server directly reachable from the internet.
 
 ## Summary
 

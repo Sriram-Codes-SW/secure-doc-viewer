@@ -249,7 +249,7 @@ public interface DocumentRepository extends JpaRepository<Document, String> {
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentRepository.java`*
 
-There is no class that implements this interface anywhere in the project. Spring, the framework the backend uses, builds one at startup from the method declarations. You state what you need and the framework supplies the how. Chapter 14 explains this in detail. The `<Document, String>` part is a **generic**: it says this repository handles `Document` objects whose identifier is a `String`. Chapter 5 covers generics.
+There is no class that implements this interface anywhere in the project. Spring, the framework the backend uses (a **framework** is a large library that calls your code, rather than the other way round; Chapter 11 explains it), builds one at startup from the method declarations. You state what you need and the framework supplies the how. Chapter 14 explains this in detail. The `<Document, String>` part is a **generic**: it says this repository handles `Document` objects whose identifier is a `String`. Chapter 5 covers generics.
 
 **We simplify here.** Interfaces have more features, such as default methods. The app doesn't need them, so this book doesn't teach them.
 

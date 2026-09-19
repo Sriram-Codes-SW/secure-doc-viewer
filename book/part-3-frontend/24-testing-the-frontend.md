@@ -232,23 +232,23 @@ Run the specs yourself with `npm test` in `frontend/`, and see one at a tag with
 
 ## Try it
 
-### Exercise 24.1 ★
+### Exercise 24.1 ★ Add a timeout test
 
 In Listing 24.1, add a test: with a timeout of 600 seconds and 100 seconds since activity, the state is `active`. Run it.
 
-### Exercise 24.2 ★
+### Exercise 24.2 ★ What expectOne catches
 
 What does `expectOne` fail on if the code under test makes two requests to the same URL?
 
-### Exercise 24.3 ★★
+### Exercise 24.3 ★★ Test SessionService
 
 Write a spec for `SessionService` that calls `login`, flushes a user, and checks that `isLoggedIn()` becomes true.
 
-### Exercise 24.4 ★★
+### Exercise 24.4 ★★ Two themes
 
 Why does `expectAccessible` run the check in both light and dark themes?
 
-### Exercise 24.5 ★★★
+### Exercise 24.5 ★★★ Why only end-to-end catches it
 
 Explain why the X-Forwarded-For regression can only be caught by the end-to-end layer, and what a unit test could still add.
 

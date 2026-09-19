@@ -203,10 +203,21 @@ All live in `src/main/java/com/example/securedocviewer/controller/`.
 
 ## Try it
 
-1. (★) Which annotation and value make `DocumentController.get` respond to `GET /api/documents/{id}`? What fills the `documentId` parameter?
-2. (★) Find the methods in `DocumentController` that return `ResponseEntity`. Why do they need it?
-3. (★★) The JSON keys of `DocumentSummary` come from its record components. If you renamed `pageCount` to `pages`, what would break on the client?
-4. (★★★) `TileController.getTile` returns `byte[]`. Explain why Jackson isn't involved, and what could go wrong if `Cache-Control: no-store` were missing.
+### Exercise 12.1 ★ Map a URL to a method
+
+Which annotation and value make `DocumentController.get` respond to `GET /api/documents/{id}`? What fills the `documentId` parameter?
+
+### Exercise 12.2 ★ Why ResponseEntity
+
+Find the methods in `DocumentController` that return `ResponseEntity`. Why do they need it?
+
+### Exercise 12.3 ★★ Renaming a JSON key
+
+The JSON keys of `DocumentSummary` come from its record components. If you renamed `pageCount` to `pages`, what would break on the client?
+
+### Exercise 12.4 ★★★ Why tiles skip Jackson
+
+`TileController.getTile` returns `byte[]`. Explain why Jackson isn't involved, and what could go wrong if `Cache-Control: no-store` were missing.
 
 ## Summary
 
