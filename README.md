@@ -392,6 +392,9 @@ Stated plainly, because the honest framing matters more than the feature list:
   Lower `tile-rate-limit-per-window` (or `tile-size`) for documents where that matters more
   than reading speed; documents keep the tile size they were rendered with. The watermark is what makes the
   result traceable regardless.
+  **Decision (product owner, 2026-09-19):** these defaults are accepted for go-live and will be
+  revisited based on real usage (`sdv_tiles_rate_limited_total` shows how often readers hit the
+  limit). Per-document sensitivity levels with tighter limits are a possible follow-up.
 - Accounts, documents, shares and the audit trail live in MySQL; sessions and the rate-limit
   counters are still in memory, so they don't span instances. Multiple instances would need a
   shared session store (e.g. Redis) and shared tile storage.
