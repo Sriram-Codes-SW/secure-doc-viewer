@@ -174,7 +174,7 @@ is written to the audit log as `DOCUMENT_SHARED` ("with <user>") or `DOCUMENT_UN
 
 **A gap that a later review closed.** At this milestone the user picker had no minimum query length,
 so a single character already listed names, and it listed admin accounts too, which the product owner's
-review later flagged as a directory leak (`PO2-10`). By `book-m6-final` a query shorter than 2 or longer
+review later flagged as a directory leak (finding `PO2-10` in that review's numbering). By `book-m6-final` a query shorter than 2 or longer
 than 32 characters returns an empty list, and admin accounts are hidden (Chapter 30).
 <!-- source: UserDirectoryController.java, DocumentService.java at book-m2-documents; dossier/DOSSIER.md V1 -->
 

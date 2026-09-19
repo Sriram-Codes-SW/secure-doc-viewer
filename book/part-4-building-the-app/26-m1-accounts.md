@@ -440,7 +440,7 @@ clean context.
 
 #### Finding: a verified session takeover
 
-**The problem.** `TM-1` was demonstrated, not just theorized. As one test user the reviewer
+**The problem.** The first finding of the technical-manager review agent (numbered `TM-1` in its report) was demonstrated, not just theorized. As one test user the reviewer
 read another user's session id from `/api/admin/sessions`, requested tile URLs with it, and
 got a tile back; the audit log and the watermark both named the victim. **The fix.** Roles on
 the admin API, and sessions listed by handle. **The lesson.** Never return a credential in an
