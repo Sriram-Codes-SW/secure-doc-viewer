@@ -27,7 +27,7 @@ important part isn't the app itself. It's the habits you practiced while buildin
 
 The repository's own "Possible next steps" are a good list, and each is a project:
 
-- Store tiles in object storage and serve them with cloud-signed URLs (Chapter 37.4 and 37.7).
+- Store tiles in object storage and serve them with cloud-signed URLs (Sections 37.4 and 37.7).
 - Share sessions across several app instances with a shared session store.
 - Add group-based sharing, expiry dates on access, or per-document sensitivity levels with tighter
   rate limits.

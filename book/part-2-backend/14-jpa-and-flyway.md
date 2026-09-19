@@ -34,7 +34,7 @@ An **ORM** (object-relational mapper) does the translation from declarations you
 
 An **entity** is a class mapped to a table. Listing 14.1 is the account entity.
 
-**Listing 14.1 — `AppUser.java` (`book-m6-final`, simplified: getters and setters after the constructors are omitted)**
+**Listing 14.1 — `AppUser.java` (`book-m6-final`, simplified: getters and setters after the constructors, and two columns, are omitted)**
 
 *`src/main/java/com/example/securedocviewer/account/AppUser.java`*
 
@@ -103,7 +103,7 @@ Extending `JpaRepository<AppUser, Long>` gives you `save`, `findById`, `count`, 
 
 ### 14.3 Query methods and transactions
 
-A **transaction** groups several database changes so that either all succeed or none do. Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
+A **transaction** groups several database changes so that either all succeed or none do: it either **commits** (makes them all permanent) or **rolls back** (undoes everything it did). Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
 
 ```java
 @Transactional
@@ -160,7 +160,7 @@ Optional<Document> findByIdForUpdate(@Param("id") String id);
 
 (`book-m6-final`, `DocumentRepository.java`, excerpt.) A **pessimistic** lock assumes conflicts are likely and blocks up front (`select ... for update`). An **optimistic** approach lets both proceed and detects the conflict at save time. The project chose pessimistic for replace and delete, where a conflict would corrupt files on disk, and the rows are few. `@Query` uses JPQL, a query language over entities rather than tables.
 
-## Advanced tier: Isolation, cleanup and real databases
+## Advanced tier: Separate transactions, cleanup and real databases
 
 ### 14.6 Separate transactions: `REQUIRES_NEW`
 

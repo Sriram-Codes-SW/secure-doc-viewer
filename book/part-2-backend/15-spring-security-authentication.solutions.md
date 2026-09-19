@@ -1,7 +1,7 @@
 <!-- chapter: 15 | part: II | owner: writer-backend | tag: book-m1-accounts | status: draft -->
 # Solutions: Chapter 15
 
-1. (★) `http-only: true` under `server.servlet.session.cookie` in `application.yml`.
+1. (★) The setting `http-only: true` (it is configuration, not an annotation) under `server.servlet.session.cookie` in `application.yml`.
 2. (★) A salted BCrypt hash, prefixed with the algorithm name such as `{bcrypt}`, in the `password_hash` column.
 3. (★★) No. Each emoji takes 4 bytes in UTF-8, so 30 emoji are 120 bytes, above the 72-byte limit; `fitsBcrypt` counts bytes, not characters.
 4. (★★) `ROLE_PUBLISHER`. Spring adds the `ROLE_` prefix.

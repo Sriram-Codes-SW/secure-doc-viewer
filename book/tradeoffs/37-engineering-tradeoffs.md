@@ -101,7 +101,7 @@ commit message of `b6aef4e`.
 
 **Cons.**
 - Every tile passes through the application server, so the app's CPU and network carry all the traffic. A cloud signed URL would let a CDN serve the bytes.
-- One shared secret (`SIGNING_SECRET`) protects everything; rotating it invalidates outstanding URLs and, per the README, makes accounts' recognised devices be forgotten.
+- One shared secret (`SIGNING_SECRET`) protects everything; outstanding URLs are signed with it, so changing it invalidates them. The README also warns that restoring a backup under a different secret still works, but every account's recognised devices are forgotten, because their hashes are keyed by it; so keep `.env` with the backup.
 
 **The enterprise alternative.** Object storage plus a CDN, with CloudFront signed URLs or S3 presigned URLs, so the edge serves the bytes and the app only signs. The README lists this as the production shape.
 

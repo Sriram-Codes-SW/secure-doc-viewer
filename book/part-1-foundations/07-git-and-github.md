@@ -36,7 +36,7 @@ git --version
 
 ### 7.2 Getting the code and reading history
 
-To get a copy of a repository, you **clone** it. The address comes from the project's page on GitHub, the website that hosts Git repositories. Substitute the address you were given:
+To get a copy of a repository, you **clone** it. The address comes from the project's repository page on GitHub, the website that hosts Git repositories: open the page, click the green *Code* button, and copy the address it shows. The project's repository is `Sriram-Codes-SW/secure-doc-viewer` on GitHub, and it is **private**, so you can open it (and its *Pull requests* tab, Section 7.4) only if its owner has given your GitHub account access; ask the owner, or use the copy of the code you were given with this book. Substitute the address you copied:
 
 ```bash
 git clone <repository-address>
@@ -103,7 +103,7 @@ A **branch** is a movable name for a line of work. The default branch, `main`, h
 
 A **remote** is a copy of the repository on another computer, usually GitHub; `git push` sends your commits to it and `git pull` brings new ones back. On GitHub, a **pull request** (PR) is a proposal to merge one branch into another. It shows the changes, lets others comment, and runs automated checks before anything is merged.
 
-This project used one pull request per phase. The milestone tags mark the merges: for example `book-m1-accounts` is the merge of pull request 1 ("Phase 1: real accounts, roles, and admin lockdown"), and `book-m5-platform` is the merge of pull request 5 ("Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests"). You can read a PR's description with `gh pr view 5` if you have GitHub's command-line tool. <!-- source: gh pr list; git rev-list of tags -->
+This project used one pull request per phase. The milestone tags mark the merges: for example `book-m1-accounts` is the merge of pull request 1 ("Phase 1: real accounts, roles, and admin lockdown"), and `book-m5-platform` is the merge of pull request 5 ("Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests"). You can read the pull requests on the repository's *Pull requests* tab (with access to the private repository, Section 7.2), or from the terminal with `gh pr view 5` if you have GitHub's command-line tool, `gh`, signed in. <!-- source: gh pr list; git rev-list of tags -->
 
 **Code review** is the practice of having someone else read a change before it lands. Later chapters tell the story of what reviews found in this project.
 

@@ -194,7 +194,7 @@ static int tilesNeeded(int lengthPx, int tileSize) {
 
 `static int tilesNeeded(...)` says: this method returns an `int`. Inside the parentheses are two parameters, each with a type. `return` sends a value back. You call it like this: `int cols = tilesNeeded(1275, 512);`, and `cols` becomes 3.
 
-Why that formula? Whole-number division drops the remainder, so `1275 / 512` is 2, one tile short. Adding `tileSize - 1` first makes any remainder push the result up to the next whole number. This is *ceiling division*, "divide and round up". The app needs it because a page rarely divides evenly into tiles.
+Why that formula? Whole-number division drops the remainder, so `1275 / 512` is 2, one tile short. Adding `tileSize - 1` first makes any remainder push the result up to the next whole number. This is **ceiling division**, "divide and round up". The app needs it because a page rarely divides evenly into tiles.
 
 ## Intermediate tier: When things go wrong
 

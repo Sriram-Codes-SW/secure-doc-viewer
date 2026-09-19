@@ -81,8 +81,8 @@ Every row is a claim you can test.
 <!-- source: dossier/DOSSIER.md "Cautions for writers"; dossier/reviews.md -->
 The project used two review roles, and the honest description matters. Both were **AI review
 agents**, briefed to act as independent third parties: a "Product Owner reviewer" and a "Senior
-Technical Manager reviewer". They read the code and wrote findings with IDs (PO-3, TM-2, and so
-on), and a human product owner made the product calls. They were not human colleagues. What they
+Technical Manager reviewer". They read the code and wrote numbered findings,
+and a human product owner made the product calls. They were not human colleagues. What they
 found was real, and the fixes were verified against the code, but treat them as a review
 technique, not as an authority.
 
@@ -90,9 +90,9 @@ technique, not as an authority.
 
 <!-- source: dossier/bugs-and-findings.md; dossier/decisions.md D7, D11; PR #1 to #5 bodies -->
 **Round 1 (PR #1, PR #2).** Two Critical findings led the list: sign-in accepted any username with
-no password (TM-2, PO-3), and the admin surface was unprotected (TM-1). The fixes were BCrypt
+no password, and the admin surface was unprotected. The fixes were BCrypt
 accounts stored in MySQL, an admin-only `/api/admin/**`, sessions listed by an opaque handle and
-never by id, and tile tokens that carry a keyed binding instead of the session id (TM-4). PR #2
+never by id, and tile tokens that carry a keyed binding instead of the session id. PR #2
 added ownership, sharing, and an audit trail. Its description records a bug a test caught: denial
 events were being rolled back together with the failed request and never saved, so audit writes
 moved to their own database transaction.
@@ -106,7 +106,7 @@ behind it; **nginx** is the one this project uses, and Chapter 33 covers it. A p
 who the original caller was in a header called `X-Forwarded-For`.
 
 <!-- source: PR #5 body, "Correction"; commit 2d82253; dossier/decisions.md D11 -->
-> **Incident: the spoofable client address (TM2-1).** The first nginx configuration appended to
+> **Incident: the spoofable client address.** The first nginx configuration appended to
 > any `X-Forwarded-For` header the client sent. The API used that header as the client's address
 > for sign-in throttling, so an attacker could invent a new address on every attempt and never
 > reach the lockout. The PR description first claimed forwarded addresses were trusted only
@@ -116,12 +116,12 @@ who the original caller was in a header called `X-Forwarded-For`.
 > Lesson: a claim about security is a hypothesis until a test that goes through the real front
 > door has tried to break it.
 
-The same round found that managing a document needed a second check (TM2-3): it now requires
+The same round found that managing a document needed a second check: it now requires
 ownership *and* the PUBLISHER role (or ADMIN), so a demoted publisher keeps read access only. It
-also found the audit log could be flooded (TM2-4, PO2-4).
+also found the audit log could be flooded.
 
 <!-- source: PR #5 body "TM3-1"; commit 82c24b6; dossier/decisions.md D7 -->
-**Round 3 (TM3-1, commit `82c24b6`).** The first fix for password guessing added an account-wide
+**Round 3 (commit `82c24b6`).** The first fix for password guessing added an account-wide
 lockout across all addresses. That let anyone lock any user out by failing 20 times. The
 replacement is the recognised-device rule from the README: the account-wide counter applies only
 to attempts from unrecognised devices. Its cost is stated plainly there: during a distributed
@@ -151,9 +151,11 @@ Anything reaching `app:8080` directly is judged by its own address.
 <!-- source: PR #5 body "Live two-IP lockout test"; dossier/decisions.md D7 -->
 nginx overwrites the header with the connection address and accepts a forwarded address only
 from the optional HTTPS front end, **Caddy** (a web server that handles certificates, at
-`172.28.0.11`; Chapter 33). In the two-address live test, all 18 checks passed: a spoofed header
-sent through nginx and directly to `app:8080` still hit the lockout, and the spoofed address
-never appeared in the audit log.
+`172.28.0.11`; Chapter 33). In the two-address live test, all 18 checks passed. They covered a
+spoofed `X-Forwarded-For` header sent through nginx and sent directly to `app:8080`: both still
+hit the lockout, and the audit log showed the container addresses, never the spoofed one. A
+separate check of the HTTPS profile confirmed that a spoofed header sent through Caddy is ignored
+(the real peer is audited); it was not one of the 18.
 
 ### 32.7 Class 2: races
 

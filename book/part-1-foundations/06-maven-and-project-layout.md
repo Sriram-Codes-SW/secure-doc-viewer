@@ -135,9 +135,9 @@ Maven runs a fixed sequence of **phases**. Asking for a phase runs it and every 
 | Command | What happens |
 |---|---|
 | `./mvnw compile` | Compiles the source code |
-| `./mvnw test` | Compiles, then runs the unit tests |
+| `./mvnw test` | Compiles, then runs all the tests, unit and integration alike (the project configures no separate integration-test plugin) |
 | `./mvnw package` | Also bundles the app into `target/secure-doc-viewer.jar` |
-| `./mvnw verify` | Also runs the integration checks; this is what **continuous integration** (CI, a service that builds and tests every proposed change automatically) runs |
+| `./mvnw verify` | Runs everything through `package`, then any checks bound to a later phase; here that adds nothing beyond `package`, but it is the command **continuous integration** (CI, a service that builds and tests every proposed change automatically) runs |
 
 *Table 6.1 — Maven phases you'll use*
 

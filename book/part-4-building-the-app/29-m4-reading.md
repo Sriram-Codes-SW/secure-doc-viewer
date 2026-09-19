@@ -20,9 +20,9 @@ still Spring Boot 3.3.4 and Java 21. PR #4 was stacked on PR #3.
 ### 29.1 The product owner's requirements
 
 The product owner's review (an AI agent playing a product owner) found reading awkward: sessions
-were per browser tab and cut off hard at 30 minutes with no warning (`PO-9`); the watermark was
-too dense, collided with content and had no trace reference (`PO-10`); and there was no `?page=`
-link, no keyboard navigation and no resume (`PO-11`). PR #4 answers these three findings.
+were per browser tab and cut off hard at 30 minutes with no warning; the watermark was
+too dense, collided with content and had no trace reference; and there was no `?page=`
+link, no keyboard navigation and no resume. PR #4 answers these three findings.
 <!-- source: dossier/milestone-briefs.md#m4; dossier/reviews.md -->
 
 ### 29.2 Deep links, keyboard, resume (4a)
@@ -245,14 +245,14 @@ screen must be designed for the human eye, not only for the parser.
 
 **The decision.** Lower the default opacity from 0.28 to 0.2 and make opacity and spacing
 configurable. **Why.** The product owner's review found the mark too dense and colliding with
-content (`PO-10`). **What it costs.** A lighter mark is easier to crop or edit out. Later
+content. **What it costs.** A lighter mark is easier to crop or edit out. Later
 milestones record the watermark's strength as a documented product decision.
 <!-- source: dossier/decisions.md#d5; PR #4 body -->
 
 #### Decision: shared activity across tabs
 
 **The decision.** The last-activity time is shared by every tab. **Why.** Sessions were per tab
-before (`PO-9`); a reader active in one tab shouldn't be warned in another. **What it costs.**
+before; a reader active in one tab shouldn't be warned in another. **What it costs.**
 The client's clock is an estimate of the server's timer, so the server stays the authority.
 <!-- source: PR #4 body; idle.ts Javadoc at book-m4-reading -->
 

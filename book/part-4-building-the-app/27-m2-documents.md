@@ -20,11 +20,11 @@ This milestone is PR #2, which was stacked on PR #1.
 
 ### 27.1 The product owner's requirements
 
-At m1, every signed-in user saw every document, and anyone could upload (`PO-4`, `TM-7`). Documents
+At m1, every signed-in user saw every document, and anyone could upload. Documents
 and the audit list lived in memory, so a restart lost them and orphaned the tiles on disk
-(`PO-5`, `TM-8`); the audit log was a 500-entry ring buffer (`TM-9`). Milestone 2 answers those
-findings, plus `PO-6`, `PO-8`, `PO-12`, `PO-13`. The reviewers were AI review agents playing a
-product owner and a senior technical manager; the book cites their finding IDs in code font.
+; the audit log was a 500-entry ring buffer. Milestone 2 answers those
+findings, plus several smaller findings. The reviewers were AI review agents playing a
+product owner and a senior technical manager; the book describes their findings in plain words.
 <!-- source: dossier/milestone-briefs.md#m2; dossier/reviews.md -->
 
 The product owner's choice of visibility, in their own words, was "Go ahead with Phase 2, users
@@ -165,8 +165,18 @@ admin. A user who can't even see the document gets 404 first.
 Manage page. Its Javadoc states the safeguards: it is limited to PUBLISHER and ADMIN in
 `SecurityConfig` (readers never share), returns usernames only, returns at most 20 per query so it
 can't dump account details, matches by name prefix among enabled accounts, and leaves out the caller.
-Sharing with an unknown name is rejected by the service with a "No such user." error.
-<!-- source: UserDirectoryController.java, DocumentService.java at book-m2-documents -->
+
+Sharing itself is a `DocumentService` method behind the same "owner or admin" rule as the other
+management actions. Sharing with a name that doesn't exist fails with HTTP 400 and the message
+"No user named '<username>'." Sharing with the owner fails with 400 and "The owner always has access."
+Unsharing is silent: removing a user who isn't shared does nothing and raises no error. Each change
+is written to the audit log as `DOCUMENT_SHARED` ("with <user>") or `DOCUMENT_UNSHARED` ("from <user>").
+
+**A gap that a later review closed.** At this milestone the user picker had no minimum query length,
+so a single character already listed names, and it listed admin accounts too, which the product owner's
+review later flagged as a directory leak (`PO2-10`). By `book-m6-final` a query shorter than 2 or longer
+than 32 characters returns an empty list, and admin accounts are hidden (Chapter 30).
+<!-- source: UserDirectoryController.java, DocumentService.java at book-m2-documents; dossier/DOSSIER.md V1 -->
 
 ### 27.6 The audit trail
 

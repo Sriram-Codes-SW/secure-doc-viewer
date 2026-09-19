@@ -26,8 +26,6 @@ architecture blueprint for that milestone, and the decisions and challenges of t
 The history in this part comes from the repository (its commits, tags and pull requests) and from the
 recorded conversation in which the app was built. Two independent
 reviewers examined the product between milestones. They were AI review agents playing a product
-owner and a senior technical manager, and the book refers to their findings by ID (for example
-`TM-1` or `PO-3`) in code font, with a plain explanation each time.
 
 One caveat matters for reading the tags. Pull requests 1 to 4 were stacked on one another and merged
 within a minute, so `book-m1-accounts` to `book-m4-reading` are cumulative snapshots of `main` at those

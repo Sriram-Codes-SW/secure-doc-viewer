@@ -281,11 +281,26 @@ View one with `git show book-m6-final:frontend/src/styles.css`.
 
 ## Try it
 
-1. ★ In `app.html`, which condition decides whether the Admin link appears? Which class property does it read?
-2. ★ Change the accent color in a scratch copy of `styles.css` and reload `ng serve`. Which screens change?
-3. ★★ Add a signal `showHint` to a scratch component with a button that toggles it (`update((v) => !v)`) and an `@if` that shows a paragraph.
-4. ★★ Use a contrast checker to compute the ratio of `--muted` on `--surface` in both themes. Does each pass 4.5:1?
-5. ★★★ Explain why `track doc.documentId` is better than tracking by position when the list is filtered.
+### Exercise 21.1 ★
+
+In `app.html`, which condition decides whether the Admin link appears? Which class property does it read?
+
+### Exercise 21.2 ★
+
+Change the accent color in a scratch copy of `styles.css` and reload `ng serve`. Which screens change?
+
+### Exercise 21.3 ★★
+
+Add a signal `showHint` to a scratch component with a button that toggles it (`update((v) => !v)`) and an `@if` that shows a paragraph.
+
+### Exercise 21.4 ★★
+
+Use a contrast checker to compute the ratio of `--muted` on `--surface` in both themes. Does each pass 4.5:1?
+
+### Exercise 21.5 ★★★
+
+Explain why `track doc.documentId` is better than tracking by position when the list is filtered.
+
 
 Solutions are in `21-angular-components.solutions.md`.
 

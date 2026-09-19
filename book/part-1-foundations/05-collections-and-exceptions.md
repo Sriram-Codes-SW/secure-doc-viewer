@@ -36,20 +36,26 @@ Example 5.1 shows all three. (`var` lets the compiler work out the type from the
 ```java
 import java.util.*;
 
-var pages = new ArrayList<String>();      // list
-pages.add("cover");
-pages.add("contents");
-System.out.println(pages.get(0));         // cover (counting starts at 0)
+public class Collections101 {
+    public static void main(String[] args) {
+        var pages = new ArrayList<String>();      // list
+        pages.add("cover");
+        pages.add("contents");
+        System.out.println(pages.get(0));         // cover (counting starts at 0)
 
-var sharedWith = new HashSet<String>();   // set
-sharedWith.add("reader.one");
-sharedWith.add("reader.one");             // ignored: already there
-System.out.println(sharedWith.size());    // 1
+        var sharedWith = new HashSet<String>();   // set
+        sharedWith.add("reader.one");
+        sharedWith.add("reader.one");             // ignored: already there
+        System.out.println(sharedWith.size());    // 1
 
-var failures = new HashMap<String, Integer>();   // map
-failures.put("pub.one", 2);
-System.out.println(failures.get("pub.one"));     // 2
+        var failures = new HashMap<String, Integer>();   // map
+        failures.put("pub.one", 2);
+        System.out.println(failures.get("pub.one"));     // 2
+    }
+}
 ```
+
+Save it as `Collections101.java` and run it with `java Collections101.java` (Chapter 3).
 
 The real app uses each. A document keeps its shares as `Set<AppUser> sharedWith = new HashSet<>()`, and the sign-in throttle keeps a map from a key to a queue of timestamps. <!-- source: Document.java line 68 and LoginThrottle.java line 61 at book-m6-final -->
 
@@ -74,12 +80,18 @@ A **lambda** is a small unnamed method you can pass around. `u -> u.getUsername(
 **Example 5.2 — Filter and transform**
 
 ```java
-List<String> names = List.of("pub.one", "reader.one", "outsider.one");
-List<String> shortNames = names.stream()
-        .filter(n -> n.length() < 10)
-        .map(n -> n.toUpperCase())
-        .toList();
-// [PUB.ONE]
+import java.util.List;
+
+public class StreamDemo {
+    public static void main(String[] args) {
+        List<String> names = List.of("pub.one", "reader.one", "outsider.one");
+        List<String> shortNames = names.stream()
+                .filter(n -> n.length() < 10)
+                .map(n -> n.toUpperCase())
+                .toList();
+        System.out.println(shortNames);   // [PUB.ONE]
+    }
+}
 ```
 
 `filter` keeps items for which the lambda is true, `map` transforms each item, and `toList()` ends the pipeline. The app uses the same idea to turn stored documents into rows for the library page.
@@ -132,12 +144,26 @@ An **exception** is an object that represents a failure. When code throws one, n
 **Example 5.3 — Catching**
 
 ```java
-try {
-    int cols = TileGrid.tileCount(0, 512);
-} catch (IllegalArgumentException e) {
-    System.out.println("Bad input: " + e.getMessage());
+public class CatchDemo {
+    static int tileCount(int lengthPx, int tileSize) {
+        if (lengthPx <= 0 || tileSize <= 0) {
+            throw new IllegalArgumentException("lengthPx and tileSize must both be positive");
+        }
+        return (lengthPx + tileSize - 1) / tileSize;
+    }
+
+    public static void main(String[] args) {
+        try {
+            int cols = tileCount(0, 512);
+            System.out.println(cols);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Bad input: " + e.getMessage());
+        }
+    }
 }
 ```
+
+The method is a copy of the app's `TileGrid.tileCount` from Chapter 3, so the example stands alone. The `println(cols)` line never runs: the exception jumps straight to the `catch` block.
 
 The app defines its own exception types so that each failure has a meaning. The smallest is one line of substance.
 

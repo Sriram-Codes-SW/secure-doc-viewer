@@ -107,7 +107,7 @@ server {
     }
 
     location / {
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; ..." always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
         try_files $uri $uri/ /index.html;
     }
 }
@@ -122,7 +122,7 @@ Line by line:
 - `location ^~ /api/` proxies API calls to `app:8080`. The `^~` marks it so that no pattern rule elsewhere can capture an API path.
 - `proxy_set_header X-Forwarded-For $remote_addr` is the fix for the incident in Chapter 32: nginx *overwrites* the header with the real connection address instead of appending to what the client sent.
 - `proxy_read_timeout 300s` allows for a long PDF render; `proxy_request_buffering off` streams uploads through instead of holding them.
-- The final `location /` serves the Angular app with its own strict Content-Security-Policy: scripts and styles from the same origin only, tiles allowed as `blob:` images, nothing may frame the viewer. Everything the browser needs comes from one origin, so the session and CSRF cookies work without extra settings.
+- The final `location /` serves the Angular app with its own strict Content-Security-Policy: scripts from the same origin only (styles also allow inline `style` attributes through `'unsafe-inline'`), tiles allowed as `blob:` images, nothing may frame the viewer. Everything the browser needs comes from one origin, so the session and CSRF cookies work without extra settings.
 
 ### 33.7 Caddy and certificates
 
@@ -152,8 +152,8 @@ Why two proxies? nginx already serves the app. Caddy's strength is certificates:
 
 The compose file gives the network a fixed subnet, `172.28.0.0/24`, `web` the address `172.28.0.10`, and `tls` the address `172.28.0.11`. This is not decoration. The app sets `FORWARD_HEADERS_STRATEGY: native` and `TRUSTED_PROXY_REGEX: '172\.28\.0\.10'`, so it believes `X-Forwarded-For` only from nginx; nginx believes a forwarded address only from Caddy. The chain of belief is one link at a time, and every link is pinned to an address that cannot change.
 
-<!-- source: dossier/decisions.md D11, D12; PR #5 body "Operations" (TM2-6) -->
-The fixed subnet came from a finding by the Senior Technical Manager review agent (Chapter 32): without pinned addresses, "trust the proxy" could not be expressed safely. The 18-check live test in Chapter 32 verified the chain.
+<!-- source: dossier/decisions.md D11, D12; PR #5 body "Operations" -->
+The fixed subnet came from a finding by the Senior Technical Manager review agent (Chapter 32): without pinned addresses, "trust the proxy" could not be expressed safely. The two-address live test in Chapter 32 checked the nginx and direct-to-app links, and a separate check of the `tls` profile confirmed that Caddy ignores a spoofed header.
 
 ### 33.9 Secrets and configuration
 

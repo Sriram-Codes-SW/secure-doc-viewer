@@ -24,8 +24,8 @@ tag differ from the earlier chapters: Spring Boot 4.1.1, Java 25, PDFBox 3.0.8, 
 ### 30.1 The requirements
 
 Three review findings drove the first commit of this milestone: Spring Boot 3.3 was past open-source
-support and PDFBox was behind (`TM-16`), there was no Dockerfile, CI or Maven wrapper (`TM-14`), and
-there were no controller, integration or end-to-end tests (`TM-13`). The reviewers were AI review
+support and PDFBox was behind, there was no Dockerfile, CI or Maven wrapper, and
+there were no controller, integration or end-to-end tests. The reviewers were AI review
 agents. The first commit answers with a platform upgrade, containers, a CI pipeline and end-to-end
 tests.
 <!-- source: dossier/milestone-briefs.md#m5; dossier/bugs-and-findings.md#b -->
@@ -64,7 +64,7 @@ just text that anyone can send, so the backend must only believe it from a proxy
 
 The first version was wrong. nginx appended to whatever `X-Forwarded-For` the client already
 sent, so any client could pretend to be any address and reset the sign-in lockout. The technical
-review recommended not merging PR #5 until this was fixed (`TM2-1`). The fix (commit `2d82253`) made
+review recommended not merging PR #5 until this was fixed. The fix (commit `2d82253`) made
 nginx overwrite the header with the real peer address. A Playwright test that goes through nginx
 fails on the pre-fix stack ("Expected 429, Received 401") and passes on the fixed one. A later
 commit (`a51674c`) pinned trust further: Compose uses a fixed subnet, and the API trusts
@@ -109,7 +109,7 @@ vulnerability, and about consistency between a database and files.*
 
 Milestone 1 throttled sign-ins per account and address, and per address. A first fix for the
 spoofing finding added an account-wide lockout across all addresses. The next review found that
-this let anyone lock out any user by failing from several addresses (`TM3-1`): a denial of service
+this let anyone lock out any user by failing from several addresses: a denial of service
 against the victim. The final design, in commit `82c24b6`, uses a 15-minute window:
 
 - account plus address: 5 failures, always applies;
@@ -130,7 +130,7 @@ even sent straight to the app container, still lock out.
 
 ### 30.7 Versioned tiles and stale URLs
 
-Replacing a PDF while readers are mid-document could mix old and new tiles (`TM2-5`, `PO2-2`). The
+Replacing a PDF while readers are mid-document could mix old and new tiles. The
 fix (commit `cd0f5c2`) renders a replacement into a new tile version and switches the document to it
 under a database row lock. Stale tile URLs answer 410 (Gone), and the viewer reloads with an
 "updated" notice. The storage janitor removes superseded versions. A migration, `V3`, adds the
@@ -249,7 +249,7 @@ flowchart LR
 #### Incident: the proxy that believed the client
 
 **The problem.** nginx appended to a client-supplied `X-Forwarded-For`, so a client could spoof its
-address and reset the sign-in lockout. **How it was found.** The technical review (`TM2-1`), which
+address and reset the sign-in lockout. **How it was found.** The technical review, which
 recommended not merging until it was fixed. **The fix.** nginx overwrites the header, the API trusts
 only nginx's address, and a Playwright test proves it. **The lesson.** Trust is a property of a
 network position, not of a header. The PR body even carries the correction: a claim made when the
@@ -258,7 +258,7 @@ PR was first submitted was struck through and replaced.
 
 #### Incident: a fix that created a denial of service
 
-**The problem.** The account-wide lockout let anyone lock out any user (`TM3-1`). **The fix.**
+**The problem.** The account-wide lockout let anyone lock out any user. **The fix.**
 Recognised devices (Section 30.6). **The lesson.** A defense that counts failures per victim turns
 into a weapon against the victim. Ask who can trigger it.
 <!-- source: dossier/decisions.md#d7 -->

@@ -221,4 +221,5 @@ All live in `src/main/java/com/example/securedocviewer/controller/`.
 
 - *Spring Framework Reference Documentation*, "Annotated Controllers." https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html
 - *Spring Framework Reference Documentation*, "Multipart Resolver." https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-servlet/multipart.html
+- Roy T. Fielding, *Architectural Styles and the Design of Network-based Software Architectures*, doctoral dissertation, University of California, Irvine, 2000, Chapter 5, "Representational State Transfer (REST)." https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm
 - *RFC 9110*, "HTTP Semantics." https://www.rfc-editor.org/rfc/rfc9110

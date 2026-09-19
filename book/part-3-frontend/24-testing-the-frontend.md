@@ -232,11 +232,26 @@ Run the specs yourself with `npm test` in `frontend/`, and see one at a tag with
 
 ## Try it
 
-1. ★ In Listing 24.1, add a test: with a timeout of 600 seconds and 100 seconds since activity, the state is `active`. Run it.
-2. ★ What does `expectOne` fail on if the code under test makes two requests to the same URL?
-3. ★★ Write a spec for `SessionService` that calls `login`, flushes a user, and checks that `isLoggedIn()` becomes true.
-4. ★★ Why does `expectAccessible` run the check in both light and dark themes?
-5. ★★★ Explain why the X-Forwarded-For regression can only be caught by the end-to-end layer, and what a unit test could still add.
+### Exercise 24.1 ★
+
+In Listing 24.1, add a test: with a timeout of 600 seconds and 100 seconds since activity, the state is `active`. Run it.
+
+### Exercise 24.2 ★
+
+What does `expectOne` fail on if the code under test makes two requests to the same URL?
+
+### Exercise 24.3 ★★
+
+Write a spec for `SessionService` that calls `login`, flushes a user, and checks that `isLoggedIn()` becomes true.
+
+### Exercise 24.4 ★★
+
+Why does `expectAccessible` run the check in both light and dark themes?
+
+### Exercise 24.5 ★★★
+
+Explain why the X-Forwarded-For regression can only be caught by the end-to-end layer, and what a unit test could still add.
+
 
 Solutions are in `24-testing-the-frontend.solutions.md`.
 

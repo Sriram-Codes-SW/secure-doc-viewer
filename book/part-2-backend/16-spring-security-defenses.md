@@ -20,6 +20,7 @@ By the end of this chapter, you will be able to:
 
 - Chapter 8: how the web works (headers, cookies)
 - Chapter 15: Spring Security I
+- Chapter 14: Storing data with JPA and Flyway (audit rows written in their own transaction)
 
 ## Beginner tier: Attacks the browser makes for you
 
@@ -96,7 +97,7 @@ Two things stand out. The last rule, `anyRequest().denyAll()`, means anything no
 
 The class comment of `DocumentService` states a related choice: "A document the user can't view is reported as not found, never as forbidden, so its existence isn't revealed." A `403` tells a prober "this id exists but is off-limits"; a `404` tells them nothing. The project applies `403` only when the caller can see the document but not change it.
 
-### 16.3 Security headers: CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`
+### 16.3 Security headers: CSP, `nosniff`, `Referrer-Policy`
 
 Response headers can instruct the browser to be stricter. The project sets these in `SecurityConfig`:
 
@@ -109,7 +110,7 @@ Response headers can instruct the browser to be stricter. The project sets these
                 "camera=(), microphone=(), geolocation=(), payment=()")))
 ```
 
-(`book-m6-final`, excerpt.) A **Content Security Policy** (CSP) tells the browser what a page may load; the API only returns JSON and PNGs, so `default-src 'none'` forbids everything, and `frame-ancestors 'none'` prevents the response from being framed by another site (clickjacking). `Referrer-Policy: no-referrer` matters here because tile URLs carry signed tokens: the code comment says "never send them onward in a Referer". Spring Security also adds `X-Content-Type-Options: nosniff` by default, which stops browsers guessing a content type. `SecurityHeadersTest` checks these headers (`book-m3-hardening` and later).
+(`book-m6-final`, excerpt.) A **Content Security Policy** (CSP) tells the browser what a page may load; the API only returns JSON and PNGs, so `default-src 'none'` forbids everything, and `frame-ancestors 'none'` prevents the response from being framed by another site (**clickjacking**: tricking you into clicking something on a page that a malicious site has hidden inside a frame). The older `X-Frame-Options` header does the same job for old browsers; Spring Security adds it by default. `Referrer-Policy: no-referrer` matters here because tile URLs carry signed tokens: the code comment says "never send them onward in a Referer". Spring Security also adds `X-Content-Type-Options: nosniff` by default, which stops browsers guessing a content type. `SecurityHeadersTest` checks these headers (`book-m3-hardening` and later).
 
 ## Advanced tier: Abuse, proxies and lifetimes
 

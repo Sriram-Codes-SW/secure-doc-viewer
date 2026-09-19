@@ -24,9 +24,9 @@ MySQL 8.4 and an Angular 22 frontend (Blueprint v1).
 After the MVP, two independent reviewers read the product as outsiders: an AI agent playing a
 product owner (PO) and one playing a senior technical manager (TM). Between them they filed 13
 PO and 20 TM findings. Two were rated critical. First, sign-in accepted any username with no
-password, even an empty one (`TM-2`, `PO-3`), so the name printed in every watermark meant
+password, even an empty one, so the name printed in every watermark meant
 nothing. Second, the admin endpoints needed only a valid session, and they listed every live
-session id, and the id was the only credential (`TM-1`, `PO-2`): a user could read another
+session id, and the id was the only credential: a user could read another
 user's session id and act as them.
 <!-- source: dossier/bugs-and-findings.md#B; dossier/reviews.md -->
 
@@ -183,7 +183,7 @@ Three settings deserve a sentence each.
 #### Why a cookie session and not a token in JavaScript
 
 At m0 the session id lived in an `X-Session-Id` header and, in the first Angular baseline, in
-`sessionStorage`, where any injected script can read it (`TM-15`). The project's record shows the
+`sessionStorage`, where any injected script can read it. The project's record shows the
 outcome (a server-side session in an httpOnly cookie) but no debate about JSON Web Tokens, so the
 book does not describe one.
 <!-- source: dossier/decisions.md#d3; dossier/bugs-and-findings.md#B -->
@@ -191,7 +191,7 @@ book does not describe one.
 ### 26.4 Binding tile tokens to a session (`SessionKeys`)
 
 At m0 the tile token contained the session id, in plain base64: `docId|0|0|0|<session-id>|exp`.
-A leaked tile URL therefore leaked the credential (`TM-4`). Milestone 1 changes what the token
+A leaked tile URL therefore leaked the credential. Milestone 1 changes what the token
 carries. `SessionKeys` derives values from the session id with HMAC so the id never leaves the
 server.
 
@@ -246,14 +246,14 @@ There are two derived values, each with its own HMAC context string ("tile-bindi
 - The **admin handle** identifies a session in the admin screen so it can be revoked. It can't
   be turned back into the id or used to sign in.
 
-This closes `TM-4` and the display half of `TM-1`. The binding is compared with
+This closes the token-leak problem and the display half of the session-id exposure. The binding is compared with
 `MessageDigest.isEqual`, the same constant-time check you met in Chapter 25.
-<!-- source: SessionKeys.java at book-m1-accounts; dossier/bugs-and-findings.md#B (TM-1, TM-4); PR #1 body -->
+<!-- source: SessionKeys.java at book-m1-accounts; dossier/bugs-and-findings.md#B; PR #1 body -->
 
 ### 26.5 Rate limiting and sign-in lockout
 
 Two more guards arrive. `TileRateLimiter` limits tile requests per user rather than per
-session, because the m0 limit could be bypassed by signing in again (`TM-3`). `LoginThrottle`
+session, because the m0 limit could be bypassed by signing in again. `LoginThrottle`
 slows password guessing: failed sign-ins are counted per account and address and per address,
 and the response is HTTP 429 with a `Retry-After` header. Milestone 5 (Chapter 30) revisits the
 lockout rules after a reviewer shows they can be abused.
@@ -326,9 +326,7 @@ Explain in your own words why `anyRequest().denyAll()` is the last rule in Listi
 
 ### Exercise 26.3 ★★★ Inspect the cookies
 
-On your own copy at `book-m1-accounts`, start the app (the first admin's password comes from your
-`.env` file, or from a one-time password printed at startup if you left it unset; never copy a real
-password into notes or screenshots). Sign in and inspect the cookies in your browser's developer
+On your own copy at `book-m1-accounts`, start the app. On an empty database the first start creates an `admin` account. Its password is the value of `BOOTSTRAP_ADMIN_PASSWORD` in your local `.env` file, or, if that is empty, a random one printed once in the startup log (as the project README describes; use your own throwaway value and never copy a real password into notes or screenshots). Sign in and inspect the cookies in your browser's developer
 tools. Which cookie can JavaScript read, and why must it be readable?
 
 ## Architecture blueprint v1
@@ -447,7 +445,7 @@ read another user's session id from `/api/admin/sessions`, requested tile URLs w
 got a tile back; the audit log and the watermark both named the victim. **The fix.** Roles on
 the admin API, and sessions listed by handle. **The lesson.** Never return a credential in an
 API, and derive identity from a verified principal, not from something the client sends.
-<!-- source: dossier/bugs-and-findings.md#b (TM-1) -->
+<!-- source: dossier/bugs-and-findings.md#b -->
 
 ## Summary
 

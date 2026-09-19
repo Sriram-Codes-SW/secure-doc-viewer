@@ -231,7 +231,7 @@ watermark is deliberately simple at this tag. Later milestones make it lighter, 
 spaced by measured text width, and add a trace code (Chapter 29).
 
 The cost is real: every tile request decodes a PNG, draws on it and encodes it again. A later
-review recorded this as a low-severity limitation (`TM-17`).
+review recorded this as a low-severity limitation.
 <!-- source: WatermarkService.java at book-m0-mvp; dossier/reviews.md TM-17; dossier/decisions.md#d5 -->
 
 ### 25.5 The endpoints
@@ -411,10 +411,10 @@ costs.** A decode, draw and encode per request, recorded later as a low-severity
 #### Challenge: the MVP was a demo, and a review said so
 
 **The problem.** This version signed anyone in who typed a username. Later, independent
-reviews found that login accepted any username with no password (`TM-2`), that admin
-endpoints needed only a valid session and listed every live session id (`TM-1`), that the
-tile token contained the session id, so a leaked URL leaked a credential (`TM-4`), and that
-the signing secret was committed in `application.yml` (`TM-6`; the file at this tag holds a
+reviews found that login accepted any username with no password, that admin
+endpoints needed only a valid session and listed every live session id, that the
+tile token contained the session id, so a leaked URL leaked a credential, and that
+the signing secret was committed in `application.yml` (the file at this tag holds a
 visibly demo-only value). **How it was found.** The reviews ran against the working product
 after the MVP and a first Angular baseline existed. **The fix.** Milestone 1 (Chapter 26)
 addressed these: real accounts, roles, a keyed session binding in tokens, and a secret

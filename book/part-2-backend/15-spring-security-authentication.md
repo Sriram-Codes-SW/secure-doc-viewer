@@ -18,6 +18,7 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
+- Chapter 5: collections and exceptions
 - Chapter 8: how the web works (cookies, headers)
 - Chapter 11: Spring Boot foundations
 - Chapter 12: REST controllers and JSON
@@ -37,7 +38,7 @@ By the end of this chapter, you will be able to:
 
 A **servlet filter** is a piece of code that every request passes through before it reaches a controller, and every response passes back through. Spring Security is a chain of such filters, each with one job: read the session, check a CSRF token, decide whether the request is allowed. You describe the chain in one bean. The project's begins like this (Listing 15.1).
 
-**Listing 15.1 — `SecurityConfig.java` (`book-m6-final`, simplified: only the opening lines and the last disabled features are shown)**
+**Listing 15.1 — `SecurityConfig.java` (`book-m6-final`, simplified: the method's other parameters are omitted, and only the opening lines and the last disabled features are shown)**
 
 *`src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
@@ -47,7 +48,7 @@ A **servlet filter** is a piece of code that every request passes through before
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, /* ... */) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, ...) throws Exception {
         http
                 // ... csrf, sessions, headers, authorization rules, custom filters ...
                 .requestCache(cache -> cache.disable())
@@ -200,7 +201,7 @@ We simplify here: an attacker could still compare response times, and the full d
 
 ## Try it
 
-1. (★) Which annotation makes the session cookie unreadable to JavaScript? Which file sets it?
+1. (★) Which setting makes the session cookie unreadable to JavaScript? Which file holds it?
 2. (★) What does the database store instead of a password?
 3. (★★) A password of 30 emoji is 30 characters. Will `fitsBcrypt` accept it? Why?
 4. (★★) What is the role string Spring builds from `.roles("PUBLISHER")`?

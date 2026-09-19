@@ -222,4 +222,4 @@ Each limit is checked before the expensive work begins, which is the point: reje
 - *Spring Framework Reference Documentation*, "Validation, Data Binding, and Type Conversion." https://docs.spring.io/spring-framework/reference/core/validation.html
 - *Spring Boot Reference Documentation*, "Type-safe Configuration Properties." https://docs.spring.io/spring-boot/reference/features/external-config.html#features.external-config.typesafe-configuration-properties
 - *Spring Framework Reference Documentation*, "Error Responses." https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html
-- *OWASP Cheat Sheet Series*, "Input Validation Cheat Sheet." https://cheatsheetseries.owasp.org/
+- *OWASP Cheat Sheet Series*, "Input Validation Cheat Sheet." https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html

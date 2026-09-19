@@ -302,11 +302,26 @@ See any of them at a tag with `git show book-m6-final:frontend/src/app/core/idle
 
 ## Try it
 
-1. ★ In `document.models.ts`, which property of `DocumentDetail` can be `null`, and for whom?
-2. ★ Write a type `Direction` that allows only `'next'` or `'previous'`, and a function `step(current: number, d: Direction): number`.
-3. ★★ In a scratch copy, add a fourth alternative `{ kind: 'paused' }` to `IdleState`. Does the compiler complain anywhere? Why or why not?
-4. ★★ Rewrite the `try`/`catch` in Listing 19.4 as a helper `fetchOrNull(url, signal): Promise<Response | null>`. How can a caller tell an abort from a network failure?
-5. ★★★ Write a generic function `firstWhere<T>(items: T[], test: (item: T) => boolean): T | null` and use it to find the first loaded tile.
+### Exercise 19.1 ★
+
+In `document.models.ts`, which property of `DocumentDetail` can be `null`, and for whom?
+
+### Exercise 19.2 ★
+
+Write a type `Direction` that allows only `'next'` or `'previous'`, and a function `step(current: number, d: Direction): number`.
+
+### Exercise 19.3 ★★
+
+In a scratch copy, add a fourth alternative `{ kind: 'paused' }` to `IdleState`. Does the compiler complain anywhere? Why or why not?
+
+### Exercise 19.4 ★★
+
+Rewrite the `try`/`catch` in Listing 19.4 as a helper `fetchOrNull(url, signal): Promise<Response | null>`. How can a caller tell an abort from a network failure?
+
+### Exercise 19.5 ★★★
+
+Write a generic function `firstWhere<T>(items: T[], test: (item: T) => boolean): T | null` and use it to find the first loaded tile.
+
 
 Solutions are in `19-typescript.solutions.md`.
 

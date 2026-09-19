@@ -22,10 +22,10 @@ Chapters 27 (documents), 13 (validation and errors) and 16 (Spring Security), as
 
 The technical review (an AI reviewer playing a senior technical manager) had found that an upload
 was read whole into memory, had no type or size limits and rendered synchronously, which is a
-denial-of-service risk (`TM-5`). Error responses were inconsistent (`TM-11`), messages echoed
-input (`TM-18`), there were no security headers (`TM-15`) and no health check (`TM-12`). The
+denial-of-service risk. Error responses were inconsistent, messages echoed
+input, there were no security headers and no health check. The
 product owner's review also complained that a corrupt or non-PDF upload returned a raw 500 with
-no progress feedback (`PO-8`). PR #3 addresses all of these in three commits.
+no progress feedback. PR #3 addresses all of these in three commits.
 <!-- source: dossier/bugs-and-findings.md#b; dossier/milestone-briefs.md#m3 -->
 
 ### 28.2 Upload limits and streaming ingest (3a)
@@ -34,7 +34,7 @@ Uploads are streamed to a temporary file and parsed from disk instead of being r
 memory, and the source PDF is deleted before the tiles are committed. Before anything is rendered,
 the server rejects:
 
-- a file without the `%PDF-` signature at its start;
+- a file with no `%PDF-` signature in its first 1,024 bytes (a few writers prepend junk, so the check allows for it);
 - a document with more than 500 pages;
 - any page larger than 40 million pixels at render resolution;
 - any upload over 50 MB, with a JSON 413 response.
@@ -56,10 +56,12 @@ private int maxPages = 500;
 private long maxPagePixels = 40_000_000L;
 ```
 
+Two methods in `TileGenerationService` (`requirePdfSignature` and `requireWithinLimits`) implement these checks. The pixel test computes each page's crop box at the render resolution (`renderDpi / 72` as the scale), swaps width and height for pages rotated by 90 or 270 degrees, and rejects the page if `width * height` exceeds `maxPagePixels`. All of them fail with a `BadRequestException`, which the error contract turns into HTTP 400: "The file is not a readable PDF.", "The PDF has no pages.", "The PDF has N pages; the limit is 500.", or "Page N is too large to render (WxH px).". Only the 50 MB size limit answers 413.
+
 The frontend also checks the file type and size in the browser and shows an upload progress bar,
 then a "rendering pages" state. The server still enforces every limit, because a browser check can
 be bypassed.
-<!-- source: ViewerProperties.java at book-m3-hardening diff; PR #3 body -->
+<!-- source: TileGenerationService.java and ViewerProperties.java at book-m3-hardening; PR #3 body -->
 
 ## Intermediate tier: A consistent contract with clients
 
@@ -142,14 +144,14 @@ The signing secret was moved out of the source in milestone 1 (`68b4945`, PR #1)
 `SIGNING_SECRET` environment variable, and `ViewerProperties` has validated it at startup since then,
 with `@NotBlank` and `@Size(min = 32)` (the same annotations are in the file at `book-m1-accounts`).
 Milestone 3 doesn't change that rule. The old placeholder remains in git history.
-<!-- source: ViewerProperties.java at book-m1-accounts; PR #1 body; dossier/bugs-and-findings.md#b (TM-6) -->
+<!-- source: ViewerProperties.java at book-m1-accounts; PR #1 body; dossier/bugs-and-findings.md#b -->
 
 ### 28.6 What was deferred
 
 The PR states plainly: "Deferred: processing uploads in the background with job status." Upload
 limits and streaming covered the main risk. A render limit and concurrency cap arrive in
 Chapter 30 (`cd0f5c2`, `1ce2c8b`).
-<!-- source: PR #3 body; dossier/bugs-and-findings.md#b (TM-5) -->
+<!-- source: PR #3 body; dossier/bugs-and-findings.md#b -->
 
 ### 28.7 In this project
 
@@ -221,7 +223,7 @@ concurrency cap.
 #### Decision: errors are one shape, and secrets stay in the log
 
 **The decision.** All errors use `{"error": "..."}`, and unexpected failures carry only a short
-reference. **Why.** The reviewer found inconsistent statuses and echoed input (`TM-11`, `TM-18`),
+reference. **Why.** The reviewer found inconsistent statuses and echoed input,
 and the project wanted no stack traces, SQL or paths reaching a client. **What it costs.** Someone
 has to read the server log to see the cause.
 <!-- source: PR #3 body; dossier/bugs-and-findings.md#b -->
