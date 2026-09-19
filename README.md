@@ -3,7 +3,8 @@
 A small Spring Boot service that serves PDF documents to authenticated viewers **without ever
 handing out the PDF**. Pages are rasterized server-side, sliced into image tiles, and delivered
 one tile at a time through short-lived HMAC-signed URLs that are bound to a login session and
-watermarked per viewer at request time. The browser reassembles the tiles onto a `<canvas>`.
+watermarked per viewer at request time. The browser reassembles the tiles into a page by placing
+each one at its position, as a positioned element with the tile as its background image.
 
 This is the architecture commercial e-magazine and flipbook readers use. The project exists to
 implement that pattern end to end and to be explicit about what it does and does not achieve.
