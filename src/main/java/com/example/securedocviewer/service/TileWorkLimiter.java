@@ -28,6 +28,10 @@ public class TileWorkLimiter {
         this.metrics = metrics;
     }
 
+    int availableSlots() {
+        return slots.availablePermits();
+    }
+
     public <T> T run(Callable<T> work) throws Exception {
         if (!slots.tryAcquire(WAIT_MILLIS, TimeUnit.MILLISECONDS)) {
             metrics.tileBusy();

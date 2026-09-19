@@ -47,6 +47,24 @@ traceable. The cost is CPU per request and losing shared caching — which is wh
 are explicitly `Cache-Control: no-store`, since a shared cache holding a tile watermarked for
 someone else would leak it.
 
+### How strong the watermark is: a deliberate trade-off
+
+The mark is red at 20% opacity, repeated in a brick pattern with 1.5× text-height gaps. That is a
+product decision, not a default nobody chose: readers need to read the page through it, and a
+heavier mark made dense pages (code, tables) hard to read.
+
+What it is meant to guarantee is attribution, not deterrence by ugliness:
+
+- Every full tile carries at least one complete copy (viewer, UTC time, trace code), and the
+  pattern continues seamlessly across tile edges, so any capture larger than about one tile still
+  names the viewer. A screenshot small enough to miss every copy is too small to be much use.
+- The trace code leads to the exact sign-in in the audit log, so even a partly legible mark is
+  enough.
+- It can't be switched off by the reader: it is burned into the pixels on the server.
+
+Deployments that care more about deterrence than comfort can turn it up without code changes:
+`watermark-opacity` (up to 0.6) and `watermark-spacing` (down to 0.5).
+
 ---
 
 ## Architecture

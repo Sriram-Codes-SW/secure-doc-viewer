@@ -251,6 +251,8 @@ class TileGenerationServiceTest {
         try (var dirs = java.nio.file.Files.list(staging)) {
             assertEquals(1, dirs.count(), "abandoned render left its staging directory behind");
         }
+        assertEquals(1, service.availableRenderSlots(), "every render slot is free again");
+        assertEquals(0, service.abandonedRendersRunning(), "no abandoned render still running");
     }
 
     private static byte[] pdfWithPages(int pages) throws IOException {

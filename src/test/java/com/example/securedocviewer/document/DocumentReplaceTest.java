@@ -65,6 +65,31 @@ class DocumentReplaceTest {
         assertFalse(Files.exists(STORAGE.resolve(id).resolve("v2")), "the rejected render must not be committed");
     }
 
+    @Autowired
+    private com.example.securedocviewer.config.ViewerProperties properties;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Test
+    void aReplacementThatTimesOutLeavesTheDocumentAsItWas() throws Exception {
+        String id = uploadAs("rp-timeout");
+        Viewer owner = new Viewer("rp-timeout", false, true);
+        java.time.Duration normal = properties.getRenderTimeout();
+        properties.setRenderTimeout(java.time.Duration.ofMillis(1));
+        try {
+            assertThrows(com.example.securedocviewer.exception.BadRequestException.class,
+                    () -> documents.replaceFile(id, pdf(40), owner, actor("rp-timeout")));
+        } finally {
+            properties.setRenderTimeout(normal);
+        }
+        assertEquals(1, jdbc.queryForObject("select tile_version from document where id = ?", Integer.class, id));
+        assertTrue(Files.isDirectory(STORAGE.resolve(id).resolve("v1").resolve("page-0")), "current tiles intact");
+        assertFalse(Files.exists(STORAGE.resolve(id).resolve("v2")), "nothing committed");
+        // The abandoned render stops and frees its slot: the next replace goes through.
+        assertEquals(2, documents.replaceFile(id, pdf(2), owner, actor("rp-timeout")).pageCount());
+    }
+
     @Test
     void aDisabledUserCannotBeGivenAccess() throws IOException {
         String id = uploadAs("rp-sharer");

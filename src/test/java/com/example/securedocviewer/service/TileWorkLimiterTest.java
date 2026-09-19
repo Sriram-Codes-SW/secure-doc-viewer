@@ -41,4 +41,17 @@ class TileWorkLimiterTest {
             pool.shutdownNow();
         }
     }
+
+    @Test
+    void workThatFailsStillFreesItsSlot() throws Exception {
+        ViewerProperties properties = new ViewerProperties();
+        properties.setMaxConcurrentTileRenders(1);
+        TileWorkLimiter limiter = new TileWorkLimiter(properties, new ViewerMetrics(new SimpleMeterRegistry()));
+
+        assertThrows(java.io.IOException.class, () -> limiter.run(() -> {
+            throw new java.io.IOException("unreadable tile");
+        }));
+        assertEquals(1, limiter.availableSlots());
+        assertEquals("next", limiter.run(() -> "next"));
+    }
 }

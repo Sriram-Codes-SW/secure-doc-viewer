@@ -1,5 +1,6 @@
 package com.example.securedocviewer.controller;
 
+import com.example.securedocviewer.exception.ServiceBusyException;
 import com.example.securedocviewer.exception.TileGoneException;
 import com.example.securedocviewer.service.TileWorkLimiter;
 import com.example.securedocviewer.model.SignedTilePayload;
@@ -112,8 +113,9 @@ public class TileController {
         // page. Enforced after auth so unauthenticated requests can't burn
         // a legitimate user's allowance, and before the disk read/render
         // so a throttled request doesn't pay that cost.
+        java.time.Instant counted;
         try {
-            tileRateLimiter.recordAndEnforce(username);
+            counted = tileRateLimiter.recordAndEnforce(username);
         } catch (RateLimitExceededException e) {
             metrics.tileRateLimited();
             auditLogService.recordAtMostEvery(Duration.ofSeconds(properties.getTileRateLimitWindowSeconds()),
@@ -139,7 +141,9 @@ public class TileController {
         // First 6 characters of the session's admin handle: enough to single out one sign-in
         // in the audit log's session column, too short to be of any other use.
         String traceCode = sessionKeys.adminHandle(session.getId()).substring(0, 6);
-        byte[] png = tileWork.run(() -> {
+        byte[] png;
+        try {
+            png = tileWork.run(() -> {
             BufferedImage rawTile = tileGenerationService.loadRawTile(
                     payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
             // Sized from the document's full tile size, so cropped edge tiles get the same mark.
@@ -147,7 +151,12 @@ public class TileController {
             ByteArrayOutputStream encoded = new ByteArrayOutputStream();
             ImageIO.write(watermarked, "png", encoded);
             return encoded.toByteArray();
-        });
+            });
+        } catch (ServiceBusyException busy) {
+            // The server was busy, not the reader too fast: don't charge their allowance.
+            tileRateLimiter.refund(username, counted);
+            throw busy;
+        }
 
         // One event per page view rather than per tile: a page is ~35 tiles, and
         // per-tile rows buried everything else in the audit log.

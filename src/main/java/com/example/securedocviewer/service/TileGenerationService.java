@@ -32,7 +32,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,7 +95,12 @@ public class TileGenerationService {
         this.metrics = metrics;
         int slots = Math.max(1, properties.getMaxConcurrentRenders());
         this.renderPermits = new Semaphore(slots, true);
-        this.renderThreads = Executors.newFixedThreadPool(slots, Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
+        // No queue: a task either starts at once or is refused, so it can never be
+        // cancelled while waiting (which would skip the finally that frees its slot).
+        // Twice the slots is enough threads, because a thread that has just freed its
+        // slot may still be finishing up while the next render starts.
+        this.renderThreads = new ThreadPoolExecutor(0, 2 * slots, 60, TimeUnit.SECONDS, new SynchronousQueue<>(),
+                Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
         metrics.abandonedRendersRunning(abandonedRunning::get);
     }
 
@@ -119,7 +127,9 @@ public class TileGenerationService {
             }
             AtomicBoolean cancelled = new AtomicBoolean();
             AtomicReference<RenderState> state = new AtomicReference<>(RenderState.RUNNING);
-            Future<RenderedDocument> job = renderThreads.submit(() -> {
+            Future<RenderedDocument> job;
+            try {
+                job = renderThreads.submit(() -> {
                 try {
                     RenderedDocument rendered = renderStaged(stagingDir, source, cancelled);
                     if (!state.compareAndSet(RenderState.RUNNING, RenderState.DONE)) {
@@ -136,6 +146,10 @@ public class TileGenerationService {
                     metrics.renderFinished(timing);
                 }
             });
+            } catch (RejectedExecutionException e) {
+                discardStaging(stagingDir, e);
+                throw new ServiceBusyException("The server is busy rendering other documents. Try again shortly.", 5);
+            }
             handedToRenderThread = true;
             try {
                 return job.get(properties.getRenderTimeout().toMillis(), TimeUnit.MILLISECONDS);
@@ -164,6 +178,10 @@ public class TileGenerationService {
                 }
                 throw new IOException(cause);
             } catch (InterruptedException e) {
+                // Treated like a timeout: nobody will commit this render, so it cleans up after itself.
+                if (state.compareAndSet(RenderState.RUNNING, RenderState.ABANDONED)) {
+                    abandonedRunning.incrementAndGet();
+                }
                 cancelled.set(true);
                 job.cancel(true);
                 Thread.currentThread().interrupt();
@@ -175,6 +193,15 @@ public class TileGenerationService {
                 metrics.renderFinished(timing);
             }
         }
+    }
+
+    /** Free render slots right now (tests and diagnostics). */
+    int availableRenderSlots() {
+        return renderPermits.availablePermits();
+    }
+
+    int abandonedRendersRunning() {
+        return abandonedRunning.get();
     }
 
     private static RenderedDocument awaitFinished(Future<RenderedDocument> job) throws IOException {
