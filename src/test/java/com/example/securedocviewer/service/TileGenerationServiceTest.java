@@ -251,6 +251,13 @@ class TileGenerationServiceTest {
         try (var dirs = java.nio.file.Files.list(staging)) {
             assertEquals(1, dirs.count(), "abandoned render left its staging directory behind");
         }
+        // The render thread frees its slot in a finally that runs just after the caller
+        // has its result, so allow a moment rather than checking at the same instant.
+        long slotsDeadline = System.currentTimeMillis() + 5_000;
+        while ((service.availableRenderSlots() != 1 || service.abandonedRendersRunning() != 0)
+                && System.currentTimeMillis() < slotsDeadline) {
+            Thread.sleep(10);
+        }
         assertEquals(1, service.availableRenderSlots(), "every render slot is free again");
         assertEquals(0, service.abandonedRendersRunning(), "no abandoned render still running");
     }
