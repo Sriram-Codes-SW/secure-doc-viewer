@@ -70,7 +70,7 @@ Deployments that care more about deterrence than comfort can turn it up without 
 ## Architecture
 
 ```
-upload ──► TileGenerationService ──► {storage}/{docId}/page-{n}/tile-{row}_{col}.png
+upload ──► TileGenerationService ──► {storage}/{docId}/v{version}/page-{n}/tile-{row}_{col}.png
                                               │
 viewer ──► POST /api/auth/login ──► httpOnly session cookie (+ CSRF cookie)
        ──► /api/documents/{id}/pages/{n}/tile-urls
@@ -80,8 +80,10 @@ viewer ──► POST /api/auth/login ──► httpOnly session cookie (+ CSRF 
        ──► GET /api/tiles?token=… ──► verify HMAC + expiry ────┘
                                   ──► session live? (Spring Security) and token bound to it?
                                   ──► per-user rate limit
+                                  ──► still allowed to view? token's render version current? (else 404 / 410)
+                                  ──► server-wide tile work limit (else 503, retried)
                                   ──► load raw tile from disk
-                                  ──► WatermarkService stamps viewer id + timestamp
+                                  ──► WatermarkService stamps viewer, UTC time, trace code
                                   ──► PNG bytes (no-store)
                                               │
        ◄── viewer fetches each tile and paints it at (col*tileSize, row*tileSize)
@@ -338,7 +340,8 @@ cd frontend && E2E_ADMIN_USER=admin E2E_ADMIN_PASSWORD=… npx playwright test
 ```
 
 GitHub Actions runs all of this on every pull request — backend, frontend, a known-vulnerability
-scan of every Maven and npm dependency (OSV; fails the build on any published advisory), then the
+scan of every Maven and npm dependency (OSV; fails the build on any published advisory), a scan
+of the built container images (Trivy; fails on any fixable HIGH/CRITICAL OS or library issue), then the
 Playwright journey against a freshly built Docker stack with throwaway secrets — and Dependabot opens weekly
 grouped update PRs for Maven, npm, Docker images and Actions.
 

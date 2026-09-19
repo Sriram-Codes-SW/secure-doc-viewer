@@ -114,9 +114,18 @@ public class DocumentService {
         String title = validTitle(rawTitle == null || rawTitle.isBlank() ? titleFromFilename(originalFilename) : rawTitle);
         RenderedDocument rendered = tiles.render(pdf);
         String documentId = UUID.randomUUID().toString();
-        tiles.commit(rendered, documentId, 1);
+        try {
+            tiles.commit(rendered, documentId, 1);
+        } catch (IOException | RuntimeException e) {
+            tiles.discard(rendered);
+            throw e;
+        }
         try {
             DocumentDetail created = tx.execute(status -> {
+                // Rendering can take a while: the uploader may have been demoted or disabled meanwhile.
+                if (!currentRoles(viewer).publisher()) {
+                    throw new ForbiddenException("Only publishers and admins can upload documents.");
+                }
                 AppUser owner = users.findByUsername(viewer.username())
                         .orElseThrow(() -> new ResourceNotFoundException("No such user."));
                 Document document = documents.save(new Document(documentId, title, owner,

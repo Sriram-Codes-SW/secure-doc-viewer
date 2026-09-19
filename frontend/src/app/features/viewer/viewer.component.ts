@@ -54,6 +54,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   private loadGeneration = 0;
   private abortController = new AbortController();
   private gridSub: Subscription | null = null;
+  private reloadSub: Subscription | null = null;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -395,7 +396,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
     if (outcome.accessRevoked) {
       this.loseAccess();
     } else if (outcome.replaced) {
-      this.reloadDocument(page);
+      this.reloadDocument(page, this.manifest()?.tileVersion);
     } else if (outcome.retryAfterSeconds !== null) {
       this.startThrottleCountdown(page, generation, outcome.retryAfterSeconds);
     } else if (outcome.unauthorized && allowUrlReissue) {
@@ -415,14 +416,31 @@ export class ViewerComponent implements OnInit, OnDestroy {
   }
 
   /** The owner replaced the PDF: fetch the new page list and show the same page (or the last one). */
-  private reloadDocument(page: number): void {
-    this.documentsService.get(this.documentId).subscribe({
+  /**
+   * @param staleVersion when set, the reload was triggered by tiles of this version being gone:
+   *   if the document still has that version, reloading can't help, so stop instead of looping.
+   */
+  private reloadDocument(page: number, staleVersion?: number): void {
+    const generation = this.loadGeneration;
+    this.reloadSub?.unsubscribe();
+    this.reloadSub = this.documentsService.get(this.documentId).subscribe({
       next: (manifest) => {
+        if (generation !== this.loadGeneration) {
+          return; // the reader moved on (or left) meanwhile
+        }
+        if (staleVersion !== undefined && manifest.tileVersion === staleVersion) {
+          this.errorMessage.set('Some parts of this page could not be loaded.');
+          return;
+        }
         this.manifest.set(manifest);
         this.updatedNotice.set(true);
         this.loadPage(Math.min(page, manifest.pageCount - 1));
       },
-      error: (err: HttpErrorResponse) => (err.status === 404 ? this.loseAccess() : this.errorMessage.set('Could not load this page.')),
+      error: (err: HttpErrorResponse) => {
+        if (generation === this.loadGeneration) {
+          err.status === 404 ? this.loseAccess() : this.errorMessage.set('Could not load this page.');
+        }
+      },
     });
   }
 
@@ -460,6 +478,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
     this.abortController.abort();
     this.abortController = new AbortController();
     this.gridSub?.unsubscribe();
+    this.reloadSub?.unsubscribe();
     this.clearThrottle();
     for (const tile of this.tiles()) {
       if (tile.src) {

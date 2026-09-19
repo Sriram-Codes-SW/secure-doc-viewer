@@ -51,7 +51,7 @@ jobs:
       # Fails the build if any Maven or npm dependency (including transitive
       # ones) has a published vulnerability.
       - run: >
-          docker run --rm -v "$PWD:/src:ro" ghcr.io/google/osv-scanner:v2
+          docker run --rm -v "$PWD:/src:ro" ghcr.io/google/osv-scanner:v2@sha256:afd838850ac1a0fcc15ff4a041dc9ba11123c3f0d2666217a5f0fcf9222b55fa
           scan source --lockfile=/src/pom.xml --lockfile=/src/frontend/package-lock.json
 
   e2e:
@@ -77,6 +77,12 @@ jobs:
           } > .env
       - name: Build and start the full stack
         run: docker compose --profile full up -d --build
+      - name: Scan the built images for OS and library vulnerabilities
+        # Fails on any HIGH/CRITICAL vulnerability that has a fix available.
+        run: |
+          for image in secure-doc-viewer-app secure-doc-viewer-web; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock               aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969               image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$image"
+          done
       - name: Wait for the API to be healthy
         run: |
           for i in $(seq 1 60); do

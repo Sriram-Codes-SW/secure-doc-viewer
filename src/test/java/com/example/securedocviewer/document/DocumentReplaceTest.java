@@ -91,6 +91,16 @@ class DocumentReplaceTest {
     }
 
     @Test
+    void aPublisherDemotedWhileTheirUploadRendersCannotCreateTheDocument() throws IOException {
+        accounts.create("rp-upload-demoted", "correct-horse-battery", Role.READER, false);
+        long before = jdbc.queryForObject("select count(*) from document", Long.class);
+        // The session still says PUBLISHER; the database already says READER.
+        assertThrows(ForbiddenException.class, () -> documents.upload("Late", "late.pdf", pdf(1),
+                Visibility.PRIVATE, new Viewer("rp-upload-demoted", false, true), actor("rp-upload-demoted")));
+        assertEquals(before, jdbc.queryForObject("select count(*) from document", Long.class));
+    }
+
+    @Test
     void aDisabledUserCannotBeGivenAccess() throws IOException {
         String id = uploadAs("rp-sharer");
         accounts.create("rp-disabled", "correct-horse-battery", Role.READER, false);

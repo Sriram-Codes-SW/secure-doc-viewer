@@ -154,4 +154,19 @@ class ConcurrentServingIntegrationTest {
             return new MockMultipartFile("file", "busy.pdf", "application/pdf", out.toByteArray());
         }
     }
+
+    @Test
+    void aMissingTileOfTheCurrentRenderIsAServerErrorNotAReplace() throws Exception {
+        MockHttpSession owner = signIn("cs-damage-owner", Role.PUBLISHER);
+        String id = json(mvc.perform(multipart("/api/documents").file(pdf(1)).param("title", "Damaged")
+                        .param("visibility", "PRIVATE").session(owner).with(csrf()))
+                .andExpect(status().isOk()).andReturn()).get("documentId").asString();
+        String url = json(mvc.perform(get("/api/documents/" + id + "/pages/0/tile-urls").session(owner))
+                .andExpect(status().isOk()).andReturn()).at("/tileUrls/0/0").asString();
+        // Damage on the server (e.g. a mismatched restore): the current render's tile is gone.
+        java.nio.file.Files.delete(java.nio.file.Path.of("target", "test-storage", id, "v1", "page-0", "tile-0_0.png"));
+
+        // 410 would tell the viewer "replaced, reload" and it would reload the same render forever.
+        mvc.perform(get(url).session(owner)).andExpect(status().isInternalServerError());
+    }
 }

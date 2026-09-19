@@ -90,6 +90,28 @@ public class TileController {
         this.tileWork = tileWork;
     }
 
+    /**
+     * A missing tile means "replaced" (410, the viewer reloads) only if the
+     * document really has moved on to a newer render. A missing tile of the
+     * current render is damage on the server (e.g. a mismatched restore): that
+     * is a 500, never a 410 that would make the viewer reload the same thing forever.
+     */
+    private BufferedImage loadTile(SignedTilePayload payload, TileAccess access, Authentication authentication)
+            throws IOException {
+        try {
+            return tileGenerationService.loadRawTile(
+                    payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
+        } catch (TileGoneException gone) {
+            int current = documents.tileAccessIfViewable(payload.documentId(), Viewer.of(authentication))
+                    .map(TileAccess::tileVersion).orElse(-1);
+            if (current == access.tileVersion()) {
+                throw new IllegalStateException("Tile file missing for the current render of document "
+                        + payload.documentId() + " (version " + current + ", page " + payload.page() + ")");
+            }
+            throw gone;
+        }
+    }
+
     @GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getTile(@RequestParam String token,
                                           Authentication authentication,
@@ -144,8 +166,7 @@ public class TileController {
         byte[] png;
         try {
             png = tileWork.run(() -> {
-            BufferedImage rawTile = tileGenerationService.loadRawTile(
-                    payload.documentId(), access.tileVersion(), payload.page(), payload.row(), payload.col());
+            BufferedImage rawTile = loadTile(payload, access, authentication);
             // Sized from the document's full tile size, so cropped edge tiles get the same mark.
             BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode, access.tileSize());
             ByteArrayOutputStream encoded = new ByteArrayOutputStream();

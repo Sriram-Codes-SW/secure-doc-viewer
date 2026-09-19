@@ -9,8 +9,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -60,23 +63,38 @@ public class AuditLogService {
     private static final class Throttled {
         Instant lastWritten;
         int suppressed;
+        /** The most recent suppressed event, written as a summary if nothing follows it. */
+        Instant lastSuppressedAt;
+        AuditEventType lastType;
+        Actor lastActor;
+        Subject lastSubject;
     }
+
+    private final TransactionTemplate separateTransaction;
 
     private final Map<String, Throttled> throttled = new ConcurrentHashMap<>();
 
     public AuditLogService(JdbcTemplate jdbc,
-                           @Value("${secure-doc-viewer.audit-retention-days:180}") int retentionDays) {
+                           @Value("${secure-doc-viewer.audit-retention-days:180}") int retentionDays,
+                           PlatformTransactionManager transactionManager) {
         this.jdbc = jdbc;
         this.retentionDays = retentionDays;
+        // Audit rows commit on their own, so a failing caller's rollback can't erase them.
+        this.separateTransaction = new TransactionTemplate(transactionManager);
+        this.separateTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(AuditEventType type, Actor actor, Subject subject) {
+        insert(Instant.now(), type, actor, subject);
+    }
+
+    private void insert(Instant at, AuditEventType type, Actor actor, Subject subject) {
         jdbc.update("""
                         insert into audit_event (occurred_at, event_type, username, session_handle, client_ip,
                             document_id, document_title, page_index, tile_row, tile_col, detail)
                         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                Timestamp.from(Instant.now()), type.name(), actor.username(), actor.sessionHandle(),
+                Timestamp.from(at), type.name(), actor.username(), actor.sessionHandle(),
                 actor.clientIp(), subject.documentId(), truncate(subject.documentTitle(), 200),
                 subject.page(), subject.tileRow(), subject.tileCol(), truncate(subject.detail(), 255));
     }
@@ -84,9 +102,10 @@ public class AuditLogService {
     /**
      * Records the event only if the same key hasn't been recorded within
      * {@code interval}. Used for events that can fire on every request (e.g.
-     * throttled tile fetches) and would otherwise flood the log.
+     * throttled tile fetches) and would otherwise flood the log. Not
+     * transactional itself: the common, suppressed case costs no database
+     * connection; only an actual write opens its own transaction.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordAtMostEvery(Duration interval, String key, AuditEventType type, Actor actor, Subject subject) {
         Instant now = Instant.now();
         // Decided inside compute(), which is atomic per key (including against the
@@ -96,6 +115,10 @@ public class AuditLogService {
             Throttled current = state == null ? new Throttled() : state;
             if (current.lastWritten != null && current.lastWritten.plus(interval).isAfter(now)) {
                 current.suppressed++;
+                current.lastSuppressedAt = now;
+                current.lastType = type;
+                current.lastActor = actor;
+                current.lastSubject = subject;
             } else {
                 current.lastWritten = now;
                 suppressedBefore[0] = current.suppressed;
@@ -110,16 +133,38 @@ public class AuditLogService {
         Subject withCount = suppressedBefore[0] == 0 ? subject : new Subject(subject.documentId(), subject.documentTitle(),
                 subject.page(), subject.tileRow(), subject.tileCol(),
                 (subject.detail() == null ? "" : subject.detail() + " ") + "(+" + suppressedBefore[0] + " similar suppressed)");
-        record(type, actor, withCount);
+        separateTransaction.executeWithoutResult(status -> insert(now, type, actor, withCount));
     }
 
-    /** Forget throttle keys idle for an hour, so the map stays small. */
+    /**
+     * Forget throttle keys idle for an hour, so the map stays small. Events that
+     * were suppressed and never followed by another write are summarised first,
+     * so the log never under-reports how much happened.
+     */
     @Scheduled(fixedDelay = 3_600_000)
     public void sweepThrottled() {
-        Instant cutoff = Instant.now().minus(Duration.ofHours(1));
+        sweepThrottledIdleSince(Instant.now().minus(Duration.ofHours(1)));
+    }
+
+    void sweepThrottledIdleSince(Instant cutoff) {
+        List<Throttled> tails = new ArrayList<>();
         for (String key : throttled.keySet()) {
-            throttled.computeIfPresent(key, (k, state) ->
-                    state.lastWritten == null || state.lastWritten.isBefore(cutoff) ? null : state);
+            throttled.computeIfPresent(key, (k, state) -> {
+                if (state.lastWritten != null && !state.lastWritten.isBefore(cutoff)) {
+                    return state;
+                }
+                if (state.suppressed > 0) {
+                    tails.add(state);
+                }
+                return null;
+            });
+        }
+        for (Throttled tail : tails) {
+            Subject s = tail.lastSubject;
+            Subject summary = new Subject(s.documentId(), s.documentTitle(), s.page(), s.tileRow(), s.tileCol(),
+                    (s.detail() == null ? "" : s.detail() + " ") + "(+" + tail.suppressed + " similar suppressed, last one here)");
+            separateTransaction.executeWithoutResult(status ->
+                    insert(tail.lastSuppressedAt, tail.lastType, tail.lastActor, summary));
         }
     }
 

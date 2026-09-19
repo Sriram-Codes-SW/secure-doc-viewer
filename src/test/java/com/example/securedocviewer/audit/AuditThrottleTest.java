@@ -50,4 +50,21 @@ class AuditThrottleTest {
         assertEquals(1, jdbc.queryForObject(
                 "select count(*) from audit_event where username = 'throttle-probe'", Integer.class));
     }
+
+    @Test
+    void suppressedEventsThatNothingFollowsAreStillCounted() {
+        Actor prober = new Actor("tail-probe", null, "127.0.0.1");
+        for (int i = 0; i < 4; i++) {
+            audit.recordAtMostEvery(Duration.ofMinutes(10), "tail-key", AuditEventType.ACCESS_DENIED, prober,
+                    Subject.detail("probe"));
+        }
+        // An hour later the key is forgotten; the 3 suppressed ones must not vanish with it.
+        audit.sweepThrottledIdleSince(java.time.Instant.now().plus(Duration.ofHours(1)));
+
+        java.util.List<String> details = jdbc.queryForList(
+                "select detail from audit_event where username = 'tail-probe' order by id", String.class);
+        assertEquals(2, details.size(), details.toString());
+        assertEquals("probe", details.get(0));
+        assertTrue(details.get(1).contains("+3 similar suppressed"), details.get(1));
+    }
 }

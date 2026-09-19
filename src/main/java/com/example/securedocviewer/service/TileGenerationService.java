@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
@@ -95,10 +96,9 @@ public class TileGenerationService {
         this.metrics = metrics;
         int slots = Math.max(1, properties.getMaxConcurrentRenders());
         this.renderPermits = new Semaphore(slots, true);
-        // No queue: a task either starts at once or is refused, so it can never be
-        // cancelled while waiting (which would skip the finally that frees its slot).
-        // Twice the slots is enough threads, because a thread that has just freed its
-        // slot may still be finishing up while the next render starts.
+        // No queue: a render either gets a thread at once or is refused (503). Twice
+        // the slots is enough threads, because a thread that has just freed its slot
+        // may still be finishing up while the next render starts.
         this.renderThreads = new ThreadPoolExecutor(0, 2 * slots, 60, TimeUnit.SECONDS, new SynchronousQueue<>(),
                 Thread.ofPlatform().name("pdf-render-", 0).daemon().factory());
         metrics.abandonedRendersRunning(abandonedRunning::get);
@@ -127,25 +127,34 @@ public class TileGenerationService {
             }
             AtomicBoolean cancelled = new AtomicBoolean();
             AtomicReference<RenderState> state = new AtomicReference<>(RenderState.RUNNING);
-            Future<RenderedDocument> job;
-            try {
-                job = renderThreads.submit(() -> {
-                try {
-                    RenderedDocument rendered = renderStaged(stagingDir, source, cancelled);
-                    if (!state.compareAndSet(RenderState.RUNNING, RenderState.DONE)) {
-                        // Finished just after the request gave up: nobody will commit it.
-                        discardStaging(stagingDir, new CancellationException("abandoned"));
-                        throw new CancellationException("Render abandoned after render-timeout");
-                    }
-                    return rendered;
-                } finally {
-                    if (state.get() == RenderState.ABANDONED) {
-                        abandonedRunning.decrementAndGet();
-                    }
-                    renderPermits.release();
-                    metrics.renderFinished(timing);
+            AtomicBoolean started = new AtomicBoolean();
+            FutureTask<RenderedDocument> job = new FutureTask<>(() -> {
+                started.set(true);
+                RenderedDocument rendered = renderStaged(stagingDir, source, cancelled);
+                if (!state.compareAndSet(RenderState.RUNNING, RenderState.DONE)) {
+                    // Finished just after the request gave up: nobody will commit it.
+                    discardStaging(stagingDir, new CancellationException("abandoned"));
+                    throw new CancellationException("Render abandoned after render-timeout");
                 }
+                return rendered;
             });
+            try {
+                // The slot is freed by this wrapper rather than inside the task, so it is
+                // freed even if the task was cancelled before it got to run.
+                renderThreads.execute(() -> {
+                    try {
+                        job.run();
+                    } finally {
+                        if (!started.get()) {
+                            discardStaging(stagingDir, new CancellationException("cancelled before starting"));
+                        }
+                        if (state.get() == RenderState.ABANDONED) {
+                            abandonedRunning.decrementAndGet();
+                        }
+                        renderPermits.release();
+                        metrics.renderFinished(timing);
+                    }
+                });
             } catch (RejectedExecutionException e) {
                 discardStaging(stagingDir, e);
                 throw new ServiceBusyException("The server is busy rendering other documents. Try again shortly.", 5);

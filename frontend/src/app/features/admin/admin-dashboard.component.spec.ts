@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { UserSummary } from './admin.models';
-import { AdminDashboardComponent } from './admin-dashboard.component';
+import { AdminDashboardComponent, POLL_IDLE_MS, shouldPoll } from './admin-dashboard.component';
 
 function user(username: string, overrides: Partial<UserSummary> = {}): UserSummary {
   return {
@@ -55,5 +55,21 @@ describe('AdminDashboardComponent users', () => {
   it('shows every time in UTC, like the audit log and the watermark', () => {
     const admin = create([]).componentInstance;
     expect(admin.formatTime(Date.UTC(2026, 8, 18, 23, 22, 45) / 1000)).toBe('2026-09-18 23:22 UTC');
+  });
+});
+
+describe('admin sessions polling', () => {
+  const now = 10_000_000;
+
+  it('refreshes while someone is using the visible page', () => {
+    expect(shouldPoll(now, now - 30_000, false)).toBe(true);
+  });
+
+  it('stops when the page has been left alone, so polls never keep an idle admin signed in', () => {
+    expect(shouldPoll(now, now - POLL_IDLE_MS, false)).toBe(false);
+  });
+
+  it('stops while the tab is hidden', () => {
+    expect(shouldPoll(now, now, true)).toBe(false);
   });
 });

@@ -127,7 +127,7 @@ public class LoginThrottle {
 
     /** Drops counters whose failures have all aged out, so the map can't grow without bound. */
     @Scheduled(fixedDelay = 300_000)
-    public void sweep() {
+    public synchronized void sweep() {
         Instant cutoff = clock.instant().minus(WINDOW);
         failures.entrySet().removeIf(entry -> {
             synchronized (entry.getValue()) {

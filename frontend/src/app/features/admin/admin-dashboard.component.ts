@@ -1,12 +1,23 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription, interval, startWith, switchMap } from 'rxjs';
+import { EMPTY, Subscription, catchError, filter, interval, startWith, switchMap } from 'rxjs';
 import { Role } from '../../core/session.service';
 import { AdminService } from './admin.service';
 import { AUDIT_EVENT_TYPES, AuditEvent, AuditFilter, RateLimitStatus, SessionSummary, UserSummary } from './admin.models';
 
 const REFRESH_MS = 5_000;
+/** Background refreshes stop after this long without any input on the page. */
+export const POLL_IDLE_MS = 2 * 60_000;
+
+/**
+ * Whether to refresh the sessions list in the background. An unattended admin
+ * page must not keep polling: every poll would count as activity and keep the
+ * most privileged session alive past its idle timeout.
+ */
+export function shouldPoll(now: number, lastInputAt: number, hidden: boolean): boolean {
+  return !hidden && now - lastInputAt < POLL_IDLE_MS;
+}
 const MIN_PASSWORD_LENGTH = 12;
 const AUDIT_PAGE_SIZE = 50;
 
@@ -56,6 +67,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   resetPasswordValue = '';
 
   private sessionsSub: Subscription | null = null;
+  private lastInputAt = Date.now();
   private auditSub: Subscription | null = null;
 
   constructor(private readonly adminService: AdminService) {}
@@ -63,13 +75,23 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.sessionsSub = interval(REFRESH_MS)
       .pipe(
+        filter(() => shouldPoll(Date.now(), this.lastInputAt, document.hidden)),
         startWith(0),
-        switchMap(() => this.adminService.getSessions()),
+        // One failed refresh must not end the polling for good.
+        switchMap(() => this.adminService.getSessions().pipe(catchError(() => EMPTY))),
       )
       .subscribe((sessions) => this.sessions.set(sessions));
 
     this.loadUsers();
     this.refreshAudit();
+  }
+
+  @HostListener('document:pointerdown')
+  @HostListener('document:keydown')
+  @HostListener('document:wheel')
+  @HostListener('document:touchstart')
+  onUserInput(): void {
+    this.lastInputAt = Date.now();
   }
 
   ngOnDestroy(): void {
