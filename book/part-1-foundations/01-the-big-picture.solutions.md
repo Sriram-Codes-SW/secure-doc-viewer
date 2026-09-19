@@ -10,4 +10,4 @@ Hiding the download button: the client can do it, but it protects nothing. Check
 
 ### Exercise 1.3 ★★ Read the limits
 
-One good answer: "A valid session can request every tile" is accepted because readers need normal reading speed (about 15 pages a minute); the watermark makes the result traceable instead. "No text layer" is accepted because a text layer would be the copyable text the design avoids.
+One good answer: "A valid session can request every tile" is accepted because readers need normal reading speed (about 15 pages a minute, derived as 180 tiles per minute divided by about 12 tiles per page); the watermark makes the result traceable instead. "No text layer" is accepted because a text layer would be the copyable text the design avoids.

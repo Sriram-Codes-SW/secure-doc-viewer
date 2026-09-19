@@ -6,13 +6,15 @@
 - Explain why the first version of the viewer never sends the PDF file to the browser.
 - Compute how many tiles cover a page and why the last row and column are shorter.
 - Describe how a signed URL proves a tile request is genuine without a database lookup.
-- Read `TileGrid`, `SignedUrlService` and `TileController` at `book-m0-mvp` and say what each guards.
+- Read `TileGrid`, `SignedUrlService` and `TileController` at `book-m0-mvp` and say what each does and what it protects against.
 
 ## Prerequisites
 
-Chapters 3–6 (Java), 8 (Spring Boot), 11–12 (HTTP and REST) and 17 (testing basics), as
-listed in `book/OUTLINE.md`. At this milestone the project uses Spring Boot 3.3.4, Java 21 and
+Chapters 3–6 (Java), 8 (the web), 11–12 (Spring Boot and REST), 17 (signatures and PDFs) and
+18 (testing), as listed in `book/OUTLINE.md`. At this milestone the project uses Spring Boot 3.3.4, Java 21 and
 PDFBox 3.0.3 (`pom.xml` at `book-m0-mvp`); the upgrade to Spring Boot 4 comes in Chapter 30.
+
+## Beginner tier: Serving a page as small tiles
 
 ### 25.1 Requirements and the threat we start with
 
@@ -94,8 +96,12 @@ without loss. That is why the class has no dependencies: `TileGridTest` can use 
 image instead of a rendered PDF.
 <!-- source: commit b6aef4e message; TileGrid.java and TileGridTest.java at book-m0-mvp -->
 
-**Try it (preview).** Compute `tileCount(1000, 256)`. The answer is 4, and the last tile is
+**Example 25.1.** Compute `tileCount(1000, 256)`. The answer is 4, and the last tile is
 232 pixels wide (1000 - 3 * 256).
+
+## Intermediate tier: How the pieces talk to each other
+
+*Assumes the beginner tier. This tier shows how the browser and the server exchange signed, single-use-scope tokens and pixels.*
 
 ### 25.3 Signed URLs (`SignedUrlService`)
 
@@ -107,7 +113,7 @@ until it expires. That is why Chapter 26 binds tokens to a session more tightly.
 
 The service issues a token that grants access to exactly one tile of one page of one
 document, for one session, until a fixed expiry. The token is two base64url strings joined by
-a dot: the payload, and an HMAC-SHA256 signature over it. **HMAC** (hash-based message
+a dot: the payload, and an HMAC-SHA256 signature over it. **Base64url** is a way to write any bytes using only letters, digits, hyphen and underscore, so the result is safe inside a URL. **HMAC** (hash-based message
 authentication code) mixes a secret key into a hash, so only a holder of the key can produce a
 matching signature. Change any field of the payload and the signature no longer matches.
 
@@ -220,7 +226,7 @@ spaced by measured text width, and add a trace code (Chapter 29).
 
 The cost is real: every tile request decodes a PNG, draws on it and encodes it again. A later
 review recorded this as a low-severity limitation (`TM-17`).
-<!-- source: WatermarkService.java at book-m0-mvp; scratchpad previous-review-findings.md TM-17; dossier/decisions.md#d5 -->
+<!-- source: WatermarkService.java at book-m0-mvp; dossier/reviews.md TM-17; dossier/decisions.md#d5 -->
 
 ### 25.5 The endpoints
 
@@ -228,7 +234,7 @@ Four controllers make up the API. Two matter most for the design.
 
 **Asking for tile URLs.** `PageTileUrlController` answers
 `GET /api/documents/{documentId}/pages/{page}/tile-urls`. It checks the session, looks up the
-page's grid in the manifest, and issues one signed token per tile, returning a grid of
+page's grid in the **manifest** (the record of a document's title, page count and tile grid), and issues one signed token per tile, returning a grid of
 `/api/tiles?token=...` paths. It never returns a page-level or document-level download link.
 <!-- source: PageTileUrlController.java at book-m0-mvp -->
 
@@ -273,7 +279,7 @@ check the uploader's role. Chapter 26 adds roles.
 
 #### How ingest stores tiles
 
-`TileGenerationService.ingest` gives the document a random UUID, renders each page with PDFBox
+`TileGenerationService.ingest` gives the document a random UUID (a 128-bit random identifier), renders each page with PDFBox
 at the configured DPI, and calls `tileAndSave`, which slices with `TileGrid` and writes
 `{storageRoot}/{documentId}/page-{n}/tile-{row}_{col}.png`. The PDF bytes themselves are not
 written to disk. At this tag `application.yml` sets the tile size to 256 pixels, the render
@@ -281,9 +287,13 @@ resolution to 150 DPI, the signed-URL lifetime to 120 seconds and the session li
 1,800 seconds.
 <!-- source: TileGenerationService.java, DocumentController.java, TileController.java and application.yml at book-m0-mvp -->
 
+## Advanced tier: Sessions and what this version leaves open
+
+*Assumes the earlier tiers. This tier covers the session check behind every token and the gaps that later milestones close.*
+
 ### 25.6 A first session service and a one-page viewer
 
-`SessionService` is a minimal in-memory store: `login(username)` creates a random UUID session
+`SessionService` is a minimal in-memory store: `login(username)` creates a random UUID (a 128-bit random identifier) session
 id with an expiry, `logout` removes it, and `requireValidSession` returns the username or
 throws `SessionExpiredException`. Its own Javadoc calls it a stand-in for a real
 authentication system. Because tokens are bound to the session id, ending a session kills
@@ -293,9 +303,11 @@ Sign-in at this tag takes only a username, and the session id travels in an `X-S
 header. The browser side is one static `index.html` that signs in, fetches manifests and tile
 URLs, and draws tiles on a canvas. Documents live in an in-memory `DocumentRegistry`, so a
 restart forgets them while the tiles stay orphaned on disk.
-<!-- source: SessionService.java, git ls-tree at book-m0-mvp; blueprints/v0-mvp.md; previous-review-findings.md TM-8 -->
+<!-- source: SessionService.java, git ls-tree at book-m0-mvp; blueprints/v0-mvp.md; dossier/reviews.md TM-8 -->
 
 ## In this project
+
+Table 25.1 lists the files to open in your copy of the repository.
 
 **Table 25.1 — Where the concepts live (at `book-m0-mvp`)**
 
@@ -308,14 +320,14 @@ restart forgets them while the tiles stay orphaned on disk.
 | Endpoints | `DocumentController`, `PageTileUrlController`, `TileController`, `SessionController` |
 | Sessions | `security/SessionService.java`, `SessionServiceTest` |
 
-Table 25.1 lists the files to open in your copy of the repository.
 
 ## Try it
 
 1. (★) Compute `tileCount` for a page 1,240 pixels wide and 1,754 tall with 256-pixel tiles.
    How many columns and rows, and how wide is the last column?
-2. (★★) In your local copy, change one character of a token before the dot and request it.
-   Which exception does `verifyAndDecode` throw, and why does the order of its checks matter?
+2. (★★) Run `book-m0-mvp` locally, change one character of a token before the dot and request it.
+   `verifyAndDecode` throws `InvalidTokenException`; check `GlobalExceptionHandler` to find the
+   HTTP status the client sees, and explain why the order of the checks matters.
 3. (★★★) Why does `TileController` not trust the token's expiry alone? Describe a case where
    a token is valid but the request must still be refused.
 
@@ -391,7 +403,7 @@ addressed these: real accounts, roles, a keyed session binding in tokens, and a 
 supplied through the environment. **The lesson.** A stand-in is fine while you learn the
 shape of a system, but write down what it stands in for. The MVP's own Javadoc did that,
 which turned the later findings into a to-do list instead of a surprise.
-<!-- source: scratchpad previous-review-findings.md; PR #1 body; SessionService Javadoc and application.yml at book-m0-mvp -->
+<!-- source: dossier/reviews.md; dossier/bugs-and-findings.md; SessionService Javadoc and application.yml at book-m0-mvp -->
 
 ## Summary
 

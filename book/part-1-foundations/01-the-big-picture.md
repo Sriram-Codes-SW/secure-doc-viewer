@@ -32,13 +32,13 @@ The realistic goal is smaller and more useful:
 2. Make heavy copying slow, so that harvesting a whole document takes long enough to notice.
 3. Make every copy traceable, so that a leaked image says who it was shown to.
 
-The Secure Document Viewer is a small web application built to reach those three goals honestly. A signed-in reader opens a document in the browser and reads it page by page. The reader never receives the PDF file. <!-- source: README.md, "Why this design" and "Limitations" at book-m6-final -->
+The Secure Document Viewer is a small web application built to reach those three goals honestly. A signed-in reader opens a document in the browser and reads it page by page. The reader never receives the **PDF** (Portable Document Format) file, the common format for fixed-layout documents such as reports and manuals. <!-- source: README.md, "Why this design" and "Limitations" at book-m6-final -->
 
 ### 1.2 Why hiding a button doesn't protect anything
 
 The obvious way to build a "protected" viewer is to send the PDF to the browser, then use the browser to hide the download button and block the right-click menu. Call this the *naive viewer*.
 
-Here is why it fails. Your browser is a program running on *your* computer, under *your* control. Every instruction the site sends it, including "hide this button", is a request that the browser happens to honor. A person who opens the browser's developer tools can undo the hiding in seconds. Even without that, the PDF already arrived on their machine, so it sits in the browser's cache waiting to be copied.
+Here is why it fails. Your browser is a program running on *your* computer, under *your* control. Every instruction the site sends it, including "hide this button", is a request that the browser happens to honor. A person who opens the browser's **developer tools** (DevTools, a panel built into every browser that lets you inspect and change the page you're viewing) can undo the hiding in seconds. Even without that, the PDF already arrived on their machine, so it sits in the browser's **cache** (the folder where a browser keeps copies of files it has downloaded) waiting to be copied.
 
 The project's README puts it bluntly: both tricks "live entirely in the browser, so both are undone in about ten seconds with DevTools." <!-- source: README.md, opening of "Why this design" -->
 
@@ -52,11 +52,11 @@ The app does still block the right-click menu in its Angular viewer. It does so 
 
 If the PDF must never reach the browser, the server has to send something else. The design does this in three steps.
 
-1. **Rasterize.** *Rasterizing* means turning a page described by shapes and text (which is what a PDF contains) into a grid of colored dots, an image. The server renders each PDF page as an image at 150 DPI (dots per inch).
-2. **Slice.** The server cuts each page image into square *tiles* of 512 by 512 pixels. Tiles at the right and bottom edges are cropped shorter.
+1. **Rasterize.** To **rasterize** a page means turning a page described by shapes and text (which is what a PDF contains) into a grid of colored dots, an image. The server renders each PDF page as an image at 150 DPI (dots per inch).
+2. **Slice.** The server cuts each page image into square **tiles** of 512 by 512 pixels (a pixel is one dot of the image). Tiles at the right and bottom edges are cropped shorter.
 3. **Deliver.** The server keeps only the tiles. The original PDF stops existing as something the app can serve. The browser asks for tiles one at a time and assembles them on screen.
 
-A US letter page (8.5 by 11 inches) at 150 DPI is 1,275 by 1,650 pixels. Divided into 512-pixel squares, that is 3 columns by 4 rows: 12 tiles. That matches the README's "about 12 tiles" per page. <!-- source: README.md; src/main/resources/application.yml at book-m6-final (tile-size: 512, render-dpi: 150) -->
+A US letter page (8.5 by 11 inches) at 150 DPI is 1,275 by 1,650 pixels. Divided into 512-pixel squares, that is 3 columns by 4 rows: 12 tiles. The project's README says the same in its own words: "a letter page is ~12 tiles". <!-- source: README.md; src/main/resources/application.yml at book-m6-final (tile-size: 512, render-dpi: 150) -->
 
 Figure 1.1 shows the flow.
 
@@ -73,9 +73,9 @@ flowchart LR
 
 Three more ingredients complete the design. Each gets its own chapter later; here is the one-line version.
 
-- **Signed, short-lived tile URLs.** Every tile is fetched from its own web address (a URL) that contains a cryptographic signature and an expiry time. Change any part and the signature no longer matches. Chapter 17 explains signatures.
-- **A per-viewer watermark.** When the server sends a tile, it stamps the viewer's username and a timestamp onto it, so every response is individually traceable.
-- **Access checks on every request.** The server verifies the sign-in and the document's permissions again for each tile, so unsharing a document cuts off a page that is already open.
+- **Signed, short-lived tile URLs.** A **URL** (Uniform Resource Locator) is a web address such as `https://example.com/page`. Every tile is fetched from its own URL, and that URL carries a **signature**: a short code that only the server can produce, computed from the rest of the address and a secret key. Change any part of the address and the signature no longer matches, so the server refuses it. The URL also carries an expiry time. A URL like this is a **signed URL**. Chapter 17 explains signatures.
+- **A per-viewer watermark.** A **watermark** is a faint mark laid over an image. When the server sends a tile, it stamps the viewer's username and a timestamp onto it, so every response is individually traceable.
+- **Access checks on every request.** The server verifies the sign-in and the document's permissions again for each tile, so unsharing a document cuts off a page that is already open. Signing in starts a **session**: the server's record that a particular browser has proven who it is, so the browser doesn't have to send the password again with every request.
 
 #### An analogy, and where it breaks down
 
@@ -106,7 +106,7 @@ sequenceDiagram
     Server-->>Browser: Watermarked tile image
 ```
 
-Two rules follow, and the rest of the book depends on them:
+The *Database* in the figure is a separate program that stores the app's accounts, documents and permissions on disk so they survive a restart; [Chapter 9](09-sql-and-mysql.md) teaches it. Two rules follow, and the rest of the book depends on them:
 
 - The client is under the user's control, so the server treats everything it sends as untrusted until checked.
 - The server holds the secrets: the signing key, the tiles and the database.
@@ -137,9 +137,10 @@ Being honest about limits is a design feature here, so learn them now.
 **What it does:**
 
 - The PDF stops being servable after upload; only disconnected tiles remain.
-- Tile URLs expire (120 seconds by default) and are tied to one sign-in session.
+- Tile URLs expire (120 seconds by default) and work only for the session they were issued to.
 - Every tile carries the viewer's identity and a UTC timestamp.
-- Each user is rate limited (180 tiles per 60 seconds by default), so a scripted harvest is slow.
+- Each user is subject to a **rate limit**, a cap on how many requests one user may make in a period of time (here 180 tiles per 60 seconds by default), so a scripted harvest is slow.
+- Every important action (sign-ins, uploads, views, denied requests) is written to the **audit trail**, an append-only record in the **database** (the program that stores the app's data permanently; Chapter 9 teaches it).
 
 **What it does not do:**
 
@@ -147,7 +148,7 @@ Being honest about limits is a design feature here, so learn them now.
 - A determined user with a valid session can still request every tile and reassemble them. The rate limit bounds how fast, not whether. The README estimates about half an hour for a 500-page document at the defaults.
 - It offers no multi-factor sign-in, and pages are images, so screen readers get no text.
 
-<!-- source: README.md, "Limitations", at book-m6-final; application.yml -->
+<!-- source: README.md, "Why this design" and "Limitations", at book-m6-final; application.yml; SignedTilePayload.java (session binding) -->
 
 The watermark is what makes a leak attributable. That is the honest promise: raise the cost, add attribution, and never claim prevention.
 
@@ -159,7 +160,7 @@ Three simpler designs come to mind, and each fails in a way that teaches somethi
 
 - **Send the PDF with a viewer library.** The file is in the browser's memory and cache. Anyone can save it.
 - **Send whole page images.** Better, but a single request returns a complete, high-quality page, and scripting that is trivial. Tiles mean each individual response is a fragment.
-- **Stamp one watermark at upload time.** Every reader would get an identical copy, so a leak would not say who leaked it. Stamping at request time costs CPU on each request, and the README accepts that cost on purpose. <!-- source: README.md, "Watermarking happens on the way out, not at ingest" -->
+- **Stamp one watermark at upload time.** Every reader would get an identical copy, so a leak would not say who leaked it. Stamping at request time costs processor time (CPU) on each request, and the README accepts that cost on purpose. <!-- source: README.md, "Watermarking happens on the way out, not at ingest" -->
 
 Every one of these trade-offs is revisited in [Chapter 37](../tradeoffs/37-engineering-tradeoffs.md), which lists the enterprise alternative to each choice.
 
@@ -203,7 +204,7 @@ For each of these, say whether it can be enforced by the client, the server, or 
 
 ### Exercise 1.3 ★★ Read the limits
 
-Read the "Limitations" section of `README.md`. Pick two limits and, for each, write one sentence explaining why the design accepts it.
+Read the "Limitations" section of `README.md` at `book-m6-final`. Pick two limits and, for each, write one sentence explaining why the design accepts it.
 
 *Solution:* Appendix C, Exercise 1.3.
 

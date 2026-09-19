@@ -166,8 +166,8 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
-- Chapter 7: SQL and MySQL basics (tables, rows, primary keys)
-- Chapter 13: Your first REST controller
+- Chapter 9: SQL and MySQL (tables, rows, primary keys)
+- Chapter 12: REST controllers and JSON
 
 ## Beginner tier: <the core idea in plain words>
 
@@ -264,6 +264,20 @@ signposted, never hidden:
   in any tier of earlier chapters. A beginner tier may assume only the beginner tiers of
   earlier chapters.
 - Don't label individual paragraphs or callouts with tiers.
+- **Part IV and Part V chapters use the tier headings too** (decision of 2026-09-19). The three
+  `##` tier headings are required in every feature chapter, including milestone chapters
+  (Chapters 25–31) and production chapters (Chapters 32–36). The tier headings are unnumbered;
+  the numbered N.M sections sit beneath them, numbered continuously through the chapter. In a
+  milestone chapter the order is: Learning objectives, Prerequisites, Beginner tier,
+  Intermediate tier, Advanced tier, Architecture blueprint vN, Decisions and challenges, In this
+  project, Try it, Summary, Further reading. Put the milestone's requirements and core new code
+  in the beginner tier, how the parts talk and why this design in the intermediate tier, and
+  security, performance and incidents in the advanced tier. Only the trade-offs chapter (37),
+  part openers and front matter are exempt.
+- **Prerequisite chapter numbers** must match `book/OUTLINE.md` exactly. For orientation: the
+  web and HTTP are Chapter 8, SQL is 9, Docker is 10, Spring Boot is 11, REST is 12, JPA and
+  Flyway is 14, Spring Security is 15 and 16, backend testing is 18, TypeScript is 19, Angular
+  is 21 to 23, and frontend testing is 24.
 
 ## 8. Analogies
 
@@ -539,6 +553,18 @@ The advanced tiers and Part IV's "Decisions and challenges" use real events. Rul
   by personal name or email address. Review-finding IDs from the sources (such as `TM2-5` or
   `PO2-7`) may be quoted in code font, with a plain-words explanation.
 - No blame, no drama. Bugs are normal; the story is how they were found and what was learned.
+- **The reviewers were AI agents.** The Product Owner (PO) and Technical Manager (TM) reviews
+  were carried out by Claude agents, briefed as independent third parties. Never present them
+  as human reviewers, and never invent credentials, job histories or personalities for them.
+  Say once, early in the chapter, that these reviewers were AI review agents; after that "the
+  TM review" and "the PO review" are fine. Implementation and code review also involved an AI
+  coding agent working with the project owner; say so plainly where it matters. Decisions
+  attributed to "the product owner" are the project owner's decisions.
+- **Cite the dossier, not the scratchpad.** History claims cite files in `book/_team/dossier/`
+  (`timeline.md`, `decisions.md`, `bugs-and-findings.md`, `reviews.md`, `versions.md`), a commit
+  hash or a PR number. Never cite the coordinator's scratchpad or temporary folders, agent
+  identifiers, or the raw conversation file, in the book text or in source comments. If the
+  dossier lacks a fact, ask `research` through `requests.md`.
 
 ## 15. Cross-references and links
 

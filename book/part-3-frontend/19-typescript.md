@@ -23,7 +23,7 @@ By the end of this chapter, you will be able to:
 
 ### 19.1 JavaScript and TypeScript: what each is
 
-A **browser** runs one programming language natively: **JavaScript**. Every interactive web page, including this one, ultimately runs JavaScript. JavaScript lets you write `total + 1` without ever saying whether `total` holds a number, some text, or nothing at all, and it finds out only when the line runs, in front of a user.
+A **browser** runs one programming language natively: **JavaScript**. Every interactive web page, including the Secure Document Viewer's, ultimately runs JavaScript. JavaScript lets you write `total + 1` without ever saying whether `total` holds a number, some text, or nothing at all, and it finds out only when the line runs, in front of a user.
 
 **TypeScript** is JavaScript with a layer of labels added, called **types**. A type says what kind of value a name holds: `number`, `string`, or a shape you define. A program called the **compiler** reads your TypeScript before anything runs, checks that every use matches its label, and then removes the labels, producing plain JavaScript for the browser. The browser never sees a type.
 
@@ -105,7 +105,7 @@ export type IdleState =
 
 *Path: `frontend/src/app/core/idle.ts`*
 
-Each alternative carries a `kind` label. Only the `warning` alternative has `secondsLeft`. When code checks `state.kind === 'warning'`, the compiler knows that inside that branch `state.secondsLeft` exists, and outside it, doesn't. This pattern is a **discriminated union**, and it turns "which fields are valid right now?" from a comment into something the compiler enforces. You can see it used in `app.html`: `@if (state.kind === 'warning') { ... {{ formatCountdown(state.secondsLeft) }} ... }`.
+Each alternative carries a `kind` label. Only the `warning` alternative has `secondsLeft`. When code checks `state.kind === 'warning'`, the compiler knows that inside that branch `state.secondsLeft` exists, and outside it, doesn't. This pattern is a **discriminated union**, and it turns "which fields are valid right now?" from a comment into something the compiler enforces. The screen that shows the countdown makes exactly this kind of check on `state.kind` before it reads `state.secondsLeft`. Angular's template syntax, which that screen is written in, is the subject of Chapter 21; for now, only notice the check.
 
 ### 19.3 Functions, arrow functions, modules
 
@@ -130,11 +130,13 @@ export function idleState(nowMs: number, lastActivityMs: number, timeoutSeconds:
 
 *Path: `frontend/src/app/core/idle.ts`*
 
-The function takes three numbers, returns an `IdleState`, and has no side effects: given the same three numbers it always gives the same answer. The compiler checks every `return` against `IdleState`; returning `{ kind: 'warnng' }` would be rejected. Notice `{ kind: 'warning', secondsLeft }`: when a variable has the same name as the property, TypeScript lets you write it once (`secondsLeft` instead of `secondsLeft: secondsLeft`).
+`IDLE_WARNING_SECONDS` is a constant defined a few lines above the function in the same file (`export const IDLE_WARNING_SECONDS = 5 * 60;`, so 300 seconds), left out of this excerpt. The function takes three numbers, returns an `IdleState`, and has no side effects (it changes nothing outside itself and reads nothing but its inputs): given the same three numbers it always gives the same answer. The compiler checks every `return` against `IdleState`; returning `{ kind: 'warnng' }` would be rejected. Notice `{ kind: 'warning', secondsLeft }`: when a variable has the same name as the property, TypeScript lets you write it once (`secondsLeft` instead of `secondsLeft: secondsLeft`).
 
 Small functions are often written as **arrow functions**, `(x) => expression`, which are the same idea as Java lambdas (Chapter 5). `this.tiles().filter((t) => t.status === 'loaded')` passes an arrow function that answers "is this tile loaded?" for each element.
 
 A **module** is a file that lists what it shares with `export` and pulls in what it needs with `import`. That's how `viewer.component.ts` uses code from other files:
+
+**Listing 19.3a — `viewer.component.ts` (book-m6-final, excerpt: two of its import lines, not adjacent in the file)**
 
 ```typescript
 import { API_BASE_URL } from '../../core/config';
@@ -201,6 +203,29 @@ The project turns on a few extra checks in `tsconfig.json` (Chapter 20, Section 
 ### 19.6 Types that mirror the API
 
 The backend (Part II) sends JSON. The frontend describes what it expects with interfaces, one per response shape, kept in `*.models.ts` files. `DocumentDetail` in `document.models.ts`, for example, lists the fields the viewer needs: the page list, the `tileVersion`, and `canManage`.
+
+Here is the backend's side of the same shape, the Java record from Part II:
+
+**Listing 19.3b — `DocumentSummary.java` (book-m6-final)**
+
+```java
+public record DocumentSummary(
+        String documentId,
+        String title,
+        int pageCount,
+        String owner,
+        Visibility visibility,
+        long createdAtEpochSeconds,
+        long updatedAtEpochSeconds,
+        boolean canManage,
+        Integer sharedWithCount
+) {
+}
+```
+
+*Path: `src/main/java/com/example/securedocviewer/document/DocumentSummary.java`*
+
+(The file also has a package line and a documentation comment, omitted here.) Compare it with Listing 19.1 line by line: `String` becomes `string`, `int` and `long` both become `number` (JavaScript has one number type), `boolean` stays, the Java enum `Visibility` becomes a union of its constant names, and `Integer sharedWithCount`, which can be `null` in Java, becomes `number | null`. The names are identical because Jackson, the backend's JSON library, uses the record's field names as JSON keys.
 
 Two rules keep these honest:
 

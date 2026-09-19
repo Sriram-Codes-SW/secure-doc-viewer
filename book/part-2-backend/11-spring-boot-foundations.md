@@ -16,6 +16,7 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
+- Chapter 3: your first Java program (`main`, imports, `final`)
 - Chapter 4: classes, objects, records and interfaces
 - Chapter 6: Maven and the shape of a project
 - Chapter 8: how the web works (HTTP requests and responses)
@@ -59,7 +60,7 @@ Read it from the bottom up.
 - `main` is the method Java runs first (Chapter 3). Its only job is to hand control to `SpringApplication.run`, which starts the framework. From this line on, Spring is in charge.
 - Words that start with `@` are **annotations**: labels attached to a class or method that tell a tool how to treat it. They don't change what the code does by themselves; the framework reads them.
 - `@SpringBootApplication` marks this class as the starting point. It switches on three behaviors: it tells Spring to search this package and every package beneath it (`com.example.securedocviewer...`) for classes to manage, which is called **component scanning**; it allows this class to declare extra configuration; and it turns on **auto-configuration**, which Section 11.5 explains.
-- `@EnableScheduling` turns on the feature that runs methods on a timer. The project uses it for cleanup jobs that later chapters describe; for now, note that one annotation is enough to activate a whole capability.
+- `@EnableScheduling` turns on the feature that runs methods on a timer. The project uses it for cleanup jobs that [Chapter 14](14-jpa-and-flyway.md) describes; for now, note that one annotation is enough to activate a whole capability.
 
 ### 11.3 Beans and dependency injection
 
@@ -76,6 +77,8 @@ Listing 11.2 shows it in the smallest useful example in the repository.
 @RequestMapping("/api/documents")
 public class DocumentController {
 
+    // ... two nested records omitted ...
+
     private final DocumentService documents;
     private final RequestActors actors;
 
@@ -83,13 +86,16 @@ public class DocumentController {
         this.documents = documents;
         this.actors = actors;
     }
+
+    // ... request-handling methods omitted ...
+}
 ```
 
 The constructor lists two parameters. When Spring builds the controller, it looks in the application context for a bean of type `DocumentService` and one of type `RequestActors`, and passes them in. Nothing in the class says where they come from, which is the point: `DocumentController` only says what it needs. The fields are `final`, so once the object exists its dependencies can't change or be missing. This style is called **constructor injection**, and every controller and service in the project uses it.
 
 Dependencies form a chain. `DocumentService` in turn asks for a `DocumentRepository`, an `AppUserRepository`, a `TileGenerationService`, an `AuditLogService` and a `PlatformTransactionManager`. Spring works out the order and builds them from the bottom up. If one can't be found, the program refuses to start and names the missing type, so a wiring mistake shows up at startup and never in front of a user.
 
-**A note on how Spring chooses.** Spring picks a dependency by type, not by name. If two beans of the same type exist, Spring can't choose without more information, and startup fails. `KnownDevices` shows a related detail: it has two constructors (one public for Spring, one package-private for tests that supply a fixed clock), so the public one carries an explicit `@Autowired` label to say "use this one".
+**A note on how Spring chooses.** Spring picks a dependency by type, not by name. If two beans of the same type exist, Spring can't choose without more information, and startup fails. `KnownDevices` shows a related detail: it has two constructors (one public for Spring, and one visible only inside its own package, which the unit tests use to supply a fixed clock), so the public one carries an explicit `@Autowired` label to say "use this one".
 
 ## Intermediate tier: Configuring the program from outside
 
