@@ -1,5 +1,9 @@
 # Weekly dependency update PRs, grouped per ecosystem so they arrive as a few
 # reviewable PRs rather than dozens. CI runs the full suite on each.
+#
+# Only stable, long-term-support lines are proposed automatically: non-LTS
+# runtime/database releases are ignored, and moving to a new LTS major of the
+# database is a deliberate, tested step rather than an automatic bump.
 version: 2
 updates:
   - package-ecosystem: maven
@@ -20,16 +24,35 @@ updates:
       npm-other:
         patterns: ['*']
         exclude-patterns: ['@angular/*', '@angular-devkit/*']
+        # Majors arrive as separate PRs, so one breaking upgrade can't hold back the rest.
+        update-types: ['minor', 'patch']
+    ignore:
+      # Angular pins the TypeScript range it supports; TypeScript moves with Angular upgrades.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
 
   - package-ecosystem: docker
     directories: [/, /frontend]
     schedule:
       interval: weekly
+    ignore:
+      # Odd-numbered Node releases never become LTS (24 and 26 are LTS lines).
+      - dependency-name: node
+        versions: ['25.x', '27.x', '29.x']
+      # Java LTS releases are 25, then 29: skip the non-LTS releases in between.
+      - dependency-name: eclipse-temurin
+        versions: ['26.x', '27.x', '28.x']
 
   - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Stay on the MySQL 8.4 LTS line (patches only). Innovation releases (9.x
+      # below 9.7, 26.x...) are not LTS; moving to the next LTS (9.7) is a
+      # deliberate upgrade with a migration test, not an automatic bump.
+      - dependency-name: mysql
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
