@@ -25,3 +25,6 @@ Thumbs.db
 
 # Angular CLI cache when run from the repo root
 .angular/
+
+# Generated book outputs
+book/build/out/
