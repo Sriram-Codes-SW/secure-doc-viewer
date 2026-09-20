@@ -277,7 +277,7 @@ An `Actor` says who did something and from where. "Who" is the username and a se
 
 **Table 4.1 — Class or record**
 
-| | Class | Record |
+| Aspect | Class | Record |
 |---|---|---|
 | Fields | You declare them, usually `private` | Listed in the header, always `private final` |
 | Changes after creation | Allowed, if you write setters | Never |

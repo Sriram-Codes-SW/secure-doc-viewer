@@ -23,7 +23,7 @@ tested all of it, including the concurrent cases that only fail one run in fifty
 
 **Part III built the browser side.** TypeScript gave you a type system for the messages between the
 two halves. Angular gave you components, services, routes, and guards. You saw that a guard is a
-courtesy to the user and never a security control, that the interceptor is where a `401` from any call
+courtesy to the user and never a security control, that the interceptor is where a `401` from an ordinary API call
 is handled in one place, and that end-to-end tests with an accessibility scanner catch what
 unit tests can't.
 

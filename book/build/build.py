@@ -213,7 +213,12 @@ def add_scope(html):
     """Header cells in a table head get scope="col" (screen readers use it to announce columns)."""
     def head(m):
         return re.sub(r'<th(?=[\s>])(?![^>]*\bscope=)', '<th scope="col"', m.group(0))
-    return re.sub(r'<thead.*?</thead>', head, html, flags=re.S)
+    html = re.sub(r'<thead.*?</thead>', head, html, flags=re.S)
+    # Code blocks that scroll sideways must be reachable by keyboard (WCAG 2.1.1): make each one focusable.
+    html = re.sub(r'<pre(?=[\s>])(?![^>]*\btabindex=)', '<pre tabindex="0"', html)
+    # An <img> already has the image role; the extra role="img" Pandoc adds is redundant.
+    html = re.sub(r'(<img\b[^>]*?) role="img"', r'\1', html)
+    return html
 
 
 mark('4 docker image check and metadata')

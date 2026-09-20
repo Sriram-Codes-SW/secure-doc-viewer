@@ -300,7 +300,7 @@ flowchart TB
 
 Only the first run pays for the download. Every later run, on your laptop, in the Docker build or in CI, ends at the same last box, which is the point of the wrapper.
 
-The wrapper arrived late. In the first review of the project, the threat-modeling reviewer (an AI review agent, like the other reviewers you will meet) listed the missing Dockerfile, CI and Maven wrapper as one finding. The wrapper was added in the commit that moved the project to Java 25, the one behind milestone `book-m5-platform`.
+The wrapper arrived late. In the first review of the project, the AI technical-manager reviewer (an AI review agent, like the other reviewer you will meet) listed the missing Dockerfile, CI and Maven wrapper as one finding. The wrapper was added in the commit that moved the project to Java 25, the one behind milestone `book-m5-platform`.
 
 This has a practical consequence for you. At the tags `book-m0-mvp` to `book-m4-reading` there is no `mvnw`, and the project builds with Spring Boot 3.3.4 on Java 21. To run one of those milestones you need a JDK 21 and a Maven that you install yourself (Maven 3.9 is the line the wrapper later pinned), and you start the app with `mvn` instead of `./mvnw`. Table IV.3 in [Part IV](../part-4-building-the-app/00-part-introduction.md) lists exactly what each group of tags needs. Reading the older code with `git show <tag>:<path>` (Chapter 7) needs none of that. <!-- source: dossier reviews.md TM-14; timeline.md commit 2d10e07; git log for mvnw; Table IV.3 in Part IV -->
 

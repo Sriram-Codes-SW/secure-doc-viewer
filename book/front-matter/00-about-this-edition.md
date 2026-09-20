@@ -32,13 +32,25 @@ more.
 ## Accessibility
 
 The book is published as a PDF, an EPUB, and a single web page. All three contain real text, and every
-diagram has alternative text and a text description in the body. The PDF is a tagged PDF, so a
-reading order can be followed, and it passes the automated PDF/UA-2 check of the veraPDF validator.
-The EPUB passes the EPUB validator epubcheck. In the EPUB and web editions the difficulty stars on
-the exercises are labeled in words; in the PDF they are shown only as symbols, and the meaning of
-one, two, and three stars is explained in How to use this book. These editions were checked with
-automated tools (veraPDF and epubcheck) and by manual sampling, and have not been tested with screen
-readers or other assistive technology. If you find a barrier, report it as you would an error.
+diagram has alternative text and a text description in the body. In the EPUB and web editions the
+difficulty stars on the exercises are labeled in words, and code listings can be reached and scrolled
+with the keyboard. In the PDF the stars are shown only as symbols, and the meaning of one, two, and
+three stars is explained in How to use this book.
+
+What was checked, on September 20, 2026: the PDF is a tagged PDF and passes the PDF/UA-2 check of
+veraPDF 1.30.2. The EPUB passes epubcheck, and Ace by DAISY 1.4.6 reports no failures for it. The web
+page passes the Nu HTML Checker 26.9.16 without errors. axe-core 4.13.0, pa11y 10.0.0, and Lighthouse
+13.5.0 found no missing alternative text, heading, language, table, or color-contrast failures on the
+pages they were run on, which were chapters of the EPUB and a sample of the web page, not the whole
+book. The PDF does not pass PDF/UA-1.
+
+What was not checked: nobody has tested these editions with a screen reader or other assistive
+technology, the PDF has not been checked with PAC or with the accessibility checker in Acrobat, and no
+third-party audit has been made. This book does not claim conformance with WCAG, PDF/UA, or EPUB
+Accessibility.
+
+If you find a barrier, please report it as you would an error (see Corrections and updates below), and
+say which edition and which page you were using.
 
 ## Corrections and updates
 

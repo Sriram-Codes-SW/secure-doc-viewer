@@ -81,8 +81,8 @@ Every row is a claim you can test.
 ### 32.4 Who reviewed, and how
 
 <!-- source: dossier/DOSSIER.md "Cautions for writers"; dossier/reviews.md -->
-The project used two review roles, and the honest description matters. Both were AI review agents, briefed to act as independent third parties: the AI product-owner reviewer (the "PO reviewer" from here on) and the AI technical-manager reviewer (the "TM reviewer"). They read the code and wrote numbered findings,
-and the project owner, a human, made the product calls. They were not human colleagues. What they
+The project used two review roles, and the honest description matters. Both were AI review agents, briefed to act as independent third parties: the AI product-owner reviewer (the "PO reviewer" from here on) and the AI technical-manager reviewer (the "TM reviewer"). They read the code and wrote numbered findings.
+The project owner, a human, made the product calls. The reviewers were not human colleagues. What they
 found was real, and the fixes were verified against the code, but treat them as a review
 technique, not as an authority.
 

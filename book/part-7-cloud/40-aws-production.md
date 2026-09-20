@@ -482,7 +482,7 @@ Two specifics need code. The two purges have property-driven schedules, so a ser
 - **Timeouts that don't fit together.** Symptoms: long uploads fail at about a minute (ALB idle timeout left at its default), or intermittent `502` responses on idle connections (nginx's `keepalive_timeout` not above the ALB's). Fix: Table 40.3.
 - **A health path that includes the database.** Symptom: healthy tasks restarted during a failover. Fix: use the readiness probe.
 - **Assuming lifecycle rules delete superseded `v{n}` prefixes.** They expire object versions, not folders you named. Fix: keep the app's delete and an orphan sweep.
-- **Keeping the in-memory throttles, or putting a CDN in front of tiles.** Symptoms: limits that multiply with the number of tasks; revoked shares that stop working on open pages, or watermarks that vanish. Fix: shared, atomic counters, and tiles that stay app-served and are never cached at a shared edge (Chapter 41, Section 41.8).
+- **Keeping the in-memory throttles, or putting a CDN in front of tiles.** Symptoms: limits that multiply with the number of tasks; revocations that no longer take effect on pages already open, or watermarks that vanish. Fix: shared, atomic counters, and tiles that stay app-served and are never cached at a shared edge (Chapter 41, Section 41.8).
 
 ## In this project
 

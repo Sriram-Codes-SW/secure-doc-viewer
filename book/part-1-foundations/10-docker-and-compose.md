@@ -390,7 +390,7 @@ Collect the security choices scattered through this chapter's listings:
 - **Health checks.** They let Compose start services in a safe order and let operators see real status.
 - **Scanned images.** The project's CI builds the images and scans them for known vulnerabilities, failing on any high, or critical issue that has a fix (Chapter 36).
 
-These were not all there at first. The threat-modeling review, an AI review agent, listed "no Dockerfile, no CI, no Maven wrapper" as a finding. The Docker stack arrived in the fifth phase. It was then tightened over several review rounds, and non-root nginx and digest pinning came in the second round. <!-- source: dossier reviews.md TM-14; bugs-and-findings.md (round 2, commit f682716); ci.yml at book-m6-final -->
+These were not all there at first. The review by the AI technical-manager reviewer listed "no Dockerfile, no CI, no Maven wrapper" as a finding. The Docker stack arrived in the fifth phase. It was then tightened over several review rounds, and non-root nginx and digest pinning came in the second round. <!-- source: dossier reviews.md TM-14; bugs-and-findings.md (round 2, commit f682716); ci.yml at book-m6-final -->
 
 A related decision concerns upgrades. When the bot Dependabot proposed moving MySQL from 8.4 to a release numbered 26.7, the project declined. It told the bot to ignore major-version bumps for the database. 8.4 is a long-term-support release, and 26.7 was an "innovation" release. Moving to the next long-term-support version would be a deliberate upgrade with a migration test. <!-- source: dossier decisions.md, Dependabot rules (PR #10) -->
 
