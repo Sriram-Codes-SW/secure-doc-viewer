@@ -1,6 +1,6 @@
 # Index terms
 
-Index-ready vocabulary: bolded defined terms in the chapters that exist. Generated and filtered; regenerate as chapters change.
+Index-ready vocabulary: bolded defined terms in the chapters. Generated and filtered; regenerate as chapters change.
 
 ## 01-the-big-picture
 
@@ -70,6 +70,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - doc comment
 - encoded
 - exception
+- hashing
 - if statement
 - JDK
 - JRE
@@ -123,6 +124,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 
 ## 05-collections-and-exceptions
 
+- atomic
 - boxing
 - bytes
 - catches
@@ -132,10 +134,8 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - deque
 - diamond
 - entries
-- exception
 - finally
 - for-each loop
-- generic
 - immutable
 - Instant
 - keys
@@ -147,6 +147,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - set
 - stream
 - thread
+- thread-safe
 - Try-with-resources
 - unchecked
 - UTC
@@ -162,7 +163,6 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - coordinates
 - dependency
 - executable JAR
-- framework
 - Gradle
 - JAR
 - Maven
@@ -200,12 +200,10 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - staging area
 - tag
 - Untracked
-- Version control
 - working folder
 
 ## 08-how-the-web-works
 
-- authentication
 - body
 - certificate
 - Content-Security-Policy
@@ -220,7 +218,6 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - idempotent
 - integrity
 - JSON
-- method
 - multipart
 - origin
 - parts
@@ -235,7 +232,6 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - REST
 - safe
 - same-origin policy
-- session
 - status code
 - status line
 - TLS
@@ -262,9 +258,9 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - rows
 - schema
 - SQL
+- SQL injection
 - table
 - transaction
-- type
 
 ## 10-docker-and-compose
 
@@ -275,6 +271,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - Docker
 - Docker Compose
 - Dockerfile
+- host
 - image
 - install MySQL directly
 - layers
@@ -282,8 +279,8 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - network
 - profiles
 - registry
+- reverse proxy
 - service name
-- tag
 - virtual machine
 - volume
 
@@ -294,27 +291,21 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - auto-configuration
 - bean
 - component scanning
-- constructor injection
-- dependency injection
-- framework
+- controller
 - inversion of control
 - library
 - log
 - profile
 - property placeholder
+- service
+- SLF4J
 - Spring Boot
-- starter
 
 ## 12-rest-controllers-and-json
 
 - deserialization
 - Jackson
-- JSON array
-- multipart
-- query string
-- record
-- resource
-- REST
+- multipart form data
 - serialization
 
 ## 13-validation-and-errors
@@ -322,95 +313,130 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - Bean Validation
 - decompression bomb
 - exception handlers
+- helps the caller
 - log
-- stack trace
+- protects the system
+- relaxed binding
 - UUID
 
 ## 14-jpa-and-flyway
 
 - commits
-- cron
+- composite primary key
+- connection
+- cron expression
+- dirty checking
 - entity
 - fixed delay
-- Flyway
 - Hibernate
 - JPA
+- Lazy loading
+- N+1 problem
 - optimistic
 - ORM
 - pessimistic
+- Propagation
 - query method
-- repository
 - rolls back
 - row lock
 - Spring Data JPA
-- transaction
+- worked example
 
 ## 15-spring-security-authentication
 
-- Authentication
-- Authorization
+- audit event
+- authority
 - BCrypt
-- cookie
+- bytes
+- delegating
+- handle
 - hash
+- HMAC
+- JWT
+- no self-registration
 - role
 - salt
-- servlet filter
-- session
+- servlet
+- servlet filters
+- session fixation
 - Spring Security
-- token
+- user enumeration
 
 ## 16-spring-security-defenses
 
-- atomic counting
+- absolute lifetime
+- authorization rules
 - clickjacking
-- Content Security Policy
+- Content Security Policy (CSP)
 - cross-site request forgery (CSRF)
 - double-submit cookie
-- session fixation
+- handle
+- idle timeout
+- race condition
+- recognised device
+- reverse proxy
+- rolling
+- SPA
+- Throttling
 
 ## 17-files-images-pdfs-signatures
 
-- HMAC
+- 216
+- 218
+- base64url
+- bound
+- canonical string
+- CPU
+- dots per inch (DPI)
+- heap
 - pixels
 - PNG
 - rasterizing
 - semaphore
+- session binding
 - signed token
-- watermark
+- staging
+- threads
+- worked example
 
 ## 18-testing-the-backend
 
 - Assertions
+- drift
 - error
 - failure
 - flaky test
 - H2
 - integration test
 - JUnit 5
-- lambda
 - latch
 - mock
 - Mockito
 - MockMvc
 - not
+- Poll
 - round trip
 - skipped
 - system test
-- test
 - Testcontainers
 - unit test
 
 ## 19-typescript
 
+- array
 - arrow functions
 - browser
-- compiler
+- conditional expression
 - discriminated union
-- interface
+- infers
 - JavaScript
 - module
+- Nullish coalescing, `??`,
 - Observable
+- Optional chaining, `?.`,
 - Promise
+- template literals
+- Type assertions,
 - types
 - TypeScript
 - union type
@@ -421,15 +447,11 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - budgets
 - bundler
 - development server
-- digest
 - Editing `package-lock.json` by hand,
-- hash
 - LTS
 - Node.js
 - npm
-- origin
 - packages
-- proxy
 - registry
 - semantic versioning
 
@@ -440,103 +462,173 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - class
 - computed
 - Contrast
+- creates
 - CSS custom properties
+- declaration
 - decorator
+- destroys
 - event binding
+- Flexbox
 - inputs
 - interpolation
 - lifecycle hooks
 - outputs
 - pipe
 - property binding
+- runs
+- selector
 - signal
 - stylesheet
 - template
+- tiles
 
 ## 22-http-client-and-services
 
 - 401
 - 403
-- dependency injection
+- cancels
+- Content-Security-Policy
 - interceptor
-- service
+- Observable
+- operators
 
 ## 23-routing-guards-forms
 
 - deep link
+- defense in depth
 - form
 - guards
 - lazy loading
 - open redirect
+- query parameter
+- Reactive
 - route guard
 - route parameter
 - router
 - single-page application
+- Template-driven
+- trust boundary
+- URL tree
 - UX only
 
 ## 24-testing-the-frontend
 
 - axe-core
 - Continuous integration (CI)
+- end-to-end test
+- fixture
 - jsdom
 - Playwright
+- regression test
+- spec
+- stub
+- test isolation
 - TestBed
+- Testing
 - unit test
 - Vitest
 
 ## 25-m0-the-tiled-viewer
 
+- 35 tiles per page
+- 401 (Unauthorized)
 - Base64url
+- constant-time
 - Decode
-- HMAC
+- deterrent
 - manifest
+- one after another
+- pixels
+- Rasterizing
 - Recompute
+- tile
+- utility class
+- UUID
 
 ## 26-m1-accounts
 
 - account
 - admin handle
-- BCrypt
 - built-in accounts
-- cookie
-- CSRF
+- context string
+- CSRF token
 - deny by default
 - filter chain
 - Flyway migration
 - httpOnly
-- OpenID Connect (OIDC)
+- normalized
 - password hash
-- role
+- rotating
 - SameSite=Strict
-- session
+- session fixation
+- sliding
+- sliding window
 - tile binding
+- volume
 
 ## 27-m2-documents
 
-- 404, not 403
-- foreign key
+- 404 "not found"
+- admin
+- and
+- CSV injection
+- enum
+- exponential backoff
+- indexes
 - join table
+- JPA
+- JPQL
+- Manage
+- model
 - owner
-- transaction
-- visibility
+- parameters
 
 ## 28-m3-hardening
 
-- Content-Security-Policy
-- decompression bomb
-- Permissions-Policy
-- Referrer-Policy: no-referrer
+- Actuator
+- crop box
+- defense in depth
+- dots per inch (DPI)
+- headers
+- magic number
+- points
+- safety net
+- staging directory
+- Untrusted input
 
 ## 29-m4-reading
 
+- admin handle
+- clamps
 - Crockford Base32
-- discriminated union
-- six-character trace code
+- decorator
+- measurement
+- normalized
+- query parameters
+- sliding
+- trace code
 - trace filter
 
 ## 30-m5-platform
 
-- unrecognised devices
+- Caddy
+- denial of service
+- fair
+- filter
+- health check
+- HSTS
+- layers
+- major
+- Maven wrapper
+- nginx
+- permit
+- proxies
+- recognised
+- replaces
+- reverse proxy
+- semaphore
+- system user
+- upsert
 
 ## 31-m6-final
 
@@ -545,56 +637,53 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - Continuous integration (CI)
 - CVE
 - Dependabot
-- dependency
 - flaky test
 - ignore rule
-- LTS
 - peer dependency
-- race condition
 - render slots
 - semantic versioning
 - ultrareview
 
 ## 32-security-review
 
-- Caddy
-- CSRF
 - Generic `500` responses
-- httpOnly
 - Identical answers
-- nginx
 - No MFA
-- reverse proxy
 - Right-click blocking
 - threat model
 
 ## 33-deployment-and-tls
 
-- Caddy
-- nginx
-- reverse proxy
 - Serve over HTTPS
+- single-page-app fallback
+- Stage one (`AS build`)
+- Stage two
 
 ## 34-backups-and-operations
 
-- Storage janitor
+- Line 1
+- Line 2
+- Line 3
+- Line 4
 
 ## 35-metrics-and-monitoring
 
 - audit log
-- defense in depth
-- health check
 - illustrative
+- Metric tag
 - metrics
 - Operations
 - pulling
 - rate
 - ratio
-- Tag
 
 ## 36-supply-chain-and-ci
 
+- action
+- batch mode
+- image tag
 - jobs
+- least privilege
 - OSV
 - steps
 - Supply-chain risk
@@ -606,4 +695,57 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist. Generat
 - Cons
 - Pros
 - When you'd switch
+
+## 38-design-patterns
+
+- adapter
+- builder
+- bulkhead
+- chain of responsibility
+- compensate
+- composite
+- data transfer object
+- design pattern
+- design patterns
+- facade
+- factory method
+- fail fast
+- fluent interface
+- guard clause
+- observer
+- pattern-itis
+- rate limiter
+- reserve
+- service layer
+- sliding window log
+- state machine
+- strategy
+- template method
+- token bucket
+- value object
+
+## 39-architectural-patterns
+
+- allowlist of known devices
+- approximates
+- architectural pattern
+- ate of requests, the 
+- capability URL
+- copy-on-write
+- event log
+- event sourcing
+- gateway
+- layers
+- microservices
+- modular monolith
+- rate limiting
+- RED
+- REST API
+- reverse proxy
+- row lock
+- rrors, and the 
+- session-based
+- single-page application
+- token-based
+- twelve-factor app
 

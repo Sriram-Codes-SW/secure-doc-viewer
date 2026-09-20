@@ -61,6 +61,9 @@ erDiagram
 
 *Figure 9.1 — How four tables relate (crow's-foot notation: one on the left, many on the right)*
 
+<!-- source: V1__create_app_user.sql and V2__documents_shares_audit.sql at book-m2-documents (unchanged at book-m6-final): foreign keys fk_document_owner, fk_document_page_document, fk_document_share_document, fk_document_share_user -->
+
+
 Read `app_user ||--o{ document` as "one user owns zero or more documents". The document-to-share and user-to-share links together make the many-to-many relationship that Section 9.6 explains.
 
 **Analogy.** A table is a spreadsheet tab and a foreign key is a cell that says "see row 7 of the Users tab". The analogy breaks down because a database enforces the link: it refuses to store an `owner_id` that points to nobody. A spreadsheet would let the bad reference sit there until something broke.
@@ -114,7 +117,7 @@ CREATE TABLE app_user (
 Line by line:
 
 - `--` starts a comment.
-- `CREATE TABLE app_user ( ... );` defines the table. Each line inside is a column: a name, a **type**, and optional rules.
+- `CREATE TABLE app_user ( ... );` defines the table. Each line inside is a column: a name, a type, and optional rules.
 - `BIGINT` is a large whole number; `VARCHAR(64)` is text up to 64 characters; `BOOLEAN` is true or false; `DATETIME(6)` is a date and time with microsecond precision.
 - `NOT NULL` means the column cannot be empty. SQL's `NULL` means "unknown or missing", like Chapter 5's `null`.
 - `AUTO_INCREMENT` makes the database assign the next number to `id`, so each new account gets a fresh key.

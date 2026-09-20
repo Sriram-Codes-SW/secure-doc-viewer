@@ -82,7 +82,7 @@ The words `ArrayList`, `HashSet` and `HashMap` name particular implementations. 
 
 ### 5.2 Generics in plain words
 
-What are the angle brackets in `ArrayList<String>`? They are a **generic** parameter: they say what type of thing the collection holds. A `List<String>` holds only text, and the compiler refuses to let you add a number. Without generics you would find out at runtime, with a crash, when the wrong kind of value came out of the list.
+What are the angle brackets in `ArrayList<String>`? They are a generic parameter: they say what type of thing the collection holds. A `List<String>` holds only text, and the compiler refuses to let you add a number. Without generics you would find out at runtime, with a crash, when the wrong kind of value came out of the list.
 
 Read a generic type from the outside in. The throttle's field is `Map<String, Deque<Instant>>`:
 
@@ -261,7 +261,7 @@ public class Opt {
 
 ### 5.6 Exceptions: throwing, catching, custom types
 
-An **exception** is an object that represents a failure. When code throws one, normal execution stops and the exception travels up the chain of callers (Chapter 3's stack trace) until something **catches** it. If nothing does, the program or the request ends with the error.
+An exception is an object that represents a failure. When code throws one, normal execution stops and the exception travels up the chain of callers (Chapter 3's stack trace) until something **catches** it. If nothing does, the program or the request ends with the error.
 
 **Example 5.5 — Catching**
 

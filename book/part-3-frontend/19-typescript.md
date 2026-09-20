@@ -28,7 +28,7 @@ By the end of this chapter, you will be able to:
 
 A **browser** runs one programming language natively: **JavaScript**. Every interactive web page, including the Secure Document Viewer's, ultimately runs JavaScript. JavaScript lets you write `total + 1` without ever saying whether `total` holds a number, some text, or nothing at all, and it finds out only when the line runs, in front of a user.
 
-**TypeScript** is JavaScript with a layer of labels added, called **types**. A type says what kind of value a name holds: `number`, `string`, or a shape you define. A program called the **compiler** reads your TypeScript before anything runs, checks that every use matches its label, and then removes the labels, producing plain JavaScript for the browser. The browser never sees a type.
+**TypeScript** is JavaScript with a layer of labels added, called **types**. A type says what kind of value a name holds: `number`, `string`, or a shape you define. A program called the compiler reads your TypeScript before anything runs, checks that every use matches its label, and then removes the labels, producing plain JavaScript for the browser. The browser never sees a type.
 
 Think of a form at a doctor's office with boxes marked "date of birth" and "phone number". The boxes don't make you honest, but the clerk can spot at once that you wrote a phone number in the date box. TypeScript is the clerk, and the compiler runs the check at your desk, before the form is sent.
 
@@ -83,7 +83,9 @@ Line by line: the first three lines declare a text, a number and a list, with th
 
 ### 19.3 Types, interfaces, unions
 
-An **interface** names a shape: which properties an object has and what type each one is. It is the closest thing to a Java record (Chapter 4), except that it exists only for the compiler.
+An interface names a shape: which properties an object has and what type each one is. It is the closest thing to a Java record (Chapter 4), except that it exists only for the compiler.
+
+*Pattern note: The idle-state union is a small state machine (Chapter 38, Section 38.8).*
 
 **Listing 19.1 — `document.models.ts` (book-m6-final, excerpt: `PageInfo` and `DocumentSummary`)**
 

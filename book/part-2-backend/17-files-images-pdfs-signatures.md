@@ -183,7 +183,7 @@ storage/
 
 ### 17.4 Drawing text on an image (watermarks)
 
-A **watermark** is text drawn into the picture. Here it shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log, so a leaked screenshot points back to a sign-in (a comment in `application.yml` says so). Its look is configurable: `watermark-opacity: 0.2` and `watermark-spacing: 1.5`, the gap between copies as a multiple of the text height. `WatermarkService` does the drawing, and `TileController` applies it to each tile at request time (Chapter 12). The class comment gives the reason for stamping on the way out rather than during upload: "one stored tile serves every viewer, and every response is still individually traceable back to who requested it and when."
+A watermark is text drawn into the picture. Here it shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log, so a leaked screenshot points back to a sign-in (a comment in `application.yml` says so). Its look is configurable: `watermark-opacity: 0.2` and `watermark-spacing: 1.5`, the gap between copies as a multiple of the text height. `WatermarkService` does the drawing, and `TileController` applies it to each tile at request time (Chapter 12). The class comment gives the reason for stamping on the way out rather than during upload: "one stored tile serves every viewer, and every response is still individually traceable back to who requested it and when."
 
 **Listing 17.4 — `WatermarkService.applyWatermark` (`book-m6-final`, simplified: the long explanatory comments, the tile-sizing lines and the closing lines are omitted)**
 
@@ -232,7 +232,7 @@ The browser asks for tiles by URL, and anyone could type a different tile or doc
 
 **Where the analogy breaks down:** a wristband works for anyone wearing it, but a tile URL is also bound to your session: pasted into another browser, it's refused. And a wristband lasts all night, while a tile URL expires after two minutes.
 
-Now the precise version. A **hash** (Chapter 15) is a fixed-length fingerprint of some data. An **HMAC** (hash-based message authentication code) is a hash computed from a message *and a secret key*, here with the algorithm HmacSHA256. Without the key, nobody can produce the right fingerprint for a message, and change a single character of the message and the fingerprint changes completely. The project's **signed token** is the message plus its fingerprint. What is the message? `SignedTilePayload` says.
+Now the precise version. A hash (Chapter 15) is a fixed-length fingerprint of some data. An HMAC (hash-based message authentication code) is a hash computed from a message *and a secret key*, here with the algorithm HmacSHA256. Without the key, nobody can produce the right fingerprint for a message, and change a single character of the message and the fingerprint changes completely. The project's **signed token** is the message plus its fingerprint. What is the message? `SignedTilePayload` says.
 
 **Listing 17.5 — `SignedTilePayload.java` (`book-m6-final`, simplified: the comments and imports are omitted)**
 
@@ -345,6 +345,8 @@ The server holds no list of issued tokens. Everything it needs to check a token 
 
 Watermarking and encoding a tile uses the **CPU**, the processor that does the computing. Rendering a PDF uses a lot more, plus memory. A server serves many users at once, using **threads**: a thread is one line of work a program runs alongside others. If everyone's request needs a heavy step and there's no limit, a crowd of readers, or one hostile client, can make the machine slow for everyone. The remedy is to **bound** the work: allow so many at once, and refuse or delay the rest.
 
+*Pattern note: A limit that keeps one part from exhausting everything else is the bulkhead pattern, and a render's lifecycle is a small state machine (Chapter 38, Sections 38.9 and 38.8).*
+
 `TileWorkLimiter` bounds tile work across *all* users. The per-user rate limit (`TileRateLimiter`, Chapter 26) bounds each reader; this bounds the server. It uses a **semaphore**, a counter of permits: a task must take a permit to run and returns it when done. Picture a car park with a fixed number of spaces and a barrier. A car enters only if a space is free; otherwise it waits a moment and is turned away.
 
 **Listing 17.7 — `TileWorkLimiter.run` (`book-m6-final`, class comment and imports omitted)**
@@ -374,6 +376,8 @@ The history explains the design. The first version had no time limit: a patholog
 ### 17.7 Files on disk safely: staging, atomic move, cleanup
 
 A database transaction can undo itself, but files can't join it. Uploading a document changes both, so the order of the steps decides what a crash leaves behind. The rule the project follows is: *do the risky work in a place nobody looks, then make it visible in one step, and make sure every failure path removes the mess.* Listing 17.8 is the upload method, and its comments tell the story.
+
+*Pattern note: Building in staging and switching in one step is the atomic switch idea (Chapter 39, Section 39.11).*
 
 **Listing 17.8 — `DocumentService.upload` (`book-m6-final`)**
 
@@ -433,9 +437,9 @@ public void commit(RenderedDocument rendered, String documentId, int version) th
 
 *Path: `src/main/java/com/example/securedocviewer/service/TileGenerationService.java`*
 
-The method refuses to write into a folder that already exists, so a new render can never mix with an old one. And `moveDirectory` renames the whole staging folder to its final name. A rename within one file system is **atomic**: it either happens completely or not at all, so a reader never sees a folder that is half moved. `FileOperations` uses the operating system's atomic rename (`StandardCopyOption.ATOMIC_MOVE`), and retries it briefly if the file system reports a lock.
+The method refuses to write into a folder that already exists, so a new render can never mix with an old one. And `moveDirectory` renames the whole staging folder to its final name. A rename within one file system is atomic: it either happens completely or not at all, so a reader never sees a folder that is half moved. `FileOperations` uses the operating system's atomic rename (`StandardCopyOption.ATOMIC_MOVE`), and retries it briefly if the file system reports a lock.
 
-**A real incident: locked folders on Windows.** The project was first built in a folder synchronized by OneDrive. Sync clients and antivirus scanners briefly hold files that were just written, so renames and deletes of tile folders failed at random with "access denied". *The fix:* `FileOperations` retries each move or delete for about two seconds with growing pauses, falls back to copy-and-delete if a folder stays locked, and the janitor skips a locked folder and tries again next time. The root fix was moving the project out of the synced folder, and `application.yml` now carries a warning: "Keep it out of synced folders (OneDrive, Dropbox)". The developer also noticed a security angle: the sync client was uploading every rendered tile to a cloud service, which defeats the purpose of never handing out the document. <!-- source: dossier bugs-and-findings C4; commit ba00693 --> The lesson: **file operations fail for reasons outside your program; retry the transient ones and clean up the rest.**
+**A real incident: locked folders on Windows.** The project was first built in a folder synchronized by OneDrive. Sync clients and antivirus scanners briefly hold files that were just written, so renames and deletes of tile folders failed at random with "access denied". *The fix:* `FileOperations` retries each move or delete up to eight times, with pauses that grow from 50 to 800 milliseconds (a little under four seconds in all; the class comment says "about two seconds", but its constants add up to more), falls back to copy-and-delete if a folder stays locked, and the janitor skips a locked folder and tries again next time. The root fix was moving the project out of the synced folder, and `application.yml` now carries a warning: "Keep it out of synced folders (OneDrive, Dropbox)". The developer also noticed a security angle: the sync client was uploading every rendered tile to a cloud service, which defeats the purpose of never handing out the document. <!-- source: dossier bugs-and-findings C4; commit ba00693 --> The lesson: **file operations fail for reasons outside your program; retry the transient ones and clean up the rest.**
 
 **Versions make replacement safe.** Replacing a PDF doesn't overwrite tiles. It renders into a new version directory (`v2`), and only when that is complete does the database row switch its `tile_version` to 2, in one transaction under a row lock (Chapter 14). The old directory is deleted *afterward*. Readers mid-page still have tokens naming version 1, and they get `410 Gone` on their next tile and reload cleanly, instead of receiving a mix of old and new pages. <!-- source: dossier decisions D8; commit cd0f5c2 --> Two later findings tightened this. Tokens were found to *not* yet sign the version at first, so an old link silently served the new render; now the version is one of the signed fields (Table 17.3). <!-- source: dossier bugs-and-findings G8; commit f682716 --> And a leftover `v2` folder from a failed database commit once made every later replacement fail with a `500` until the janitor removed it; now a leftover target version is cleared under the row lock before the new render is committed. <!-- source: dossier bugs-and-findings F2 -->
 

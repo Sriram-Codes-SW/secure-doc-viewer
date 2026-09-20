@@ -54,6 +54,8 @@ it. They are told as stories: the problem, how it was found, the fix and the les
   HTTPS, backups, metrics and supply-chain hygiene.
 - **The Engineering Trade-offs** weighs every major decision against the alternatives, including
   what an enterprise would do differently.
+- **Part VI, Patterns,** closes the book by naming the design and architectural patterns the app
+  already uses, so you leave with a vocabulary for your next project.
 - The **appendices** hold the glossary, the architecture blueprints side by side, solutions to the
   exercises, command cheat sheets and troubleshooting.
 

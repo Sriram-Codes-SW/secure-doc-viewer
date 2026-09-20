@@ -58,7 +58,10 @@ flowchart LR
 
 *Figure 10.1 — An image, its container, its volume and its published port*
 
-Docker fetches images from a **registry**, a public store; Docker Hub is the default. Images have a **tag** after the colon (`mysql:8.4`), the same idea as Chapter 7's Git tags but for images. An image is built in **layers**, each the result of one step; Docker stores each layer once and reuses it, which is why pulling a second image that shares layers is fast.
+<!-- source: docker-compose.yml, service mysql (image, container_name, volumes, ports) at book-m6-final -->
+
+
+Docker fetches images from a **registry**, a public store; Docker Hub is the default. Images have a tag after the colon (`mysql:8.4`), the same idea as Chapter 7's Git tags but for images. An image is built in **layers**, each the result of one step; Docker stores each layer once and reuses it, which is why pulling a second image that shares layers is fast.
 
 ### 10.3 Your first containers
 

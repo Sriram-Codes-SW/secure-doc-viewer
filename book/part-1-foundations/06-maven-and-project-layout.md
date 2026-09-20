@@ -107,7 +107,7 @@ Every Maven project or library is identified by three values, its **coordinates*
 
 The `<parent>` block says "start from the settings of `spring-boot-starter-parent`, version 4.1.1". A **parent** POM supplies sensible defaults, and one of them matters a great deal: a tested list of matching library versions. That is why most dependencies later in the file have no version number. The parent chooses one that is known to work with the others. The empty `<relativePath/>` tag tells Maven to fetch the parent from the internet rather than look for it in a neighboring folder.
 
-Spring Boot is the **framework** Part II teaches: a large library that supplies the structure of a web application, so you write only the parts specific to yours. Here you only need to know that it is also the source of the version list.
+Spring Boot is the framework Part II teaches: a large library that supplies the structure of a web application, so you write only the parts specific to yours. Here you only need to know that it is also the source of the version list.
 
 Next come the properties.
 
@@ -158,7 +158,7 @@ Reading them one at a time:
 - `pdfbox` has an explicit version, written `${pdfbox.version}`. The dollar sign and braces mean "insert the value of the property named `pdfbox.version`", which Listing 6.2 defined as 3.0.8. The parent does not manage this library, so the project chooses its version.
 - `mysql-connector-j` is the driver that lets Java talk to MySQL. Its **scope** is `runtime`.
 
-A **scope** says when a dependency is needed. Table 6.1 lists the two you will meet in this project. A dependency with no scope is needed for everything.
+A scope says when a dependency is needed. Table 6.1 lists the two you will meet in this project. A dependency with no scope is needed for everything.
 
 | Scope | Available when | Example in this project |
 |---|---|---|
@@ -449,6 +449,8 @@ Web serving, PDF reading, and tests: that is the whole first version. Milestone 
 ### 6.13 Directory layout
 
 Table 6.3 shows the layout at `book-m6-final`, which follows Maven's conventions.
+
+*Pattern note: A single deployable with clear package boundaries is a modular monolith (Chapter 39, Section 39.6).*
 
 | Path | Holds |
 |---|---|

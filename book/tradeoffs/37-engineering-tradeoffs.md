@@ -1,4 +1,4 @@
-<!-- chapter: 37 | part: trade-offs | owner: writer-production | tag: book-m6-final | status: expanded-draft -->
+<!-- chapter: 37 | part: trade-offs | owner: writer-production | tag: book-m6-final | status: expanded -->
 # Chapter 37: The engineering trade-offs
 
 Tag: `book-m6-final`. Prerequisites: Chapters 15, 16, 25 to 31, and 32 to 36. Terms such as CDN (a network of servers that delivers files from near the reader), Redis (an in-memory data store shared between servers), and presigned URL (a temporary signed link to a stored file) are glossed where they first appear or in the chapters named.
@@ -11,6 +11,12 @@ By the end of this chapter you can:
 - say which limits you will hit first as the app grows, and in what order;
 - name the enterprise alternative to each choice and the trigger that would justify the move;
 - separate a decision the project actually made and recorded from an opinion about it.
+
+## Prerequisites
+
+- Chapters 15 and 16: authentication, sessions and the defenses around them.
+- Chapters 25 to 31: the milestones the decisions were made in.
+- Chapters 32 to 36: security review, deployment, backups, monitoring and the supply chain.
 
 ## How to read this chapter
 
@@ -398,6 +404,7 @@ Notice the order. Steps 1 to 3 have to come before Step 6, or the load balancer 
 
 Figure 37.2 shows the order of the seven steps as a chain.
 
+<!-- source: the book's design exercise, built on the code named for Figure 37.1 at book-m6-final -->
 ```mermaid
 flowchart LR
     S1["1 Share sessions"] --> S2["2 Share counters"] --> S3["3 Share tiles"] --> S4["4 One runner for scheduled jobs"] --> S5["5 Same secret everywhere"] --> S6["6 Load balancer in front"] --> S7["7 Rolling deploys"]

@@ -38,6 +38,9 @@ flowchart LR
 
 *Figure 1 — The route of one request through the backend, with the chapters that teach each stop*
 
+<!-- source: SecurityConfig.java, DocumentController.java, DocumentService.java, DocumentRepository.java and GlobalExceptionHandler.java at book-m6-final -->
+
+
 A request first meets the security filters (Chapters 15 and 16), which decide who is calling and whether they may go further. The controller (Chapter 12) reads the path, the query string or the JSON body. Validation (Chapter 13) checks the input. The service applies the rules of the application, such as which documents a user may open, and uses repositories to read and write MySQL (Chapter 14) and, for documents, the files on disk (Chapter 17). If anything fails on the way, an exception handler (Chapter 13) turns it into the one JSON error shape the browser understands. Chapter 11 is the framework that connects all of these, and Chapter 18 shows how to test each stop.
 
 ## Why this order

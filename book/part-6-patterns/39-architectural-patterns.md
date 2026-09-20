@@ -1,4 +1,4 @@
-<!-- chapter: 39 | part: VI | owner: writer-production | tag: book-m6-final | status: draft -->
+<!-- chapter: 39 | part: VI | owner: writer-production | tag: book-m6-final | status: expanded -->
 # Chapter 39: Architectural patterns and how to decide
 
 Chapter 38 named the patterns inside the code: the small shapes that solve small problems. This chapter climbs one level. It names the patterns that shape the whole system, such as how the parts are stacked, where the front door is, how state is kept, and how the app is built and watched. Then it ends with something more useful than a list: a way to use these names while you make design decisions, with a real decision from this project worked through step by step.
@@ -70,7 +70,7 @@ Read it from top to bottom, the way a request travels. Each arrow crosses a boun
 
 **The problem.** A person needs an interactive interface, but the rules and the data must stay somewhere the person can't tamper with.
 
-**The pattern.** Split the system in two: a **client** that runs where the user is and shows things, and a **server** that runs where you control it and decides things. Here the client is a **single-page application** (SPA): the browser downloads one page of HTML and JavaScript once, and after that it only fetches data, as JSON, from the server's **REST API** (Chapter 12).
+**The pattern.** Split the system in two: a client that runs where the user is and shows things, and a server that runs where you control it and decides things. Here the client is a **single-page application** (SPA): the browser downloads one page of HTML and JavaScript once, and after that it only fetches data, as JSON, from the server's **REST API** (Chapter 12).
 
 **Where it lives.** The client is the Angular app under `frontend/`, built into plain files and served by nginx. The server is the Spring Boot app whose controllers answer under `/api`. The nginx configuration has the rule that makes an SPA work: `try_files $uri $uri/ /index.html`, so a deep link like `/viewer/123`, which isn't a real file, still serves the app and lets Angular's router take over (Chapter 33).
 
@@ -100,8 +100,8 @@ flowchart TB
     DR --> DB[("MySQL")]
     UR --> DB
     AU --> DB
-    C -.->|"UserAdminController and UserDirectoryController skip a layer"| UR
-    C -.-> DR
+    C -.->|"UserDirectoryController skips the service layer"| UR
+    C -.->|"UserAdminController skips the service layer"| DR
 ```
 
 <!-- source: controller, document, account, audit, service packages at book-m6-final; constructor dependencies of the seven controllers -->
@@ -141,7 +141,7 @@ Again, the honesty. Nothing *enforces* those boundaries. There is no module desc
 
 **The pattern.** Put a **reverse proxy** (Chapter 16), sometimes called a **gateway** when it does more, at the edge. It terminates TLS, serves static files, forwards the rest, and sets the rules about headers. Everything behind it trusts it, and nothing else.
 
-**Where it lives.** Chapters 32 and 33 covered it in detail. Two pieces are worth naming as architecture. Caddy handles TLS and HSTS; nginx serves the app, proxies `/api`, sets the frontend's security headers, and overwrites `X-Forwarded-For`. The app trusts forwarded headers only from nginx's fixed address. The **trust boundary** is the line between what the inside believes and what it must check.
+**Where it lives.** Chapters 32 and 33 covered it in detail. Two pieces are worth naming as architecture. Caddy handles TLS and HSTS; nginx serves the app, proxies `/api`, sets the frontend's security headers, and overwrites `X-Forwarded-For`. The app trusts forwarded headers only from nginx's fixed address. The trust boundary is the line between what the inside believes and what it must check.
 
 **What it approximates.** This is a reverse proxy, not an API gateway in the product sense. It doesn't authenticate callers, rate-limit them, or transform requests; the app does all of that. That's a choice with a reason: it keeps every security rule in one language and one test suite (Chapter 18), and it means the gateway can be swapped without moving any rules.
 
@@ -191,14 +191,14 @@ Two of the filters are the project's own, and their position is written in the c
 
 **The patterns.** In **session-based** (stateful) authentication, the server keeps a record of each signed-in user and hands the browser an opaque id, in a cookie. Each request presents the id and the server looks it up. In **token-based** (stateless) authentication, the server signs a token that carries the facts and hands it to the client, which presents it each time; any server that knows the signing key can verify it without a lookup.
 
-**Where it lives, and the hybrid.** This app uses both, for different jobs. **Table 39.1** shows the split.
+**Where it lives, and the hybrid.** This app uses both, for different jobs. Table 39.1 shows the split.
+
+**Table 39.1 — Two mechanisms, two jobs**
 
 | Job | Mechanism | Where |
 |---|---|---|
 | Recognize the signed-in user | Server-side session in an httpOnly cookie | `SecurityConfig`, `application.yml` |
 | Authorize one tile fetch | Short-lived HMAC-signed URL carrying its own facts | `SignedUrlService`, `SessionKeys` |
-
-*Table 39.1 — Two mechanisms, two jobs*
 
 The signed URL is an example of a **capability URL**: possessing the URL is what grants the right to fetch that one thing. But this project adds a deliberate twist. The URL alone isn't enough: it carries a keyed hash of the issuing session, and the request must also present that session's cookie. A pasted URL fails in another browser (Chapter 32). Figure 39.4 shows the sequence.
 
@@ -342,6 +342,8 @@ Every value that differs between environments is a placeholder with an optional 
 
 How closely does the project follow the whole checklist? Table 39.2 is honest about it.
 
+**Table 39.2 — The twelve-factor checklist, applied to this project (the factors that the repository evidences)**
+
 | Factor | The project |
 |---|---|
 | Config in the environment | Yes: Listing 39.3, `.env`, compose |
@@ -349,8 +351,6 @@ How closely does the project follow the whole checklist? Table 39.2 is honest ab
 | Build, release, run kept separate | Yes: multi-stage Dockerfile builds once; compose runs the image (Chapter 33) |
 | Stateless processes | **No:** sessions and rate-limit counters are in memory and tiles are on local disk (Chapter 37, sections 37.5 and 37.7) |
 | Dev and prod parity | Largely: MySQL 8.4 in Docker for development, and the integration test runs on real MySQL 8.4 (Chapter 18) |
-
-*Table 39.2 — The twelve-factor checklist, applied to this project (the factors that the repository evidences)*
 
 The "stateless" row is the important one. It's the reason the project runs one instance, and the reason Section 37.17 needs seven steps to change that. Knowing the pattern told the project what its limits would be before it hit them.
 
@@ -390,7 +390,7 @@ It only approximates RED. The project's counters cover the operations that matte
 
 ## The decision framework
 
-Naming patterns is useful only if it improves decisions. Here is a method that uses everything so far. It has five steps.
+Naming patterns is useful only if it improves decisions. Here is a method that uses everything so far. It has five steps, and Figure 39.6 shows them, including the loop back to step 1 when the world changes.
 
 ```mermaid
 flowchart LR
@@ -425,13 +425,13 @@ Here is a real decision from the project, put through the framework. It's the si
 
 **Step 4: costs.**
 
+**Table 39.3 — The lockout options with their costs**
+
 | Option | What it stops | What it costs |
 |---|---|---|
 | (a) per account and address, per address | Guessing from one place; one place trying many accounts | Nothing stops a botnet spreading guesses over many addresses |
 | (b) plus account-wide from anywhere | The botnet | Anyone can lock out any user by failing 20 times: a new attack |
 | (c) account-wide only for unknown devices | The botnet, without hurting the owner on a usual device | Storage of hashed addresses; a new device is locked out during an attack until the window passes or an administrator unlocks it |
-
-*Table 39.3 — The lockout options with their costs*
 
 **Step 5: the decision and the record.** The project shipped (a) first, tried (b) as the fix for a different problem, saw (by review) that (b) created a denial-of-service, and settled on (c). The record is in the README, in prose that states the cost plainly: "while an account is under a distributed attack, its owner can still sign in from a usual device, but not from a new one … until the window passes or an admin presses Unlock". The audit event records which rule fired, so the trade-off is visible when it bites. The trigger to revisit is in Chapter 37 (section 37.14): when the app gains MFA or an identity provider.
 
@@ -457,6 +457,8 @@ Fill it in before you write the code. If you can't state the cost, you haven't u
 
 To keep the vocabulary honest, here are architecture-level patterns you'll meet elsewhere that the project has not adopted, each with one line on why it isn't needed here. The project's records show no evaluation of most of these, so the reasons are the book's assessment.
 
+**Table 39.4 — Patterns the project does not use**
+
 | Pattern | One line |
 |---|---|
 | Microservices | One team and one deployable; the network calls and distributed failures would add cost without a need (section 39.6) |
@@ -465,20 +467,20 @@ To keep the vocabulary honest, here are architecture-level patterns you'll meet 
 | Service mesh | There is no fleet of services to connect |
 | Caching layer for tiles | Watermarking per viewer defeats shared caching (Chapter 37, section 37.2) |
 
-*Table 39.4 — Patterns the project does not use*
-
 <!-- source: PR #3 body ("Deferred: processing uploads in the background"); README Limitations -->
 
 ### 39.20 Where you met each pattern
 
 Table 39.5 maps the patterns of Chapters 38 and 39 to the chapters where you met them in the code, so you can go back and see them in place.
 
+**Table 39.5 — Patterns and the chapters where they appear**
+
 | Pattern | Chapter | Where you met it |
 |---|---|---|
 | Dependency injection, repository, service layer | 38 | Chapters 11, 12, 14, 27 |
-| Chain of responsibility, strategy, builder, template method | 38 | Chapters 15, 16, 22 |
-| Observer, state machine | 38 | Chapters 17, 22 |
-| Bulkhead, rate limiter, reserve then refund | 38 | Chapters 16, 17, 28 |
+| Chain of responsibility, strategy, builder, template method | 38 | Chapters 12, 14, 15, 16, 22 |
+| Observer, state machine | 38 | Chapters 17, 19, 21, 22 |
+| Bulkhead, rate limiter, reserve then refund | 38 | Chapters 16, 17, 26 |
 | Client-server and SPA | 39 | Chapters 1, 8, 21 to 23, 25 |
 | Layered architecture | 39 | Chapters 11 to 14, 26, 27 |
 | Modular monolith | 39 | Chapters 6, 11, 37 |
@@ -491,8 +493,6 @@ Table 39.5 maps the patterns of Chapters 38 and 39 to the chapters where you met
 | Infrastructure as code, immutable images | 39 | Chapters 10, 33, 36 |
 | Defense in depth, least privilege, secure by default | 39 | Chapters 16, 28, 32, 33, 36 |
 | Health checks and observability | 39 | Chapters 30, 35 |
-
-*Table 39.5 — Patterns and the chapters where they appear*
 
 ## Common mistakes
 

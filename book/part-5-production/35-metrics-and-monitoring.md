@@ -1,4 +1,4 @@
-<!-- chapter: 35 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded-draft -->
+<!-- chapter: 35 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Chapter 35: Health, metrics and alerting
 
 Once the app is running for other people, you can't watch it by staring at a terminal. Nobody is sitting next to the server when a reader gets a blank page at 2 a.m., and the person who eventually hears about it will want an answer to a simple question: what was the app doing at that moment? This chapter shows how the Secure Document Viewer reports on itself. A health check says whether it is alive. A set of counters says what it is doing and how often. The audit log says who did it. Together they let you notice a problem before a user reports it, and diagnose it after.
@@ -223,6 +223,8 @@ The endpoint came from a finding by the Senior Technical Manager review agent (C
 
 A counter is a running total since the last restart, so its raw value is nearly useless: "18,432 tiles served" says nothing about whether that happened in an hour or a month. What you want is a **rate**, how fast the counter rises. Prometheus gives you two functions for this. They belong to Prometheus's query language, PromQL, and the examples below are the book's own illustrations, not queries stored in the repository.
 
+*Pattern note: Rates, errors and durations are the RED idea (Chapter 39, Section 39.15).*
+
 - `increase(sdv_sign_in_total{outcome="failure"}[15m])` is how many failed sign-ins happened in the last 15 minutes.
 - `rate(sdv_tiles_served_total[5m])` is tiles per second, averaged over the last 5 minutes.
 
@@ -285,6 +287,7 @@ The three signals answer different questions, so use them in order. An alert (me
 
 Figure 35.2 puts the three signals side by side, as a way to choose the right one.
 
+<!-- source: application.yml (health and prometheus endpoints), ViewerMetrics.java, AuditEventType.java at book-m6-final -->
 ```mermaid
 flowchart TB
     Q["What do you need to know?"] --> A["Is it up right now?"]

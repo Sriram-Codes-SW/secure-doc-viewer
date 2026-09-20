@@ -16,7 +16,8 @@
 Chapters 3–6 (Java), 8 (the web), 11–12 (Spring Boot and REST), 17 (signatures and PDFs) and 18
 (testing), as listed in `book/OUTLINE.md`. At this milestone the project uses Spring Boot 3.3.4,
 Java 21 and PDFBox 3.0.3 (`pom.xml` at `book-m0-mvp`); the upgrade to Spring Boot 4 comes in Chapter
-30.
+30. To run this tag yourself, see Table IV.3 ("What you need to run each tag") in the
+[Part IV introduction](00-part-introduction.md).
 <!-- source: pom.xml at book-m0-mvp; OUTLINE.md -->
 
 ## Beginner tier: Serving a page as small tiles
@@ -31,7 +32,7 @@ tile is stamped with the identity of the person requesting it, and the browser p
 together on a canvas.
 <!-- source: commit b6aef4e message; README at book-m0-mvp -->
 
-To see why that is a good design, look at the obvious alternative. A **naive viewer** shows the PDF
+To see why that is a good design, look at the obvious alternative. A naive viewer shows the PDF
 in the browser and "protects" it by hiding the download button and blocking the right-click menu. The
 project's own README explains why that fails: both tricks live entirely in the browser, so both are
 undone in about ten seconds with the browser's developer tools. The protection has to live on the
@@ -64,11 +65,11 @@ and no Angular yet.
 
 ### 25.2 The vocabulary of a tiled viewer
 
-A **PDF** is a document format that describes pages of text and graphics. **Rasterizing** a page means
+A PDF is a document format that describes pages of text and graphics. **Rasterizing** a page means
 drawing it into an image: a grid of colored dots called **pixels**. A **tile** is one rectangular piece
-of that image, here a square of at most 256 pixels on a side. A **token** is a small, opaque piece of
-text that stands for a permission. A **session** is the server's record that a particular person
-signed in. A **watermark** is a visible mark, here the viewer's name and the time, drawn over an
+of that image, here a square of at most 256 pixels on a side. A token is a small, opaque piece of
+text that stands for a permission. A session is the server's record that a particular person
+signed in. A watermark is a visible mark, here the viewer's name and the time, drawn over an
 image so a copy can be traced. Each term gets a fuller treatment as it comes up; the glossary at the
 back of the book collects them.
 
@@ -278,7 +279,7 @@ public record TileUrlGrid(
 
 *Path: `src/main/java/com/example/securedocviewer/model/TileUrlGrid.java`*
 
-A **record** is Java's compact way to declare a class that only holds data (Chapter 4). `tileUrls[row][col]`
+A record is Java's compact way to declare a class that only holds data (Chapter 4). `tileUrls[row][col]`
 is the URL for the tile in that position, so the client can paint it at `col * tileSize` across and
 `row * tileSize` down.
 <!-- source: TileUrlGrid.java at book-m0-mvp; index.html at book-m0-mvp -->
@@ -291,10 +292,12 @@ wristband works all night, while a token names one tile and expires at a fixed t
 wristband works for whoever wears it, just as a copied URL works until it expires. That is why Chapter
 26 binds tokens to a session more tightly.
 
+*Pattern note: A signed URL is a capability URL, combined here with a session (Chapter 39, Section 39.9).*
+
 The service issues a token that grants access to exactly one tile of one page of one document, for
 one session, until a fixed expiry. The token is two base64url strings joined by a dot: the payload,
 and an HMAC-SHA256 signature over it. **Base64url** is a way to write any bytes using only letters,
-digits, hyphen and underscore, so the result is safe inside a URL. **HMAC** (hash-based message
+digits, hyphen and underscore, so the result is safe inside a URL. HMAC (hash-based message
 authentication code) mixes a secret key into a hash, so only a holder of the key can produce a
 matching signature. Change any field of the payload and the signature no longer matches.
 
@@ -798,6 +801,7 @@ flowchart LR
 ```
 
 *Figure 25.2 — Blueprint v0 (`book-m0-mvp`)*
+<!-- source: book/blueprints/v0-mvp.md; classes named in the diagram, present at book-m0-mvp under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, service/DocumentRegistry.java, controller/PageTileUrlController.java, controller/SessionController.java, security/SessionService.java, service/SignedUrlService.java, controller/TileController.java, service/TileGenerationService.java, service/TileGrid.java, service/WatermarkService.java -->
 
 This is the starting point, so nothing has changed since a previous version. Signing in takes only a
 username, tile URLs are HMAC-signed and bound to the session id, and documents and sessions live in

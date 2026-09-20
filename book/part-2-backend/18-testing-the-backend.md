@@ -25,7 +25,7 @@ By the end of this chapter, you will be able to:
 
 ### 18.1 Why we test, and the test pyramid
 
-A **test** is code that runs other code and checks the result. Think of the checklist a pilot runs before every takeoff. The pilot knows how to fly, and still nobody trusts memory for the twelfth flight of the day: a checklist run the same way every time catches the step that was skipped. A test suite is the checklist for the code. It runs in minutes, doesn't get bored, and doesn't assume that the change you made "couldn't possibly affect that."
+A test is code that runs other code and checks the result. Think of the checklist a pilot runs before every takeoff. The pilot knows how to fly, and still nobody trusts memory for the twelfth flight of the day: a checklist run the same way every time catches the step that was skipped. A test suite is the checklist for the code. It runs in minutes, doesn't get bored, and doesn't assume that the change you made "couldn't possibly affect that."
 
 **Where the analogy breaks down:** a checklist confirms that steps were performed. A test can only show that the cases someone *thought to write* still behave as expected. A green test run means "no known problem", never "no problem". Most of the skill in testing is choosing the cases well, and this chapter spends as much time on choosing as on syntax.
 
@@ -42,6 +42,9 @@ Tests come in sizes, and a healthy project has a shape, usually drawn as a pyram
 ```
 
 *Figure 18.1 — The test pyramid*
+
+<!-- source: the test classes named in Table 18.1 at book-m6-final; the top layer is the Playwright end-to-end tests of Chapter 24 -->
+
 
 A **unit test** exercises one small piece, such as a method or a class, in isolation. It's fast (milliseconds) and, when it fails, it points at the broken line. An **integration test** starts several pieces together, for example the real security filters plus the real controllers plus a database, to check that they cooperate. It is slower and, when it fails, tells you *that* something is wrong but makes you search for where. A **system test** drives the finished app the way a user would (Chapter 24). You want many of the first kind, fewer of the second, and few of the third, because speed and precision fall as scope rises.
 
@@ -169,7 +172,7 @@ The second test uses `assertThrows`, which deserves a slow reading:
 assertThrows(IllegalArgumentException.class, () -> TileGrid.tileCount(0, 256));
 ```
 
-The second argument is a **lambda** (Chapter 5), a small piece of code handed to `assertThrows` unrun. `assertThrows` runs it inside a `try` block, and passes only if the code throws the named exception type. Without the lambda, the exception would escape from your test line and crash it. This is also a test of a *refusal*: the project cares that bad input fails loudly rather than producing a nonsense grid.
+The second argument is a lambda (Chapter 5), a small piece of code handed to `assertThrows` unrun. `assertThrows` runs it inside a `try` block, and passes only if the code throws the named exception type. Without the lambda, the exception would escape from your test line and crash it. This is also a test of a *refusal*: the project cares that bad input fails loudly rather than producing a nonsense grid.
 
 The third test builds a random image (`noiseImage`, omitted here) and checks the dimensions of the tiles cut from it. The comment `// 612 - 600 = 12px wide` is the good kind of comment in a test: it shows the arithmetic that explains the expected number. Tests that assert magic numbers with no explanation are hard to trust and harder to fix.
 

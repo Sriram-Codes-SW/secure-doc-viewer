@@ -19,3 +19,5 @@ No custom colors (STYLE.md section 13.1). Chapters copy the Mermaid block into t
 Status: first pass (editor). v3 and v4 are derived from file-level diffs and are shallower than
 the others. The writer-app checks each blueprint against the code when writing the chapter and
 reports corrections through `requests.md`.
+
+Parts V and VI add no blueprint of their own: the architecture stays at v6 (Part V operates it; Chapters 38 and 39 name its patterns and repeat the v6 picture as Figure 39.1 where useful).

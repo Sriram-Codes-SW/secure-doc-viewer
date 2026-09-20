@@ -5,7 +5,7 @@ application that you can explain from the browser to the database and back. The 
 less than what you practiced while building it, so it is worth stepping back to see how the parts
 fit together.
 
-## How the five parts fit together
+## How the six parts fit together
 
 **Part I gave you a footing.** You learned to work in a terminal and to read a file path, to write
 and run Java, to build with Maven, to keep history with Git, to reason about requests, responses and
@@ -43,6 +43,11 @@ render tiles on the server costs CPU and caching. Keeping sessions in memory cos
 Building authentication yourself costs you the features an identity provider gives away. Naming
 those costs, and the point at which you would choose differently, is what separates an engineer
 who follows a design from one who owns it.
+
+**Part VI gave the vocabulary.** Design patterns (Chapter 38) and architectural patterns (Chapter 39) put
+names on what you had already seen: filter chains and strategies, state machines and bulkheads, layers,
+gateways, event logs and atomic switches. Naming a solution is what lets you recognize it in another
+project and borrow it deliberately, and the five-step method in Chapter 39 tells you when not to.
 
 ## What you can now do
 

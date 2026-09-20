@@ -19,7 +19,8 @@ Chapter 25, the milestone this one builds on, as listed in `book/OUTLINE.md`. Th
 `book-m1-accounts`: still Spring Boot 3.3.4 and Java 21, now with Spring Security, JPA, Flyway, MySQL
 8.4 and an Angular 22 frontend (Blueprint v1). This milestone is pull request #1: an earlier baseline
 commit (`32d040f`, the Angular frontend and admin features) followed by "Phase 1" (`68b4945`, real
-accounts, roles and the admin lockdown).
+accounts, roles and the admin lockdown). To run this tag yourself, see Table IV.3 ("What you need to
+run each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: blueprints/v1-accounts.md; timeline; PR #1 body -->
 
 ## Beginner tier: From "anyone" to real accounts
@@ -59,14 +60,14 @@ tests and a browser-style CSRF flow test, and 4 frontend tests (role-aware navig
 
 - An **account** is a stored record of who may sign in: a username, a password hash, a role.
 - A **password hash** is a one-way scrambling of the password. The server keeps the hash, never the
-  password, and compares hashes at sign-in. **BCrypt** is a hash designed to be slow, so guessing
-  millions of passwords is expensive. It also adds a random **salt** to every password, so two users
+  password, and compares hashes at sign-in. BCrypt is a hash designed to be slow, so guessing
+  millions of passwords is expensive. It also adds a random salt to every password, so two users
   with the same password get different hashes.
-- A **role** is a named bundle of permissions. Here READER can read documents they have access to,
+- A role is a named bundle of permissions. Here READER can read documents they have access to,
   PUBLISHER can also upload, and ADMIN can also manage accounts, sessions and the audit log.
-- A **session** is the server's memory that you signed in. The browser holds only a small cookie that
+- A session is the server's memory that you signed in. The browser holds only a small cookie that
   points at it.
-- A **cookie** is a small value the server asks the browser to send back on every request.
+- A cookie is a small value the server asks the browser to send back on every request.
 - **httpOnly** marks a cookie that page JavaScript can't read, so an injected script can't steal it.
 - **SameSite=Strict** tells the browser to send a cookie only for requests that start on this site,
   not from links or forms on other sites.
@@ -277,7 +278,7 @@ Read it in order.
 4. **One message for every failure.** Unknown user, wrong password and disabled account all produce
    the same `Invalid username or password.` The comment says why: "so the response doesn't reveal which
    accounts exist." A different message for "no such user" would let an attacker list valid usernames.
-   This is called **user enumeration**.
+   This is called user enumeration.
 5. **Record the failure or success** with the throttle.
 6. **Create the session and change its id.** `sessionAuthenticationStrategy` gives the user a *new*
    session id and registers it. This defeats **session fixation**, an attack where the attacker plants a
@@ -398,11 +399,11 @@ environment variable so local development over plain HTTP still works.
 
 Because the browser attaches the session cookie to every request to this site automatically, another
 website could make your browser send a request to this app, for example a hidden form that submits
-a delete. **CSRF** (cross-site request forgery) is that attack. `SameSite=Strict` already stops most of
+a delete. CSRF (cross-site request forgery) is that attack. `SameSite=Strict` already stops most of
 it, since the browser won't attach the cookie to a request started elsewhere. The project also uses the
 older, robust defense: a second value, the **CSRF token**, that a page on another site can't read.
 
-The design is the **double-submit cookie** pattern. The server sets a cookie named `XSRF-TOKEN` that
+The design is the double-submit cookie pattern. The server sets a cookie named `XSRF-TOKEN` that
 JavaScript *can* read (this is the one cookie that is not httpOnly, on purpose). Angular's `HttpClient`
 copies its value into a request header, `X-XSRF-TOKEN`, on every write. The server compares the header
 with the cookie. A forged request from another site can carry the cookie (the browser attaches it) but
@@ -449,6 +450,8 @@ At milestone 0 the session id lived in an `X-Session-Id` header, and in the firs
 outcome (a server-side session in an httpOnly cookie) but no debate about JSON Web Tokens, so the book
 does not describe one.
 
+*Pattern note: The session-plus-capability-URL hybrid is discussed in Chapter 39, Section 39.9.*
+
 What the choice buys is that nothing secret is ever visible to page JavaScript. The frontend's
 `SessionService` comment says it exactly: "The credential itself is an httpOnly cookie the browser
 manages — nothing secret is held here or in web storage — so the session is shared across tabs and
@@ -493,7 +496,7 @@ export const roleGuard =
 
 *Path: `frontend/src/app/core/auth.guard.ts`*
 
-A **route guard** decides whether the router may open a page. `authGuard` lets signed-in users through
+A route guard decides whether the router may open a page. `authGuard` lets signed-in users through
 and otherwise redirects to `/login`, remembering the requested address in a `returnUrl` query
 parameter so that signing in returns you there. `roleGuard` builds on it: it requires one of the listed
 roles. The comment is the important sentence: "UX only ... The server enforces the same rules on every
@@ -505,7 +508,7 @@ call the API directly, so the server is the only place that protects.
 `login` is open. Its page components load lazily (`loadComponent: () => import(...)`), so the browser
 downloads a screen's code only when it is visited.
 
-The `SessionService` holds "who is signed in" as a **signal** that the navigation, guards and
+The `SessionService` holds "who is signed in" as a signal that the navigation, guards and
 interceptor all read. On startup it calls `GET /api/auth/me`, which also primes the CSRF cookie, and a
 401 anywhere (an HTTP interceptor watches) clears the state and sends the user to sign in.
 <!-- source: auth.guard.ts, app.routes.ts, session.service.ts at book-m1-accounts; PR #1 body -->
@@ -588,6 +591,8 @@ Base32.)
 ### 26.11 Rate limiting and sign-in lockout
 
 Two guards arrive, and each counts something different on purpose.
+
+*Pattern note: A per-user limit is the rate limiter and bulkhead idea (Chapter 38, Section 38.9).*
 
 **The tile rate limit** (`TileRateLimiter`) is keyed by *username*, not session. The class comment
 says why: "signing in again (or in several tabs/browsers at once) doesn't hand out a fresh
@@ -929,6 +934,7 @@ flowchart LR
 ```
 
 *Figure 26.2 — Blueprint v1 (`book-m1-accounts`)*
+<!-- source: book/blueprints/v1-accounts.md; classes named in the diagram, present at book-m1-accounts under src/main/java/com/example/securedocviewer/: controller/AdminController.java, service/AuditLogService.java, controller/AuthController.java, account/BootstrapAdmin.java, controller/DocumentController.java, service/DocumentRegistry.java, security/LoginThrottle.java, controller/PageTileUrlController.java, security/SecurityConfig.java, security/SessionKeys.java, service/SignedUrlService.java, controller/TileController.java, service/TileGenerationService.java, security/TileRateLimiter.java, account/UserAccountService.java, controller/UserAdminController.java, service/WatermarkService.java; db/migration/V1__create_app_user.sql; docker-compose.yml; frontend/ -->
 
 What changed since v0:
 

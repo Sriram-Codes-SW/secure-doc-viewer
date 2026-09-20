@@ -115,7 +115,7 @@ export class App implements OnInit, OnDestroy {
 
 (Excerpt: the rest of the class, which holds `staySignedIn`, `formatCountdown`, `checkIdle` and `logout`, is omitted.)
 
-- The **constructor** runs first, when the object is created. Its parameters are how Angular hands over the services the class needs (dependency injection, Chapter 22). Here it asks for the `SessionService` and the `Router`. `private readonly` and `readonly` in front of a parameter declare it as a field in one step; `readonly` means the field can't be reassigned, and leaving out `private` (as with `sessionService`) lets the template read it, which it does.
+- The constructor runs first, when the object is created. Its parameters are how Angular hands over the services the class needs (dependency injection, Chapter 22). Here it asks for the `SessionService` and the `Router`. `private readonly` and `readonly` in front of a parameter declare it as a field in one step; `readonly` means the field can't be reassigned, and leaving out `private` (as with `sessionService`) lets the template read it, which it does.
 - `ngOnInit` runs once, after the constructor, when the component is ready. It starts a timer with `setInterval(() => this.checkIdle(), 1000)`: "every 1,000 milliseconds, call `checkIdle`". `setInterval` returns a number-like handle, which the class stores in `idleTimer` so it can be stopped later. Its type, `ReturnType<typeof setInterval> | null`, means "whatever `setInterval` returns, or `null` before it starts".
 - `ngOnDestroy` runs when the component is removed. It stops the timer with `clearInterval`. Forgetting this is a classic leak: the timer would keep calling `checkIdle` on a component that no longer exists.
 
@@ -123,7 +123,7 @@ The same start-then-clean-up habit appears wherever a component starts something
 
 ### 21.3 Templates: binding, conditionals, loops
 
-A **template** is HTML with extra syntax that connects it to the class. Here is the top-level template:
+A template is HTML with extra syntax that connects it to the class. Here is the top-level template:
 
 **Listing 21.3 — `app.html` (book-m6-final)**
 
@@ -237,6 +237,8 @@ Walk through what happens. The template is written inline (`template:` instead o
 
 If the class holds `count = 0` as a plain variable and later sets it to 1, how does the screen learn about it? Angular's answer, used throughout this project, is the **signal**: a box that holds a value and remembers who has read it. You read a signal by calling it like a function (`idle()`), and change it with `set` or `update`:
 
+*Pattern note: Signals track their dependents automatically, an observer-style pattern (Chapter 38, Section 38.7).*
+
 ```typescript
 readonly zoom = signal(1);          // create, starting at 1
 this.zoom.set(1.4);                 // replace the value
@@ -318,13 +320,15 @@ Read it as a map of consequences. If the reader zooms, only `zoom` changes, so o
 
 The same pattern protects who-is-signed-in state. `SessionService` (Chapter 22) keeps the user in a private signal and shares it read-only:
 
-**Listing 21.6a — `session.service.ts` (book-m6-final, excerpt: three lines from the class body, not adjacent)**
+**Listing 21.7 — `session.service.ts` (book-m6-final, excerpt: three lines from the class body, not adjacent)**
 
 ```typescript
   private readonly current = signal<CurrentUser | null>(null);
   readonly user = this.current.asReadonly();
   readonly isAdmin = computed(() => this.current()?.role === 'ADMIN');
 ```
+
+*Path: `frontend/src/app/core/session.service.ts`*
 
 Other classes can read `user()` but cannot call `set` on it; only `SessionService` can change who is signed in. That is the same principle as a private field with a public getter in Java (Chapter 4).
 
@@ -350,7 +354,7 @@ A parent would write `<app-page-badge [page]="currentPage()" />`, using the same
 
 Component stylesheets are scoped: rules in `app.css` affect only the `App` component. To read them you need a few CSS ideas. A **selector** picks elements (`.topbar` picks elements with `class="topbar"`; `nav a` picks links inside a `nav`). A **declaration** sets a property (`padding: 0.85rem 1.5rem;`). Sizes in `rem` are multiples of the page's base font size, so layouts scale with a reader's font setting. **Flexbox** (`display: flex`) lays children out in a row and lets you align and space them. Here is the top bar:
 
-**Listing 21.7 — `app.css` (book-m6-final, excerpt: the top bar)**
+**Listing 21.8 — `app.css` (book-m6-final, excerpt: the top bar)**
 
 ```css
 .topbar {
@@ -373,7 +377,7 @@ Component stylesheets are scoped: rules in `app.css` affect only the `App` compo
 
 Look-and-feel that every screen shares lives in one global file, `styles.css`, built on **CSS custom properties** (also called variables): named values, written `--name`, that any rule can read with `var(--name)`.
 
-**Listing 21.8 — `styles.css` (book-m6-final, excerpt: the tokens)**
+**Listing 21.9 — `styles.css` (book-m6-final, excerpt: the tokens)**
 
 ```css
 :root {
@@ -419,7 +423,7 @@ The naming is by *role*, not by color: `--surface` is "what cards and bars are p
 | `--on-accent` on `--accent` (buttons) | 6.1 : 1 | 6.0 : 1 |
 | `--danger` on `--surface` (error text) | 5.8 : 1 | 6.3 : 1 |
 
-*Table 21.1 — Contrast ratios (computed by the author from the token values in Listing 21.8; the automated check in Chapter 24 is the project's own guard)*
+*Table 21.1 — Contrast ratios (computed by the author from the token values in Listing 21.9; the automated check in Chapter 24 is the project's own guard)*
 
 Two things show why tokens matter. First, at `book-m5-platform` the `--muted` color in light mode was changed from `#6b7280` to `#5d6470`: the old value scored 4.8 : 1 on white and only 4.5 : 1 on the page background, right at the limit, and the new one has real margin. Second, the button text color changed from a hard-coded white to `var(--on-accent)`. With white text on the dark theme's lighter accent, the ratio would be only about 3.2 : 1, below the AA threshold; `--on-accent` fixes that by using dark text there. The git diff of `styles.css` between `book-m4-reading` and `book-m5-platform` shows both changes. Because colors live in one place, each fix was a small edit, and Chapter 24 shows the automated check that keeps this true in both themes.
 
@@ -437,7 +441,7 @@ A PDF page is cut into rectangular **tiles** on the server (Part II), each a sma
 
 The Angular viewer places each tile as an absolutely positioned `<div>` whose CSS background is the tile's picture:
 
-**Listing 21.9 — `viewer.component.html` (book-m6-final, excerpt: the tiles)**
+**Listing 21.10 — `viewer.component.html` (book-m6-final, excerpt: the tiles)**
 
 ```html
       @for (tile of tiles(); track tile.key) {
@@ -459,7 +463,7 @@ The Angular viewer places each tile as an absolutely positioned `<div>` whose CS
 
 The stylesheet's comment states the design intent:
 
-**Listing 21.10 — `viewer.component.css` (book-m6-final, excerpt)**
+**Listing 21.11 — `viewer.component.css` (book-m6-final, excerpt)**
 
 ```css
 /*

@@ -27,11 +27,11 @@ By the end of this chapter, you will be able to:
 
 ### 22.1 Services and dependency injection in Angular
 
-Several screens need the same things: to know who is signed in, to fetch documents. Copying that code into each component would be wasteful and error-prone. Instead the code goes into a **service**: a plain class, marked `@Injectable`, that Angular creates once and hands to whoever asks. Think of a shared office printer: nobody buys their own, and everyone who needs one is pointed to the same machine.
+Several screens need the same things: to know who is signed in, to fetch documents. Copying that code into each component would be wasteful and error-prone. Instead the code goes into a service: a plain class, marked `@Injectable`, that Angular creates once and hands to whoever asks. Think of a shared office printer: nobody buys their own, and everyone who needs one is pointed to the same machine.
 
 **Where the analogy breaks down:** a printer sits in the office whether or not anyone prints. Angular creates a service only when something first asks for it.
 
-Asking is called **dependency injection**, the same idea as Spring's (Chapter 11): a class declares what it needs, and the framework supplies it. Here, in the constructor:
+Asking is called dependency injection, the same idea as Spring's (Chapter 11): a class declares what it needs, and the framework supplies it. Here, in the constructor:
 
 **Listing 22.1 — `documents.service.ts` (book-m6-final, excerpt)**
 
@@ -124,6 +124,8 @@ Uploads use the browser's `FormData` and ask for progress events:
 
 Every `HttpClient` method returns an **Observable** (Chapter 19), and this chapter reads more clearly with a few habits in mind.
 
+*Pattern note: Observables are the observer pattern in stream form (Chapter 38, Section 38.7).*
+
 - **Nothing happens until you subscribe.** `this.http.get(...)` only *describes* a request. The request is sent when someone calls `.subscribe(...)`. Two subscriptions send two requests.
 - **An HTTP Observable delivers one result and ends.** Unlike a stream of key presses, a request produces a single response (or an error) and completes, so a component doesn't have to unsubscribe from it to avoid leaks. Long-lived Observables, such as a timer, are different; those need cleanup (Chapter 21).
 - **`.pipe(...)` adds steps.** The steps are small functions called **operators**. The project uses a handful: `map` (change each value), `tap` (do something on the side, such as store a result, without changing it), `catchError` (turn a failure into something else), `switchMap` (start a new Observable for each incoming value, cancelling the previous one) and `debounceTime` (wait until values stop arriving).
@@ -154,6 +156,8 @@ If step 6 answers with an error instead, the `error` callback runs, the componen
 ### 22.5 Interceptors: CSRF header and 401 handling
 
 Cross-Site Request Forgery (CSRF, Chapter 16) is an attack in which another website tricks your browser into sending a request to the app, and the browser helpfully attaches your session cookie. The server's defense is to require a secret that only pages from the app itself can supply. The pattern used here: the server sets a cookie named `XSRF-TOKEN` that JavaScript is allowed to read, and the frontend copies its value into a header, `X-XSRF-TOKEN`, on every state-changing request. A foreign site can't read the app's cookie, so it can't set the header.
+
+*Pattern note: An interceptor is a chain of responsibility with one link (Chapter 38, Section 38.3).*
 
 Angular's `HttpClient` does this copying by default for same-origin requests. `app.config.ts` says so in a comment:
 
@@ -201,6 +205,8 @@ sequenceDiagram
 ```
 
 *Figure 22.1 — A write request from the browser to the API*
+
+<!-- source: app.config.ts, session.interceptor.ts and nginx.conf at book-m6-final; XSRF handling is Angular's built-in default -->
 
 An **interceptor** is a function that sees every request and response that passes through `HttpClient`. `sessionInterceptor` handles the case where the session has ended:
 
@@ -340,6 +346,8 @@ The second piece is the idle bookkeeping:
 
 When an owner shares a document, the manage screen suggests usernames as they type. Sending a request on every keystroke would waste effort and, worse, answers could arrive out of order. The component solves both with an Observable pipeline:
 
+*Pattern note: Debouncing with `switchMap` is the observer idea in practice (Chapter 38, Section 38.7).*
+
 **Listing 22.10 — `manage.component.ts` (book-m6-final, excerpt: the suggestion pipeline)**
 
 ```typescript
@@ -378,6 +386,8 @@ The obvious alternative to what this chapter shows is the pattern many tutorials
 ### 22.12 Why one origin: nginx and the proxy
 
 Chapter 20 showed the development proxy. In production, `frontend/nginx.conf` does the same job with more care. The comment at its top says the design goal: "Serves the Angular app and proxies the API, so browser, session cookie and CSRF cookie all share one origin." With one origin there is no cross-origin resource sharing (CORS) setup to get wrong, no cookie policies to loosen, and the relative URLs in the frontend just work.
+
+*Pattern note: One origin behind a proxy is the client-server single-page-app pattern (Chapter 39, Section 39.4).*
 
 **Listing 22.11 — `nginx.conf` (book-m6-final, excerpt: the API location)**
 

@@ -36,11 +36,13 @@ The project has both layers, because each finds problems the other can't (Sectio
 ```mermaid
 flowchart TB
     subgraph CI["GitHub Actions on every change"]
+        J0["Job: Backend tests"]
         J1["Job: Frontend tests and build"]
         J2["Job: End-to-end on the Docker stack"]
     end
     J1 --> U["Vitest specs with jsdom and a fake HTTP layer"]
     J1 --> B["Production build"]
+    J0 -->|"must pass first"| J2
     J1 -->|"must pass first"| J2
     J2 --> E["Playwright in real Chromium against the running stack"]
     E --> A["axe check on six screens, in light and dark"]
@@ -51,7 +53,7 @@ flowchart TB
 
 <!-- source: ci.yml, playwright.config.ts and secure-viewing.spec.ts at book-m6-final; the six screens are sign-in, admin, upload, manage, document list and viewer -->
 
-The left branch is fast and isolated; the right branch is slow and realistic. The accessibility check is not a separate tool run on its own: it is a step inside the end-to-end test, so it looks at the pages exactly as the real stack serves them.
+The end-to-end job starts only after both the backend job and the frontend job have passed (`needs: [backend, frontend]` in `ci.yml`). The frontend jobs on the left are fast and isolated; the end-to-end job on the right is slow and realistic. The accessibility check is not a separate tool run on its own: it is a step inside the end-to-end test, so it looks at the pages exactly as the real stack serves them.
 
 ### 24.2 Unit tests with Vitest
 

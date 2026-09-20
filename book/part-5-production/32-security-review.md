@@ -1,4 +1,4 @@
-<!-- chapter: 32 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded-draft -->
+<!-- chapter: 32 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Chapter 32: Security review and threat modeling
 
 This chapter teaches you to look at your own app the way an attacker does, and walks through the
@@ -57,6 +57,8 @@ minute with a script.
 
 Table 32.1 lists each asset with its threat, the control, and where it lives. You met most of
 these controls in Chapters 15 and 16.
+
+*Pattern note: Layering several independent controls is defense in depth (Chapter 39, Section 39.14).*
 
 **Table 32.1 — Assets, threats, and controls**
 

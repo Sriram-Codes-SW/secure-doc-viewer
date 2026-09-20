@@ -23,7 +23,7 @@ By the end of this chapter, you will be able to:
 
 ### 7.1 Version control as a save history
 
-Imagine writing a long document and saving copies named `report-final`, `report-final-2` and `report-really-final`. Within a week you cannot say which is newest, what changed between them, or which one you sent to your manager. **Version control** replaces that habit. A tool records every meaningful change, who made it, when, and why, and lets you return to any earlier state. **Git** is the version control tool this project uses, and it is the most widely used one in the world.
+Imagine writing a long document and saving copies named `report-final`, `report-final-2` and `report-really-final`. Within a week you cannot say which is newest, what changed between them, or which one you sent to your manager. Version control replaces that habit. A tool records every meaningful change, who made it, when, and why, and lets you return to any earlier state. **Git** is the version control tool this project uses, and it is the most widely used one in the world.
 
 A Git project is a **repository**: your files plus a hidden folder named `.git` that holds the whole history. Each saved state is a **commit**: a snapshot of every tracked file at one moment, with a message describing the change and a unique identifier such as `2d10e07`. Commits form a chain, and each one points to the commit before it. Because each snapshot is complete, you can reload any of them.
 
@@ -74,7 +74,7 @@ Untracked files:
   notes.txt
 ```
 
-**Untracked** means Git can see the file but is not recording it. Recording happens in two steps, and the reason for two steps is worth understanding. Git has three places where your work can be: the **working folder** (the files you edit), the **staging area** (a list of changes you have chosen to record next) and the **repository** (the saved history). You move changes from the first to the second with `git add`, and from the second to the third with `git commit`.
+**Untracked** means Git can see the file but is not recording it. Recording happens in two steps, and the reason for two steps is worth understanding. Git has three places where your work can be: the **working folder** (the files you edit), the **staging area** (a list of changes you have chosen to record next) and the repository (the saved history). You move changes from the first to the second with `git add`, and from the second to the third with `git commit`.
 
 Figure 7.1 draws the three places and the commands that move changes between them.
 

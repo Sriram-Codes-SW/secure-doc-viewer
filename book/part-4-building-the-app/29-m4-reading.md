@@ -15,7 +15,8 @@
 Chapters 28 (hardening) and 21–23 (Angular components, services and testing), as listed in
 `book/OUTLINE.md`. Chapter 25 (the watermark's first version) and Chapter 26 (sessions and the
 admin handle) matter too. The code is at `book-m4-reading` (pull request #4, three commits named 4a,
-4b and 4c), still Spring Boot 3.3.4 and Java 21. Pull request #4 was stacked on pull request #3.
+4b and 4c), still Spring Boot 3.3.4 and Java 21. Pull request #4 was stacked on pull request #3. To run this tag yourself, see Table IV.3 ("What you
+need to run each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m4; timeline -->
 
 ## Beginner tier: Reading comfortably
@@ -43,7 +44,7 @@ friction.
 
 ### 29.2 Deep links: the address bar as part of the interface
 
-A **deep link** is an address that opens the application at a specific place inside it, not just at
+A deep link is an address that opens the application at a specific place inside it, not just at
 its front door. For a document viewer the useful place is "page 12 of this document".
 
 Web addresses can carry small pieces of data after a question mark, called **query parameters**. In
@@ -319,7 +320,7 @@ export function idleState(nowMs: number, lastActivityMs: number, timeoutSeconds:
 
 *Path: `frontend/src/app/core/idle.ts`*
 
-`IdleState` is a **discriminated union**: exactly one of three shapes, told apart by the `kind`
+`IdleState` is a discriminated union: exactly one of three shapes, told apart by the `kind`
 field. Code that receives one must handle each shape, and TypeScript checks that it does.
 
 Now a worked example with real numbers. Assume the timeout is 1,800 seconds (30 minutes) and the
@@ -371,7 +372,7 @@ private checkIdle(): void {
 
 *Path: `frontend/src/app/app.ts`*
 
-If nobody is signed in, there is nothing to time. Otherwise the state is stored in a **signal**
+If nobody is signed in, there is nothing to time. Otherwise the state is stored in a signal
 (Angular's small reactive value, Chapter 22), and the template shows the banner when the state is a
 warning. On `expired` the browser signs out locally and goes to the sign-in page with two query
 parameters: `returnUrl` (where you were, so signing back in returns you there) and `reason=idle` (so
@@ -675,6 +676,7 @@ flowchart LR
 ```
 
 *Figure 29.1 — Blueprint v4 (`book-m4-reading`)*
+<!-- source: book/blueprints/v4-reading.md; classes named in the diagram, present at book-m4-reading under src/main/java/com/example/securedocviewer/: controller/AdminController.java, audit/AuditLogService.java, controller/AuthController.java, security/SessionKeys.java, controller/TileController.java, document/Viewer.java, config/ViewerProperties.java, service/WatermarkService.java -->
 
 What changed since v3 is mostly at the edges: the frontend gained the idle timer, the deep links and the keyboard handling, and the backend gained the configurable watermark, the trace code and the trace filter.
 

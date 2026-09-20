@@ -135,7 +135,7 @@ The split between the two groups matters. Anything in `dependencies` ends up, at
 
 *Path: `frontend/package-lock.json`*
 
-`version` is what was actually installed: `package.json` asked for `~7.8.0`, and 7.8.2 satisfied that. `resolved` is where the file came from. `integrity` is a **hash**: a short fingerprint calculated from the file's contents. If anyone altered the file, on the registry or in transit, the fingerprint would no longer match and npm would refuse to install it. The lock file describes not only the eight direct dependencies but every library they need in turn, a few hundred entries in total. Commit both files. Don't edit the lock file by hand.
+`version` is what was actually installed: `package.json` asked for `~7.8.0`, and 7.8.2 satisfied that. `resolved` is where the file came from. `integrity` is a hash: a short fingerprint calculated from the file's contents. If anyone altered the file, on the registry or in transit, the fingerprint would no longer match and npm would refuse to install it. The lock file describes not only the eight direct dependencies but every library they need in turn, a few hundred entries in total. Commit both files. Don't edit the lock file by hand.
 
 ### 20.4 The Angular CLI: `ng serve`, `ng build`, `ng test`
 
@@ -208,9 +208,9 @@ bootstrapApplication(App, appConfig)
 
 ### 20.6 The dev proxy (`proxy.conf.json`) and same origin
 
-An **origin** is the combination of scheme, host and port: `http://localhost:4200` and `http://localhost:8080` are different origins. Browsers keep origins apart; a page from one may not freely call another. Cookies and the CSRF protection from Part II (Chapter 16) assume the page and the API share an origin.
+An origin is the combination of scheme, host and port: `http://localhost:4200` and `http://localhost:8080` are different origins. Browsers keep origins apart; a page from one may not freely call another. Cookies and the CSRF protection from Part II (Chapter 16) assume the page and the API share an origin.
 
-In development the pieces run on two ports: `ng serve` on 4200 and Spring Boot on 8080. The dev server bridges them with a **proxy**: it forwards any request whose path starts with `/api` to the backend, so the browser thinks it is talking to one server.
+In development the pieces run on two ports: `ng serve` on 4200 and Spring Boot on 8080. The dev server bridges them with a proxy: it forwards any request whose path starts with `/api` to the backend, so the browser thinks it is talking to one server.
 
 **Listing 20.5 — `proxy.conf.json` (book-m6-final)**
 
@@ -245,6 +245,8 @@ sequenceDiagram
 ```
 
 *Figure 20.1 — Requests in development*
+
+<!-- source: proxy.conf.json and angular.json (proxyConfig) at book-m6-final; README of the frontend gives port 4200; Spring Boot on 8080 per the proxy target -->
 
 The frontend code itself stays free of this: `core/config.ts` sets `API_BASE_URL = ''`, so every call is a relative URL such as `/api/documents`. In production the same job is done by nginx, whose `location ^~ /api/` block forwards to the backend (Chapters 30 and 33). The same code therefore works unchanged in both places.
 
@@ -337,7 +339,7 @@ None of these is "the right answer" in general; they are reasonable defaults for
 
 ### 20.10 `npm install` versus `npm ci`
 
-`npm install` may update the lock file if ranges allow newer versions. `npm ci` installs exactly what the lock file says and fails if `package.json` and the lock file disagree. The Dockerfile uses `npm ci --no-audit --no-fund`, so an image rebuilt next month contains the same packages that were tested. (`--no-audit` and `--no-fund` switch off two informational steps npm otherwise performs: a vulnerability report and a funding message. CI has its own vulnerability scan, Section 20.12.) The base images are also pinned by **digest**, a fingerprint (hash) of the exact image contents, so a rebuild can't silently pick up a different one.
+`npm install` may update the lock file if ranges allow newer versions. `npm ci` installs exactly what the lock file says and fails if `package.json` and the lock file disagree. The Dockerfile uses `npm ci --no-audit --no-fund`, so an image rebuilt next month contains the same packages that were tested. (`--no-audit` and `--no-fund` switch off two informational steps npm otherwise performs: a vulnerability report and a funding message. CI has its own vulnerability scan, Section 20.12.) The base images are also pinned by digest, a fingerprint (hash) of the exact image contents, so a rebuild can't silently pick up a different one.
 
 **Listing 20.7 — `Dockerfile` (book-m6-final, excerpt: the build stage)**
 

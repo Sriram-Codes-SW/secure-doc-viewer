@@ -1,4 +1,4 @@
-<!-- chapter: 36 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded-draft -->
+<!-- chapter: 36 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Chapter 36: Supply chain and CI
 
 Most of the code in a running app is code you didn't write: libraries, base images, build tools. You trust it because it's popular, but popular software has flaws too, and a flaw in a library you use is a flaw in your app. This chapter shows how the project checks that code automatically on every change, how it keeps updates coming without letting a surprise upgrade in, and what it looks like when the machinery catches a real problem.
@@ -163,7 +163,7 @@ The scanner itself runs as a container (`docker run --rm`), pinned by digest. It
 
 **Trivy** scans something different: the *built container images*. An image contains an operating system (packages like `libssl`), a Java runtime, and your application. A flaw can hide in an operating system package that neither `pom.xml` nor `package-lock.json` mentions, and only an image scan sees it.
 
-**Listing 36.4 — `.github/workflows/ci.yml`, `book-m6-final` (simplified: the file has a long run of spaces between arguments instead of line breaks, shown here as line breaks; the image digest is shortened)**
+**Listing 36.4 — `.github/workflows/ci.yml`, `book-m6-final` (simplified: in the file, the `docker run` command is one long line whose arguments are separated by runs of spaces; here it is broken across lines with backslashes added, the leading indentation is reduced, and the image digest is shortened)**
 
 ```yaml
 - name: Scan the built images for OS and library vulnerabilities
@@ -204,6 +204,8 @@ After the stack builds, the job scans the images (Listing 36.4), then loops up t
 
 A tag like `mysql:8.4` can point to a different image tomorrow, because the image's maintainers can push a new build under the same tag. That is often what you want (security patches), but it means your build is no longer the one you tested. The project pins each base image by digest, for example `mysql:8.4@sha256:85b9bf...` in `docker-compose.yml`, and the same in both Dockerfiles. A rebuild then gets exactly the image that was reviewed, and Dockerfile comments say so: "Pinned by digest (Dependabot updates it) so a rebuild gets exactly the reviewed image."
 
+*Pattern note: Pinning by digest is infrastructure as code with immutable images (Chapter 39, Section 39.13).*
+
 GitHub Actions get the same treatment. Look at a pinned line again:
 
 ```yaml
@@ -227,8 +229,8 @@ Figure 36.2 is the decision Dependabot now makes for each candidate update.
 ```mermaid
 flowchart TB
     D["Dependabot finds a newer version"] --> I{"Does an ignore rule match?"}
-    I -->|"yes: Node 25, MySQL major, TypeScript minor"| S["No pull request"]
-    I -->|"no"| G["Grouped pull request, majors separate for npm-other"]
+    I -->|"yes: node 25.x, 27.x, 29.x; eclipse-temurin 26.x to 28.x; mysql major; typescript minor and major"| S["No pull request"]
+    I -->|"no"| G["Grouped pull request; the npm-other group holds only minor and patch, majors come separately"]
     G --> C["CI: tests, scans, end-to-end"]
     C --> H["A person reads the notes and merges"]
 ```

@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 ### 11.1 What a framework is
 
-Imagine you want to open a restaurant. You could build the building, wire the electricity, install plumbing, and only then start cooking. Or you could rent a fitted-out kitchen where the ovens, the extraction fans and the fire alarms already exist, and you bring your recipes. A **framework** is the fitted-out kitchen: a large body of ready-made code that already knows how to start a program, listen for web requests and connect to a database. You supply the recipes, which are the pieces specific to your application.
+Imagine you want to open a restaurant. You could build the building, wire the electricity, install plumbing, and only then start cooking. Or you could rent a fitted-out kitchen where the ovens, the extraction fans and the fire alarms already exist, and you bring your recipes. A framework is the fitted-out kitchen: a large body of ready-made code that already knows how to start a program, listen for web requests and connect to a database. You supply the recipes, which are the pieces specific to your application.
 
 A **library** is a single tool you pick up when you need it, such as a PDF reader. You call the library, and you decide when. With a framework, the direction reverses: the framework calls you. Your code sits in classes that the framework finds, creates and invokes at the right moment. This reversal has a name, **inversion of control**, and it explains most of what looks strange about Spring at first. Here is the difference as two tiny sketches. They are written to teach, so they are Examples, not project code.
 
@@ -103,7 +103,9 @@ If any step fails, the program stops with an error and never listens. That's del
 
 When Spring starts, it creates one object of every class it finds that is labeled as a managed component (with annotations such as `@Component`, `@Service`, `@RestController` or `@Configuration`). Each such object is a **bean**, and the box that holds them all is the **application context**. By default there is one instance of each bean, shared by the whole program.
 
-The labels tell Spring, and the reader, what kind of class this is. Three kinds appear throughout the project, so it helps to name them now. A **controller** is a class that answers web requests; Chapter 12 is about them. A **service** is a class that holds the rules of the application, such as who may open a document. A **repository** is a class that reads and writes the database; Chapter 14 covers it.
+*Pattern note: Constructor injection is the dependency injection pattern (Chapter 38, Section 38.2).*
+
+The labels tell Spring, and the reader, what kind of class this is. Three kinds appear throughout the project, so it helps to name them now. A **controller** is a class that answers web requests; Chapter 12 is about them. A **service** is a class that holds the rules of the application, such as who may open a document. A repository is a class that reads and writes the database; Chapter 14 covers it.
 
 **Table 11.1 — The labels that create beans**
 
@@ -114,7 +116,7 @@ The labels tell Spring, and the reader, what kind of class this is. Three kinds 
 | `@Component` | Any other managed class | `StorageJanitor`, `ViewerProperties` |
 | `@Configuration` with `@Bean` methods | A class that builds beans by hand | `SecurityConfig` |
 
-Why not just write `new DocumentService(...)` wherever you need one? Because a `DocumentService` needs a `DocumentRepository`, which needs a database connection, which needs configuration. If every class built its own helpers, you'd repeat that wiring everywhere, and you couldn't swap a helper for a fake in a test. Instead, a class declares what it needs, and Spring hands it over. That is **dependency injection**. To keep the kitchen analogy going: the chef doesn't drive to the market. The chef writes a list ("flour, eggs, butter"), and a supplier delivers exactly those items before service begins. The class's constructor is the list, and Spring is the supplier.
+Why not just write `new DocumentService(...)` wherever you need one? Because a `DocumentService` needs a `DocumentRepository`, which needs a database connection, which needs configuration. If every class built its own helpers, you'd repeat that wiring everywhere, and you couldn't swap a helper for a fake in a test. Instead, a class declares what it needs, and Spring hands it over. That is dependency injection. To keep the kitchen analogy going: the chef doesn't drive to the market. The chef writes a list ("flour, eggs, butter"), and a supplier delivers exactly those items before service begins. The class's constructor is the list, and Spring is the supplier.
 
 Listing 11.2 shows it in the smallest useful example in the repository.
 
@@ -141,7 +143,7 @@ public class DocumentController {
 
 *Path: `src/main/java/com/example/securedocviewer/controller/DocumentController.java`*
 
-The constructor lists two parameters. When Spring builds the controller, it looks in the application context for a bean of type `DocumentService` and one of type `RequestActors`, and passes them in. Nothing in the class says where they come from, which is the point: `DocumentController` only says what it needs. The fields are `final`, so once the object exists its dependencies can't change or be missing. This style is called **constructor injection**, and every controller and service in the project uses it.
+The constructor lists two parameters. When Spring builds the controller, it looks in the application context for a bean of type `DocumentService` and one of type `RequestActors`, and passes them in. Nothing in the class says where they come from, which is the point: `DocumentController` only says what it needs. The fields are `final`, so once the object exists its dependencies can't change or be missing. This style is called constructor injection, and every controller and service in the project uses it.
 
 Why constructor injection rather than marking a field and letting Spring fill it in afterward? Three reasons. The dependencies are visible in one place, the constructor, so you can see at a glance how much a class depends on; a class with twelve parameters is asking to be split. The `final` fields make it impossible to forget one. And a test can create the class by hand, with a fake in place of a real dependency, just by calling `new`, with no Spring at all. Chapter 18 shows tests that do exactly this, such as `new SignedUrlService(properties)`.
 
@@ -162,6 +164,9 @@ graph TD
 ```
 
 *Figure 11.1 — Part of the dependency chain behind `DocumentController`*
+
+<!-- source: constructors of DocumentController, DocumentService, RequestActors, SessionKeys and TileGenerationService at book-m6-final; partial: TileGenerationService also takes ViewerMetrics, omitted here -->
+
 
 Spring builds the leaves first: `ViewerProperties`, then `SessionKeys` and `TileGenerationService`, and so on up to the controller. If a bean can't be built or found, the program refuses to start and names the missing type, so a wiring mistake shows up at startup and never in front of a user.
 
@@ -243,7 +248,7 @@ spring:
 
 On a developer machine none of the `DB_` variables need to be set: the defaults point at MySQL on `localhost`. In Docker Compose (Chapter 10), the compose file sets `DB_HOST` to the name of the database container. The password has an *empty* default on purpose: there is no built-in password to guess, and a deployment must supply its own.
 
-**Which value wins?** The same property can be given in several places, and Spring Boot applies a fixed order. The two you need to know: a value from an **environment variable** overrides the same property in `application.yml`, and a value from `application.yml` overrides a default written in code. The project adds one more source for local work, in `application.yml`:
+**Which value wins?** The same property can be given in several places, and Spring Boot applies a fixed order. The two you need to know: a value from an environment variable overrides the same property in `application.yml`, and a value from `application.yml` overrides a default written in code. The project adds one more source for local work, in `application.yml`:
 
 ```yaml
 spring:
@@ -277,7 +282,7 @@ public BootstrapAdmin(UserAccountService accounts,
 
 ### 11.5 Starters and auto-configuration
 
-Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-starter-webmvc`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa` and `spring-boot-starter-flyway`. A **starter** is a single dependency that pulls in a matched set of libraries for one job, at versions known to work together. Table 11.2 lists the ones the project uses.
+Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-starter-webmvc`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa` and `spring-boot-starter-flyway`. A starter is a single dependency that pulls in a matched set of libraries for one job, at versions known to work together. Table 11.2 lists the ones the project uses.
 
 **Table 11.2 — The starters in `pom.xml` (`book-m6-final`) and what each brings**
 
@@ -295,7 +300,7 @@ A comment in the project's `pom.xml` notes that "Spring Boot 4 splits the old al
 
 **Where do the versions come from?** The top of the `pom.xml` declares `spring-boot-starter-parent` version `4.1.1` as its parent. That parent contains a table of tested versions for hundreds of libraries, so most dependencies in the file have *no version number at all*: Maven takes it from the parent. Upgrading Spring Boot upgrades the whole tested set at once.
 
-**Auto-configuration** is the second half of the trick. When Spring Boot starts, it looks at what is on the classpath and at your settings, and creates sensible beans for you. With the JPA starter and a MySQL driver present and `spring.datasource.url` set, it builds the database connection pool and the transaction manager without you writing a line. With the Flyway starter present, it runs the migrations at startup (Chapter 14). With the web starter, it starts Tomcat. If you define your own bean of the same kind, yours takes priority: that's exactly what `SecurityConfig` does when it declares its own `PasswordEncoder` and `SecurityFilterChain` (Chapter 15). The rule of thumb is that Boot provides a default and you override only what you must.
+Auto-configuration is the second half of the trick. When Spring Boot starts, it looks at what is on the classpath and at your settings, and creates sensible beans for you. With the JPA starter and a MySQL driver present and `spring.datasource.url` set, it builds the database connection pool and the transaction manager without you writing a line. With the Flyway starter present, it runs the migrations at startup (Chapter 14). With the web starter, it starts Tomcat. If you define your own bean of the same kind, yours takes priority: that's exactly what `SecurityConfig` does when it declares its own `PasswordEncoder` and `SecurityFilterChain` (Chapter 15). The rule of thumb is that Boot provides a default and you override only what you must.
 
 We simplify here: the full list of what is auto-configured is long and changes between versions. You don't need to memorize it; you need to know that it exists, so that when a bean appears that you never wrote, you know where it came from.
 
@@ -367,7 +372,7 @@ Read it as a small story. If any account exists, do nothing: this code runs at *
 
 ### 11.8 Annotations are read by the framework, so calls matter
 
-Annotations such as `@Transactional` work because Spring wraps the bean in a **proxy**, a stand-in object with the same methods that adds behavior (here, starting a database transaction) around your method. The consequence is that the wrapper only runs when the call comes from *outside* the bean, through the proxy. If a method calls another method on `this`, the proxy is bypassed and the annotation does nothing. Chapter 14 returns to this. The project's `DocumentService` doesn't use the annotation at all; it manages transactions explicitly, because rendering a PDF is slow and must run outside any database transaction (Chapter 14).
+Annotations such as `@Transactional` work because Spring wraps the bean in a proxy, a stand-in object with the same methods that adds behavior (here, starting a database transaction) around your method. The consequence is that the wrapper only runs when the call comes from *outside* the bean, through the proxy. If a method calls another method on `this`, the proxy is bypassed and the annotation does nothing. Chapter 14 returns to this. The project's `DocumentService` doesn't use the annotation at all; it manages transactions explicitly, because rendering a PDF is slow and must run outside any database transaction (Chapter 14).
 
 ### 11.9 A managed version you must override: the Tomcat incident
 

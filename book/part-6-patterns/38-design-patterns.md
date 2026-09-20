@@ -19,7 +19,7 @@ By the end of this chapter, you will be able to:
 - Chapter 4: classes, objects, records and interfaces
 - Chapters 11 to 16: beans, controllers, transactions, filters and throttling
 - Chapters 17 and 18: bounded work, atomic file handling and tests
-- Chapters 19 to 23: the Angular basics (needed only for Section 38.12)
+- Chapters 19 to 23: the Angular basics (needed only for Section 38.13)
 - Chapter 37: the engineering trade-offs (referred to in Section 38.14)
 
 ## Beginner tier: A vocabulary for solutions
@@ -53,7 +53,7 @@ Several patterns have appeared earlier in the book without their names. Table 38
 | Service layer | One class holds the rules of a use case, apart from the web and the database | `DocumentService` (Chapters 12 and 16) |
 | Data transfer object | A plain carrier of data between layers | `DocumentSummary`, `DocumentDetail` (Chapter 12) |
 
-Each of these earns its keep. **Dependency injection** removes the wiring from every class and lets a test hand in a fake, and its cost is that the connections are invisible until you know to look for them (Chapter 11). A **repository** lets `DocumentService` say `findVisibleTo(user)` without a line of SQL; its cost is that a query method's name has to be read as a sentence (Chapter 14), and a careless one can hide a slow query. A **service layer** keeps rules in one place, so that two controllers can't implement "who may open this" differently; the price is a class that grows large, and `DocumentService` is the project's largest for that reason. A **data transfer object** (DTO), here a Java record, decides exactly what leaves the server, so a database entity with a password hash can never be serialized by accident (Chapter 12).
+Each of these earns its keep. Dependency injection removes the wiring from every class and lets a test hand in a fake, and its cost is that the connections are invisible until you know to look for them (Chapter 11). A repository lets `DocumentService` say `findVisibleTo(user)` without a line of SQL; its cost is that a query method's name has to be read as a sentence (Chapter 14), and a careless one can hide a slow query. A **service layer** keeps rules in one place, so that two controllers can't implement "who may open this" differently; the price is a class that grows large, and `DocumentService` is the project's largest for that reason. A **data transfer object** (DTO), here a Java record, decides exactly what leaves the server, so a database entity with a password hash can never be serialized by accident (Chapter 12).
 
 Two smaller patterns show up in the smallest code. A **value object** is a small immutable object defined by its values, with no identity of its own. A **factory method** is a static method that builds an object, so callers don't need to know how. The project's `Viewer` is both.
 
@@ -76,7 +76,7 @@ public record Viewer(String username, boolean admin, boolean publisher) {
 
 *Path: `src/main/java/com/example/securedocviewer/document/Viewer.java`*
 
-`Viewer` is a **record**: its three fields can't change after construction, and two `Viewer`s with the same values are equal, which is what makes it a value object. It is deliberately small. `DocumentService` receives a `Viewer` rather than Spring's `Authentication`, so the service's rules mention only "admin" and "publisher", not framework types. The static method `of` is the factory: it reads the authority strings (`ROLE_ADMIN`, `ROLE_PUBLISHER`) once, and applies the rule that an administrator is also a publisher. Every controller calls `Viewer.of(authentication)`, so that translation exists in exactly one place. The same shape appears in `WatermarkService.Layout.of(...)` and in `UserSummary.of(user)`, and it comes at almost no cost.
+`Viewer` is a record: its three fields can't change after construction, and two `Viewer`s with the same values are equal, which is what makes it a value object. It is deliberately small. `DocumentService` receives a `Viewer` rather than Spring's `Authentication`, so the service's rules mention only "admin" and "publisher", not framework types. The static method `of` is the factory: it reads the authority strings (`ROLE_ADMIN`, `ROLE_PUBLISHER`) once, and applies the rule that an administrator is also a publisher. Every controller calls `Viewer.of(authentication)`, so that translation exists in exactly one place. The same shape appears in `WatermarkService.Layout.of(...)` and in `UserSummary.of(user)`, and it comes at almost no cost.
 
 **When not to use a factory method:** a plain constructor is clearer when there is only one way to build the object. A factory is worth adding when construction involves a decision or a translation, as here.
 
@@ -160,7 +160,7 @@ public SessionAuthenticationStrategy sessionAuthenticationStrategy(SessionRegist
 
 *Path: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
-The first method returns an `AuthorizationManager`, an interface with one method, so a **lambda** (Chapter 5) *is* the strategy. The metrics endpoint's rule (Chapter 16) plugs in a decision function that says "allowed only from these address ranges". The second bean builds a **composite**: a strategy made of other strategies, treated as one. Signing in must both change the session id (defeating fixation) and register the session (so an admin can list it), and the composite runs both. That is a second named pattern, **composite**: a group of objects that can be used like a single one.
+The first method returns an `AuthorizationManager`, an interface with one method, so a lambda (Chapter 5) *is* the strategy. The metrics endpoint's rule (Chapter 16) plugs in a decision function that says "allowed only from these address ranges". The second bean builds a **composite**: a strategy made of other strategies, treated as one. Signing in must both change the session id (defeating fixation) and register the session (so an admin can list it), and the composite runs both. That is a second named pattern, **composite**: a group of objects that can be used like a single one.
 
 **What a strategy costs:** an interface, and a reader must find *which* implementation is active. **When not to use it:** when there is one behavior and no realistic second one. The project doesn't create its own strategy interfaces for such cases: there is no `TokenSigner` interface with one implementation, because `SignedUrlService` is a concrete class, and Section 37.4 compares it with signed URLs from a cloud provider, a change you would make only if the need arose.
 
@@ -168,15 +168,19 @@ The first method returns an `AuthorizationManager`, an interface with one method
 
 **The problem:** many operations have the same fixed steps around one variable step (begin a transaction, do something, commit or roll back). Writing the fixed steps each time invites mistakes, such as forgetting the rollback. **The pattern:** in a **template method**, the fixed skeleton is written once and the variable step is supplied by the caller; in Java and Spring it is usually supplied as a *callback*, a lambda passed in. **Where it lives:** the Spring classes `TransactionTemplate` and `JdbcTemplate`, both used by the project.
 
-**Listing 38.4 — Two callbacks in the project (`book-m6-final`, excerpts from two files)**
+**Listing 38.4 — `DocumentService.java` (`book-m6-final`, two excerpts, in file order)**
 
 ```java
-// DocumentService.java
 this.tx = new TransactionTemplate(transactionManager);
 // ...
 return tx.execute(status -> detail(requireViewable(documentId, viewer, actor), viewer));
+```
 
-// AuditLogService.java
+*Path: `src/main/java/com/example/securedocviewer/document/DocumentService.java`*
+
+The second callback is in `AuditLogService`, where the query result is turned into objects:
+
+```java
 private static final RowMapper<AuditEvent> ROW_MAPPER = (ResultSet rs, int rowNum) -> new AuditEvent(
         rs.getLong("id"),
         rs.getTimestamp("occurred_at").toInstant().toEpochMilli(),
@@ -184,9 +188,7 @@ private static final RowMapper<AuditEvent> ROW_MAPPER = (ResultSet rs, int rowNu
         // ...
 ```
 
-*Path: `src/main/java/com/example/securedocviewer/document/DocumentService.java` and `src/main/java/com/example/securedocviewer/audit/AuditLogService.java`*
-
-In the first line, `TransactionTemplate.execute` is the skeleton: it begins a transaction, calls the lambda, commits if it returns and rolls back if it throws (Chapter 14). The lambda is the variable step, and it is the *only* thing the project writes. In the second, `JdbcTemplate` runs the query and loops over rows, and the `RowMapper` lambda says how to turn *one row* into an `AuditEvent`. In both, the framework controls the flow and calls your code at the right moment, which is the inversion of control from Chapter 11.
+(`book-m6-final`, `AuditLogService.java`, excerpt: the start of `ROW_MAPPER`.) In the first listing, `TransactionTemplate.execute` is the skeleton: it begins a transaction, calls the lambda, commits if it returns and rolls back if it throws (Chapter 14). The lambda is the variable step, and it is the *only* thing the project writes. In the second, `JdbcTemplate` runs the query and loops over rows, and the `RowMapper` lambda says how to turn *one row* into an `AuditEvent`. In both, the framework controls the flow and calls your code at the right moment, which is the inversion of control from Chapter 11.
 
 **What it costs:** control flow that jumps between your lambda and the framework, which makes stepping through it in a debugger surprising. **When not to use it:** for the fixed skeleton of a single call, a template class is more machinery than a try/catch. It pays when the boilerplate is easy to get wrong, as transaction handling is.
 
@@ -224,7 +226,7 @@ public void onIdChanged(HttpSessionIdChangedEvent event) {
 
 *Path: `src/main/java/com/example/securedocviewer/security/SessionMetadata.java`*
 
-`SessionMetadata` remembers where and when each session signed in, for the admin list. It never asks the container "has a session ended?". It is *told* when a session is destroyed, and removes its record, and when the id changes at sign-in (Chapter 15) it moves the record to the new id. The code that ends sessions knows nothing about this class. In Angular, the same idea appears as RxJS observables and signals (Section 38.12).
+`SessionMetadata` remembers where and when each session signed in, for the admin list. It never asks the container "has a session ended?". It is *told* when a session is destroyed, and removes its record, and when the id changes at sign-in (Chapter 15) it moves the record to the new id. The code that ends sessions knows nothing about this class. In Angular, the same idea appears as RxJS observables and signals (Section 38.13).
 
 **What it costs:** hidden control flow. Reading `SessionMetadata` won't tell you *who* triggers `onDestroyed`. **When not to use it:** when the caller can simply call the other component directly and the coupling is fine, an event is just a longer way to write a method call.
 

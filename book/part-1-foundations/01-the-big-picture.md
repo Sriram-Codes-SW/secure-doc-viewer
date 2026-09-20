@@ -87,6 +87,9 @@ flowchart LR
 
 *Figure 1.1 — From PDF to tiles to screen*
 
+<!-- source: README.md "Why this design"; application.yml (tile-size, render-dpi); TileGenerationService.java, WatermarkService.java and TileController.java at book-m6-final -->
+
+
 Three more ingredients, explained in Section 1.8, make the tiles safe to serve: signed addresses, a watermark and checks on every request.
 
 ### 1.5 Clients and servers, in one picture
@@ -111,6 +114,9 @@ sequenceDiagram
 ```
 
 *Figure 1.2 — A browser asks for a tile*
+
+<!-- source: TileController.java (method getTile) and DocumentService.tileAccessIfViewable at book-m6-final -->
+
 
 The *Database* in the figure is a separate program that stores the app's accounts, documents and permissions on disk so they survive a restart; [Chapter 9](09-sql-and-mysql.md) teaches it. Two rules follow, and the rest of the book depends on them:
 

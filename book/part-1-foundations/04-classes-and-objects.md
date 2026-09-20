@@ -445,6 +445,9 @@ flowchart LR
 
 *Figure 4.1 — One request's path through the classes (simplified)*
 
+<!-- source: DocumentController.java, DocumentService.java and DocumentRepository.java at book-m6-final (each receives the next class through its constructor) -->
+
+
 The controller receives the web request and asks the service to do the work; the service applies the rules and asks the repository for data; the repository talks to the database. Each arrow is a constructor parameter. Part II builds exactly this layering.
 
 ### 4.7 Packages, imports and access levels

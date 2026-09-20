@@ -22,8 +22,7 @@ By the end of this chapter, you will be able to:
 
 **A note on versions.** Most listings in this chapter are quoted at `book-m3-hardening` (Spring Boot 3.3.4, Java 21), where these features were added. Listings 13.1 and 13.2, the paging snippet, the two short excerpts in Section 13.5 and Listings 13.6 and 13.7 come from `book-m6-final` (Spring Boot 4.1.1, Java 25). At `book-m6-final`, `ViewerProperties` has more settings and different defaults (for example `tileRateLimitPerWindow` is 180, not 120), and `GlobalExceptionHandler` has extra handlers, but the parts quoted here are unchanged. One name changed with Spring 7: the constant for status 413 is `HttpStatus.PAYLOAD_TOO_LARGE` in the m3 code and `HttpStatus.CONTENT_TOO_LARGE` at `book-m6-final`; the status is the same.
 
-Terms used here and explained where they appear: **`Accept` header** (the request header naming the content types the caller can receive; Chapter 8), **stack trace** (the list of method calls at the moment of an exception; Chapter 3), **log** (Chapter 11), **`Retry-After`** (a response header telling the client how many seconds to wait; Chapter 12), and **UUID** (a randomly generated identifier, used here only to make a short reference code). CSRF is the subject of [Chapter 16](16-spring-security-defenses.md).
-
+Terms used here and explained where they appear: **`Accept` header** (the request header naming the content types the caller can receive; Chapter 8), stack trace (the list of method calls at the moment of an exception; Chapter 3), **log** (Chapter 11), **`Retry-After`** (a response header telling the client how many seconds to wait; Chapter 12), and **UUID** (a randomly generated identifier, used here only to make a short reference code).
 ## Beginner tier: Never trust input
 
 ### 13.1 Never trust input
@@ -126,6 +125,8 @@ The four refused cases are the boundaries: one below the minimum size, one above
 ### 13.4 Typed configuration (`ViewerProperties`) that fails fast
 
 Chapter 11 showed the `secure-doc-viewer:` block of `application.yml`. `ViewerProperties` is the Java class that receives it. Listing 13.3 shows the parts that matter.
+
+*Pattern note: Reading settings from the environment is twelve-factor configuration (Chapter 39, Section 39.12).*
 
 **Listing 13.3 — `ViewerProperties.java` (`book-m3-hardening`, simplified: the other settings and all getters and setters are omitted)**
 
@@ -265,7 +266,7 @@ public ResponseEntity<Map<String, String>> handleInvalidBody(MethodArgumentNotVa
 
 ### 13.6 Errors raised before a controller runs
 
-The advice class only sees exceptions thrown while a controller is handling a request. Failures inside the security filter chain (not signed in, a missing CSRF token) happen earlier, so the advice never sees them. `SecurityErrorResponses` writes the same `{"error": ...}` JSON itself, so a caller gets one shape whether the failure came from a controller or a filter (Chapter 16). It's a good example of a rule that had to be applied twice, in two places, because the framework has two paths.
+The advice class only sees exceptions thrown while a controller is handling a request. Failures inside the security filter chain (not signed in, or a missing CSRF token, the guard against forged requests that [Chapter 16](16-spring-security-defenses.md) explains) happen earlier, so the advice never sees them. `SecurityErrorResponses` writes the same `{"error": ...}` JSON itself, so a caller gets one shape whether the failure came from a controller or a filter (Chapter 16). It's a good example of a rule that had to be applied twice, in two places, because the framework has two paths.
 
 ## Advanced tier: Not leaking, and setting limits
 

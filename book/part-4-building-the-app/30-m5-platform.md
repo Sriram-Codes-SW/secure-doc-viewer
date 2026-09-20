@@ -67,9 +67,9 @@ without installing Maven themselves.
 
 ### 30.3 What a container is
 
-Chapter 10 introduced Docker. As a reminder, an **image** is a frozen recipe-plus-ingredients bundle: a
-filesystem with a program and everything it needs. A **container** is a running instance of an
-image, isolated from the machine around it. **Docker Compose** starts several containers together
+Chapter 10 introduced Docker. As a reminder, an image is a frozen recipe-plus-ingredients bundle: a
+filesystem with a program and everything it needs. A container is a running instance of an
+image, isolated from the machine around it. Docker Compose starts several containers together
 from one file.
 
 **Analogy.** An image is a sealed lunch box packed at the factory; a container is the lunch box being
@@ -116,7 +116,7 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 *Path: `Dockerfile`*
 
-This is a **multi-stage build**: two `FROM` lines, two images. Read it in two halves.
+This is a multi-stage build: two `FROM` lines, two images. Read it in two halves.
 
 **The build stage** (first `FROM`, named `build`). It starts from a full JDK (the toolkit that can
 compile), copies the wrapper and `pom.xml`, and downloads all dependencies (`dependency:go-offline`)
@@ -247,8 +247,9 @@ Here are the ideas, one at a time.
 (`mysqladmin ping`) passes, starts `app`, which runs Flyway migrations V1 to V3 on the fresh database,
 and waits for `/actuator/health` to answer, then starts `web`. When it finishes, you browse to
 `http://localhost:8081`: the request enters nginx, which serves the Angular files, and forwards `/api/...` calls to `app:8080`,
-which talks to MySQL. Two additional copies of your data are volumes: `mysql-data` and `app-storage`
-(the tiles), which survive `docker compose down` unless you delete them.
+which talks to MySQL. Your data lives in two named volumes: `mysql-data` (the database) and
+`app-storage` (the tiles). Both survive `docker compose down` unless you delete them
+(`docker compose down -v`).
 <!-- source: docker-compose.yml at book-m5-platform; PR #5 body -->
 
 ### 30.7 Continuous integration
@@ -573,10 +574,11 @@ and never printed.
 pipeline of Chapter 25 into a chain of independent gates, and then the two resource problems that
 came with letting people replace documents and upload heavy PDFs.*
 
-### 30.12 The tile endpoint, five gates later
+### 30.12 The tile endpoint, now six gates
 
 At milestone 0 the tile endpoint verified a token, checked a session, read a tile and stamped it.
-This is the same method at milestone 5. Compare it with Listing 25.9.
+This is the same method at milestone 5, where the checks before the work have grown to six (Table
+30.3). Compare it with Listing 25.9.
 
 **Listing 30.9 — `TileController.getTile` (book-m5-platform, simplified: Javadoc, the helper `loadTile` and imports removed)**
 
@@ -691,6 +693,8 @@ Three details are worth a closer look.
 Owners can replace a document's PDF. Until this milestone, the new tiles were written over the old
 ones while readers were reading. A reader could load some tiles of a page from the old version and
 some from the new, producing a page that never existed (`TM2-5` and `PO2-2`).
+
+*Pattern note: Versions plus one atomic switch are the immutable versions pattern (Chapter 39, Section 39.11).*
 
 The fix has three parts.
 
@@ -1020,6 +1024,7 @@ flowchart LR
 ```
 
 *Figure 30.1 — Blueprint v5 (`book-m5-platform`)*
+<!-- source: book/blueprints/v5-platform.md; classes named in the diagram, present at book-m5-platform under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; db/migration/V1, V2, V3; Dockerfile; docker-compose.yml; frontend/nginx.conf; deploy/Caddyfile -->
 
 ## Decisions and challenges
 

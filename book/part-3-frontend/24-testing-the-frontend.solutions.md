@@ -35,7 +35,7 @@ Example:
 
 ### Exercise 24.4 ★★ Two themes
 
-The two themes use different color values (Listing 21.8), so text that has enough contrast in one palette may not in the other. Checking only the light theme would leave the dark palette unverified.
+The two themes use different color values (Listing 21.9), so text that has enough contrast in one palette may not in the other. Checking only the light theme would leave the dark palette unverified.
 
 ### Exercise 24.5 ★★★ Why only end-to-end catches it
 

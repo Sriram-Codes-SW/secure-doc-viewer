@@ -27,6 +27,8 @@ By the end of this chapter, you will be able to:
 
 Chapter 1 introduced clients and servers. **HTTP** (HyperText Transfer Protocol) is the set of rules they follow to talk. A **protocol** is an agreed format for a conversation, like the rules of a phone call: who speaks first, how you say goodbye. The conversation is always the same shape: the client sends a **request**, and the server sends back one **response**. The server never speaks first.
 
+*Pattern note: This request and response exchange is the client-server pattern (Chapter 39, Section 39.4).*
+
 A request names *what* the client wants and *how*; the response says whether that worked and carries the result. Everything on a web page, from the text to each image, arrives through separate exchanges like this. When a reader looks at one page of a document in the app, the browser makes about a dozen tile requests, one for each tile.
 
 Follow what happens when you type an address such as `https://docs.example.com/` into a browser:
@@ -52,6 +54,9 @@ Content-Type: application/json
 ```
 
 *Figure 8.1 — One request and its response (teaching example, abbreviated)*
+
+<!-- source: modeled on GET /api/documents in DocumentController.java and the SDV_SESSION cookie name in application.yml at book-m6-final; the values are placeholders -->
+
 
 The top block is the request: a **request line** (method, path, protocol version), then **headers**, one per line. The bottom is the response: a **status line**, headers, an empty line, and the **body**. The id and title values are placeholders for illustration. Notice that everything is plain text. You can write a request by hand, and Section 8.10 does.
 
@@ -87,7 +92,7 @@ A URL has parts. Take `https://docs.example.com:8080/api/tiles?token=<signed-tok
 
 The path can also carry a value. The app's document endpoints use `/api/documents/{documentId}`, where `{documentId}` stands for a real identifier, so `/api/documents/123e4567-e89b-12d3-a456-426614174000` names one document. The app's real identifiers are random UUIDs, so they cannot be guessed by counting upward. A path that names a thing is called a **resource**, and the design style of naming resources by path and acting on them with methods is called **REST** (Chapter 12).
 
-The **method** says what the client wants to do. Table 8.1 lists the ones the app uses, with real examples from `DocumentController`.
+The method says what the client wants to do. Table 8.1 lists the ones the app uses, with real examples from `DocumentController`.
 
 | Method | Meaning | Example in the app |
 |---|---|---|
@@ -219,7 +224,7 @@ JSON is for structured data. A PDF is a large block of bytes, and HTTP has a sep
 
 HTTP has no memory: each request stands alone. Yet after you sign in, the server must recognize you on the next request. The mechanism is a **cookie**: a small piece of text that the server asks the browser to store (with a `Set-Cookie` header) and that the browser then attaches to every later request to that server (with a `Cookie` header).
 
-At sign-in, the server creates a **session** (Chapter 1) and sends its identifier as a cookie. The app's configuration names and protects it.
+At sign-in, the server creates a session (Chapter 1) and sends its identifier as a cookie. The app's configuration names and protects it.
 
 **Listing 8.3 — `application.yml` (book-m6-final, excerpt: session cookie)**
 
@@ -377,7 +382,7 @@ The backend is never reached directly by the browser, so the browser sees a sing
 
 ### 8.9 HTTPS and TLS in one page
 
-Plain HTTP travels as readable text, so anyone on the network path can read or change it, including the session cookie. **HTTPS** is HTTP inside an encrypted channel created by **TLS** (Transport Layer Security). TLS provides three things: **encryption** (eavesdroppers see noise), **integrity** (changes are detected) and **authentication** (a certificate proves you reached the real host). A **certificate** is a signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. (A public key is one half of a pair of numbers used for encryption: it can be shared freely, while its partner, the private key, stays secret on the server.)
+Plain HTTP travels as readable text, so anyone on the network path can read or change it, including the session cookie. **HTTPS** is HTTP inside an encrypted channel created by **TLS** (Transport Layer Security). TLS provides three things: **encryption** (eavesdroppers see noise), **integrity** (changes are detected) and authentication (a certificate proves you reached the real host). A **certificate** is a signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. (A public key is one half of a pair of numbers used for encryption: it can be shared freely, while its partner, the private key, stays secret on the server.)
 
 The project's optional TLS front end is a program called Caddy, and the setting `SESSION_COOKIE_SECURE=true` is what you turn on when you use it. The Caddy configuration adds one more header, `Strict-Transport-Security` (HSTS), which tells the browser to use only HTTPS for this site from then on.
 

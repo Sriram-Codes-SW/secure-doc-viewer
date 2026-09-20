@@ -15,7 +15,8 @@
 
 Chapters 27 (documents), 13 (validation and error handling) and 16 (Spring Security), as listed in
 `book/OUTLINE.md`. The code is at `book-m3-hardening` (pull request #3, three commits named 3a, 3b and
-3c; stacked on pull request #2), still Spring Boot 3.3.4 and Java 21.
+3c; stacked on pull request #2), still Spring Boot 3.3.4 and Java 21. To run this tag yourself, see Table IV.3 ("What you need to run
+each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m3; timeline -->
 
 ## Beginner tier: Never trust what arrives
@@ -115,7 +116,7 @@ Now the hostile case. A PDF can declare any page size it likes in its own header
 declares a page 200,000 by 200,000 points. The scale makes that about 416,000 by 416,000 pixels, or
 173 billion pixels. At roughly 4 bytes per pixel in a typical image type, allocating that
 image would need hundreds of gigabytes, and a small file of a few kilobytes would bring the server
-down. That is a **decompression bomb**: a small input that expands into an enormous amount of work or
+down. That is a decompression bomb: a small input that expands into an enormous amount of work or
 memory when processed.
 
 The defense is arithmetic before allocation. The server multiplies the declared width by the
@@ -214,7 +215,7 @@ problem. The fix is small in the controller, and it changes the design.
 
 *Path: `src/main/java/com/example/securedocviewer/controller/DocumentController.java`*
 
-`file.getBytes()` loads everything into memory; `file.getInputStream()` gives a **stream**, a way to
+`file.getBytes()` loads everything into memory; `file.getInputStream()` gives a stream, a way to
 read the data a piece at a time. The `try (...)` form is try-with-resources: the stream is closed when
 the block ends, even if an error occurs. The service then copies the stream to a file on disk and
 parses the file from there.
@@ -667,6 +668,7 @@ flowchart LR
 ```
 
 *Figure 28.1 — Blueprint v3 (`book-m3-hardening`)*
+<!-- source: book/blueprints/v3-hardening.md; classes named in the diagram, present at book-m3-hardening under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, controller/GlobalExceptionHandler.java, security/SecurityConfig.java, service/TileGenerationService.java, config/ViewerProperties.java -->
 
 ## Decisions and challenges
 

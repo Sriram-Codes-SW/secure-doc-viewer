@@ -16,7 +16,8 @@
 Chapters 26 (accounts and sessions), 9 (SQL and MySQL) and 14 (JPA and Flyway), as listed in
 `book/OUTLINE.md`. The code is at `book-m2-documents`, still Spring Boot 3.3.4 and Java 21. This
 milestone is pull request #2 (commit `ba00693`), which was stacked on pull request #1 and merged
-within a minute of it.
+within a minute of it. To run this tag yourself, see Table IV.3 ("What you need to run each tag") in
+the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m2; timeline -->
 
 ## Beginner tier: Who owns a document?
@@ -45,7 +46,7 @@ users, and a document open to everyone who is signed in.
 Three ideas define access.
 
 - The **owner** is the account that uploaded the document.
-- The **visibility** is either `PRIVATE` (the owner plus users the owner shares it with) or
+- The visibility is either `PRIVATE` (the owner plus users the owner shares it with) or
   `EVERYONE` (every signed-in user).
 - An **admin** can see and manage everything.
 
@@ -145,10 +146,10 @@ CREATE INDEX ix_document_share_user ON document_share (user_id);
 
 Ideas from Chapter 9 appear here in their working clothes.
 
-- A **foreign key** (`owner_id`) ties each document to exactly one account, and the database refuses
+- A foreign key (`owner_id`) ties each document to exactly one account, and the database refuses
   a document whose owner doesn't exist.
 - `document_share` is a **join table** for a many-to-many relationship: one row per (document,
-  user) grant. Its **composite primary key** `(document_id, user_id)` makes it impossible to share the
+  user) grant. Its composite primary key `(document_id, user_id)` makes it impossible to share the
   same document with the same user twice.
 - `ON DELETE CASCADE` removes a document's pages and shares automatically when the document row is
   deleted, so nothing orphaned remains.
@@ -236,7 +237,7 @@ Each annotation answers one question about the mapping.
 - `@ManyToMany ... @JoinTable` maps the set of users onto the `document_share` join table.
 
 This is the first milestone where the database is more than a list of accounts, and the first time
-that a **schema** (Flyway's SQL) and a **model** (JPA's annotations) must agree. If the column
+that a schema (Flyway's SQL) and a **model** (JPA's annotations) must agree. If the column
 `page_count` is named differently in the two, the app fails at startup or at the first query. The
 integration tests catch that.
 <!-- source: Document.java at book-m2-documents -->
@@ -355,9 +356,11 @@ longer than 32 characters returns an empty list, and admin accounts are hidden (
 
 ### 27.7 The audit trail
 
-An **audit trail** is a durable, ordered record of who did what and when, kept so that questions such
+An audit trail is a durable, ordered record of who did what and when, kept so that questions such
 as "who opened this document last Tuesday?" can be answered later. At milestone 1 it was a small
 in-memory list. Now it is a database table, written by one service.
+
+*Pattern note: An append-only audit trail is an event log (Chapter 39, Section 39.10).*
 
 **Listing 27.6 — `AuditEventType.java` (book-m2-documents)**
 
@@ -424,7 +427,7 @@ name can't make the insert fail. The important part is the annotation on the fir
 
 ### 27.8 Why the audit write needs its own transaction
 
-A **transaction** is a group of database changes that succeed or fail together. If any step fails,
+A transaction is a group of database changes that succeed or fail together. If any step fails,
 everything is rolled back as if nothing happened. Spring wraps a service method in one transaction
 by default, so all the database work of one request is atomic.
 
@@ -552,11 +555,13 @@ final class FileOperations {
 
 *Path: `src/main/java/com/example/securedocviewer/service/FileOperations.java`*
 
-The class's Javadoc gives the plan: "Each operation retries for about two seconds before giving up." (Adding up the sleeps in the code below gives closer to four seconds in the worst case, so treat the Javadoc's figure as approximate.)
 `deleteDirectory` tries up to 8 times. After a `FileSystemException` it sleeps and tries again. The
 sleep is an **exponential backoff**: `50L << Math.min(attempt, 4)` shifts the number 50 left by the
-attempt number, capped at 4, so the waits are 50, 100, 200, 400 milliseconds, then 800 for the
-remaining tries. Waiting longer each time gives whatever holds the lock a chance to let go without
+attempt number, capped at 4, so the waits are 50, 100, 200, 400 milliseconds, then 800 for each of
+the remaining four tries. The sleeps add up to 50 + 100 + 200 + 400 + 4 × 800 = 3,950 milliseconds,
+so an operation that never succeeds gives up after about four seconds. (The class's Javadoc says "about
+two seconds"; the code, which this book quotes, waits about twice that. The point of the comment is the
+idea, not the exact figure, but when a comment and the code disagree, believe the code.) Waiting longer each time gives whatever holds the lock a chance to let go without
 hammering the disk. The `moveDirectory` method (not shown) uses the same loop with an atomic rename,
 and if the directory stays locked it falls back to copy-and-delete.
 
@@ -783,6 +788,7 @@ flowchart LR
 ```
 
 *Figure 27.1 — Blueprint v2 (`book-m2-documents`)*
+<!-- source: book/blueprints/v2-documents.md; classes named in the diagram, present at book-m2-documents under src/main/java/com/example/securedocviewer/: controller/AdminController.java, audit/AuditEvent.java, audit/AuditLogService.java, controller/DocumentController.java, document/DocumentService.java, controller/PageTileUrlController.java, security/SecurityConfig.java, service/SignedUrlService.java, service/StorageJanitor.java, controller/TileController.java, service/TileGenerationService.java, security/TileRateLimiter.java, controller/UserDirectoryController.java; db/migration/V1, V2 -->
 
 What changed since v1: a `document/` package replaces the in-memory `DocumentRegistry`, with migration
 `V2`; documents gain an owner, a visibility and per-user shares; endpoints for rename, replace,

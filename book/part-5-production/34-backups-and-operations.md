@@ -1,4 +1,4 @@
-<!-- chapter: 34 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded-draft -->
+<!-- chapter: 34 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Chapter 34: Backups, restores and operations
 
 This chapter answers a question every real deployment must answer before the first user arrives: if the server's disk dies tonight, what do you get back tomorrow? You'll learn what state the app holds, how to capture it consistently, how to prove a backup works by restoring it, and what the app quietly deletes on its own schedule. Backups are the least exciting part of an app and the part you'll be most grateful for on the one day you need them.
@@ -155,7 +155,7 @@ A backup is only proven by a restore. The project did one, and the checks it use
 5. A reader signed in (`200`) and received a watermarked tile (`200`, `image/png`). This is the end-to-end proof: authentication, database, storage, and watermarking all working on the restored data.
 6. The scratch environment and the backup files were removed afterward. Backups contain password hashes and document content, so cleaning up is part of the drill.
 
-<!-- source: PR 5 body, restore drill; README "Backup and restore" -->
+<!-- source: README.md "Backup and restore" at book-m6-final; PR 5 body, restore drill -->
 Figure 34.2 lays the restore order and the drill checks in one chain. The restore itself is four steps; the drill adds the proof.
 
 ```mermaid

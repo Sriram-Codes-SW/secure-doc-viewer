@@ -118,6 +118,8 @@ Everything that runs in the browser is under the reader's control. The reader ca
 
 A **route guard** is a function that Angular runs before entering a route. It returns `true` to allow entry, or a redirect.
 
+*Pattern note: A guard is a guard clause (Chapter 38, Sections 38.11 and 38.13).*
+
 **Listing 23.2 — `auth.guard.ts` (book-m6-final)**
 
 ```typescript

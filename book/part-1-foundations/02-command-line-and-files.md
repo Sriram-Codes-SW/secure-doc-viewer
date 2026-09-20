@@ -90,6 +90,9 @@ secure-doc-viewer/
 
 *Figure 2.1 — The top of the project's folder tree (book-m6-final, abbreviated)*
 
+<!-- source: git ls-tree of the repository root and of src/ at book-m6-final -->
+
+
 A folder inside another is written with slashes: `src/main/resources` is `resources` inside `main` inside `src`. The full layout gets its own section in Chapter 6.
 
 ### 2.3 Creating, reading, copying and deleting files
@@ -345,7 +348,7 @@ final class FileOperations {
 
 *Path: `src/main/java/com/example/securedocviewer/service/FileOperations.java`*
 
-The method waits between attempts, and the wait grows: `50L << Math.min(attempt, 4)` shifts the number 50 left by the attempt number, doubling it each time (50, 100, 200, 400 and then 800 milliseconds). The lesson for a beginner is the operating-system one: your files are not only yours. Other programs may hold them, and a sync service can also copy your secrets and your documents to a cloud you did not intend. That is why `.env.example` carries a warning that the storage folder must not be synced. <!-- source: dossier bugs-and-findings.md C4; decisions.md (move out of OneDrive); FileOperations.java and .env.example at book-m6-final -->
+The method waits between attempts, and the wait grows: `50L << Math.min(attempt, 4)` shifts the number 50 left by the attempt number, doubling it each time (50, 100, 200, 400 and then 800 milliseconds, staying at 800 from the fifth wait on). The class allows eight attempts, and it waits after each failure, so the waits add up to 50 + 100 + 200 + 400 + 4 x 800 = 3,950 milliseconds, close to four seconds. The class comment above says "about two seconds", which understates what the code does; when a comment and the code disagree, believe the code. The lesson for a beginner is the operating-system one: your files are not only yours. Other programs may hold them, and a sync service can also copy your secrets and your documents to a cloud you did not intend. That is why `.env.example` carries a warning that the storage folder must not be synced. <!-- source: dossier bugs-and-findings.md C4; decisions.md (move out of OneDrive); FileOperations.java and .env.example at book-m6-final -->
 
 ### 2.11 Common mistakes
 

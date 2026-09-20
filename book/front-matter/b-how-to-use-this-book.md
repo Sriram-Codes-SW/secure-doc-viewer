@@ -3,7 +3,8 @@
 ## Reading order
 
 Read Parts I to III in order. Part IV assembles the app milestone by milestone and assumes what
-those parts taught. Part V takes the app to production, and Chapter 37 weighs the trade-offs. If
+those parts taught. Part V takes the app to production, Chapter 37 weighs the trade-offs, and Part
+VI (Chapters 38 and 39) names the patterns you have been using. If
 you already know a topic, try its exercises first; if you can do the starred exercises without
 looking anything up, skim the chapter and move on. The outline (`OUTLINE.md`) lists, for every
 chapter, which earlier chapters it assumes and what its sections are.

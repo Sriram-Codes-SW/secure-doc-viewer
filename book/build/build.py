@@ -36,6 +36,32 @@ subprocess.run('npx --yes -p @mermaid-js/mermaid-cli mmdc -p ../puppeteer-config
                '-o diagrams/rendered.md -e png -s 2 -b white', cwd=OUT, check=True, shell=True, env=env0)
 SRC = 'diagrams/rendered.md'
 
+# Accessibility: give each rendered diagram the text of its italic caption (the line below it) as alt text.
+rp = os.path.join(OUT, SRC)
+lines = open(rp, encoding='utf-8').read().split('\n')
+for i, line in enumerate(lines):
+    m = re.match(r'!\[diagram\]\((.+?)\)$', line)
+    if not m:
+        continue
+    alt = 'Diagram'
+    for nxt in lines[i + 1:i + 4]:
+        if nxt.strip():
+            cm = re.match(r'\*(Figure [^*]+)\*\s*$', nxt.strip())
+            if cm:
+                alt = 'Diagram. ' + cm.group(1).replace('[', '(').replace(']', ')')
+            break
+    lines[i] = f'![{alt}]({m.group(1)})'
+with open(rp, 'w', encoding='utf-8', newline='\n') as f:
+    f.write('\n'.join(lines))
+
+# PDF only: the default LaTeX fonts lack these glyphs, so use same-width ASCII stand-ins (EPUB/HTML keep the originals).
+pdf_text = open(rp, encoding='utf-8').read()
+for old, new in {'─': '-', '├': '+', '└': '+', '│': '|', '≈': '~',
+                 '\U0001F600': BACKSLASH + 'uD83D' + BACKSLASH + 'uDE00'}.items():
+    pdf_text = pdf_text.replace(old, new)
+with open(os.path.join(OUT, 'diagrams', 'rendered-pdf.md'), 'w', encoding='utf-8', newline='\n') as f:
+    f.write(pdf_text)
+
 common = ['docker', 'run', '--rm', '-v', BOOK.replace(BACKSLASH, '/') + ':/data', '-w', '/data/build/out',
           'pandoc/extra:latest', '--from', 'gfm', '--toc', '--toc-depth=2', '--standalone', '--resource-path=.:/data/build/out/diagrams',
           '--metadata', 'title=Building a Secure Document Viewer',
@@ -46,7 +72,7 @@ subprocess.run(common + ['--embed-resources', '-o', 'secure-doc-viewer-guide.htm
 # LaTeX book PDF (XeLaTeX): chapters start new pages, running headers, wrapped code, numbered sections.
 subprocess.run(common + ['--pdf-engine=xelatex', '-V', 'documentclass=book', '-V', 'classoption=oneside,11pt', '-V', 'papersize=a4',
                '-V', 'geometry:margin=2.5cm', '--top-level-division=chapter', '--highlight-style=tango',
-               '--include-in-header=/data/build/header.tex', '-V', 'colorlinks=true', '-o', 'secure-doc-viewer-guide.pdf', SRC],
+               '--include-in-header=/data/build/header.tex', '-V', 'colorlinks=true', '-o', 'secure-doc-viewer-guide.pdf', 'diagrams/rendered-pdf.md'],
                check=True, env=env)
 for n in sorted(os.listdir(OUT)):
     print(f'{os.path.getsize(os.path.join(OUT, n)):>10}  {n}')

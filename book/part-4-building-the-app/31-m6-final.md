@@ -43,7 +43,7 @@ final state of the project.
 
 ### 31.2 The vocabulary of a healthy project
 
-A **dependency** is a library your project uses but did not write. The backend depends on Spring,
+A dependency is a library your project uses but did not write. The backend depends on Spring,
 PDFBox and a MySQL driver; the frontend depends on Angular, Vitest and dozens more. Your project
 inherits every feature of a dependency, and every flaw.
 
@@ -59,7 +59,7 @@ A **CVE** (Common Vulnerabilities and Exposures entry) is a public identifier fo
 flaw in some software. A tool that scans your dependencies compares their versions with lists of
 such flaws.
 
-**LTS** means long-term support: a release line that its maintainers promise to keep fixing for a
+LTS means long-term support: a release line that its maintainers promise to keep fixing for a
 stated period. Not every release line gets that promise. Node.js, for example, promotes only its
 even-numbered major versions to LTS.
 
@@ -162,7 +162,7 @@ being freed. It reads 0 free slots where it expected 1. Nothing in the productio
 slot does come back, microseconds later. The test asserted on state that another thread changes
 after the result was handed over.
 
-This is a **race condition**: the outcome depends on which of two threads gets there first. Races
+This is a race condition: the outcome depends on which of two threads gets there first. Races
 are the classic cause of flaky tests, and they are hard to find by staring at a test, because
 running it under a debugger slows one side and hides the problem. On a fast machine, though, the
 gap can be hit, which is what the pull request description records.
@@ -645,6 +645,7 @@ flowchart LR
 ```
 
 *Figure 31.1 — Blueprint v6 (`book-m6-final`)*
+<!-- source: book/blueprints/v6-final.md; classes named in the diagram, present at book-m6-final under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; same files as book-m5-platform -->
 
 **What changed since v5:** no structural change. The non-test changes are the Dependabot policy and the Vitest 5 and jsdom 30 bumps; the flaky-test fix is test code only.
 

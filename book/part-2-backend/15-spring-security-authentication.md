@@ -30,7 +30,7 @@ By the end of this chapter, you will be able to:
 
 ### 15.1 Authentication, authorization, and the difference
 
-**Authentication** answers "who are you?" **Authorization** answers "what may you do?" Think of an office building with a front desk. Showing your badge to the guard is authentication. The badge reader on each door, which opens only some of them for you, is authorization. This chapter is about the guard; [Chapter 16](16-spring-security-defenses.md) is about the doors.
+Authentication answers "who are you?" Authorization answers "what may you do?" Think of an office building with a front desk. Showing your badge to the guard is authentication. The badge reader on each door, which opens only some of them for you, is authorization. This chapter is about the guard; [Chapter 16](16-spring-security-defenses.md) is about the doors.
 
 **Where the analogy breaks down:** a guard sees your face and remembers you. A server sees only a claim, a username and a password typed into a form, and it can't tell a person from a script. It must also re-check on every request, because HTTP has no memory of earlier requests unless you add one (Section 15.6). Nothing here identifies a *human*; it identifies someone who knows the password.
 
@@ -39,6 +39,8 @@ By the end of this chapter, you will be able to:
 ### 15.2 The filter chain
 
 A **servlet** is Java's name for a piece of code that handles web requests, and the web server (Tomcat, in this project) hands each request to your application through a chain of **servlet filters**. A filter is code that every request passes through *before* it reaches a controller, and every response passes back through afterward. Each filter can look at the request, change it, stop it (by writing a response itself) or pass it on.
+
+*Pattern note: A filter chain is the chain of responsibility pattern (Chapter 38, Section 38.3; pipes and filters, Chapter 39, Section 39.8).*
 
 Spring Security is a chain of such filters, each with one job. One reads the session and works out who the caller is. One checks the CSRF token (Chapter 16). One decides whether the request is allowed. If any filter refuses, the controller never runs. You describe the chain in one place, a bean of type `SecurityFilterChain`. The project's begins like this.
 
@@ -72,6 +74,8 @@ Why write the chain by hand instead of using defaults? Because the defaults assu
 ### 15.3 Storing passwords: hashing, salting, BCrypt
 
 The database must never contain passwords. Anyone who could read it, through a leaked backup, a stolen disk or a mistake, would have every account, and people reuse passwords across sites. Instead the database stores a **hash**: the output of a one-way function that turns a password into a fixed-length string of characters. "One-way" means that given the hash you can't practically get back the password. To check a sign-in, the server hashes what was typed and compares the two hashes.
+
+*Pattern note: A password encoder that can be swapped or upgraded is the strategy pattern (Chapter 38, Section 38.4).*
 
 Plain hashing has two weaknesses. Two people with the same password would have the same hash, and attackers prepare tables of the hashes of common passwords. The fix for both is a **salt**: random data mixed into each password before hashing, so the same password produces a different hash every time. The salt isn't secret. It's stored beside the hash, and its job is to make precomputed tables useless.
 
@@ -287,7 +291,7 @@ Step 6 raises an obvious question: what *is* the session, and how does the brows
 
 ### 15.6 Sessions and the session cookie (`SDV_SESSION`, httpOnly, SameSite)
 
-HTTP forgets you between requests. Chapter 8 compared the session cookie to a coat-check ticket, and this section shows the real thing. After a successful sign-in, the server creates a **session**: a record kept on the server, holding the security context and the attributes from Step 7, and identified by a long random id. The server sends that id to the browser in a **cookie** (Chapter 8), and the browser returns the cookie with every later request. The server looks the id up and knows who is calling. Here is the relevant part of the sign-in response as it travels, written as an example rather than a capture from the project, with a placeholder id.
+HTTP forgets you between requests. Chapter 8 compared the session cookie to a coat-check ticket, and this section shows the real thing. After a successful sign-in, the server creates a session: a record kept on the server, holding the security context and the attributes from Step 7, and identified by a long random id. The server sends that id to the browser in a cookie (Chapter 8), and the browser returns the cookie with every later request. The server looks the id up and knows who is calling. Here is the relevant part of the sign-in response as it travels, written as an example rather than a capture from the project, with a placeholder id.
 
 **Example 15.1 — A sign-in response that sets the session cookie (teaching example)**
 
@@ -324,7 +328,7 @@ server:
 - `secure` means "send it only over HTTPS". It defaults to `false` for local development and is set to `true` wherever the app is served over HTTPS; the file's own comment says it "Must be true anywhere the app is served over HTTPS".
 - `timeout: 30m` is the idle timeout: 30 minutes without a request ends the session.
 
-**Sessions versus tokens.** The alternative to a server-side session is a **token**: a signed piece of text, for example a **JWT** (JSON Web Token, a signed text holding your identity and an expiry), that the browser stores and sends with each request, usually in a header. The server can check it without keeping any records. Table 15.2 compares the two for this project.
+**Sessions versus tokens.** The alternative to a server-side session is a token: a signed piece of text, for example a **JWT** (JSON Web Token, a signed text holding your identity and an expiry), that the browser stores and sends with each request, usually in a header. The server can check it without keeping any records. Table 15.2 compares the two for this project.
 
 **Table 15.2 — Sessions and tokens, for this app**
 

@@ -38,6 +38,8 @@ An analogy: you leave your outgoing mail tray on your desk. Anyone who can slip 
 
 The server sets a second cookie, `XSRF-TOKEN`, holding a random value. The app's own JavaScript reads that cookie and copies its value into a request header, `X-XSRF-TOKEN`, on every request that changes something (`POST`, `PUT`, `PATCH`, `DELETE`). The server accepts a change only if the header matches the token. A foreign page can make the browser *send* cookies, but it can't *read* this cookie (browsers only let a site read its own cookies), so it can't fill in the header. This is the **double-submit cookie** pattern: the same value arrives twice, once in a cookie the browser sends automatically and once in a header that only the real app can write.
 
+*Pattern note: The token handler is a swappable strategy (Chapter 38, Section 38.4).*
+
 Here is one changing request as it travels, written as an example with placeholders, not captured from the project.
 
 **Example 16.1 — A request that changes something, with its CSRF header (teaching example)**
@@ -210,6 +212,8 @@ The test `anAdminCanSignAUserOutEverywhere` shows the whole thing: one user sign
 
 Hashing passwords slowly (Chapter 15) makes each guess expensive, but an attacker can still send many guesses. **Throttling** limits how many attempts are allowed in a period. `LoginThrottle` applies three rules over a rolling 15-minute window.
 
+*Pattern note: Reserving an attempt first and handing it back on success is the reserve-then-compensate pattern (Chapter 38, Section 38.10).*
+
 **Table 16.2 — The three sign-in rules (`LoginThrottle`)**
 
 | Rule | Limit | Stops |
@@ -272,6 +276,8 @@ Two limits of the design are stated in the class comment: the counters live in m
 ### 16.7 Trusting `X-Forwarded-For` only from a proxy
 
 Throttling by address needs the real client address. In a deployment the connection reaches the app through a **reverse proxy** (a server that receives requests on the app's behalf and forwards them, covered in Part V), so the address on the connection is the proxy's, and the original address travels in a header, `X-Forwarded-For`. But any client can write that header. If the app believes it blindly, an attacker can send a different fake address with every attempt and never hit a per-address limit.
+
+*Pattern note: A proxy that owns the trust boundary is the gateway pattern (Chapter 39, Section 39.7).*
 
 **Listing 16.7 — `application.yml` (`book-m6-final`, excerpt: the forwarded-header settings)**
 

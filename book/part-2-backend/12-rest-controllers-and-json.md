@@ -24,7 +24,7 @@ By the end of this chapter, you will be able to:
 
 ### 12.1 What REST means, and what this book means by it
 
-Think of a library desk. You don't walk the shelves; you hand the clerk a request slip naming the thing you want and what you want done with it: "fetch book 42", "return book 42", "renew book 42". **REST** (representational state transfer) is a style of web API built the same way. Each thing the server holds is called a **resource** and has an address: `/api/documents/<document-id>` is one document. The HTTP method on the request says the action, and the response carries a *representation* of the resource, usually JSON.
+Think of a library desk. You don't walk the shelves; you hand the clerk a request slip naming the thing you want and what you want done with it: "fetch book 42", "return book 42", "renew book 42". REST (representational state transfer) is a style of web API built the same way. Each thing the server holds is called a resource and has an address: `/api/documents/<document-id>` is one document. The HTTP method on the request says the action, and the response carries a *representation* of the resource, usually JSON.
 
 Table 12.1 shows the methods the project uses, with real endpoints.
 
@@ -44,7 +44,9 @@ The path names *nouns* (documents, shares, sessions) and the method supplies the
 
 ### 12.2 A controller method: `@RestController`, `@GetMapping`
 
-A **controller** is a class whose methods answer web requests. Listing 12.1 is the start of the class that handles the document library.
+A controller is a class whose methods answer web requests. Listing 12.1 is the start of the class that handles the document library.
+
+*Pattern note: Keeping controllers thin and putting the rules in a service is the service layer pattern (Chapter 38, Section 38.2; layered architecture, Chapter 39, Section 39.5).*
 
 **Listing 12.1 — `DocumentController.java` (`book-m6-final`, simplified: the nested records, fields and constructor are omitted, see Listing 11.2; the other methods and the closing brace are left out)**
 
@@ -114,7 +116,7 @@ public DocumentDetail update(@PathVariable String documentId, @RequestBody Updat
 
 `{documentId}` in the path is a placeholder. When a request for `/api/documents/123e4567-e89b-12d3-a456-426614174000` arrives, `@PathVariable` copies that part of the real URL into the parameter, so `documentId` holds the identifier. Use a path variable to say *which resource*.
 
-For `@RequestBody`, Spring reads the JSON body and builds an `UpdateDocumentRequest` from it. That class is a Java **record** (Chapter 4): a short way to declare a class that only carries data. Its component names, `title` and `visibility`, are the JSON keys the client must send. Use a body to say *what to change* or *what to create*.
+For `@RequestBody`, Spring reads the JSON body and builds an `UpdateDocumentRequest` from it. That class is a Java record (Chapter 4): a short way to declare a class that only carries data. Its component names, `title` and `visibility`, are the JSON keys the client must send. Use a body to say *what to change* or *what to create*.
 
 Now the query string, which the tile endpoint uses: `TileController.getTile` declares `@RequestParam String token`, so a request for `/api/tiles?token=abc` gives the method the value `abc`. Another example is in `UserDirectoryController`, which serves the "share with" picker:
 
@@ -149,6 +151,8 @@ Nothing in this trace runs unless the security rules in Chapter 16 allow it firs
 ### 12.4 Jackson: turning objects into JSON
 
 You return a Java object; the client receives text. The library that converts between them is **Jackson**, and Spring Boot 4 uses Jackson 3, whose packages start with `tools.jackson` (`SecurityErrorResponses` imports `tools.jackson.databind.ObjectMapper`, for example). Converting an object to JSON is called **serialization**, and the reverse, **deserialization**. You rarely call Jackson yourself: Spring calls it when a method returns an object or takes a `@RequestBody`.
+
+*Pattern note: A record that carries only the data of one JSON message is a data transfer object (Chapter 38, Section 38.2).*
 
 For a record, the rule is simple: each component becomes a JSON key with the same name. Listing 12.3 is a record the project returns from the document list.
 
@@ -218,6 +222,9 @@ sequenceDiagram
 ```
 
 *Figure 12.1 — The requests behind viewing one page*
+
+<!-- source: DocumentController.java, PageTileUrlController.java and TileController.java at book-m6-final -->
+
 
 1. `GET /api/documents` (`DocumentController.list`): the library. The reader picks a document.
 2. `GET /api/documents/{documentId}` (`DocumentController.get`): the `DocumentDetail`, which includes a list of pages, each with its number of tile rows and columns and its pixel size (`PageInfo`).

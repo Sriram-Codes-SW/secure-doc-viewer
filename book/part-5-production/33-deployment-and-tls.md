@@ -1,4 +1,4 @@
-<!-- chapter: 33 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded-draft -->
+<!-- chapter: 33 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Chapter 33: Deployment and TLS
 
 This chapter moves the Secure Document Viewer from your laptop to a server that other people can reach. You'll learn what changes when strangers are on the other end of the connection, how nginx and Caddy stand in front of the app, how the container images are built, and how to read the compose file that ties the pieces together. By the end you'll be able to bring up the whole stack with one command, put HTTPS in front of it, and explain the reason behind each line of configuration.
@@ -148,6 +148,8 @@ Because everything Chapter 32 built assumes traffic arrives through nginx. nginx
 
 Before nginx can serve anything, the images have to be built. Two Dockerfiles do it. Here is the backend's.
 
+*Pattern note: Images built from a Dockerfile are infrastructure as code (Chapter 39, Section 39.13).*
+
 **Listing 33.1 — `Dockerfile`, `book-m6-final` (simplified: comments omitted, and the digests shortened)**
 
 ```dockerfile
@@ -210,6 +212,8 @@ Stage one builds the Angular app with Node. `npm ci` installs exactly what the l
 ### 33.8 The nginx configuration, piece by piece
 
 Here is the configuration, with its explanatory comments removed so the structure is visible.
+
+*Pattern note: Nginx in front of the app is the reverse proxy and gateway pattern (Chapter 39, Section 39.7).*
 
 **Listing 33.3 — `frontend/nginx.conf`, `book-m6-final` (simplified: comments omitted)**
 
@@ -329,6 +333,8 @@ The failure mode is worth understanding, because it's silent. If the addresses d
 ### 33.11 Secrets and configuration
 
 Secrets are never in the compose file. Look at how it asks for them:
+
+*Pattern note: Settings and secrets from the environment are twelve-factor configuration (Chapter 39, Section 39.12).*
 
 ```yaml
 MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}

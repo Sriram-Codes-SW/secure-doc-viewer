@@ -38,6 +38,8 @@ An **ORM** (object-relational mapper) does the translation from declarations you
 
 An **entity** is a class mapped to a table. Listing 14.1 is the account entity.
 
+*Pattern note: A repository hides how objects are stored behind a collection-like interface (Chapter 38, Section 38.2).*
+
 **Listing 14.1 — `AppUser.java` (`book-m6-final`, simplified: getters and setters after the constructors, and two columns, are omitted)**
 
 ```java
@@ -83,13 +85,13 @@ public class AppUser {
 Line by line:
 
 - `@Entity` says "this class is stored in the database", and `@Table(name = "app_user")` names the table. Without `@Table`, Hibernate would guess a name from the class.
-- `@Id` marks the **primary key**, the column that identifies a row. `@GeneratedValue(strategy = GenerationType.IDENTITY)` lets MySQL generate the value (`AUTO_INCREMENT`) when the row is inserted.
+- `@Id` marks the primary key, the column that identifies a row. `@GeneratedValue(strategy = GenerationType.IDENTITY)` lets MySQL generate the value (`AUTO_INCREMENT`) when the row is inserted.
 - `@Column` maps a field to a column and repeats constraints: `nullable = false` becomes `NOT NULL`, `unique = true` becomes a unique constraint, and `length = 64` is the `VARCHAR` size. The migration in Section 14.5 is where the schema is really defined; these declarations describe it to Hibernate, and mismatches show up as errors when the application runs.
 - `@Enumerated(EnumType.STRING)` stores the role as the text `READER`, `PUBLISHER` or `ADMIN`. The alternative, the default, stores the *position* of the name in the enum: `READER` is 0, `PUBLISHER` is 1. Then reordering the enum, or inserting a new role in the middle, silently changes what every stored row means. Storing the name is safer and readable in the database.
 - `Instant` is Java's type for a moment in time (Chapter 5). The project maps it to `DATETIME(6)`, and Section 14.9 explains how it's kept in UTC.
 - The two constructors: the `protected` one with no parameters exists for Hibernate, which creates entities by calling it and then filling the fields. Your code uses the public one, which forces a caller to supply the required values.
 
-A **repository** is an interface through which you load and save entities. You write no implementation.
+A repository is an interface through which you load and save entities. You write no implementation.
 
 **Listing 14.2 — `AppUserRepository.java` (`book-m6-final`)**
 
@@ -201,7 +203,7 @@ List<Document> findVisibleTo(@Param("username") String username, @Param("everyon
 
 ### 14.5 Flyway migrations (`V1`, `V2`, `V3`)
 
-Someone has to create the tables. If Hibernate did it automatically, the schema would depend on whichever code last ran, and production changes would be guesses. Instead the project sets `spring.jpa.hibernate.ddl-auto: none` ("Flyway owns the schema; Hibernate never alters it", says the comment in `application.yml`) and uses **Flyway**, which applies numbered SQL files in order and records what it applied in a table, so each file runs exactly once on each database.
+Someone has to create the tables. If Hibernate did it automatically, the schema would depend on whichever code last ran, and production changes would be guesses. Instead the project sets `spring.jpa.hibernate.ddl-auto: none` ("Flyway owns the schema; Hibernate never alters it", says the comment in `application.yml`) and uses Flyway, which applies numbered SQL files in order and records what it applied in a table, so each file runs exactly once on each database.
 
 **Listing 14.5 — `V1__create_app_user.sql` (`book-m2-documents`, identical at `book-m6-final`)**
 
@@ -280,14 +282,16 @@ Two habits show here. New columns on tables that already hold rows get a `DEFAUL
 
 ### 14.6 Transactions: `@Transactional` and `TransactionTemplate`
 
-A **transaction** groups several database changes so that either all succeed or none do: it either **commits** (makes them all permanent) or **rolls back** (undoes everything it did). Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
+A transaction groups several database changes so that either all succeed or none do: it either **commits** (makes them all permanent) or **rolls back** (undoes everything it did). Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
+
+*Pattern note: `TransactionTemplate` is the template method idea with a callback (Chapter 38, Section 38.5).*
 
 ```java
 @Transactional
 public UserSummary create(String rawUsername, String password, Role role, boolean mustChangePassword) {
 ```
 
-(`book-m6-final`, `UserAccountService.java`, signature only.) Spring wraps the method in a **proxy** (a stand-in object with the same methods; Chapter 11, Section 11.8): the proxy begins a transaction, runs your method, commits if it returns normally and rolls back if it throws. Read-only methods use `@Transactional(readOnly = true)`, which lets the database and Hibernate skip work.
+(`book-m6-final`, `UserAccountService.java`, signature only.) Spring wraps the method in a proxy (a stand-in object with the same methods; Chapter 11, Section 11.8): the proxy begins a transaction, runs your method, commits if it returns normally and rolls back if it throws. Read-only methods use `@Transactional(readOnly = true)`, which lets the database and Hibernate skip work.
 
 Inside a transaction, Hibernate *tracks* every entity it loaded. That's why `UserAccountService.update` can change a user with `user.setEnabled(enabled)` and never call `save`: at commit, Hibernate notices the field differs from what it loaded and writes an `UPDATE`. This is called **dirty checking**. It is convenient, and it surprises people: a setter called inside a transaction is a database write.
 
@@ -383,7 +387,7 @@ A `DATETIME` column has no time zone. If a laptop in one zone and a container in
 
 ### 14.10 Timed sweeps with `@Scheduled`
 
-Some data must be cleaned up on a timer. Chapter 11 mentioned `@EnableScheduling`; with it on, a method marked `@Scheduled` runs by itself, on a background thread that Spring manages. The project has five.
+Some data must be cleaned up on a timer. Chapter 11 mentioned `@EnableScheduling`; with it on, a method marked `@Scheduled` runs by itself, on a background thread that Spring manages. The project has six.
 
 **Table 14.2 — Scheduled sweeps (`book-m6-final`)**
 
@@ -393,11 +397,12 @@ Some data must be cleaned up on a timer. Chapter 11 mentioned `@EnableScheduling
 | `AuditLogService.sweepThrottled` | fixed delay 1 hour | Forget idle throttle keys, first writing a summary of suppressed events |
 | `KnownDevices.purgeExpired` | cron `0 45 3 * * *` (daily, 03:45) | Delete known-address rows older than 30 days (the `RETENTION` constant) |
 | `LoginThrottle.sweep` | fixed delay 5 minutes | Drop sign-in counters whose failures have aged out |
+| `TileRateLimiter.sweep` | fixed delay 5 minutes | Drop per-user tile windows with no recent requests |
 | `StorageJanitor.sweep` | 2 minute initial delay, then every 6 hours | Remove tile directories nothing points to |
 
 A **cron expression** lists second, minute, hour, day of month, month and weekday: `0 30 3 * * *` means "second 0 of minute 30 of hour 3, every day". A **fixed delay** waits that long *after the previous run finishes*, so runs never overlap. The cron values are themselves configurable, as in `@Scheduled(cron = "${secure-doc-viewer.audit-retention-cron:0 30 3 * * *}")`, using the placeholder syntax from Chapter 11. Spring evaluates a cron in the server's time zone unless told otherwise, which is one more reason the app runs in UTC in its container.
 
-The `StorageJanitor` is the most careful of the five, because it deletes files. It touches only directories whose names look like document ids and only ones older than an hour, "once they are old enough that no upload can still be in flight" (its class comment). It keeps every version of a document whose *current* version is missing from disk, because then the other versions may be the only surviving copy; a review of the backup design asked for that rule. <!-- source: dossier bugs-and-findings F1; commit 66f7152 --> Its test builds nine directories of different ages and checks exactly which are removed (Chapter 18). A good sweep is safe to run at any moment, safe to run twice, and logs and moves on when one item fails, so that one locked folder doesn't stop the rest.
+The `StorageJanitor` is the most careful of the six, because it deletes files. It touches only directories whose names look like document ids and only ones older than an hour, "once they are old enough that no upload can still be in flight" (its class comment). It keeps every version of a document whose *current* version is missing from disk, because then the other versions may be the only surviving copy; a review of the backup design asked for that rule. <!-- source: dossier bugs-and-findings F1; commit 66f7152 --> Its test builds nine directories of different ages and checks exactly which are removed (Chapter 18). A good sweep is safe to run at any moment, safe to run twice, and logs and moves on when one item fails, so that one locked folder doesn't stop the rest.
 
 ### 14.11 Testing with H2 versus a real MySQL
 
