@@ -33,16 +33,19 @@ more.
 
 The book is published as a PDF, an EPUB, and a single web page. All three contain real text, and every
 diagram has alternative text and a text description in the body. In the EPUB and web editions the
-difficulty stars on the exercises are labeled in words, and code listings can be reached and scrolled
-with the keyboard. In the PDF the stars are shown only as symbols, and the meaning of one, two, and
-three stars is explained in How to use this book.
+difficulty stars on the exercises are labeled in words, and, in the web edition, code listings can be
+reached and scrolled with the keyboard. In the PDF the stars are shown only as symbols, and the
+meaning of one, two, and three stars is explained in How to use this book.
 
 What was checked, on September 20, 2026: the PDF is a tagged PDF and passes the PDF/UA-2 check of
 veraPDF 1.30.2. The EPUB passes epubcheck, and Ace by DAISY 1.4.6 reports no failures for it. The web
-page passes the Nu HTML Checker 26.9.16 without errors. axe-core 4.13.0, pa11y 10.0.0, and Lighthouse
-13.5.0 found no missing alternative text, heading, language, table, or color-contrast failures on the
-pages they were run on, which were chapters of the EPUB and a sample of the web page, not the whole
-book. The PDF does not pass PDF/UA-1.
+page passes the Nu HTML Checker 26.9.16 without errors. axe-core 4.13.0 reported no violations on 26
+chapters of the EPUB and on a sample of the web page, Lighthouse 13.5.0 scored the sample 100 out of
+100, and pa11y 10.0.0, run on 11 chapters and the sample, found no missing alternative text, heading,
+language, or table problems. Some color-contrast checks on code listings and star symbols could not be
+decided by these tools and were measured by hand instead; the checked code colors are at least 4.5 to
+1 against their background. These tools were run on part of the book, not the whole book. The PDF
+does not pass PDF/UA-1.
 
 What was not checked: nobody has tested these editions with a screen reader or other assistive
 technology, the PDF has not been checked with PAC or with the accessibility checker in Acrobat, and no

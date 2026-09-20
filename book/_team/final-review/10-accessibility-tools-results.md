@@ -132,3 +132,74 @@ Notes on wording: the phrase "does not claim conformance" replaces any "accessib
 ## Not done
 
 PAC 2024; Acrobat Accessibility Checker; screen reader sessions; full-page Lighthouse and axe on the 19 MB HTML; axe on all 61 XHTML files (24 sampled; Ace covered all 61); re-count of PDF structure elements at 825 pages.
+
+---
+
+# Final files (built 2026-09-20: EPUB 23:20, HTML 23:21, PDF 23:43; PDF 825 pages)
+
+Runs made after the T1, T2 and T3 fixes, one tool at a time, on exactly these files. Scratch: `book/build/out/a11y-scratch/` (`epub6/` = this EPUB unzipped, `html-sample.html` rebuilt from this HTML with the About page, Chapters 4, 13 and 41, Appendix A and the Index).
+
+| Tool | Version | Target | Result |
+|---|---|---|---|
+| veraPDF | 1.30.2 | PDF | PDF/UA-2: **PASS**. PDF/UA-1: 102 passed, 4 failed (header and `pdfuaid:part`, 1 check each; 436 link annotations without `/Contents`, clauses 7.18.1 and 7.18.5). Own scan: `StructTreeRoot`, `Lang en-US`, 1,663 bookmarks; 81 of 81 Figure elements have `/Alt`. |
+| epubcheck | npm `epubchecker` wrapper 5.2.1 | EPUB | "Everything is fine". |
+| Ace by DAISY | 1.4.6 (`ace-puppeteer`, host Chrome) | EPUB, 64 documents | Outcome **pass**, 0 findings (was fail with 185). Metadata present: accessMode, accessModeSufficient, accessibilityFeature, accessibilityHazard, accessibilitySummary. Absent (expected): `conformsTo`, `certifiedBy`, `certifierCredential`, `certifierReport`. |
+| Nu HTML checker | 26.9.16 | HTML edition (19.4 MB) | 0 errors, 0 warnings; 87 info messages (86 void-element slashes, 1 style `type`). The 81 redundant `role="img"` messages are gone. |
+| Nu HTML checker | 26.9.16 | 61 EPUB XHTML files | 67 messages, all `epub:type` "not allowed" false positives (the checker knows no EPUB namespace); nothing else. |
+| axe-core | 4.13.0 (puppeteer-core 25.11.0, host Chrome) | 26 EPUB files, one at a time: title page, nav, About, Preface, How to use, Setup, all seven part openers, Chapters 1, 3, 4, 13, 24, 30, 37, 41, Epilogue, Appendices A, B, C, Index | **0 WCAG violations.** Only the best-practice rules `landmark-one-main` (26) and `region` (2,604 nodes in 25 files), which do not apply to EPUB content documents. `scrollable-region-focusable`: gone (was 30 nodes in 7 files). 12 files list colour-contrast as "needs review". |
+| axe-core | 4.13.0 | HTML sample | **0 violations**, 30 colour-contrast items "needs review". |
+| pa11y | 10.0.0 (htmlcs and axe runners, WCAG2AA) | 11 EPUB files (About, How to use, Chapters 4, 13, 24, 30, 41, Appendices A and C, Index, nav) and the HTML sample | HTML CodeSniffer: nothing real. The axe runner lists the same "needs review" contrast items as errors (up to 248 in Appendix C, 30 in the sample). The sample also gives 577 `NoSuchID` (artifact of cutting the page; see below). |
+| Lighthouse | 13.5.0 | HTML sample (over local HTTP) | Accessibility **100**; 0 failed audits. |
+
+The colour-contrast "needs review" items were classified (axe `messageKey`) on Appendix C, Chapter 30, Chapter 24 and the sample: all are `nonBmp` (star glyphs inside labelled spans: no text to measure), `elmPartiallyObscured` or `elmPartiallyObscuring` (line-number overlays in code blocks). No contrast violation was reported. Own measurements: PDF text colours at least 4.99:1 on the code background, HTML syntax theme at least 5.05:1.
+
+`NoSuchID` on the HTML sample is caused by cutting the page (the contents list points at chapters not in the sample). The whole HTML was checked in the previous pass: 6,059 internal links, 0 broken; not re-run on this build.
+
+Verified counts on these files: EPUB and HTML `<pre>` blocks 522 of 522 with `tabindex="0"`; 0 `role="img"` on `img`; 81 of 81 images with alt; PDF 81 of 81 Figure elements with `/Alt`; 84 "Text description" lines; stars 167 "one star", 199 "two stars", 126 "three stars", 0 stray; Table 4.1 has no empty header cell (Ace reports no `empty-table-header`).
+
+## Sentence-by-sentence check of the printed Accessibility statement (`front-matter/00-about-this-edition.md`)
+
+| # | Sentence (start) | True as written? | Evidence or fix |
+|---|---|---|---|
+| 1 | "The book is published as a PDF, an EPUB, and a single web page." | True. | Three files. |
+| 2 | "All three contain real text, and every diagram has alternative text and a text description in the body." | True. | 81 of 81 images with alt in EPUB and HTML, 81 of 81 PDF Figure elements with `/Alt`, 84 description lines. Quality of the alt text was sampled, not fully reviewed; the sentence does not claim quality. |
+| 3 | "In the EPUB and web editions the difficulty stars on the exercises are labeled in words," | True. | 167 / 199 / 126, none unlabelled. |
+| 4 | "and code listings can be reached and scrolled with the keyboard." | **True for the web edition in a browser; not shown for EPUB reading systems.** | 522 of 522 `pre` have `tabindex="0"`; axe and Ace report no `scrollable-region-focusable`. Reading systems (Thorium, Apple Books, Kindle) may handle `tabindex` differently, and no reader was run. Replacement below. |
+| 5 | "In the PDF the stars are shown only as symbols, and the meaning of one, two, and three stars is explained in How to use this book." | True. | PDF headings extract as star glyphs. |
+| 6 | "the PDF is a tagged PDF and passes the PDF/UA-2 check of veraPDF 1.30.2." | True. | PASS. |
+| 7 | "The EPUB passes epubcheck, and Ace by DAISY 1.4.6 reports no failures for it." | True. | Both clean. |
+| 8 | "The web page passes the Nu HTML Checker 26.9.16 without errors." | True. | 0 errors, 0 warnings. |
+| 9 | "axe-core 4.13.0, pa11y 10.0.0, and Lighthouse 13.5.0 found no missing alternative text, heading, language, table, or color-contrast failures on the pages they were run on, which were chapters of the EPUB and a sample of the web page, not the whole book." | **Partly.** True for axe and Lighthouse. Not literally true for pa11y: pa11y prints color-contrast "errors" on 7 of its 12 targets (they are axe "needs review" items, not confirmed failures) and 577 `NoSuchID` errors on the sample (an artifact). Also some code-block and star contrast checks could not be decided automatically. | Replacement below. |
+| 10 | "The PDF does not pass PDF/UA-1." | True. | 4 rules fail. |
+| 11 | "nobody has tested these editions with a screen reader ..., the PDF has not been checked with PAC or with the accessibility checker in Acrobat, and no third-party audit has been made." | True as far as this review knows. | None run here; the author should confirm nobody else has. |
+| 12 | "This book does not claim conformance with WCAG, PDF/UA, or EPUB Accessibility." | True (and prudent). | No `conformsTo` in the OPF. |
+| 13 | "If you find a barrier, please report it as you would an error (see Corrections and updates below), and say which edition and which page you were using." | True as written. | The section it points to says "report it to the author or the publisher of your copy" and gives no address; consider adding one. |
+
+### Exact replacement wording for sentences 4 and 9
+
+Sentence 4 (replace "and code listings can be reached and scrolled with the keyboard"):
+
+```
+and, in the web edition, code listings can be reached and scrolled with the keyboard.
+```
+
+Sentence 9 (replace from "axe-core 4.13.0" to "not the whole book."):
+
+```
+axe-core 4.13.0 reported no violations on 26 chapters of the EPUB and on a sample of the web page,
+Lighthouse 13.5.0 scored the sample 100 out of 100, and pa11y 10.0.0, run on 11 chapters and the
+sample, found no missing alternative text, heading, language, or table problems. Some color-contrast
+checks on code listings and star symbols could not be decided by these tools and were measured by hand
+instead; the checked code colors are at least 4.5 to 1 against their background. These tools were run
+on part of the book, not the whole book.
+```
+
+("At least 4.5 to 1" is true: measured 4.99:1 or better in the PDF and 5.05:1 or better in the HTML theme; the EPUB has no syntax colors. If you also want to mention that pa11y lists the undecided checks as errors, add: "pa11y lists those undecided checks as errors.")
+
+## Outcome
+
+All tools ran on the final files. The three fixes worked: Ace changed from fail (185 findings) to pass (0), axe found no violations on 26 EPUB files and the HTML sample, and Lighthouse scored 100. Every sentence of the printed statement is true except two that are stronger than the evidence: sentence 4 (keyboard access shown only for the web edition in a browser) and sentence 9 (pa11y's output contains contrast errors that are only "needs review" items). With the two replacements above the statement matches what was verified.
+
+Still not covered: screen readers, PAC, the Acrobat checker, full-page Lighthouse and axe on the 19 MB HTML, axe on 35 of 61 EPUB files (Ace covered all 61), figure description quality beyond a sample, and any reading-system testing of the EPUB.
+
+Note on coverage: the request was at least 20 EPUB files for axe and pa11y. axe covered 26 files; pa11y covered 11 files (it is much slower) plus the HTML sample, so pa11y's coverage is below the requested 20. The replacement wording for sentence 9 states the real numbers (26 for axe, 11 for pa11y).
