@@ -1,7 +1,7 @@
 <!-- chapter: 12 | part: II | owner: writer-backend | tag: book-m6-final | status: expanded -->
 # Chapter 12: REST controllers and JSON
 
-A controller is the class that receives one kind of web request and returns a response. Everything the browser asks the Secure Document Viewer to do, from signing in to listing documents to fetching one image tile, arrives at a controller method. In this chapter you learn to read and write controllers, using the real ones from the project: the document library, the endpoint that hands out signed tile URLs, the tile endpoint that sends PNG images, and the upload endpoint that receives a PDF. Along the way you learn how Java objects become JSON and back, and why the choice of a status code is a promise to the client.
+A controller is the class that receives one kind of web request and returns a response. Everything the browser asks the Secure Document Viewer to do, from signing in to listing documents to fetching one image tile, arrives at a controller method. In this chapter you learn to read and write controllers, using the real ones from the project. They include the document library, the endpoint that hands out signed tile URLs, the tile endpoint that sends PNG images, and the upload endpoint that receives a PDF. Along the way you learn how Java objects become JSON and back, and why the choice of a status code is a promise to the client.
 
 ## Learning objectives
 
@@ -40,7 +40,7 @@ Table 12.1 shows the methods the project uses, with real endpoints.
 
 The path names *nouns* (documents, shares, sessions) and the method supplies the verb. Compare `DELETE /api/documents/abc` with an imaginary `POST /api/deleteDocument?id=abc`: the first uses the language HTTP already has, so any client, cache or log reader understands it without reading your documentation.
 
-**Where the analogy breaks down:** a library clerk remembers you between visits. A pure REST server is meant to treat each request as self-contained, carrying everything needed to answer it. This project bends that rule on purpose: sign-in creates a server-side session, and later requests carry a cookie that identifies it (Chapter 15). This book calls the API "REST-style": resources, paths and methods as above, JSON bodies and honest status codes, but not the full academic definition (see Further reading).
+**Where the analogy breaks down:** a library clerk remembers you between visits. A pure REST server is meant to treat each request as self-contained, carrying everything needed to answer it. This project bends that rule on purpose: sign-in creates a server-side session, and later requests carry a cookie that identifies it (Chapter 15). This book calls the API "REST-style": resources, paths and methods as in Table 12.1, JSON bodies and honest status codes, but not the full academic definition (see Further reading).
 
 ### 12.2 A controller method: `@RestController`, `@GetMapping`
 
@@ -125,7 +125,7 @@ Now the query string, which the tile endpoint uses: `TileController.getTile` dec
 public List<String> search(@RequestParam(defaultValue = "") String q, Authentication authentication) {
 ```
 
-(`book-m6-final`, `UserDirectoryController.java`, excerpt: the method signature.) Here `defaultValue = ""` means "if the caller leaves `q` out, treat it as empty" instead of failing. Without a default, a missing required parameter is an error, which Chapter 13 turns into a clean JSON `400` such as `Missing required 'token'.` Use a query parameter for *optional filters and small options*: the search text, the page size in the admin audit log.
+(`book-m6-final`, `UserDirectoryController.java`, excerpt: the method signature.) Here `defaultValue = ""` means "if the caller leaves `q` out, treat it as empty" instead of failing. Without a default, a missing required parameter is an error. Chapter 13 turns it into a clean JSON `400` such as `Missing required 'token'.` Use a query parameter for *optional filters and small options*: the search text, the page size in the admin audit log.
 
 **A worked example: from URL to method.** Follow one request all the way. The browser sends:
 
@@ -223,6 +223,8 @@ sequenceDiagram
 
 *Figure 12.1 — The requests behind viewing one page*
 
+*Text description:* A sequence between a browser and a server, read from top to bottom. The browser asks for the document list and receives summaries. It asks for one document and receives its detail, with page and tile-grid sizes. It asks for the signed tile URLs of one page and receives a grid of URLs. Finally it asks for each tile with its token and receives one PNG image per request.
+
 <!-- source: DocumentController.java, PageTileUrlController.java and TileController.java at book-m6-final -->
 
 
@@ -274,7 +276,7 @@ public class PageTileUrlController {
 
 The class-level path has two variables, `{documentId}` and `{page}`, and both are available to every method. `@PathVariable int page` shows something else: Spring converts the text in the path to the parameter's type, so `/pages/3/` gives the integer 3, and text that isn't a number is refused with `400` (Chapter 13's `MethodArgumentTypeMismatchException`).
 
-The method asks the service whether this caller may view the page (`requirePage` throws a `404` if not, Chapter 16), computes a session binding, and then builds a two-dimensional array of URLs, one for each `(row, col)`, by asking `SignedUrlService` for a token for each one (Chapter 17). It wraps the array with the grid's size in a `TileUrlGrid` record and returns it with `ResponseEntity.ok(...)`. The result is JSON like `{"page": 0, "rows": 3, "cols": 2, "tileSize": 512, "tileVersion": 1, "tileUrls": [["/api/tiles?token=...", ...], ...]}`, a `String[][]` becoming an array of arrays.
+The method asks the service whether this caller may view the page (`requirePage` throws a `404` if not, Chapter 16) and computes a session binding. It then builds a two-dimensional array of URLs, one for each `(row, col)`, by asking `SignedUrlService` for a token for each one (Chapter 17). It wraps the array with the grid's size in a `TileUrlGrid` record and returns it with `ResponseEntity.ok(...)`. The result is JSON like `{"page": 0, "rows": 3, "cols": 2, "tileSize": 512, "tileVersion": 1, "tileUrls": [["/api/tiles?token=...", ...], ...]}`, a `String[][]` becoming an array of arrays.
 
 Notice what this controller does *not* do: it never returns a link to the document or a whole page, only individually signed links to single tiles. That's the security design of the whole app, expressed as the shape of one response.
 
@@ -329,22 +331,32 @@ public DocumentDetail upload(@RequestParam(value = "title", required = false) St
 
 *Path: `src/main/java/com/example/securedocviewer/controller/DocumentController.java`*
 
-The text parts `title` and `visibility` arrive through `@RequestParam` just like query parameters: `required = false` makes them optional, and Spring converts the text `PRIVATE` into the `Visibility` enum, refusing a value that isn't one of its names. The file arrives as a `MultipartFile`. The method doesn't copy the whole file into memory: it takes `file.getInputStream()`, a stream, and passes that to the service. The `try (var in = ...)` closes the stream afterward even if something throws (Chapter 5). Streaming means a 50 MB PDF isn't held as one big array just to be handed on. The size limit is in `application.yml` (`spring.servlet.multipart.max-file-size: 50MB`), and Chapter 13 shows how an oversized upload becomes a clean `413` error.
+The text parts `title` and `visibility` arrive through `@RequestParam` like query parameters: `required = false` makes them optional, and Spring converts the text `PRIVATE` into the `Visibility` enum, refusing a value that isn't one of its names. The file arrives as a `MultipartFile`. The method doesn't copy the whole file into memory: it takes `file.getInputStream()`, a stream, and passes that to the service. The `try (var in = ...)` closes the stream afterward even if something throws (Chapter 5). Streaming means a 50 MB PDF isn't held as one big array only to be handed on. The size limit is in `application.yml` (`spring.servlet.multipart.max-file-size: 50MB`), and Chapter 13 shows how an oversized upload becomes a clean `413` error.
 
-You can try this endpoint from the command line against your own copy of the app once you have signed in and saved the cookies. This is a teaching example with placeholders:
+You can try this endpoint from the command line against your own copy of the app, but a `curl` upload needs three steps: pick up the CSRF cookie, sign in, and then upload. Example 12.2 shows the sequence. It is a teaching example based on the "API" section of the project's `README.md` at `book-m6-final`, with a placeholder for the password. The browser does all of this for you, and Chapter 16 explains why the app asks for the token.
 
-**Example 12.2 — Uploading a PDF with `curl` (teaching example)**
+**Example 12.2 — Signing in and uploading a PDF with `curl` (teaching example)**
 
 ```bash
-curl -b cookies.txt \
-     -H "X-XSRF-TOKEN: <csrf-token>" \
-     -F "title=Q3 report" \
-     -F "visibility=PRIVATE" \
-     -F "file=@report.pdf" \
+jar=$(mktemp)
+xsrf() { awk '$6=="XSRF-TOKEN"{print $7}' "$jar"; }
+
+# 1. Any request receives the XSRF-TOKEN cookie (this one answers 401, which is fine)
+curl -s -c "$jar" http://localhost:8080/api/auth/me > /dev/null
+
+# 2. Sign in, sending the cookie jar and echoing the token in a header
+curl -s -b "$jar" -c "$jar" -H "X-XSRF-TOKEN: $(xsrf)" \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"pub.one","password":"<password>"}' \
+     http://localhost:8080/api/auth/login
+
+# 3. Upload (read the token again: sign-in replaces it)
+curl -s -b "$jar" -H "X-XSRF-TOKEN: $(xsrf)" \
+     -F "title=Q3 report" -F "visibility=PRIVATE" -F "file=@report.pdf" \
      http://localhost:8080/api/documents
 ```
 
-`-F` sends a multipart part; `file=@report.pdf` means "attach this file". The header supplies the CSRF token that Chapter 16 explains. The endpoint also needs the `PUBLISHER` or `ADMIN` role: the rule in `SecurityConfig` refuses a reader *before* the body is read.
+Step 1 works because the server sets the `XSRF-TOKEN` cookie on the first response, even an error. The helper function `xsrf` reads that cookie's value out of the jar file. In step 2, `-c "$jar"` saves the cookies the server sets (the session cookie and a fresh CSRF cookie), `-b "$jar"` sends the cookies you already have, and the header echoes the token, which is the double-submit defense from Chapter 16. Step 3 sends a multipart body: `-F` adds one part, and `file=@report.pdf` means "attach this file". The account must be a `PUBLISHER` or `ADMIN`, because the rule in `SecurityConfig` refuses a reader *before* the body is read. It must also not be waiting to change a temporary password. Until it has done so in the app, every request except the sign-in ones answers `403` with `passwordChangeRequired` (Chapter 16).
 
 ## Advanced tier: The contract is part of the design
 

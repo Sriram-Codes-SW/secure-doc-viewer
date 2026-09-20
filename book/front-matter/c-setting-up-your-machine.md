@@ -76,8 +76,15 @@ javac -version
 Both should report 25. If `java` reports an older version, another JDK comes earlier on your
 `PATH` (see Appendix E).
 
-You don't install Maven: the project's Maven wrapper (`./mvnw`) downloads the right version
-(3.9.16) the first time you use it.
+For the final code (`book-m6-final`) and for `book-m5-platform` you don't install Maven: the
+project's Maven wrapper (`./mvnw`) downloads the right version (3.9.16) the first time you use it.
+
+> **Note:** The earlier milestones are different. The tags `book-m0-mvp` to `book-m4-reading` were
+> built with Spring Boot 3.3.4 and **Java 21**, and they have no Maven wrapper, because `mvnw` first
+> appears at `book-m5-platform`. To build and run one of those tags yourself, you need a JDK 21 and a
+> Maven 3.9 that you install yourself. You don't have to: you can read those tags without building
+> them, with `git show <tag>:<path>` (Chapter 7). Table IV.3 in the Part IV introduction lists what
+> each tag needs.
 
 ## Step 4. Node.js 24
 

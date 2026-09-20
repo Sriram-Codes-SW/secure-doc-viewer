@@ -1,6 +1,6 @@
 # Appendix B: Blueprint history
 
-The architecture blueprint at each milestone, v0 to v6, with what changed. Assembled from `book/blueprints/`; the chapter for each tag (25 to 31) repeats its blueprint.
+The architecture blueprint at each milestone, v0 to v6, with what changed. Each blueprint is repeated in the chapter for its tag (Chapters 25 to 31). Figures B.1 to B.6 show the blueprints for v0 to v5; v6 has no drawing of its own, because its architecture equals v5.
 
 ## Blueprint v0: the tiled viewer (`book-m0-mvp`)
 
@@ -34,7 +34,9 @@ flowchart LR
     TC --> WM
 ```
 
-*Figure: Blueprint v0. Text description: the browser signs in by name only, uploads a PDF that is tiled to disk, asks for signed tile URLs, and redeems each one at the tile endpoint, which checks signature and session and stamps a watermark.*
+*Figure B.1 — Blueprint v0 (`book-m0-mvp`)*
+
+*Text description:* A left-to-right flowchart. The browser, a static page that draws tiles on a canvas, calls four controllers inside the Spring Boot application. SessionController uses the in-memory SessionService. DocumentController uses TileGenerationService and the in-memory DocumentRegistry. PageTileUrlController uses SignedUrlService and SessionService. TileController uses SignedUrlService, SessionService, TileGenerationService and WatermarkService. A dotted line shows TileGenerationService writing tiles to disk. Notice that there is no database: sessions and documents live in memory and only the tiles are on disk.
 
 ## What's here
 - Signing in takes only a username and returns a session id, sent back in an `X-Session-Id` header. This is a stand-in for real authentication.
@@ -92,7 +94,9 @@ flowchart LR
     TC -.-> D
 ```
 
-*Figure: Blueprint v1. Text description: every request now passes through Spring Security; accounts are in MySQL; tile tokens are bound to a keyed hash of the session; sign-ins and tile requests are throttled.*
+*Figure B.2 — Blueprint v1 (`book-m1-accounts`)*
+
+*Text description:* A left-to-right flowchart. The Angular app sends every request to SecurityConfig, which fans out to AuthController, UserAdminController, AdminController, DocumentController, PageTileUrlController and TileController. AuthController uses LoginThrottle and UserAccountService with BootstrapAdmin; UserAccountService reaches MySQL, which holds only the app_user table from migration V1 (dotted line). The tile-URL and tile controllers use SignedUrlService and SessionKeys; TileController also uses TileRateLimiter, WatermarkService and AuditLogService. DocumentController uses TileGenerationService and the in-memory DocumentRegistry, and tiles are on disk. Notice that everything passes through SecurityConfig and that documents are still not in the database.
 
 ## What changed since v0
 - `SessionController` and `SessionService` removed; sign-in is `POST /api/auth/login` with a password, using an httpOnly session cookie and a CSRF cookie plus header.
@@ -144,7 +148,9 @@ flowchart LR
     TC --> SU
 ```
 
-*Figure: Blueprint v2. Text description: documents, shares and the audit trail move into MySQL; one service decides who may view or manage a document and is consulted on the list, the tile-URL request and every tile request.*
+*Figure B.3 — Blueprint v2 (`book-m2-documents`)*
+
+*Text description:* A left-to-right flowchart. The Angular app goes through SecurityConfig to DocumentController (list, upload, rename, replace, delete, shares), UserDirectoryController, PageTileUrlController, TileController and AdminController. DocumentController, PageTileUrlController and TileController all consult DocumentService, which reads and writes MySQL (dotted line), where users, documents, shares and audit events now live from migrations V1 and V2. DocumentController uses TileGenerationService, which writes tiles to disk; StorageJanitor cleans disk and reads MySQL. DocumentController, TileController and AdminController write to AuditLogService, which stores events in MySQL, and TileController also uses TileRateLimiter and SignedUrlService. Notice that one service, DocumentService, decides access for three different controllers.
 
 ## What changed since v1
 - New `document/` package (`Document`, `Visibility`, `DocumentService`, `DocumentRepository`, `Viewer`) replaces the in-memory `DocumentRegistry`; migration `V2__documents_shares_audit.sql`.
@@ -177,7 +183,9 @@ flowchart LR
     SEC --> H
 ```
 
-*Figure: Blueprint v3. Text description: the same request path as v2 with upload limits, streamed ingest, a uniform error contract, security headers and a health check added.*
+*Figure B.4 — Blueprint v3 (`book-m3-hardening`)*
+
+*Text description:* A left-to-right flowchart with no new components. The Angular app, whose upload page checks the file size first, sends requests to SecurityConfig. SecurityConfig now adds security headers and permits the health check. Requests continue to DocumentController (50 MB cap, streamed ingest) and on to TileGenerationService, which applies the page-count and page-pixel limits taken from ViewerProperties (500 pages, 40 million pixels). DocumentController reports failures to GlobalExceptionHandler, which produces the uniform JSON errors; SecurityConfig also exposes only the Actuator health endpoint. Notice that milestone 3 adds guards to the existing request path.
 
 ## What changed since v2
 - Upload limit lowered from 100 MB to 50 MB (`spring.servlet.multipart`, request limit 51 MB); an oversized file gets a JSON `413` from `GlobalExceptionHandler`, whose `MAX_UPLOAD_MB` is kept in step with the setting.
@@ -216,7 +224,9 @@ flowchart LR
     AU -.-> M
 ```
 
-*Figure: Blueprint v4. Text description: the server tells the browser how long the session may sit idle so it can warn the reader; each watermark carries a short trace code derived from the session, and the audit log can be searched by that code.*
+*Figure B.5 — Blueprint v4 (`book-m4-reading`)*
+
+*Text description:* A left-to-right flowchart in two groups. In the Angular app, the Viewer (deep links, keyboard, resume) calls TileController. The idle-timer code and the session service read the session timeout from AuthController's current-user answer. The Admin page's trace filter calls AdminController, which searches AuditLogService by session-handle prefix in MySQL. In the Spring Boot app, TileController uses SessionKeys for the admin handle and WatermarkService, which reads opacity and spacing from ViewerProperties. Notice how the watermark's trace code links the tile to the audit search.
 
 ## What changed since v3
 - `AuthController`'s current-user answer gains `sessionTimeoutSeconds`, which the frontend uses for the idle warning (`core/idle.ts`, `session.service.ts`, `app.ts`).
@@ -259,9 +269,12 @@ flowchart LR
     PR --> VM
 ```
 
-*Figure: Blueprint v5. Text description: the browser reaches nginx (optionally through Caddy for HTTPS); only nginx and Caddy are published; the API and MySQL are internal; tiles are stored in versioned folders on a volume.*
+*Figure B.6 — Blueprint v5 (`book-m5-platform`)*
+
+*Text description:* A left-to-right flowchart of the Docker Compose network. The user's browser reaches nginx directly or through the optional Caddy container (HTTPS and HSTS). Inside the Spring Boot app, a request passes the SessionLifetimeFilter and PasswordChangeRequiredFilter, then SecurityConfig with LoginThrottle and KnownDevices, then the controllers. Controllers use DocumentService (backed by MySQL with migrations V1 to V3), TileWorkLimiter with TileRateLimiter, and TileGenerationService, which writes versioned tile folders to the app-storage volume; StorageJanitor cleans that volume, and Prometheus, from allowed addresses only, reads ViewerMetrics. This is a deployment-oriented view of what was added or changed since Blueprint v4: SignedUrlService, SessionKeys, WatermarkService and AuditLogService still exist at this tag but are left out to keep the drawing readable.
 
 ## What changed since v4
+- Note: this drawing is a deployment view. It shows what was added or changed at this milestone and the containers around it; `SignedUrlService`, `SessionKeys`, `WatermarkService` and `AuditLogService` still exist but are omitted.
 - Spring Boot 3.3.4 to 4.1.1 and Java 21 to 25; `Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `deploy/Caddyfile`, the full compose stack, `.github/workflows/ci.yml`, Dependabot, the Maven wrapper.
 - Versioned tiles (`{doc}/v{n}`) with atomic replace and `410 Gone` for old tokens (`TileGoneException`; migration `V3__tile_versions_and_account_security.sql`).
 - Bounded rendering and a tile work limit (`TileWorkLimiter`, `ServiceBusyException`); metrics (`ViewerMetrics`).
@@ -270,7 +283,7 @@ flowchart LR
 
 ## Blueprint v6: the finished app (`book-m6-final`)
 
-The architecture is identical to Blueprint v5 (see `v5-platform.md`). Between `book-m5-platform` and `book-m6-final` the non-test changes are `.github/dependabot.yml` (propose only stable/LTS lines) and `frontend/package.json` with its lock file (Vitest 5, jsdom 30 bumps). The history also contains a fix to a flaky assertion in `TileGenerationServiceTest` (commit `ec6c1c5`, PR #9), which is test code only.
+The architecture is identical to Blueprint v5 (Figure B.6). Between `book-m5-platform` and `book-m6-final` the non-test changes are `.github/dependabot.yml` (propose only stable/LTS lines) and `frontend/package.json` with its lock file (Vitest 5, jsdom 30 bumps). The history also contains a fix to a flaky assertion in `TileGenerationServiceTest` (commit `ec6c1c5`, PR #9), which is test code only.
 
 ## What changed since v5
 - No structural change: a test fix, dependency updates and the Dependabot policy only.

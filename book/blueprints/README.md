@@ -20,4 +20,6 @@ Status: first pass (editor). v3 and v4 are derived from file-level diffs and are
 the others. The writer-app checks each blueprint against the code when writing the chapter and
 reports corrections through `requests.md`.
 
-Parts V and VI add no blueprint of their own: the architecture stays at v6 (Part V operates it; Chapters 38 and 39 name its patterns and repeat the v6 picture as Figure 39.1 where useful).
+Parts V to VII add no blueprint of their own: the architecture stays at v6 (Part V operates it; Chapters 38 and 39 name its patterns and repeat the v6 picture as Figure 39.1 where useful).
+
+Chapters 40 and 41 have their own AWS diagrams (Figures 40.1 to 40.3 and 41.1). They are a design and not a milestone, so it is not part of the v0 to v6 series.

@@ -48,7 +48,10 @@ table are the snapshots of that history.
 
 Table IV.1 is your map. In total the repository has 38 commits and pull requests numbered 1 to 12. Pull
 requests 1 to 5 delivered milestones 1 to 5. Pull requests 6 to 8 were automatic dependency updates
-that the project declined, and pull requests 9 to 12 are the small changes of milestone 6.
+that the project declined, and pull requests 9 to 12 are the small changes of milestone 6. A thirteenth
+pull request merged later, after the last tag, and is not part of any milestone: it corrected the
+README and a code comment that still described the reader as a canvas, so the code at the tags and the
+code on the main branch differ in those two places.
 <!-- source: timeline; PR #1-#12 -->
 
 **Table IV.2 — How the tests grew**

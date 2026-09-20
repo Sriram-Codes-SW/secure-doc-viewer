@@ -1,7 +1,7 @@
 <!-- chapter: 15 | part: II | owner: writer-backend | tag: book-m6-final | status: expanded -->
 # Chapter 15: Spring Security I: who are you?
 
-Before the Secure Document Viewer can decide what you may open, it must know who you are. This chapter covers authentication: how the server checks a claim of identity, how passwords are stored so that even the database's owner can't read them, how a session cookie keeps you signed in, how roles say what an account is for, and why the sign-in endpoint gives the same answer for a wrong password and an unknown user. Chapter 16 then adds the defenses that protect all of this.
+Before the Secure Document Viewer can decide what you may open, it must know who you are. This chapter covers authentication. You learn how the server checks a claim of identity and how passwords are stored so that even the database's owner can't read them. You also learn how a session cookie keeps you signed in, how roles say what an account is for, and why the sign-in endpoint gives the same answer for a wrong password and an unknown user. Chapter 16 then adds the defenses that protect all of this.
 
 ## Learning objectives
 
@@ -99,7 +99,7 @@ A `PasswordEncoder` is Spring Security's interface for "turn a password into a h
 
 #### Worked example: what "matching" means
 
-Suppose an account has the password `<example-password>` (a placeholder: this book never prints real passwords). The table below shows what the app does, in order. The hash strings are placeholders, not real values.
+Suppose an account has the password `<example-password>` (a placeholder: this book never prints real passwords). Table 15.1 shows what the app does, in order. The hash strings are placeholders, not real values.
 
 **Table 15.1 — Creating an account and signing in, from the password's point of view**
 
@@ -199,6 +199,8 @@ sequenceDiagram
 
 *Figure 15.1 — The sign-in sequence in `AuthController.login`*
 
+*Text description:* A sequence between the browser, `AuthController`, `LoginThrottle`, the authentication manager and the session. The controller first reserves an attempt from the throttle and then authenticates. A choice follows. A wrong password, unknown user or disabled account gives one fixed `401`. A correct password hands the attempt back, changes the session id, rotates the CSRF token, sets two flags on the session and returns `200` with the cookies.
+
 <!-- source: AuthController.java at book-m6-final -->
 
 Two things to notice. The throttle is asked *before* the password is looked at, and the reservation is given back only on success. And every failure, whatever its cause, ends in the same `401`, while a success creates a session with a *new* id and a *new* CSRF token; the next three excerpts follow the figure step by step.
@@ -225,7 +227,7 @@ public ResponseEntity<CurrentUser> login(@Valid @RequestBody LoginRequest body,
 
 *Path: `src/main/java/com/example/securedocviewer/controller/AuthController.java`*
 
-**Step 1: validate and normalize.** `@Valid` applies the length rules from Chapter 13 (`username` at most 64 characters, `password` at most 128) before any code runs, and the username is normalized. **Step 2: reserve an attempt.** `loginThrottle.reserve` checks the sign-in limits and counts this attempt as a failure *in advance*. That surprising order is the subject of Chapter 16; for now, notice that the throttle runs before the password is looked at, so a locked-out caller learns nothing about whether their guess was right, and pays almost nothing for the refusal.
+**Step 1: validate and normalize.** `@Valid` applies the length rules from Chapter 13 (`username` at most 64 characters, `password` at most 128) before any code runs, and the username is normalized. **Step 2: reserve an attempt.** `loginThrottle.reserve` checks the sign-in limits and counts this attempt as a failure *in advance*. That surprising order is the subject of Chapter 16. For now, notice that the throttle runs before the password is looked at. A locked-out caller therefore learns nothing about whether their guess was right, and the refusal costs the server almost nothing.
 
 **Listing 15.6 — `AuthController.java` (`book-m6-final`, excerpt 2 of 3: the authentication step; indentation reduced)**
 
@@ -281,11 +283,11 @@ return ResponseEntity.ok(toCurrentUser(authentication, request));
 
 *Path: `src/main/java/com/example/securedocviewer/controller/AuthController.java`*
 
-**Step 5: hand back the reserved attempt** (`succeeded`), because the password was right, and record a few facts: a metric (a counter for the operators' dashboard, Chapter 35), the address as a "known device" (an address this account has signed in from successfully; Chapter 16), and the account's last sign-in time. The value `mustChangePassword` says whether this account is still using a password an administrator set (Chapter 16, Section 16.7).
+**Step 5: hand back the reserved attempt** (`succeeded`), because the password was right, and record a few facts. One is a metric (a counter for the operators' dashboard, Chapter 35). Another is the address as a "known device" (an address this account has signed in from successfully; Chapter 16). The last is the account's last sign-in time. The value `mustChangePassword` says whether this account is still using a password an administrator set (Chapter 16, Section 16.7).
 
 **Step 6: create the session.** `request.getSession(true)` makes sure a session exists. `sessionAuthenticationStrategy.onAuthentication` then changes the session's id and registers it, which prevents a **session fixation** attack in which an attacker plants a known id before you sign in (Chapter 16). `rotateCsrfToken` issues a fresh CSRF token. Then the code builds a `SecurityContext`, Spring Security's container for "who is signed in", puts the authenticated user in it, and saves it into the session with `securityContextRepository.saveContext`. From now on, the security filters find the user by reading the session, which is what "being signed in" means in this app.
 
-**Step 7: remember a few things on the session** (whether a password change is pending, and the time of sign-in, used by the lifetime filter in Chapter 16), write an **audit event** (a row in the append-only record of who did what; Chapter 14's `REQUIRES_NEW` explained why audit rows survive failures, and Chapter 27 tells how the audit trail was built), and return the current user's public details. The response never includes the session id. The class comment states the rule: it "travels only in the httpOnly session cookie set by the container."
+**Step 7: remember a few things on the session** (whether a password change is pending, and the time of sign-in, used by the lifetime filter in Chapter 16). Then write an **audit event**, a row in the append-only record of who did what (Chapter 14's `REQUIRES_NEW` explained why audit rows survive failures, and Chapter 27 tells how the audit trail was built). Finally, return the current user's public details. The response never includes the session id. The class comment states the rule: it "travels only in the httpOnly session cookie set by the container."
 
 Step 6 raises an obvious question: what *is* the session, and how does the browser present it on the next request?
 
@@ -328,7 +330,7 @@ server:
 - `secure` means "send it only over HTTPS". It defaults to `false` for local development and is set to `true` wherever the app is served over HTTPS; the file's own comment says it "Must be true anywhere the app is served over HTTPS".
 - `timeout: 30m` is the idle timeout: 30 minutes without a request ends the session.
 
-**Sessions versus tokens.** The alternative to a server-side session is a token: a signed piece of text, for example a **JWT** (JSON Web Token, a signed text holding your identity and an expiry), that the browser stores and sends with each request, usually in a header. The server can check it without keeping any records. Table 15.2 compares the two for this project.
+**Sessions versus tokens.** The alternative to a server-side session is a token: a signed piece of text that the browser stores and sends with each request, usually in a header. One example is a **JWT** (JSON Web Token), a signed text holding your identity and an expiry. The server can check it without keeping any records. Table 15.2 compares the two for this project.
 
 **Table 15.2 — Sessions and tokens, for this app**
 
@@ -339,11 +341,11 @@ server:
 | Does the server store state? | Yes, one record per sign-in | No |
 | Does the browser send it automatically? | Yes, which is why CSRF protection is needed | No, the app attaches it |
 
-The project chose the session cookie. The features it wanted (an admin listing and revoking sessions, ending every session when a password changes, a fixed maximum lifetime) are all easy when the server owns the record, and awkward with tokens. The price is the CSRF protection you'll read about in Chapter 16 and the need to keep session state on the server: the project's session registry, for example, lives in the server's memory. Neither approach is universally better; the point is that the requirements chose.
+The project chose the session cookie. The features it wanted (an admin listing and revoking sessions, ending every session when a password changes, a fixed maximum lifetime) are all straightforward when the server owns the record, and awkward with tokens. The price is the CSRF protection you'll read about in Chapter 16 and the need to keep session state on the server: the project's session registry, for example, lives in the server's memory. Neither approach is universally better; the point is that the requirements chose.
 
 ### 15.7 Roles: READER, PUBLISHER, ADMIN
 
-A **role** is a named set of permissions attached to an account. This app has three, defined in one small file.
+A role is a named set of permissions attached to an account. This app has three, defined in one small file.
 
 **Listing 15.9 — `Role.java` (`book-m1-accounts`, identical at `book-m6-final`; the class comment is omitted)**
 
@@ -357,9 +359,9 @@ public enum Role {
 
 *Path: `src/main/java/com/example/securedocviewer/account/Role.java`*
 
-The class comment explains them: every signed-in user can read documents they have access to, publishers can also upload, and admins can additionally manage accounts, sessions and the audit log. That's why a `PUBLISHER` is not a "more powerful reader" by accident: the roles are cumulative on purpose, and Chapter 16 shows the rules that enforce them.
+The class comment explains them: every signed-in user can read documents they have access to, publishers can also upload, and admins can additionally manage accounts, sessions and the audit log. The roles are cumulative on purpose: a `PUBLISHER` can do everything a reader can, plus upload. Chapter 16 shows the rules that enforce them.
 
-Where do accounts come from? There is **no self-registration**. An administrator creates every account (`UserAccountService.create`), which checks the username against the pattern `[a-z0-9._-]{3,32}` and the password against the length rules, and sets "must change password" so the new user chooses their own at first sign-in. The very first administrator has to come from somewhere, and `BootstrapAdmin` supplies it: on a completely empty database it creates an account whose password comes from the `BOOTSTRAP_ADMIN_PASSWORD` setting, or, if that isn't set, from a random 20-character value that it prints to the log once. Its class comment compares this to what Spring Boot itself does for a default user. A generated password is flagged "must change", precisely because it appeared in a log. Once any account exists, the class does nothing.
+Where do accounts come from? There is **no self-registration**. An administrator creates every account (`UserAccountService.create`), which checks the username against the pattern `[a-z0-9._-]{3,32}` and the password against the length rules, and sets "must change password" so the new user chooses their own at first sign-in. The very first administrator has to come from somewhere, and `BootstrapAdmin` supplies it. On a completely empty database it creates an account whose password comes from the `BOOTSTRAP_ADMIN_PASSWORD` setting. If that isn't set, the password is a random 20-character value that it prints to the log once. Its class comment compares this to what Spring Boot itself does for a default user. A generated password is flagged "must change", precisely because it appeared in a log. Once any account exists, the class does nothing.
 
 ### 15.8 Same answer for wrong password and unknown user
 

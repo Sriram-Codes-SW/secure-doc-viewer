@@ -22,12 +22,18 @@ By the end of this chapter, you will be able to:
 
 **A note on versions.** Most listings in this chapter are quoted at `book-m3-hardening` (Spring Boot 3.3.4, Java 21), where these features were added. Listings 13.1 and 13.2, the paging snippet, the two short excerpts in Section 13.5 and Listings 13.6 and 13.7 come from `book-m6-final` (Spring Boot 4.1.1, Java 25). At `book-m6-final`, `ViewerProperties` has more settings and different defaults (for example `tileRateLimitPerWindow` is 180, not 120), and `GlobalExceptionHandler` has extra handlers, but the parts quoted here are unchanged. One name changed with Spring 7: the constant for status 413 is `HttpStatus.PAYLOAD_TOO_LARGE` in the m3 code and `HttpStatus.CONTENT_TOO_LARGE` at `book-m6-final`; the status is the same.
 
-Terms used here and explained where they appear: **`Accept` header** (the request header naming the content types the caller can receive; Chapter 8), stack trace (the list of method calls at the moment of an exception; Chapter 3), **log** (Chapter 11), **`Retry-After`** (a response header telling the client how many seconds to wait; Chapter 12), and **UUID** (a randomly generated identifier, used here only to make a short reference code).
+Five terms are used here and explained where they appear:
+
+- **`Accept` header:** the request header naming the content types the caller can receive (Chapter 8).
+- **Stack trace:** the list of method calls at the moment of an exception (Chapter 3).
+- **Log:** the server's running record of events (Chapter 11).
+- **`Retry-After`:** a response header telling the client how many seconds to wait (Chapter 12).
+- **UUID:** a randomly generated identifier, used here only to make a short reference code.
 ## Beginner tier: Never trust input
 
 ### 13.1 Never trust input
 
-Picture a bank teller who checks that a deposit slip is filled in, but never looks at the check itself. The form is not the security; the teller's check is. The Angular app also checks what users type, so a mistake gets a friendly message immediately. But anyone can skip the app and send requests directly with a script, and the browser's checks are just code running on the user's machine, which the user controls. So the server must treat every request as untrusted, however it arrived.
+Picture a bank teller who checks that a deposit slip is filled in, but never looks at the check itself. The form is not the security; the teller's check is. The Angular app also checks what users type, so a mistake gets a friendly message immediately. But anyone can skip the app and send requests directly with a script, and the browser's checks are only code running on the user's machine, which the user controls. So the server must treat every request as untrusted, however it arrived.
 
 **Where the analogy breaks down:** a teller sees the customer and can judge them. A server never does. It sees only bytes, and it must decide from the bytes alone.
 
@@ -95,7 +101,7 @@ Bodies aren't the only input. `AdminController.audit` restricts its paging param
 
 (`book-m6-final`, `AdminController.java`, excerpt.) A caller can't ask for a page size of a million rows, which would otherwise load the audit table into memory. The rule sits in the signature, where a reader of the code sees it. A failure here raises a different exception, `HandlerMethodValidationException`, because Spring validates method parameters through a different path than request bodies.
 
-There are, in fact, three related exception types. `MethodArgumentNotValidException` is for a validated request body. `HandlerMethodValidationException` is for rules on individual parameters like the two above. Jakarta's `ConstraintViolationException` is for rules checked elsewhere in the code. The handler class has one method for each, and they all answer with the same `400` shape, so a client never has to know which mechanism caught the problem.
+There are, in fact, three related exception types. `MethodArgumentNotValidException` is for a validated request body. `HandlerMethodValidationException` is for rules on individual parameters like `page` and `size` in the audit endpoint. Jakarta's `ConstraintViolationException` is for rules checked elsewhere in the code. The handler class has one method for each, and they all answer with the same `400` shape, so a client never has to know which mechanism caught the problem.
 
 The project's own tests show the whole set of cases. This one is real:
 
@@ -182,6 +188,8 @@ flowchart TB
 
 *Figure 13.1 — The path of an error from a thrown exception to the JSON body*
 
+*Text description:* A top-down flow that starts with a request passing the security filters. From there two roads lead to a status and JSON error body. A filter failure (not signed in, bad CSRF token) is written directly by `SecurityErrorResponses`. A failure in a controller or service throws an exception, Spring picks the most specific handler, and the catch-all handler is used only when nothing more specific matches.
+
 <!-- source: GlobalExceptionHandler.java and SecurityErrorResponses.java at book-m3-hardening and book-m6-final -->
 
 Notice the two roads into the same JSON. Failures raised inside a controller or service travel down the middle of the figure: Spring chooses the handler whose exception type is the closest match, and the catch-all `Exception` handler is only the last resort. Failures raised earlier, in the security filters, never reach the handler class at all, so `SecurityErrorResponses` writes the same shape by hand (Section 13.6). Both roads end at a status and a body with one `error` key, which is why the browser app needs only one way to read a failure.
@@ -214,9 +222,9 @@ public class GlobalExceptionHandler {
 
 *Path: `src/main/java/com/example/securedocviewer/controller/GlobalExceptionHandler.java`*
 
-Each `@ExceptionHandler` names the exception types it catches. The second handler shows that one method can serve several types, and that it can use the exception's own message (`e.getMessage()`) when that message is safe to show. The helper at the bottom is where the shape is defined, once: a response with the given status, an explicitly set JSON content type (the reason for that is the incident in Section 13.7), and a body that is a one-entry map, which Jackson writes as `{"error": "..."}`.
+Each `@ExceptionHandler` names the exception types it catches. The second handler shows that one method can serve several types, and that it can use the exception's own message (`e.getMessage()`) when that message is safe to show. The helper at the bottom is where the shape is defined, once. It builds a response with the given status, an explicitly set JSON content type (the reason is the incident in Section 13.7), and a body that is a one-entry map, which Jackson writes as `{"error": "..."}`.
 
-The project defines its own small exception classes, and their comments say what they mean. `BadRequestException` is "a request that is well-formed HTTP but breaks a business rule; mapped to 400". `LoginLockedException` is "Too many failed sign-ins; mapped to 429 with Retry-After". A service simply throws the one that fits. Here is a real one, from the document service:
+The project defines its own small exception classes, and their comments say what they mean. `BadRequestException` is "a request that is well-formed HTTP but breaks a business rule; mapped to 400". `LoginLockedException` is "Too many failed sign-ins; mapped to 429 with Retry-After". A service throws the one that fits. Here is a real one, from the document service:
 
 ```java
 private static String validTitle(String title) {
@@ -260,7 +268,7 @@ public ResponseEntity<Map<String, String>> handleInvalidBody(MethodArgumentNotVa
 }
 ```
 
-(`book-m6-final`, `GlobalExceptionHandler.java`, excerpt.) It builds the message `username: must not be blank` from the field name and the annotation's message, and returns just the first, so the client gets one clear sentence to fix at a time. `Optional`'s `orElse` supplies a fallback for the odd case with no field error.
+(`book-m6-final`, `GlobalExceptionHandler.java`, excerpt.) It builds the message `username: must not be blank` from the field name and the annotation's message, and returns only the first, so the client gets one clear sentence to fix at a time. `Optional`'s `orElse` supplies a fallback for the odd case with no field error.
 
 **Adding a mapping is a three-step habit.** To add "409 when a document title already exists", you write a small exception class, throw it from the service where the rule is decided, and add one `@ExceptionHandler` method that calls `error(HttpStatus.CONFLICT, e.getMessage())`. No controller changes. Exercise 13.3 asks you to do it.
 
@@ -291,17 +299,17 @@ public ResponseEntity<Map<String, String>> handleUnexpected(Exception e) {
 
 *Path: `src/main/java/com/example/securedocviewer/controller/GlobalExceptionHandler.java`*
 
-`Exception` is the parent of every exception, so this handler catches whatever the more specific handlers above it didn't; Spring picks the most specific match. The client gets a generic sentence and an eight-character reference made from a random UUID. The full exception, with its stack trace, goes to the server log next to the same reference (`log.error(..., reference, e)`). When a user reports "reference 3f9a1c22", an operator searches the log for it and finds exactly what happened. Nothing sensitive crosses the network, and the failure is still traceable.
+`Exception` is the parent of every exception, so this handler catches whatever the more specific handlers didn't; Spring picks the most specific match. The client gets a generic sentence and an eight-character reference made from a random UUID. The full exception, with its stack trace, goes to the server log next to the same reference (`log.error(..., reference, e)`). When a user reports "reference 3f9a1c22", an operator searches the log for it and finds exactly what happened. Nothing sensitive crosses the network, and the failure is still traceable.
 
-`ErrorContractTest` proves this. It adds a controller that throws an exception whose message contains a fake SQL statement and a file path, calls it, and asserts that the response is `500`, starts with `Something went wrong on our side. Reference: `, and contains neither the SQL nor the path (Chapter 18, Listing 18.5). The test's fake secrets are on purpose: it checks by content, not just by status.
+`ErrorContractTest` proves this. It adds a controller that throws an exception whose message contains a fake SQL statement and a file path, calls it, and asserts that the response is `500`, starts with `Something went wrong on our side. Reference: `, and contains neither the SQL nor the path (Chapter 18, Listing 18.5). The test's fake secrets are on purpose: it checks by content, not only by status.
 
 #### A real incident: the handler that failed on images
 
-The comment above `GlobalExceptionHandler` records a subtle bug. *The problem:* on the tile endpoint, which answers with PNG images, a clean `401` or `429` turned into a `500`. *How it was found:* during the first manual test pass of the running app in a browser, before the hardening milestone, and fixed then (it was already fixed at `book-m1-accounts`). *The cause:* Spring negotiates the content type of a response body against the request's `Accept` header, which lists what the caller is willing to receive. The tile endpoint's callers may accept *only images*, so a JSON error body was "not acceptable", the error handler itself failed, and the failure of the failure was a `500`. *The fix:* the `error(...)` helper always sets `MediaType.APPLICATION_JSON` explicitly, as in Listing 13.4. *The lesson:* error paths are code too, and they need tests as much as success paths do. <!-- source: dossier bugs-and-findings A3 and DOSSIER 'Ch 13 incident reference' (fixed in commit 32d040f, PR #1; the m3 handler carries the class comment); phase 3b commit 335e0b0 only made the JSON error contract consistent -->
+The class comment of `GlobalExceptionHandler` records a subtle bug. *The problem:* on the tile endpoint, which answers with PNG images, a clean `401` or `429` turned into a `500`. *How it was found:* during the first manual test pass of the running app in a browser, before the hardening milestone, and fixed then (it was already fixed at `book-m1-accounts`). *The cause:* Spring negotiates the content type of a response body against the request's `Accept` header, which lists what the caller is willing to receive. The tile endpoint's callers may accept *only images*, so a JSON error body was "not acceptable", the error handler itself failed, and the failure of the failure was a `500`. *The fix:* the `error(...)` helper always sets `MediaType.APPLICATION_JSON` explicitly, as in Listing 13.4. *The lesson:* error paths are code too, and they need tests as much as success paths do. <!-- source: dossier bugs-and-findings A3 and DOSSIER 'Ch 13 incident reference' (fixed in commit 32d040f, PR #1; the m3 handler carries the class comment); phase 3b commit 335e0b0 only made the JSON error contract consistent -->
 
 ### 13.8 Do not trust a message you will show
 
-Two smaller rules follow from the same idea. First, decide which exceptions carry messages meant for users. `BadRequestException` and friends are written with user-facing text, so their handlers show `e.getMessage()`. Anything else goes to the generic 500. Second, remember that some messages include a value the caller sent. Most of the project's messages are fixed text (`"Invalid username or password."`) or a field name (`"Missing required 'token'."`), but a few echo a name back, such as `"No user named '<name>'."`. The server returns these inside a JSON string with an explicit content type, so they are never interpreted as markup; but any client that displays an error message must treat it as plain text and never insert it into a page as HTML. Angular's templates escape text by default (Part III), which is the behavior you want.
+Two smaller rules follow from the same idea. First, decide which exceptions carry messages meant for users. `BadRequestException` and friends are written with user-facing text, so their handlers show `e.getMessage()`. Anything else goes to the generic 500. Second, remember that some messages include a value the caller sent. Most of the project's messages are fixed text (`"Invalid username or password."`) or a field name (`"Missing required 'token'."`), but a few echo a name back, such as `"No user named '<name>'."`. The server returns these inside a JSON string with an explicit content type, so they are never interpreted as markup. But any client that displays an error message must treat it as plain text and never insert it into a page as HTML. Angular's templates escape text by default (Part III), which is the behavior you want.
 
 ### 13.9 Limits: upload size, page count, decompression bombs
 
@@ -375,7 +383,7 @@ private void requireWithinLimits(PDDocument document) {
 
 This is the decompression-bomb defense. A PDF page has a size in points (72 to an inch), so the code can compute the *pixel size it would render to* (`scale = dpi / 72`) *without rendering it*, and compare the area with the limit. It even accounts for a page rotated by 90 degrees, which swaps width and height. A poster-sized page at 150 DPI is refused up front with a message naming the page. The comments on the settings in `ViewerProperties` say the same: the limit is on the "Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs."
 
-**The incident behind the layers.** The first version of the upload read the whole file into memory, had no limits and rendered synchronously, so one large or hostile file could take the server down. A threat-modeling review (an AI agent playing a security reviewer) found it. The fix arrived in stages, each tied to a review round: streaming to a temporary file, the `%PDF-` check, the page and pixel limits and the `413` for oversized files came first; a cap of two concurrent renders (with `503` and `Retry-After`) followed; and a *time* limit came last, after a review round asked what happens if a pathological PDF holds one of two render slots forever. <!-- source: dossier bugs-and-findings B (TM-5), G3; commits 3de764d, cd0f5c2, 1ce2c8b --> The lesson is that limits come in several dimensions (size, count, area, concurrency and time), and each protects a different resource.
+**The incident behind the layers.** The first version of the upload read the whole file into memory, had no limits and rendered synchronously, so one large or hostile file could take the server down. A threat-modeling review (an AI agent playing a security reviewer) found it. The fix arrived in stages, each tied to a review round. Streaming to a temporary file, the `%PDF-` check, the page and pixel limits and the `413` for oversized files came first. A cap of two concurrent renders (with `503` and `Retry-After`) followed. A *time* limit came last, after a review round asked what happens if a pathological PDF holds one of two render slots forever. <!-- source: dossier bugs-and-findings B (TM-5), G3; commits 3de764d, cd0f5c2, 1ce2c8b --> The lesson is that limits come in several dimensions (size, count, area, concurrency and time), and each protects a different resource.
 
 Every limit here is a setting, not a constant. `application.yml` documents them, and the frontend has its own size check, so the user sees a refusal before waiting for a long upload. The comments in the file say to keep the three in step: the multipart limit, `GlobalExceptionHandler.MAX_UPLOAD_MB` and the frontend.
 

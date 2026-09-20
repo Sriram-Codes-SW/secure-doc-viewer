@@ -27,7 +27,7 @@ By the end of this chapter, you will be able to:
 
 On your laptop the app is a workshop: only you walk in. On a server it is a shop on a busy street. You don't let customers walk into the workshop. You put a counter in front, and staff at the counter take requests, check them, and pass them to the back room. A reverse proxy (Chapter 16) is that counter. It receives requests from browsers and forwards them to the app behind it.
 
-The analogy breaks down because the counter here also does jobs a shop counter doesn't: it serves the app's static files itself, and, in the HTTPS setup, it scrambles all traffic so that people on the street can't read what passes across it. It also keeps a rule that matters for security: it decides what the back room is told about who the customer is.
+The analogy breaks down because the counter here also does jobs a shop counter doesn't. It serves the app's static files itself. In the HTTPS setup, it also scrambles all traffic, so that people on the street can't read what passes across it. It also keeps a rule that matters for security: it decides what the back room is told about who the customer is.
 
 ### 33.2 Terms you need
 
@@ -45,7 +45,7 @@ The analogy breaks down because the counter here also does jobs a shop counter d
 
 ### 33.3 What changes on a server
 
-Four things change, and each one has a section below:
+Four things change, and this chapter takes each one in turn:
 
 1. Traffic crosses networks you don't control, so it must be encrypted (sections 33.8 and 33.12).
 2. The app must not be reachable except through the front door (sections 33.5 and 33.9).
@@ -137,6 +137,8 @@ flowchart TB
 ```
 
 *Figure 33.1 — The compose stack: profiles, fixed addresses, published ports, and volumes*
+
+*Text description:* The host machine exposes three ports, all on 127.0.0.1: 8443 to Caddy, 8081 to nginx, and 3306 to MySQL. Inside the compose network, Caddy forwards to nginx, nginx forwards to the app on port 8080, and the app talks to MySQL. Three volumes attach to Caddy, the app, and MySQL. Notice that no arrow reaches the app from the host.
 
 Notice that the app has no arrow from the host. Everything reaches it through nginx, which is the point of Section 33.6.
 
@@ -277,7 +279,7 @@ Line by line:
 - `server_tokens off` hides nginx's version number in responses, so a scanner learns less.
 - `set_real_ip_from 172.28.0.11` and `real_ip_header X-Forwarded-For`: accept a forwarded client address only from Caddy at that fixed address. Anyone else's header is ignored.
 - `client_max_body_size 51m` is kept in step with the backend's 50 MB upload limit plus form overhead. Without it, nginx would reject uploads at its default of 1 MB.
-- `location ^~ /api/` proxies API calls to `app:8080`. The `^~` marks it so that no pattern rule elsewhere (like the static-asset rule below) can capture an API path.
+- `location ^~ /api/` proxies API calls to `app:8080`. The `^~` marks it so that no pattern rule elsewhere (like the static-asset rule in Listing 33.3) can capture an API path.
 - `proxy_set_header X-Forwarded-For $remote_addr` is the fix for the incident in Chapter 32: nginx *overwrites* the header with the real connection address instead of appending to what the client sent. `X-Real-IP` gets the same value.
 - `proxy_read_timeout 300s` allows for a long PDF render; `proxy_request_buffering off` streams uploads through to the backend instead of holding them in nginx first.
 - `location = /actuator/health` proxies exactly the bare health path (Chapter 35). The `=` means exact match, so `/actuator/prometheus` isn't forwarded.
@@ -328,7 +330,7 @@ The compose file gives the network a fixed subnet, `172.28.0.0/24`, gives `web` 
 <!-- source: dossier/decisions.md D11, D12; PR #5 body "Operations" (TM2-6) -->
 The fixed subnet came from a finding by the Senior Technical Manager review agent (Chapter 32): without pinned addresses, "trust the proxy" could not be expressed safely. The two-address live test in Chapter 32 checked the nginx and direct-to-app links, and a separate check of the `tls` profile confirmed that Caddy ignores a spoofed header.
 
-The failure mode is worth understanding, because it's silent. If the addresses drift, for example someone changes nginx's address without changing `TRUSTED_PROXY_REGEX`, nothing crashes. The app simply stops believing the forwarded header and judges every request by the address it sees, which is now the proxy's. Every user appears to come from the same address, so the per-address throttling and the audit log's addresses become useless. Exercise 33.3 walks through it.
+The failure mode is worth understanding, because it's silent. If the addresses drift, for example someone changes nginx's address without changing `TRUSTED_PROXY_REGEX`, nothing crashes. The app stops believing the forwarded header and judges every request by the address it sees, which is now the proxy's. Every user appears to come from the same address, so the per-address throttling and the audit log's addresses become useless. Exercise 33.3 walks through it.
 
 ### 33.11 Secrets and configuration
 
@@ -386,6 +388,8 @@ flowchart LR
 
 *Figure 33.2 — Start order: each service waits until the previous one reports healthy*
 
+*Text description:* Four services in a row: MySQL, then the app, then nginx, then Caddy. Each arrow is labeled healthy, meaning a service starts only after the one before it reports healthy; each box names the command used for its health check.
+
 ### 33.14 The go-live checklist
 
 The README's go-live checklist turns the chapter into steps. With the reason for each:
@@ -395,6 +399,8 @@ The README's go-live checklist turns the chapter into steps. With the reason for
 - **Strong, unique `SIGNING_SECRET`, `DB_PASSWORD`, and `DB_ROOT_PASSWORD`.** Change the bootstrap admin password at first sign-in. The app forces this only when it generated the password; if you set `BOOTSTRAP_ADMIN_PASSWORD`, change it yourself and clear it from `.env`.
 - **Scheduled backups plus one restore drill** (Chapter 34).
 - **One app instance** (Chapters 34 and 37): sessions and counters are in memory and tiles are on local disk.
+
+*See also: A highly available, multi-instance version of this checklist is sketched in Chapters 40 and 41 (a design, not a built system).*
 
 ### 33.15 Common mistakes
 

@@ -69,6 +69,8 @@ Now think about who calls this URL. You do, occasionally. But mostly a machine d
 
 Actuator can expose many endpoints, and many of them are dangerous on a public network: environment variables, configuration, a heap dump. The project turns on exactly two. Here is the relevant part of `application.yml`.
 
+*See also: On AWS the same metrics could go to CloudWatch or Amazon Managed Service for Prometheus (Chapter 41, Section 41.4).*
+
 **Listing 35.1 — `src/main/resources/application.yml`, `book-m6-final` (excerpt: the `management` block only)**
 
 ```yaml
@@ -96,6 +98,8 @@ Read it line by line:
 
 Health is a summary of small checks called health indicators. Spring Boot ships indicators for the database connection, disk space, and other things it finds on the classpath. When any indicator is down, the overall status is `DOWN` and the HTTP status becomes `503` (Service Unavailable). That gives a monitor a single thing to look at.
 
+*See also: Behind a load balancer the health check should use the readiness probe (Chapter 40, Section 40.5).*
+
 <!-- source: PR #3 body "Test plan" (live health test) -->
 The project's authors tested this live during Phase 3 (PR #3): the endpoint showed `UP`, then `DOWN` with a `503` when MySQL was stopped, then `UP` again after MySQL restarted. That test matters because it proves the check is connected to something real. A health endpoint that always answers `200` is worse than none, because it gives false comfort.
 
@@ -114,6 +118,8 @@ Prometheus works by **pulling**: every scrape interval it fetches that page, not
 2. **The app must be reachable by Prometheus.** That is why the endpoint's access rule (section 35.9) matters.
 
 Let's look at what the page contains. This is an **illustrative** sample, not captured from a run, with values invented to show the shape. The real page also includes hundreds of JVM and HTTP metrics.
+
+**To see the real page**, remember that the access rule of section 35.9 allows only loopback by default, and that the full Compose stack publishes no port for the app. Two ways work. With the backend run from source (`./mvnw spring-boot:run`, Chapter 6), open `http://localhost:8080/actuator/prometheus` from the same machine. With the full stack, ask the app container to call itself, which arrives from its own loopback address: `docker compose exec app curl -s http://localhost:8080/actuator/prometheus` (the image installs `curl` for its health check). Opening the page through nginx on port 8081 won't work, because nginx forwards only the bare health path.
 
 ```text
 # HELP sdv_tiles_served_total Watermarked tiles returned
@@ -148,6 +154,8 @@ flowchart LR
 ```
 
 *Figure 35.1 — From a counter in the code to an alert, and the separate health path*
+
+*Text description:* Left to right: the counters, gauge, and timer in ViewerMetrics feed the Micrometer registry, which the actuator prometheus endpoint exposes. That endpoint answers only addresses on the metrics allow-list. Prometheus scrapes it, rules compute rates or increases over a window, and an alert reaches a person; the last two boxes are outside the repository. A separate arrow shows the health endpoint answering 200 or 503 to Docker and monitors.
 
 Notice the address rule on the way to Prometheus and the fact that health takes a separate, simpler path: a status code for machines, no numbers.
 
@@ -191,7 +199,7 @@ Table 35.1 lists every project metric, with what it counts and what a change mea
 | `sdv_render_seconds_count` and `_sum` | timer | A PDF finishes rendering | Upload volume; average render time is `_sum / _count` |
 | `sdv_render_rejected_total` | counter | An upload is refused with `503` because every render slot stayed busy | Render capacity is too small for the upload rate |
 | `sdv_render_timed_out_total` | counter | A render exceeds `render-timeout` (default 3 minutes) | A pathological or enormous PDF |
-| `sdv_render_abandoned_running` | gauge | (Current value) renders abandoned after a timeout but still stopping | A hostile page is holding a render slot; see below |
+| `sdv_render_abandoned_running` | gauge | (Current value) renders abandoned after a timeout but still stopping | A hostile page is holding a render slot; see the paragraph after this table |
 
 The last row deserves a paragraph, because it records a real design compromise. When a render exceeds `render-timeout`, the app rejects the upload and abandons the render at its next page boundary. The render can't be killed instantly, so it still holds its render slot until it actually stops. This is on purpose: if abandoned renders freed their slots immediately, hostile uploads could pile up CPU and memory. The gauge `sdv_render_abandoned_running` shows how many such renders are still winding down. A value above zero for a long time means one page is taking very long to finish, and the README's Limitations section tells you to watch this gauge.
 
@@ -221,7 +229,7 @@ The endpoint came from a finding by the Senior Technical Manager review agent (C
 
 ### 35.10 Rates, not totals
 
-A counter is a running total since the last restart, so its raw value is nearly useless: "18,432 tiles served" says nothing about whether that happened in an hour or a month. What you want is a **rate**, how fast the counter rises. Prometheus gives you two functions for this. They belong to Prometheus's query language, PromQL, and the examples below are the book's own illustrations, not queries stored in the repository.
+A counter is a running total since the last restart, so its raw value is nearly useless: "18,432 tiles served" says nothing about whether that happened in an hour or a month. What you want is a **rate**, how fast the counter rises. Prometheus gives you two functions for this. They belong to Prometheus's query language, PromQL, and the examples in this section are the book's own illustrations, not queries stored in the repository.
 
 *Pattern note: Rates, errors and durations are the RED idea (Chapter 39, Section 39.15).*
 
@@ -266,7 +274,7 @@ Pick thresholds from a week of real traffic. The counters give you the baseline,
 
 ### 35.12 Reading the metrics together: three scenarios
 
-Signals are more useful in combination. These scenarios are teaching examples built from the metrics above, not incidents from the project.
+Signals are more useful in combination. These scenarios are teaching examples built from the metrics in Table 35.1, not incidents from the project.
 
 *Scenario A: a sudden rise in `sdv_tiles_rate_limited_total`, flat `sdv_tiles_served_total`.* Tiles are being refused but reading traffic is not growing. One client is hitting the limit repeatedly while others read normally. Look for one user in the audit log. That pattern fits a script.
 
@@ -299,6 +307,8 @@ flowchart TB
 ```
 
 *Figure 35.2 — Choosing between the health check, the metrics, and the audit log*
+
+*Text description:* A question at the top branches into three: is it up right now, how much or how often, and who did it and when. Each leads to its tool: the health check answers with 200 or 503, the metrics with counters and rates, and the audit log with events, trace codes, and filters.
 
 ## Common mistakes
 

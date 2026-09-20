@@ -1,7 +1,7 @@
 <!-- chapter: 38 | part: VI | owner: writer-backend | tag: book-m6-final | status: expanded -->
 # Chapter 38: Design patterns in the code
 
-Programmers keep meeting the same problems, and over decades they've given names to the solutions that worked. Those names are **design patterns**, and they are a vocabulary as much as a technique: "that's a strategy" says in two words what would otherwise take a paragraph. This chapter names the patterns hiding in the Secure Document Viewer's code, shows where each one lives, says what it cost, and, just as important, says when *not* to use it.
+Programmers keep meeting the same problems, and over decades they've given names to the solutions that worked. Those names are **design patterns**, and they are a vocabulary as much as a technique: "that's a strategy" says in two words what would otherwise take a paragraph. This chapter names the patterns hiding in the Secure Document Viewer's code, shows where each one lives, says what it cost, and, equally important, says when *not* to use it.
 
 ## Learning objectives
 
@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 ### 38.1 What a design pattern is
 
-A carpenter has names for joints: a dovetail, a mortise and tenon, a butt joint. Each is a solution to a problem that keeps coming back ("how do I join two boards at a corner so it holds under pull?"), each has known strengths and weaknesses, and a carpenter who says "use a dovetail" saves ten minutes of explanation. A **design pattern** is the software version: a named, reusable solution to a problem that recurs in code. The classic catalog is the 1994 book *Design Patterns* by Gamma, Helm, Johnson and Vlissides, whose authors are nicknamed the "Gang of Four", and it names 23 patterns. Many more have been named since.
+A carpenter has names for joints: a dovetail, a mortise and tenon, a butt joint. Each is a solution to a problem that keeps coming back ("how do I join two boards at a corner so it holds under pull?"). Each has known strengths and weaknesses, and a carpenter who says "use a dovetail" saves ten minutes of explanation. A design pattern is the software version: a named, reusable solution to a problem that recurs in code. The classic catalog is the 1994 book *Design Patterns* by Gamma, Helm, Johnson and Vlissides, whose authors are nicknamed the "Gang of Four", and it names 23 patterns. Many more have been named since.
 
 **Where the analogy breaks down:** a joint is a physical object you cut the same way each time. A pattern is a *shape*, and every use adapts it: the code differs, the names differ, and sometimes only part of the pattern appears. A pattern is also not a library you can import. It is an idea you recognize and choose.
 
@@ -36,9 +36,9 @@ Every pattern in this chapter is described in the same five parts, so that you l
 2. **The pattern:** its standard name and a one-sentence definition in plain words.
 3. **Where it lives:** the file and the tag, checked in the code. If the project only approximates a pattern, this part says so plainly.
 4. **What it costs:** every pattern adds something, such as a class, an indirection or a rule to remember.
-5. **When not to use it:** the situations in which the pattern is just clutter.
+5. **When not to use it:** the situations in which the pattern is only clutter.
 
-The fifth part matters as much as the others. A beginner who has just learned a pattern is tempted to use it everywhere, a habit sometimes called **pattern-itis**. Good design starts from the problem, and a pattern earns its place only when the problem is really there.
+The fifth part matters as much as the others. A beginner who has learned a pattern is tempted to use it everywhere, a habit sometimes called **pattern-itis**. Good design starts from the problem, and a pattern earns its place only when the problem is really there.
 
 ### 38.2 Patterns you have already met
 
@@ -123,7 +123,7 @@ export const sessionInterceptor: HttpInterceptorFn = (req, next) => {
 
 *Path: `frontend/src/app/core/session.interceptor.ts`*
 
-The interceptor calls `next(req)`, which is "pass the request down the chain", and then acts on the *response* on its way back: it records that the user is active, and on a `401` it clears local state and returns the user to the sign-in screen. So a chain runs in both directions.
+The interceptor calls `next(req)`, which is "pass the request down the chain", and then acts on the *response* on its way back. It records that the user is active, and on a `401` it clears local state and returns the user to the sign-in screen. So a chain runs in both directions.
 
 **What it costs:** a chain hides the total behavior. To know what happens to a request you must read the whole configuration, and the order matters. **When not to use it:** when there are two fixed steps that always run in the same order, a plain method calling two other methods is easier to read than a chain.
 
@@ -162,7 +162,7 @@ public SessionAuthenticationStrategy sessionAuthenticationStrategy(SessionRegist
 
 The first method returns an `AuthorizationManager`, an interface with one method, so a lambda (Chapter 5) *is* the strategy. The metrics endpoint's rule (Chapter 16) plugs in a decision function that says "allowed only from these address ranges". The second bean builds a **composite**: a strategy made of other strategies, treated as one. Signing in must both change the session id (defeating fixation) and register the session (so an admin can list it), and the composite runs both. That is a second named pattern, **composite**: a group of objects that can be used like a single one.
 
-**What a strategy costs:** an interface, and a reader must find *which* implementation is active. **When not to use it:** when there is one behavior and no realistic second one. The project doesn't create its own strategy interfaces for such cases: there is no `TokenSigner` interface with one implementation, because `SignedUrlService` is a concrete class, and Section 37.4 compares it with signed URLs from a cloud provider, a change you would make only if the need arose.
+**What a strategy costs:** an interface, and a reader must find *which* implementation is active. **When not to use it:** when there is one behavior and no realistic second one. The project doesn't create its own strategy interfaces for such cases. There is no `TokenSigner` interface with one implementation, because `SignedUrlService` is a concrete class. Section 37.4 compares it with signed URLs from a cloud provider, a change you would make only if the need arose.
 
 ### 38.5 Template method and callbacks: the framework owns the boilerplate
 
@@ -178,7 +178,9 @@ return tx.execute(status -> detail(requireViewable(documentId, viewer, actor), v
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentService.java`*
 
-The second callback is in `AuditLogService`, where the query result is turned into objects:
+The second callback is in a different file, `AuditLogService`, where the query result is turned into objects.
+
+**Listing 38.5 — `AuditLogService.java` (`book-m6-final`, excerpt: the start of `ROW_MAPPER`)**
 
 ```java
 private static final RowMapper<AuditEvent> ROW_MAPPER = (ResultSet rs, int rowNum) -> new AuditEvent(
@@ -188,9 +190,11 @@ private static final RowMapper<AuditEvent> ROW_MAPPER = (ResultSet rs, int rowNu
         // ...
 ```
 
-(`book-m6-final`, `AuditLogService.java`, excerpt: the start of `ROW_MAPPER`.) In the first listing, `TransactionTemplate.execute` is the skeleton: it begins a transaction, calls the lambda, commits if it returns and rolls back if it throws (Chapter 14). The lambda is the variable step, and it is the *only* thing the project writes. In the second, `JdbcTemplate` runs the query and loops over rows, and the `RowMapper` lambda says how to turn *one row* into an `AuditEvent`. In both, the framework controls the flow and calls your code at the right moment, which is the inversion of control from Chapter 11.
+*Path: `src/main/java/com/example/securedocviewer/audit/AuditLogService.java`*
 
-**What it costs:** control flow that jumps between your lambda and the framework, which makes stepping through it in a debugger surprising. **When not to use it:** for the fixed skeleton of a single call, a template class is more machinery than a try/catch. It pays when the boilerplate is easy to get wrong, as transaction handling is.
+In Listing 38.4, `TransactionTemplate.execute` is the skeleton: it begins a transaction, calls the lambda, commits if it returns and rolls back if it throws (Chapter 14). The lambda is the variable step, and it is the *only* thing the project writes. In Listing 38.5, `JdbcTemplate` runs the query and loops over rows, and the `RowMapper` lambda says how to turn *one row* into an `AuditEvent`. In both, the framework controls the flow and calls your code at the right moment, which is the inversion of control from Chapter 11.
+
+**What it costs:** control flow that jumps between your lambda and the framework, which makes stepping through it in a debugger surprising. **When not to use it:** for the fixed skeleton of a single call, a template class is more machinery than a try/catch. It pays when the boilerplate is error-prone, as transaction handling is.
 
 ### 38.6 Builder and fluent interfaces
 
@@ -207,7 +211,7 @@ this.tilesServed = Counter.builder("sdv.tiles.served")
 
 **The problem:** one part of the system must react to something that happens elsewhere, without the two knowing about each other. **The pattern:** in an **observer** (also called publish-subscribe), a publisher announces events and any number of subscribers listen. **Where it lives:** the session lifecycle. `SecurityConfig` registers a `HttpSessionEventPublisher` bean, whose comment says: "Lets the registry forget sessions when they are invalidated or time out." A project class listens:
 
-**Listing 38.5 — `SessionMetadata.java` (`book-m6-final`, excerpt: the two listeners)**
+**Listing 38.6 — `SessionMetadata.java` (`book-m6-final`, excerpt: the two listeners)**
 
 ```java
 @EventListener
@@ -228,7 +232,7 @@ public void onIdChanged(HttpSessionIdChangedEvent event) {
 
 `SessionMetadata` remembers where and when each session signed in, for the admin list. It never asks the container "has a session ended?". It is *told* when a session is destroyed, and removes its record, and when the id changes at sign-in (Chapter 15) it moves the record to the new id. The code that ends sessions knows nothing about this class. In Angular, the same idea appears as RxJS observables and signals (Section 38.13).
 
-**What it costs:** hidden control flow. Reading `SessionMetadata` won't tell you *who* triggers `onDestroyed`. **When not to use it:** when the caller can simply call the other component directly and the coupling is fine, an event is just a longer way to write a method call.
+**What it costs:** hidden control flow. Reading `SessionMetadata` won't tell you *who* triggers `onDestroyed`. **When not to use it:** when the caller can call the other component directly and the coupling is fine, an event is only a longer way to write a method call.
 
 ## Advanced tier: Patterns that keep the server alive and correct
 
@@ -238,7 +242,7 @@ public void onIdChanged(HttpSessionIdChangedEvent event) {
 
 **The problem:** an activity passes through stages, and several threads can change its stage at the same time (a render finishing while the request gives up). Without a rule about which changes are allowed, both can win. **The pattern:** a **state machine** names the possible states and the allowed moves between them, and makes each move atomic. **Where it lives:** `TileGenerationService` (Chapter 17). It is a small, honest example, an `enum` and one atomic reference.
 
-**Listing 38.6 — `TileGenerationService.java` (`book-m6-final`, excerpts from `render`; the surrounding code is omitted)**
+**Listing 38.7 — `TileGenerationService.java` (`book-m6-final`, excerpts from `render`; the surrounding code is omitted)**
 
 ```java
 private enum RenderState { RUNNING, DONE, ABANDONED }
@@ -278,6 +282,8 @@ stateDiagram-v2
 
 *Figure 38.1 — The states of one PDF render*
 
+*Text description:* A state diagram with three states. A render starts in `RUNNING` and can move to `DONE` when the render finishes first, or to `ABANDONED` when the request times out or is interrupted. Both `DONE` and `ABANDONED` are final: nothing leaves them.
+
 <!-- source: TileGenerationService.render at book-m6-final -->
 
 The key is `compareAndSet(expected, new)`. It changes the state to `new` *only if* it is currently `expected`, as a single indivisible step, and tells you whether it worked. So exactly one of the two competitors wins. If the render finishes first and moves `RUNNING` to `DONE`, the timeout's attempt to move `RUNNING` to `ABANDONED` fails, and the request uses the finished result. If the timeout wins, the render's later attempt to reach `DONE` fails, and the render throws away its own staging folder because nobody will commit it. There is no way to be both, and no lock is needed. This is the same lesson as the sign-in race in Chapter 16: a decision followed by an action is a race unless something makes the two one step.
@@ -288,11 +294,11 @@ The Angular side has one too. `idle.ts` defines `IdleState` as a union of three 
 
 ### 38.9 Bulkhead and rate limiter: bounding what one part can take
 
-**The problem:** without limits, one busy or hostile part of the system can use all of a shared resource, and everything else fails with it. **The pattern:** a **bulkhead**, named after the watertight compartments of a ship, gives each kind of work its own separate limit so that flooding one compartment can't sink the rest. A **rate limiter** bounds how often something may happen in a period. **Where they live:** `TileWorkLimiter` (Listing 17.7) is a semaphore that caps *tile* work across all users; `TileGenerationService` has a *separate* semaphore for PDF renders. Because the two limits are independent, a burst of slow uploads can't consume the permits that tile serving needs, and the reverse. That is the bulkhead idea, and we say "approximates" because the project uses two semaphores rather than a general-purpose bulkhead library: it's the idea, written by hand at the two places that need it.
+**The problem:** without limits, one busy or hostile part of the system can use all of a shared resource, and everything else fails with it. **The pattern:** a **bulkhead**, named after the watertight compartments of a ship, gives each kind of work its own separate limit so that flooding one compartment can't sink the rest. A **rate limiter** bounds how often something may happen in a period. **Where they live:** `TileWorkLimiter` (Listing 17.7) is a semaphore that caps *tile* work across all users; `TileGenerationService` has a *separate* semaphore for PDF renders. Because the two limits are independent, a burst of slow uploads can't consume the permits that tile serving needs, and the reverse. That is the bulkhead idea, and we say "approximates" because the project uses two semaphores rather than a general-purpose bulkhead library: it's the idea, written by hand at the two places that need it. The compartments are separate permit pools, not separate resources: both kinds of work draw on the same CPU, memory and Tomcat threads, so the design limits how many jobs run at once, not how much each job takes.
 
 The per-user rate limiter is `TileRateLimiter`. It keeps, for each user, a list of the times of recent requests, and refuses a new one when the list already holds the maximum for the window.
 
-**Listing 38.7 — `TileRateLimiter.recordAndEnforce` (`book-m6-final`, simplified: the comments are omitted)**
+**Listing 38.8 — `TileRateLimiter.recordAndEnforce` (`book-m6-final`, simplified: the comments are omitted)**
 
 ```java
 public Instant recordAndEnforce(String username) {
@@ -326,11 +332,11 @@ The standard name for this technique is a **sliding window log**: the window alw
 
 ### 38.10 Reserve first, hand back later
 
-**The problem:** a check followed by an action can be beaten by parallel requests, as the sign-in race in Chapter 16 showed. **The pattern:** there isn't a well-known standard name for this one, and it is honest to say so. The technique is to **reserve** the resource *before* the risky step, in the same indivisible step as the check, and **compensate** (hand it back) if the step didn't consume it after all. The name "reserve, then release or compensate" is used in several fields, from bookings to payments; here it is small.
+**The problem:** a check followed by an action can be beaten by parallel requests, as the sign-in race in Chapter 16 showed. **The pattern:** there isn't a well-known standard name for this one, and it is honest to say so. The technique is to **reserve** the resource *before* the risky step, in the same indivisible step as the check, and compensate (hand it back) if the step didn't consume it after all. The name "reserve, then release or compensate" is used in several fields, from bookings to payments; here it is small.
 
 **Where it lives, twice.** `LoginThrottle.reserve` counts an attempt before the password is checked, and `succeeded` hands it back (Listing 16.6). And the tile rate limiter has the same shape for a different reason. A request is counted as soon as it passes the token checks. Then, if the *server* turns out to be too busy to serve it, the reader shouldn't be charged:
 
-**Listing 38.8 — `TileController.java` (`book-m6-final`, excerpt: the refund)**
+**Listing 38.9 — `TileController.java` (`book-m6-final`, excerpt: the refund)**
 
 ```java
 } catch (ServiceBusyException busy) {
@@ -366,9 +372,11 @@ sequenceDiagram
 
 *Figure 38.2 — Counting a request, and refunding it when the server is busy*
 
+*Text description:* A sequence between a reader, the tile controller, the rate limiter and the work limiter. The controller counts the request first, then asks the work limiter for a permit. If no permit arrives within two seconds, the controller refunds the counted request and answers `503`; otherwise it returns the tile with `200`.
+
 <!-- source: TileController.getTile, TileRateLimiter and TileWorkLimiter at book-m6-final -->
 
-The refund arrived together with the server-wide cap on concurrent tile work, in one of the later review rounds, so that a reader who is turned away with `503` is not charged against their allowance for a request that was never served. <!-- source: dossier bugs-and-findings G10; commit 782ab6b --> **What it costs:** the compensation code has to be right on every failure path. **When not to use it:** when the check and the action can be made one step already (an atomic database update), there is nothing to hand back.
+The refund arrived together with the server-wide cap on concurrent tile work, in one of the later review rounds. A reader who is turned away with `503` is therefore not charged against their allowance for a request that was never served. <!-- source: dossier bugs-and-findings G10; commit 782ab6b --> **What it costs:** the compensation code has to be right on every failure path. **When not to use it:** when the check and the action can be made one step already (an atomic database update), there is nothing to hand back.
 
 ### 38.11 Guard clauses and failing fast
 
@@ -386,7 +394,7 @@ The frontend uses several of the same ideas in its own form. All of the followin
 - **Interceptor as a chain of one.** Section 38.3.
 - **Route guards.** A guard is a *guard clause* for navigation, and `roleGuard` shows function composition:
 
-**Listing 38.9 — `auth.guard.ts` (`book-m6-final`, excerpt: `roleGuard`)**
+**Listing 38.10 — `auth.guard.ts` (`book-m6-final`, excerpt: `roleGuard`)**
 
 ```typescript
 export const roleGuard =
@@ -413,7 +421,7 @@ The project does *not* use a state-management library such as NgRx, and does not
 
 ### 38.14 Patterns in decisions, and patterns the project does not need
 
-Chapter 37 argued that a design decision is a choice between options with costs. Patterns give the options names. Take one decision from that chapter, keeping sessions and the counters that limit sign-ins and tiles in memory rather than in a shared store (Section 37.5). Seen through this chapter, the project chose a *sliding window log* and a *reserve-and-compensate* rule, implemented as ordinary objects in one process. The cost is exactly what the patterns' costs predict: the state is per instance, so running three copies would multiply the limits by three. Naming the patterns makes the cost easy to state, and makes the moment to change easy to recognize.
+Chapter 37 argued that a design decision is a choice between options with costs. Patterns give the options names. Take one decision from that chapter, keeping sessions and the counters that limit sign-ins and tiles in memory rather than in a shared store (Section 37.5). Seen through this chapter, the project chose a *sliding window log* and a *reserve-and-compensate* rule, implemented as ordinary objects in one process. The cost is exactly what the patterns' costs predict: the state is per instance, so running three copies would multiply the limits by three. Naming the patterns lets you state the cost plainly and recognize the moment to change.
 
 Here is a short list of patterns you'll meet elsewhere that this project doesn't need, with a sentence on why.
 
@@ -500,7 +508,7 @@ Choose one decision from Chapter 37 and rewrite it in this chapter's vocabulary:
 - Every pattern has a cost and a place where it is clutter; the fifth question, "when not to use it?", is the one that stops pattern-itis.
 - The project uses dependency injection, repositories, a service layer, records as value objects and factory methods throughout, and chains of responsibility, strategies and composites through Spring Security.
 - Callbacks (`TransactionTemplate`, `RowMapper`) let the framework own the boilerplate; builders make configuration read like a sentence; events let parts react without calling each other.
-- A small state machine with `compareAndSet` settles the race between a render finishing and a request timing out; a semaphore bulkhead and a sliding window limiter bound the work, and reserve-then-compensate makes limits correct under parallel requests.
+- A small state machine with `compareAndSet` settles the race between a render finishing and a request timing out; a semaphore bulkhead bounds how many jobs run at once (not how much CPU or memory each takes) and a sliding window limiter bounds how often a reader may ask, and reserve-then-compensate makes limits correct under parallel requests.
 - The Angular code has an interceptor (a chain of one), guards, signals and a bounded worker pool, but no state library, and the chapter says plainly where the project only approximates a pattern.
 
 ## Further reading

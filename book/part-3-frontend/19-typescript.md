@@ -28,7 +28,7 @@ By the end of this chapter, you will be able to:
 
 A **browser** runs one programming language natively: **JavaScript**. Every interactive web page, including the Secure Document Viewer's, ultimately runs JavaScript. JavaScript lets you write `total + 1` without ever saying whether `total` holds a number, some text, or nothing at all, and it finds out only when the line runs, in front of a user.
 
-**TypeScript** is JavaScript with a layer of labels added, called **types**. A type says what kind of value a name holds: `number`, `string`, or a shape you define. A program called the compiler reads your TypeScript before anything runs, checks that every use matches its label, and then removes the labels, producing plain JavaScript for the browser. The browser never sees a type.
+**TypeScript** is JavaScript with a layer of labels added, called types. A type says what kind of value a name holds: `number`, `string`, or a shape you define. A program called the compiler reads your TypeScript before anything runs, checks that every use matches its label, and then removes the labels, producing plain JavaScript for the browser. The browser never sees a type.
 
 Think of a form at a doctor's office with boxes marked "date of birth" and "phone number". The boxes don't make you honest, but the clerk can spot at once that you wrote a phone number in the date box. TypeScript is the clerk, and the compiler runs the check at your desk, before the form is sent.
 
@@ -52,7 +52,9 @@ The project's TypeScript version is 6.0, pinned in `package.json` as `"typescrip
 
 ### 19.2 Values and variables
 
-Before reading real code, learn the vocabulary of values. TypeScript's basic types are few:
+Before reading real code, learn the vocabulary of values. TypeScript's basic types are few, and Table 19.1 lists them:
+
+**Table 19.1 — The basic types**
 
 | Type | Holds | Example | Java counterpart |
 |---|---|---|---|
@@ -150,6 +152,7 @@ stateDiagram-v2
     [*] --> active
     active --> warning: seconds left fall to the warning window
     warning --> expired: no seconds left
+    active --> expired: no seconds left, for example after the computer slept
     warning --> active: any API request resets the clock
     active --> active: any API request resets the clock
     expired --> [*]: sign out and go to the sign-in page
@@ -157,9 +160,11 @@ stateDiagram-v2
 
 *Figure 19.1 — The idle states of `IdleState` and what moves between them*
 
+*Text description:* A state diagram with three states: active, warning and expired. The reader starts in active. Active moves to warning when the seconds left fall into the warning window, and warning moves to expired when no seconds are left. Active can also move straight to expired if the check is late, for example after the computer slept. Any API request returns active or warning to active, and expired ends the diagram with the reader signed out and sent to the sign-in page.
+
 <!-- source: idle.ts (idleState) and app.ts (checkIdle, forceLogout) at book-m6-final; touch() in session.service.ts records activity -->
 
-Notice that the diagram has exactly the states the type has, and no others: a value can never be "half-expired". `idleState` itself only *computes* which state applies from the current time and the last activity; the arrows that reset to `active` happen because every successful API request updates the last-activity time (Chapter 22), and the last arrow happens in `App.checkIdle`, which signs the reader out when the state is `expired`.
+Notice that the diagram has exactly the states the type has, and no others: a value can never be "half-expired". `idleState` itself only *computes* which state applies from the current time and the last activity. The arrows that reset to `active` happen because every successful API request updates the last-activity time (Chapter 22). The last arrow happens in `App.checkIdle`, which signs the reader out when the state is `expired`.
 
 ### 19.4 Functions, arrow functions, modules
 
@@ -184,9 +189,9 @@ export function idleState(nowMs: number, lastActivityMs: number, timeoutSeconds:
 
 *Path: `frontend/src/app/core/idle.ts`*
 
-`IDLE_WARNING_SECONDS` is a constant defined a few lines above the function in the same file (`export const IDLE_WARNING_SECONDS = 5 * 60;`, so 300 seconds), left out of this excerpt. The function takes three numbers, returns an `IdleState`, and has no side effects (it changes nothing outside itself and reads nothing but its inputs): given the same three numbers it always gives the same answer. The compiler checks every `return` against `IdleState`; returning `{ kind: 'warnng' }` would be rejected. Notice `{ kind: 'warning', secondsLeft }`: when a variable has the same name as the property, TypeScript lets you write it once (`secondsLeft` instead of `secondsLeft: secondsLeft`). The condition `cond ? a : b` is the **conditional expression**, the same as in Java: "if `cond`, then `a`, otherwise `b`".
+`IDLE_WARNING_SECONDS` is a constant defined near the top of `idle.ts`, before the function (`export const IDLE_WARNING_SECONDS = 5 * 60;`, so 300 seconds), left out of this excerpt. The function takes three numbers, returns an `IdleState`, and has no side effects (it changes nothing outside itself and reads nothing but its inputs): given the same three numbers it always gives the same answer. The compiler checks every `return` against `IdleState`; returning `{ kind: 'warnng' }` would be rejected. Notice `{ kind: 'warning', secondsLeft }`: when a variable has the same name as the property, TypeScript lets you write it once (`secondsLeft` instead of `secondsLeft: secondsLeft`). The condition `cond ? a : b` is the **conditional expression**, the same as in Java: "if `cond`, then `a`, otherwise `b`".
 
-Read the arithmetic once, because the rest of the chapter assumes you can follow such lines. `nowMs - lastActivityMs` is how many milliseconds have passed since the last activity; dividing by 1000 converts to seconds; subtracting that from the timeout gives the seconds left; `Math.ceil` rounds up, so 0.2 seconds left still counts as one second (the countdown never shows zero while there is time). If nothing is left, the session has expired. Otherwise the reader is warned when the seconds left are within the warning window: the smaller of five minutes and half the timeout.
+Read the arithmetic once, because the rest of the chapter assumes you can follow such lines. `nowMs - lastActivityMs` is how many milliseconds have passed since the last activity. Dividing by 1000 converts to seconds, and subtracting that from the timeout gives the seconds left. `Math.ceil` rounds up, so 0.2 seconds left still counts as one second (the countdown never shows zero while there is time). If nothing is left, the session has expired. Otherwise the reader is warned when the seconds left are within the warning window: the smaller of five minutes and half the timeout.
 
 Small functions are often written as **arrow functions**, `(x) => expression`, which are the same idea as Java lambdas (Chapter 5). `this.tiles().filter((t) => t.status === 'loaded')` passes an arrow function that answers "is this tile loaded?" for each element.
 
@@ -243,7 +248,9 @@ Go through it in order.
 5. **Size.** Most tiles are exactly `tileSize` wide and high, but the last column and row are usually smaller, because a page is rarely an exact multiple of the tile size. `Math.min(grid.tileSize, pageInfo.pageWidthPx - left)` picks the smaller of "a full tile" and "what remains of the page". The comment in the file says why: edge tiles are cropped, so each tile's size has to be derived from the page's dimensions rather than assumed to equal `tileSize`.
 6. **`tiles.push({...})`** adds one description. `key` is a stable label made from the row and column with a template literal. `url` joins the base and the tile's address, found by two-step lookup `grid.tileUrls[row][col]` (an array of arrays). The shorthand `top,` and `left,` means `top: top` and `left: left`.
 
-A concrete case makes the edge logic visible. Suppose a page is 1,000 pixels wide and 1,300 pixels tall, and tiles are 512 pixels:
+A concrete case makes the edge logic visible. Suppose a page is 1,000 pixels wide and 1,300 pixels tall, and tiles are 512 pixels. Table 19.2 shows each tile:
+
+**Table 19.2 — Positions and sizes of four of the six tiles**
 
 | Tile (row, col) | left | top | width | height |
 |---|---|---|---|---|
@@ -256,7 +263,7 @@ The grid has 2 columns and 3 rows (1,000 ÷ 512 rounds up to 2, and 1,300 ÷ 512
 
 ### 19.6 Missing values and safe access
 
-Real data has gaps: nobody is signed in yet, a document has no share count, a property is absent. TypeScript 6.0 helps by insisting you deal with them. The project's compiler options (Chapter 20) don't mention the `strict` setting, and in TypeScript 6.0 the strict checks are switched on by default: compiling a test file with this project's options rejects `let a: string = null;` (error `TS2322`) and a parameter with no type (error `TS7006`, "implicitly has an 'any' type"). So the compiler will not let you use a value that might be `null` as if it were surely there.
+Real data has gaps: nobody is signed in yet, a document has no share count, a property is absent. TypeScript 6.0 helps by insisting you deal with them. The project's compiler options (Chapter 20) don't mention the `strict` setting. In TypeScript 6.0 the strict checks are switched on by default. Compiling a test file with this project's options rejects `let a: string = null;` (error `TS2322`) and a parameter with no type (error `TS7006`, "implicitly has an 'any' type"). So the compiler will not let you use a value that might be `null` as if it were surely there.
 
 Three small tools make the handling readable, all visible in `session.service.ts`:
 
@@ -374,7 +381,7 @@ public record DocumentSummary(
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentSummary.java`*
 
-Compare it with Listing 19.1 line by line: `String` becomes `string`, `int` and `long` both become `number` (JavaScript has one number type), `boolean` stays, the Java enum `Visibility` becomes a union of its constant names, and `Integer sharedWithCount`, which can be `null` in Java, becomes `number | null`. The names are identical because Jackson, the backend's JSON library, uses the record's field names as JSON keys.
+Compare it with Listing 19.1 line by line. `String` becomes `string`, and `int` and `long` both become `number` (JavaScript has one number type). `boolean` stays. The Java enum `Visibility` becomes a union of its constant names. `Integer sharedWithCount`, which can be `null` in Java, becomes `number | null`. The names are identical because Jackson, the backend's JSON library, uses the record's field names as JSON keys.
 
 Two rules keep these honest:
 
@@ -413,7 +420,7 @@ You met generics in Java (`List<String>`, Chapter 5). TypeScript's are the same 
 
 ### 19.11 Small type tools the app uses
 
-- `Partial<TileState>` means "an object with any subset of `TileState`'s properties". `updateTile(key, patch)` in the viewer uses it so callers can change just `{ status: 'failed' }`.
+- `Partial<TileState>` means "an object with any subset of `TileState`'s properties". `updateTile(key, patch)` in the viewer uses it so callers can change only `{ status: 'failed' }`.
 - `Record<string, () => void>` means "an object whose keys are strings and whose values are functions taking nothing". The viewer's keyboard handler (Chapter 23) uses it to map key names to actions.
 - **Type assertions,** written `value as Type`, tell the compiler "trust me, this is a `Type`". They bypass a check, so they are used sparingly; the upload component uses one for `event.target as HTMLInputElement`, because the browser's generic event type doesn't know the target is a file input.
 - **Extending an interface** adds properties to an existing shape, as Java's `extends` does. The viewer's tile state builds on the tile description this way:
@@ -451,7 +458,7 @@ export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
 
 *Path: `frontend/src/app/features/admin/admin.models.ts`*
 
-`as const` says the array is fixed and its elements are these exact words, not just "some strings". `(typeof AUDIT_EVENT_TYPES)[number]` reads: the type of the array, indexed by any number, that is, "any one element": a union of all 21 names. The same list can drive a drop-down menu in the admin screen (it does), while the type prevents a filter from being set to a name that isn't in the list. One source of truth, no drift.
+`as const` says the array is fixed and its elements are these exact words, not merely "some strings". `(typeof AUDIT_EVENT_TYPES)[number]` reads: the type of the array, indexed by any number, that is, "any one element": a union of all 21 names. The same list can drive a drop-down menu in the admin screen (it does), while the type prevents a filter from being set to a name that isn't in the list. One source of truth, no drift.
 
 ## Advanced tier: What types can't prevent
 
@@ -484,11 +491,11 @@ The viewer prevents this with a plain counter, `loadGeneration`, incremented on 
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-Step by step: bumping `loadGeneration` invalidates every answer still in flight; `abort()` cancels the network requests and a fresh `AbortController` is made for the next page (a controller can be used only once); the two subscriptions are cancelled with `?.unsubscribe()` (the `?.` from Section 19.6: "if there is one"); the throttle timers are cleared; and each tile's temporary `blob:` address is released with `URL.revokeObjectURL` so the browser can free the image memory. The code comments in `viewer.component.ts` give the reason for bounding the requests: outstanding requests would otherwise keep spending the reader's rate-limit budget (Chapter 22). Nothing here is enforced by the compiler; it takes discipline, and `viewer.component.spec.ts` (Chapter 24) checks the visible consequences.
+Step by step: bumping `loadGeneration` invalidates every answer still in flight. `abort()` cancels the network requests, and a fresh `AbortController` is made for the next page (a controller can be used only once). The two subscriptions are cancelled with `?.unsubscribe()` (the `?.` from Section 19.6: "if there is one"). The throttle timers are cleared. Each tile's temporary `blob:` address is released with `URL.revokeObjectURL`, so the browser can free the image memory. The code comments in `viewer.component.ts` give the reason for bounding the requests: outstanding requests would otherwise keep spending the reader's rate-limit budget (Chapter 22). Nothing here is enforced by the compiler; it takes discipline, and `viewer.component.spec.ts` (Chapter 24) checks the visible consequences.
 
 ### 19.13 Why `fetch()` for tiles and not `HttpClient` or plain image URLs
 
-The obvious alternatives are to let the browser load tiles itself from an image URL, or to use `HttpClient` like every other call. The comment above `MAX_CONCURRENT_TILE_FETCHES` gives the project's reason: only `fetch()` exposes the response status, and a throttled (429) or expired (401) tile is otherwise indistinguishable from a blank one, so the page silently renders with holes. Chapter 22 shows the outcome handling; the point here is that these language choices (Promise-based `fetch`, `AbortSignal`) follow from what information the code needs.
+The obvious alternatives are to let the browser load tiles itself from an image URL, or to use `HttpClient` like every other call. The comment on `MAX_CONCURRENT_TILE_FETCHES` in `viewer.component.ts` gives the project's reason: only `fetch()` exposes the response status, and a throttled (429) or expired (401) tile is otherwise indistinguishable from a blank one, so the page silently renders with holes. Chapter 22 shows the outcome handling; the point here is that these language choices (Promise-based `fetch`, `AbortSignal`) follow from what information the code needs.
 
 ### 19.14 Numbers and user input: two small traps
 

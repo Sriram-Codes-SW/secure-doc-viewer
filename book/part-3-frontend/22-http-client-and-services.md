@@ -122,13 +122,13 @@ Uploads use the browser's `FormData` and ask for progress events:
 
 ### 22.3 Observables in five minutes
 
-Every `HttpClient` method returns an **Observable** (Chapter 19), and this chapter reads more clearly with a few habits in mind.
+Every `HttpClient` method returns an **Observable** (Chapter 19), and this chapter reads better with a few habits in mind.
 
 *Pattern note: Observables are the observer pattern in stream form (Chapter 38, Section 38.7).*
 
 - **Nothing happens until you subscribe.** `this.http.get(...)` only *describes* a request. The request is sent when someone calls `.subscribe(...)`. Two subscriptions send two requests.
 - **An HTTP Observable delivers one result and ends.** Unlike a stream of key presses, a request produces a single response (or an error) and completes, so a component doesn't have to unsubscribe from it to avoid leaks. Long-lived Observables, such as a timer, are different; those need cleanup (Chapter 21).
-- **`.pipe(...)` adds steps.** The steps are small functions called **operators**. The project uses a handful: `map` (change each value), `tap` (do something on the side, such as store a result, without changing it), `catchError` (turn a failure into something else), `switchMap` (start a new Observable for each incoming value, cancelling the previous one) and `debounceTime` (wait until values stop arriving).
+- **`.pipe(...)` adds steps.** The steps are small functions called operators. The project uses a handful. `map` changes each value. `tap` does something on the side, such as storing a result, without changing it. `catchError` turns a failure into something else. `switchMap` starts a new Observable for each incoming value and cancels the previous one. `debounceTime` waits until values stop arriving.
 - **`subscribe({ next, error })` is where the component reacts.** `next` runs for each value, `error` for a failure.
 
 A useful mental picture is a pipeline of pipes: the request flows in at one end, each operator does its small job, and the component's `next` function is the tap at the other end.
@@ -180,7 +180,7 @@ export const appConfig: ApplicationConfig = {
 
 *Path: `frontend/src/app/app.config.ts`*
 
-There is no CSRF code to write in the app, which is the point: the project relies on the framework's default. The last provider runs `SessionService.restore()` before the first page is shown; it calls `/api/auth/me` to ask the server who is signed in (so a reload keeps you signed in), and its comment in `session.service.ts` notes that this call also primes the CSRF cookie.
+There is no CSRF code to write in the app, which is the point: the project relies on the framework's default. The last provider runs `SessionService.restore()` before the first page is shown. It calls `/api/auth/me` to ask the server who is signed in (so a reload keeps you signed in), and its comment in `session.service.ts` notes that this call also primes the CSRF cookie.
 
 Figure 22.1 shows the conversation for a state-changing request, such as signing out.
 
@@ -205,6 +205,8 @@ sequenceDiagram
 ```
 
 *Figure 22.1 — A write request from the browser to the API*
+
+*Text description:* A sequence diagram with five participants: the component, HttpClient, the session interceptor, nginx and Spring Boot. The component posts a request, HttpClient copies the XSRF cookie into a request header, and the request passes through the interceptor and nginx to Spring Boot. The response comes back the same way. If the status is 401 on any address except the sign-in and who-am-I endpoints, the interceptor signs the reader out locally and redirects to the sign-in page. Otherwise the response, or the error, goes back to the component.
 
 <!-- source: app.config.ts, session.interceptor.ts and nginx.conf at book-m6-final; XSRF handling is Angular's built-in default -->
 
@@ -232,7 +234,7 @@ An **interceptor** is a function that sees every request and response that passe
 *Path: `frontend/src/app/core/session.interceptor.ts`*
 
 - A **401** means "not authenticated". Whatever request received it, the session is gone (timed out, ended elsewhere, or revoked by an administrator), so the interceptor clears local state and sends the reader to the sign-in page, remembering where they were in `returnUrl`.
-- The exception is `/api/auth/me` and `/api/auth/login` (the `AUTH_PROBES`): a 401 there just means "not signed in" or "wrong password", and redirecting would loop.
+- The exception is `/api/auth/me` and `/api/auth/login` (the `AUTH_PROBES`): a 401 there means "not signed in" or "wrong password", and redirecting would loop.
 - A **403** with `passwordChangeRequired` sends a user whose password was set by an administrator to the account page (Chapter 23).
 - `throwError(() => error)` passes the failure on, so the calling component's own `error:` handler still runs.
 
@@ -240,7 +242,7 @@ The interceptor also has a `tap` step, added at `book-m4-reading`, that calls `s
 
 ### 22.6 Loading, error and empty states
 
-Every screen that loads data has four states, and the project treats each as a design decision, not an afterthought: *loading* ("Loading…"), *error* (a sentence saying what failed, in `role="alert"` so screen assistants announce it), *empty* ("No documents yet", with different advice for people who can upload), and *content*. Error messages from the server are shown when they exist (`err.error?.error`), falling back to a generic sentence; the backend's error contract (Chapter 13) guarantees they carry no internals.
+Every screen that loads data has four states, and the project treats each as a design decision, not an afterthought. *Loading* shows "Loading…". *Error* is a sentence saying what failed, in `role="alert"` so screen assistants announce it. *Empty* says "No documents yet", with different advice for people who can upload. *Content* is the list itself. Error messages from the server are shown when they exist (`err.error?.error`), falling back to a generic sentence; the backend's error contract (Chapter 13) guarantees they carry no internals.
 
 ### 22.7 Handling 429 with `Retry-After`, and 410 Gone
 
@@ -311,7 +313,7 @@ Two methods in `session.service.ts` carry most of the session logic. The first r
 
 *Path: `frontend/src/app/core/session.service.ts`*
 
-Read the pipeline from the inside out. `http.get` asks the server who the cookie belongs to. `tap` stores the answer in the signal. `map(() => undefined)` discards the user, because the caller only needs to know the check has finished. `catchError` handles the failure case: if the server says "nobody" (a 401 for a signed-out visitor), the service records "nobody signed in" and continues with a normal completion, so a signed-out visitor sees the sign-in page and not a startup crash. `firstValueFrom` turns the whole thing into a Promise, because Angular's `provideAppInitializer` (Listing 22.5) waits for a promise before it lets the first route run. Note also that `/api/auth/me` is one of the two "auth probe" addresses the interceptor ignores (Listing 22.6): its 401 is an expected answer, not an ended session.
+Read the pipeline from the inside out. `http.get` asks the server who the cookie belongs to. `tap` stores the answer in the signal. `map(() => undefined)` discards the user, because the caller only needs to know the check has finished. `catchError` handles the failure case. If the server says "nobody" (a 401 for a signed-out visitor), the service records "nobody signed in" and continues with a normal completion. A signed-out visitor therefore sees the sign-in page and not a startup crash. `firstValueFrom` turns the whole thing into a Promise, because Angular's `provideAppInitializer` (Listing 22.5) waits for a promise before it lets the first route run. Note also that `/api/auth/me` is one of the two "auth probe" addresses the interceptor ignores (Listing 22.6): its 401 is an expected answer, not an ended session.
 
 The second piece is the idle bookkeeping:
 
@@ -340,7 +342,7 @@ The second piece is the idle bookkeeping:
 
 *Path: `frontend/src/app/core/session.service.ts`*
 
-`touch()` records "the server was just reached" in two places: the signal (for this tab) and `localStorage` (for other tabs). Browsers fire a `storage` event in *other* tabs of the same site when one writes to `localStorage`, and the constructor's listener uses it to update that tab's signal, keeping the later of the two times (`Math.max`). The result: if you read in one tab while another sits idle, the idle tab won't pop up a "you'll be signed out" banner that would be wrong. The stored value is only a timestamp, and the code comment says it is not sensitive. Failing to write (private mode, blocked storage) is caught and tolerated.
+`touch()` records "the server was reached a moment ago" in two places: the signal (for this tab) and `localStorage` (for other tabs). Browsers fire a `storage` event in *other* tabs of the same site when one writes to `localStorage`, and the constructor's listener uses it to update that tab's signal, keeping the later of the two times (`Math.max`). The result: if you read in one tab while another sits idle, the idle tab won't pop up a "you'll be signed out" banner that would be wrong. The stored value is only a timestamp, and the code comment says it is not sensitive. Failing to write (private mode, blocked storage) is caught and tolerated.
 
 ### 22.10 Search as you type: debouncing and `switchMap`
 
@@ -377,7 +379,7 @@ The final `subscribe` filters the suggestions to hide the owner and anyone the d
 
 ### 22.11 Why cookies and not tokens in web storage
 
-The obvious alternative to what this chapter shows is the pattern many tutorials teach: after sign-in the server returns a token, the frontend saves it in `localStorage`, and an interceptor adds an `Authorization` header to every request. It has real advantages: it works across different origins with no cookie rules, and it suits mobile apps and APIs used by other programs. The project chose otherwise, and the comment on `SessionService` states why: "The credential itself is an httpOnly cookie the browser manages — nothing secret is held here or in web storage." An `HttpOnly` cookie can't be read by JavaScript, so a script injected through some bug in the page (a cross-site scripting attack) can't steal it; a token in `localStorage` can be read by any script on the page. The trade-off is that cookies are sent automatically, which is what makes CSRF possible and why the CSRF header (Section 22.5) is needed, and why the app must live on one origin. Neither approach is free; the project accepted the second set of costs in exchange for the first set of protections, and its content-security policy (Section 22.12) adds a further barrier against injected scripts.
+The obvious alternative to what this chapter shows is the pattern many tutorials teach: after sign-in the server returns a token, the frontend saves it in `localStorage`, and an interceptor adds an `Authorization` header to every request. It has real advantages: it works across different origins with no cookie rules, and it suits mobile apps and APIs used by other programs. The project chose otherwise, and the comment on `SessionService` states why: "The credential itself is an httpOnly cookie the browser manages — nothing secret is held here or in web storage." An `HttpOnly` cookie can't be read by JavaScript, so a script injected through some bug in the page (a cross-site scripting attack) can't steal it. A token in `localStorage` can be read by any script on the page. The trade-off is that cookies are sent automatically, which is what makes CSRF possible and why the CSRF header (Section 22.5) is needed, and why the app must live on one origin. Neither approach is free; the project accepted the second set of costs in exchange for the first set of protections, and its content-security policy (Section 22.12) adds a further barrier against injected scripts.
 
 ## Advanced tier: One origin, and quiet polling
 
@@ -385,7 +387,7 @@ The obvious alternative to what this chapter shows is the pattern many tutorials
 
 ### 22.12 Why one origin: nginx and the proxy
 
-Chapter 20 showed the development proxy. In production, `frontend/nginx.conf` does the same job with more care. The comment at its top says the design goal: "Serves the Angular app and proxies the API, so browser, session cookie and CSRF cookie all share one origin." With one origin there is no cross-origin resource sharing (CORS) setup to get wrong, no cookie policies to loosen, and the relative URLs in the frontend just work.
+Chapter 20 showed the development proxy. In production, `frontend/nginx.conf` does the same job with more care. The comment at its top says the design goal: "Serves the Angular app and proxies the API, so browser, session cookie and CSRF cookie all share one origin." With one origin there is no cross-origin resource sharing (CORS) setup to get wrong, no cookie policies to loosen, and the relative URLs in the frontend work unchanged.
 
 *Pattern note: One origin behind a proxy is the client-server single-page-app pattern (Chapter 39, Section 39.4).*
 
@@ -423,7 +425,7 @@ export function shouldPoll(now: number, lastInputAt: number, hidden: boolean): b
 
 *Path: `frontend/src/app/features/admin/admin-dashboard.component.ts`*
 
-The doc comment above it says why: "An unattended admin page must not keep polling: every poll would count as activity and keep the most privileged session alive past its idle timeout." The function is pure and tested in `admin-dashboard.component.spec.ts`.
+The doc comment on `shouldPoll` says why: "An unattended admin page must not keep polling: every poll would count as activity and keep the most privileged session alive past its idle timeout." The function is pure and tested in `admin-dashboard.component.spec.ts`.
 
 ### 22.14 The throttle countdown, mechanically
 
@@ -461,7 +463,7 @@ function parseRetryAfter(header: string | null): number {
 
 1. `parseRetryAfter` turns the `Retry-After` header into whole seconds. `Number(null)` is 0 and `Number('abc')` is `NaN`, so the check `Number.isFinite(seconds) && seconds > 0` rejects a missing, garbled or zero header and falls back to 5 seconds. `Math.ceil` rounds a fractional wait up, never down, so the retry isn't sent a moment too early.
 2. `startThrottleCountdown` first clears any earlier countdown (`clearThrottle`), so two can't overlap, then puts the number of seconds in the `throttledSeconds` signal, which the template shows ("will load in 12s").
-3. `setInterval` ticks once a second and lowers the signal, never below zero. This timer is purely cosmetic; it doesn't decide when to retry.
+3. `setInterval` ticks once a second and lowers the signal, never lower than zero. This timer is purely cosmetic; it doesn't decide when to retry.
 4. `setTimeout` fires once, after the whole wait, and *is* the retry. It asks for a fresh grid of signed URLs (`requestGrid`), not for the old URLs to be tried again, because the tokens in them may have expired while the reader waited (Chapter 25).
 5. The `generation === this.loadGeneration` check drops the retry if the reader has turned to another page in the meantime (Chapter 19, Section 19.12).
 
@@ -479,7 +481,16 @@ nginx sends one more protection for the app's own pages, in the `location /` blo
 
 *Path: `frontend/nginx.conf`*
 
-A **Content-Security-Policy** (CSP) is a header that tells the browser which sources of content the page may use. Anything else is blocked, which limits what an injected script could do. Read the directives as a list of rules: `default-src 'self'` allows resources only from the app's own origin unless a later directive says otherwise; `script-src 'self'` allows scripts only from this origin (no inline scripts, and no scripts from other sites); `style-src 'self' 'unsafe-inline'` allows own-origin styles plus inline ones (the file doesn't say why the looser rule is needed; it is the one place the policy allows something inline); `img-src 'self' blob: data:` allows images from the origin, from `blob:` addresses (the viewer's tiles) and from `data:` addresses; `connect-src 'self'` restricts where `fetch` and `HttpClient` may talk to, so injected code couldn't send data to another server; `object-src 'none'` forbids plug-ins; `base-uri 'self'` blocks changing the base address; `form-action 'self'` stops forms posting elsewhere; and `frame-ancestors 'none'` forbids embedding the app in another site's frame. `always` makes nginx send the header even on error responses.
+A Content-Security-Policy (CSP) is a header that tells the browser which sources of content the page may use. Anything else is blocked, which limits what an injected script could do. Read the directives as a list of rules:
+
+- `default-src 'self'` allows resources only from the app's own origin unless a later directive says otherwise.
+- `script-src 'self'` allows scripts only from this origin (no inline scripts, and no scripts from other sites).
+- `style-src 'self' 'unsafe-inline'` allows own-origin styles plus inline ones. The file doesn't say why the looser rule is needed; it is the one place the policy allows something inline.
+- `img-src 'self' blob: data:` allows images from the origin, from `blob:` addresses (the viewer's tiles) and from `data:` addresses.
+- `connect-src 'self'` restricts where `fetch` and `HttpClient` may talk to, so injected code couldn't send data to another server.
+- `object-src 'none'` forbids plug-ins, and `base-uri 'self'` blocks changing the base address.
+- `form-action 'self'` stops forms posting elsewhere.
+- `frame-ancestors 'none'` forbids embedding the app in another site's frame. `always` makes nginx send the header even on error responses.
 
 The CSP explains a constraint on the frontend code: tiles must come from `blob:` URLs and not from another origin, and scripts can't be inline. It is also why the viewer's approach (fetch the bytes, then make a `blob:` address) fits the policy so naturally.
 

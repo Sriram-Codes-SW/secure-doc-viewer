@@ -1,11 +1,13 @@
 # Epilogue: where to go from here
 
-You started this book without any programming background. You now have a working, hardened web
-application that you can explain from the browser to the database and back. The application matters
-less than what you practiced while building it, so it is worth stepping back to see how the parts
-fit together.
+You started this book without any programming background. You now have a working web application,
+built in stages, that you can explain from the browser to the database and back, and you have seen
+it examined by independent reviewers and changed in response to what they found. That is not the same
+as an application that cannot be attacked. Nothing is, and this epilogue is honest about where the
+line falls. The application matters less than what you practiced while building it, so it is worth
+stepping back to see how the parts fit together.
 
-## How the six parts fit together
+## How the seven parts fit together
 
 **Part I gave you a footing.** You learned to work in a terminal and to read a file path, to write
 and run Java, to build with Maven, to keep history with Git, to reason about requests, responses and
@@ -26,17 +28,19 @@ errors are handled in one place, and that end-to-end tests with an accessibility
 unit tests can't.
 
 **Part IV put it all together.** Seven milestones took the design from a demo that signed anyone in
-by name to an application with accounts, ownership, sharing, an audit trail, hardening, a good
-reading experience and a production platform. At each step you saw the architecture blueprint
-change and read the decisions and challenges that caused the change. The recurring lesson is that
-the design that survived review was rarely the first one: the first version of nearly every
-protection had a gap that someone found by trying to get around it.
+by name to an application with accounts, ownership, sharing, an audit trail, upload and API
+hardening, a good reading experience and a container platform with continuous integration. At each
+step you saw the architecture blueprint change and read the decisions and challenges that caused the
+change. The recurring lesson is that the design that survived review was rarely the first one: the
+first version of nearly every protection had a gap that someone found by trying to get around it.
 
-**Part V made it real.** A security review is a method, not a mood: name your assets, your actors
-and their entry points, then attack your own work. Deployment brought HTTPS, a trusted proxy and a
-go-live checklist. Backups only count once you have practiced a restore. Metrics and health checks
-tell you what the system is doing when you aren't looking, and supply-chain controls keep the
-things you didn't write from becoming the way in.
+**Part V took the app toward production.** A security review is a method, not a mood: name your
+assets, your actors and their entry points, then attack your own work. Deployment brought HTTPS, a
+trusted proxy and a go-live checklist. Backups only count once you have practiced a restore. Metrics
+and health checks tell you what the system is doing when you aren't looking, and supply-chain
+controls reduce the chance that the things you didn't write become the way in. These chapters
+describe how the app can be run and what to watch. They are not a guarantee that the running system
+is safe.
 
 **The trade-offs chapter closed the loop.** Every decision in the app has a price. Choosing to
 render tiles on the server costs CPU and caching. Keeping sessions in memory costs you scale-out.
@@ -49,14 +53,45 @@ names on what you had already seen: filter chains and strategies, state machines
 gateways, event logs and atomic switches. Naming a solution is what lets you recognize it in another
 project and borrow it deliberately, and the five-step method in Chapter 39 tells you when not to.
 
+**Part VII pointed past the single server, on paper.** Chapters 40 and 41 mapped the scale-out plan onto
+AWS: containers behind a load balancer, a managed database, tiles in object storage, shared sessions
+and counters, secrets from a managed store, and the operations around them. It is a design study. The
+project never built or ran it, and the chapters say so. It showed what would carry over unchanged
+(the watermark, the access re-check on every tile, the database pointer that acts as the atomic
+switch), what would have to change, and when to stay put. Knowing when not to move is part of the same
+skill.
+
 ## What you can now do
 
 - Read Java, TypeScript, SQL, YAML and Dockerfiles well enough to find where a behavior lives.
-- Build a web service that stores data, protects it and answers errors without leaking internals.
-- Build a browser client that talks to it, handles failure gracefully and stays accessible.
+- Build a web service that stores data, checks its input and answers errors without leaking internals.
+- Build a browser client that talks to it, handles failure gracefully and takes accessibility seriously.
 - Test at three levels: small units, the running application, and a real browser.
-- Package the system, deploy it behind HTTPS, back it up, restore it and watch it.
+- Package the system in containers, put it behind HTTPS, and describe how to back it up, restore it and watch it.
 - Explain, for any protection in the app, what attack it stops and what it does not.
+
+## What the app does and does not defend
+
+The application was reviewed in several rounds, and each finding that was demonstrated was fixed and
+tested. That makes it defended against the specific attacks the reviews found and the classes they
+represent: guessing sign-ins, replaying or sharing tile links, reading documents you were not shared
+with, forging the client address, and flooding the server with expensive work. It does not, and cannot,
+do the following, and the book says each of these where it matters:
+
+- **It does not stop a screenshot or a photograph.** Anything shown on a screen can be copied. The
+  watermark makes a leak traceable; it does not make copying impossible.
+- **It has no second sign-in factor,** for administrators or anyone else, and sign-in is by password only.
+- **A reader with a valid session can still fetch every page slowly.** The rate limit makes bulk
+  harvesting slow, not impossible.
+- **The tiles on disk are neither watermarked nor encrypted,** and they appear in backups, so whoever
+  can read the storage can read the pages.
+- **Sessions and counters live in memory,** so the application runs as one instance, and its pages are
+  images with no text layer for screen readers.
+- **Publishers can discover the names of other users** through the share picker, by design.
+- **The cloud design of Part VII was never deployed,** so none of its claims has been tested on a real account.
+
+If you deploy something like this for real people, treat the reviews in this book as a start, not an
+end: have your own reviewers try to break it.
 
 ## Habits worth keeping
 
@@ -76,8 +111,8 @@ The repository's own list of possible next steps is a good set of projects. Each
 architecture, so draw the next blueprint before you start (Appendix B shows how the earlier ones
 evolved):
 
-- Store tiles in object storage and serve them with cloud-signed URLs (Sections 37.4 and 37.7
-  describe what would change and what would stay).
+- Build the AWS design of Chapters 40 and 41, starting with its smallest useful first step. Sections 37.4 and
+  37.7 describe what would change for tile delivery and storage, and what would stay.
 - Share sessions and rate-limit counters across several app instances with a shared store.
 - Add group-based sharing, expiry dates on access, or per-document sensitivity levels with tighter
   rate limits.

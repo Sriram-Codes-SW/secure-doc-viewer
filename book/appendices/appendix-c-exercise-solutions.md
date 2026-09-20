@@ -1,9 +1,9 @@
 # Appendix C: Exercise solutions
 
-Try each exercise before you look. Solutions are grouped by chapter. Compiled from the per-chapter solution files.
+Try each exercise before you look. Solutions are grouped by chapter. Each solution repeats the exercise's
+title so you can find it; chapters without a section have no solutions written.
 
 ## Chapter 1 solutions
-
 
 ### Exercise 1.1 ★ Count the tiles
 
@@ -30,7 +30,6 @@ After sign-in and opening the document, the browser makes: one request for the p
 One good answer. For the skimming customer: 1,024-pixel tiles give 2 by 2, four tiles per page, so at 180 requests a minute a reader can move through about 45 pages a minute, and a script needs about 2,000 tiles / 180 per minute, roughly 11 minutes, for 500 pages. The cost: a harvest becomes much faster, so the watermark is doing more of the work. For the sensitive customer: 256-pixel tiles give 35 tiles per page, and with 120 requests a minute reading drops to about 3 pages a minute while a harvest of 500 pages takes about 2.4 hours (17,500 tiles / 120 per minute). The cost: readers hit the limit and see blank pages while tiles load, which is exactly what an early review found. Note that a document keeps the tile size it was rendered with, so changing the setting affects only documents uploaded afterward.
 
 ## Chapter 2 solutions
-
 
 ### Exercise 2.1 ★ Explore the repository
 
@@ -65,7 +64,6 @@ On macOS or Linux, `lsof -i :8080` shows a line for the Python process with its 
 With `DB_PORT=3307` in `.env`, the placeholder `${DB_PORT:3306}` resolves to 3307, so the URL becomes `jdbc:mysql://localhost:3307/securedocs?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true` (assuming the other variables are unset or default). If you also `export DB_PORT=3308`, the app connects to port 3308: the comment in `application.yml` says real environment variables win over the `.env` file. The reason is that the environment is the more specific, more deliberate source: whoever started this process chose it, whereas the file holds a machine's everyday defaults.
 
 ## Chapter 3 solutions
-
 
 ### Exercise 3.1 ★ Hello, tiles
 
@@ -145,7 +143,6 @@ public class Check {
 It prints four `PASS` lines. Choosing the boundaries (1, 256, 257) is the point: rounding errors live at the edges. Chapter 18 shows the same checks written with the real testing library.
 
 ## Chapter 4 solutions
-
 
 ### Exercise 4.1 ★ Class or record?
 
@@ -233,7 +230,6 @@ One good answer follows the project's own design: `enum EventType { SIGN_IN, PAG
 
 ## Chapter 5 solutions
 
-
 ### Exercise 5.1 ★ Pick the collection
 
 Pages in order: a list. Usernames allowed to open a document: a set (no duplicates). Each username with its role: a map from username to role.
@@ -313,7 +309,6 @@ Test with four calls in a row (the fourth returns `false`), then a call 61 secon
 
 ## Chapter 6 solutions
 
-
 ### Exercise 6.1 ★ Read the coordinates
 
 `groupId` `com.example`, `artifactId` `secure-doc-viewer`, version `0.1.0`. It compiles for Java 25 (`<java.version>25</java.version>`).
@@ -335,7 +330,6 @@ Your exact output depends on the resolved versions, so the names below are examp
 One good answer, from `git show book-m2-documents:pom.xml` compared with `book-m0-mvp`: `spring-boot-starter-security` (accounts, from milestone 1), `spring-boot-starter-validation` (input checks), `spring-boot-starter-data-jpa` (storing objects in the database), `flyway-core` and `flyway-mysql` (schema migrations), `mysql-connector-j` (the MySQL driver), `spring-security-test` and `h2` (test tools). Scopes other than the default: `mysql-connector-j` is `runtime`; `spring-boot-starter-test`, `spring-security-test` and `h2` are `test`. The guess for each feature is the point of the exercise; check it against Chapters 14 to 16.
 
 ## Chapter 7 solutions
-
 
 ### Exercise 7.1 ★ Read the first commit
 
@@ -376,7 +370,6 @@ One good answer: create `notes.txt` with a line, commit it on `main`, branch `a`
 
 ## Chapter 8 solutions
 
-
 ### Exercise 8.1 ★ Match the code
 
 A document you may not see: `404`. A 60 MB upload: `413 Content Too Large` (limit 50 MB). Too many tile requests: `429 Too Many Requests` with a `Retry-After` header.
@@ -408,7 +401,6 @@ You should see `SDV_SESSION` (marked HttpOnly, so JavaScript cannot read it) and
 One good answer, for `Cache-Control: no-store` on tiles: it stops browsers and shared caches from keeping a tile. Without it, a cache that many people share could store a tile watermarked for one viewer and serve it to another, which would both leak content and put the wrong name on the watermark. The cost is that tiles are re-fetched instead of reused, so each view takes a little more time and server work. For `Referrer-Policy: no-referrer`: it stops the browser from telling the next site which page the visitor came from; without it, a link followed from a page whose URL contains a signed token could leak the token; the cost is that other sites lose the referral information they might otherwise use for analytics.
 
 ## Chapter 9 solutions
-
 
 ### Exercise 9.1 ★ Read a table
 
@@ -473,7 +465,6 @@ Key decisions: comments on a deleted document have no meaning, so `ON DELETE CAS
 
 ## Chapter 10 solutions
 
-
 ### Exercise 10.1 ★ Image or container?
 
 `mysql:8.4` is an image. `securedocs-mysql` is a container (its `container_name`). `mysql-data` is a volume.
@@ -499,8 +490,6 @@ The lines are `depends_on:`, `mysql:` and `condition: service_healthy` under the
 Before the move: changing one Java file changes the layer created by `COPY src src`, so only that layer and those after it (the `package` build) run again; the layer that downloaded dependencies is reused from the cache, because `pom.xml` did not change. After the move: `COPY src src` now comes before the download step, so a code change invalidates the cache from that point on, and the dependency download runs again every time. The original order is faster: downloads dominate the build time, and they should repeat only when `pom.xml` changes.
 
 ## Chapter 11 solutions
-
-# Solutions: Chapter 11
 
 ### Exercise 11.1 ★ Find the cookie settings
 
@@ -534,8 +523,6 @@ What makes a message easy to act on: it names the thing that is wrong (the prope
 
 ## Chapter 12 solutions
 
-# Solutions: Chapter 12
-
 ### Exercise 12.1 ★ Match a request to a method
 
 `@GetMapping("/{documentId}")` on the method, combined with the class-level `@RequestMapping("/api/documents")`, gives the full path `/api/documents/{documentId}` for `GET`. Spring fills the `documentId` parameter from the matching part of the URL because of `@PathVariable`.
@@ -567,8 +554,6 @@ One good answer.
 The requests you should see for a page, in order: the document detail (`GET /api/documents/{id}`), the tile-URL grid for the page (`GET /api/documents/{id}/pages/{n}/tile-urls`), then one `GET /api/tiles?token=...` per tile, several in parallel. Decoding the part of the token before the dot with a base64url decoder gives a pipe-separated string with seven fields: the document id, page, row, column, tile version, a session binding and an expiry time in epoch seconds (the canonical string of `SignedTilePayload`). You would not want the *session binding* logged if it were the session id, but it is not the session id: it is a keyed value derived from it, so the design makes the token safe to leak in a log or a shared screenshot for its short lifetime. What a leaked token still allows is fetching that one tile, from the session it was issued to, until it expires; the signature (the part after the dot) stops anyone changing any of the fields.
 
 ## Chapter 13 solutions
-
-# Solutions: Chapter 13
 
 ### Exercise 13.1 ★ Which rule stops a long username?
 
@@ -613,8 +598,6 @@ The three are the server's multipart limit (what actually stops the upload), the
 
 ## Chapter 14 solutions
 
-# Solutions: Chapter 14
-
 ### Exercise 14.1 ★ Why store the enum as text?
 
 `@Enumerated(EnumType.STRING)` on the `role` field of `AppUser`. It stores the enum constant's *name* (`READER`, `PUBLISHER`, `ADMIN`). The default, `EnumType.ORDINAL`, stores the constant's *position*: 0, 1, 2. If you inserted a new role between `READER` and `PUBLISHER`, every stored `1` (formerly `PUBLISHER`) would now mean the new role, and every stored `2` would mean `PUBLISHER`, so existing accounts would silently change role, with no error. Text is also readable when you look at the table.
@@ -640,8 +623,6 @@ A worked outline. `V4__document_notes.sql` containing `ALTER TABLE document ADD 
 Without the lock, both requests render, then both read `tile_version = 1`, both compute the next version as 2, and both try to move their tiles into `v2`: they collide or mix files, and one update overwrites the other, so the document could end up pointing at tiles that are a mixture. With the row lock, `findByIdForUpdate` makes the second transaction wait at `select ... for update` until the first commits. The first sees version 1 and produces `v2`; the second then reads version 2 and produces `v3`. On disk, after the first replace removes `v1` and the second removes `v2`, only `v3` remains, and the row's `tile_version` is 3. `MySqlIntegrationTest.concurrentReplacementsAreSerialisedByTheRowLock` asserts exactly this. It needs a real MySQL because the test is about the database's own row-lock behavior, which the in-memory H2 imitation is not a trustworthy stand-in for (the class comment names "the row lock that serialises PDF replacement" among the things H2 can't vouch for).
 
 ## Chapter 15 solutions
-
-# Solutions: Chapter 15
 
 ### Exercise 15.1 ★ Find the cookie settings
 
@@ -698,8 +679,6 @@ This is a design outline, not code from the project; the project has no email fe
 
 ## Chapter 16 solutions
 
-# Solutions: Chapter 16
-
 ### Exercise 16.1 ★ What does `denyAll()` do?
 
 `GET /api/does-not-exist` from a signed-in reader matches the rule `/api/**` with `authenticated()`. The reader is authenticated, so security lets the request through; no controller has that path, so Spring raises a "no resource" error, and `GlobalExceptionHandler` turns it into a `404` with `{"error": "Not found."}` (`ErrorContractTest` checks this). `GET /somewhere-else` matches no earlier rule, so it reaches `anyRequest().denyAll()`. For an anonymous caller that produces the `401` "Sign-in required." (the authentication entry point); for a signed-in caller it produces `403`. Either way the request never reaches application code.
@@ -743,8 +722,6 @@ One good answer.
 
 ## Chapter 17 solutions
 
-# Solutions: Chapter 17
-
 ### Exercise 17.1 ★ Count the tiles
 
 Width: 8.5 × 150 = 1,275 pixels. Height: 11 × 150 = 1,650 pixels. Columns: `tileCount(1275, 512)` is `(1275 + 511) / 512 = 1786 / 512 = 3` (integer division drops the remainder), so 3 columns, and the last column is 1,275 − 1,024 = 251 pixels wide. Rows: `tileCount(1650, 512)` is `(1650 + 511) / 512 = 2161 / 512 = 4`, so 4 rows, and the last row is 1,650 − 1,536 = 114 pixels tall. That is 12 tiles, matching the "~12 tiles" in the comment in `application.yml`.
@@ -785,8 +762,6 @@ One good answer.
 The key decisions: write in a place nobody looks and make it visible in one atomic step; change the database only after the file exists; delete the old file only after the database points at the new one; and give every failure path a cleanup, with a scheduled sweep as the last resort, as `StorageJanitor` does for tiles.
 
 ## Chapter 18 solutions
-
-# Solutions: Chapter 18
 
 ### Exercise 18.1 ★ Run the tests and read the summary
 
@@ -860,8 +835,6 @@ The key decisions: use the real filter chain so sessions and roles are real, use
 
 ## Chapter 19 solutions
 
-# Chapter 19 solutions
-
 ### Exercise 19.1 ★ The nullable property
 
 In `DocumentDetail`, `sharedWith: string[] | null` is `null` for anyone who can't manage the document (the comment: "Only present when canManage is true"). It is the only nullable property in that interface. (`DocumentSummary` has the matching `sharedWithCount: number | null`.)
@@ -923,25 +896,23 @@ Columns: 600 ÷ 256 rounds up to 3. Rows: 800 ÷ 256 rounds up to 4. So there ar
 
 ## Chapter 20 solutions
 
-# Chapter 20 solutions
-
-### Exercise 20.1 ★ Which script needs a stack
+### Exercise 20.1 ★ Which script needs more than Node?
 
 `npm run e2e` (`playwright test`). Per `playwright.config.ts`, the end-to-end tests run against a full running stack served at `http://localhost:8081` and need an admin account supplied through environment variables.
 
-### Exercise 20.2 ★ What ^22.1.8 accepts
+### Exercise 20.2 ★ Reading a version range
 
 `^22.1.8` accepts 22.1.8 and any newer 22.x.y, so 22.9.0 is accepted. 23.0.0 is not (a new major).
 
-### Exercise 20.3 ★★ Why secure false is fine in development
+### Exercise 20.3 ★★ Why `secure: false` is fine here
 
 `secure: false` turns off certificate verification for the proxy's connection to the target. In development the target is `http://localhost:8080` on your own machine, so nothing travels over a network. A production proxy would forward across a real network, where skipping verification would allow someone to impersonate the backend. (Note that production here uses nginx over a private container network, not this dev proxy.)
 
-### Exercise 20.4 ★★ Install and build
+### Exercise 20.4 ★★ Build the app
 
 A `dist/` folder appears, containing `dist/frontend/browser/` with `index.html` and JavaScript and CSS files whose names include a content hash, for example `main-XXXXXXXX.js` (the exact names vary). The Dockerfile copies that `browser` folder into nginx.
 
-### Exercise 20.5 ★★★ Delete the lock file
+### Exercise 20.5 ★★★ No lock file
 
 Without a lock file, `npm install` may pick the newest 6.0.x available (for example a later patch than the one you tested with) and writes a new lock file. `npm ci` refuses to run because its whole purpose is to install exactly what a lock file records; with none, there is nothing to reproduce.
 
@@ -951,17 +922,15 @@ Docker reuses a cached layer only if everything above it is unchanged. With `COP
 
 ## Chapter 21 solutions
 
-# Chapter 21 solutions
-
-### Exercise 21.1 ★ The Admin link condition
+### Exercise 21.1 ★ The Admin link
 
 `@if (sessionService.isAdmin()) { ... }`. It reads `sessionService.isAdmin`, a computed signal in `SessionService` that is true when the signed-in user's role is `ADMIN`.
 
-### Exercise 21.2 ★ Change the accent color
+### Exercise 21.2 ★ Changing the accent
 
 Every screen whose CSS uses `var(--accent)`: buttons, the active navigation underline, the Manage link in the viewer header, and the idle banner tint. Only the tokens changed, so no component file needs editing. (Remember the dark theme redefines `--accent` in its own block.)
 
-### Exercise 21.3 ★★ Toggle a signal
+### Exercise 21.3 ★★ A toggled hint
 
 Example:
 
@@ -976,7 +945,7 @@ Example:
    }
    ```
 
-### Exercise 21.4 ★★ Check color contrast
+### Exercise 21.4 ★★ Check the contrast
 
 Compute with any WCAG contrast checker. Light: `#5d6470` on `#ffffff` and on `#f6f7f9`; dark: `#9aa0aa` on `#191b1f` and on `#101114`. Expected, rounded: about 6.0 : 1 (light on `--surface`), 5.6 : 1 (light on `--bg`), 6.6 : 1 (dark on `--surface`) and 7.2 : 1 (dark on `--bg`), all above the 4.5 : 1 the comment in `styles.css` promises. Small differences in the last digit between checkers are normal.
 
@@ -1006,8 +975,6 @@ Add `label` and `reset` to the class in Example 21.1 and replace the button in t
 
 ## Chapter 22 solutions
 
-# Chapter 22 solutions
-
 ### Exercise 22.1 ★ The HTTP methods
 
 `GET` (list, get, findUsers, getTileUrls), `POST` (upload), `PATCH` (update), `PUT` (replaceFile, transferOwnership, share), and `DELETE` (delete, unshare). The file is sent by `upload` (`POST`, multipart `FormData`) and by `replaceFile` (`PUT`).
@@ -1034,21 +1001,19 @@ The reader types "al" and a request for "al" starts, and the server is slow to a
 
 ## Chapter 23 solutions
 
-# Chapter 23 solutions
-
-### Exercise 23.1 ★ Admin-only routes
+### Exercise 23.1 ★ Who can reach what
 
 `admin` uses `roleGuard('ADMIN')`. `documents/upload` uses `roleGuard('PUBLISHER', 'ADMIN')`. Signed-in only (`authGuard`): `documents`, `documents/:documentId/manage`, `viewer/:documentId`, and `account`. `login` has no guard.
 
-### Exercise 23.2 ★ The sign-out redirect
+### Exercise 23.2 ★ The redirect address
 
 `/login?returnUrl=%2Fdocuments` (the guard passes the attempted URL, percent-encoded, in `returnUrl`). `auth.guard.spec.ts` checks the same behavior with `/viewer/abc?page=3`.
 
-### Exercise 23.3 ★★ Guards are not security
+### Exercise 23.3 ★★ Deleting a guard
 
 The guard only decides which screen the browser shows. The document's tiles come from the API, which checks on every request that the signed-in user may see the document (the viewer shows "no longer available" on a 404). Removing the guard would let a signed-out visitor see the viewer's empty shell, but the API would still refuse them.
 
-### Exercise 23.4 ★★ Add a lazy route
+### Exercise 23.4 ★★ Add a route
 
 Example:
 
@@ -1061,7 +1026,7 @@ Example:
 
    placed before the catch-all `**` route (routes match in order).
 
-### Exercise 23.5 ★★★ Typing a page number
+### Exercise 23.5 ★★★ Keys and text fields
 
 Typing "1" or "-" in the page box would also trigger the key actions: "-" would zoom out, and arrow keys, meant to move the text cursor, would turn pages. Worse, `preventDefault()` would block the character from being typed at all.
 
@@ -1074,9 +1039,7 @@ Typing "1" or "-" in the page box would also trigger the key actions: "-" would 
 
 ## Chapter 24 solutions
 
-# Chapter 24 solutions
-
-### Exercise 24.1 ★ Add a timeout test
+### Exercise 24.1 ★ Add a boundary test
 
 Add inside the `describe` block:
 
@@ -1088,11 +1051,11 @@ Add inside the `describe` block:
 
    With 600 seconds of timeout, 500 seconds are left; the warning window is the smaller of 300 seconds and half the timeout (300), so 500 is outside it. Run with `npm test` in `frontend/`.
 
-### Exercise 24.2 ★ What expectOne catches
+### Exercise 24.2 ★ Two requests, one expectation
 
 `expectOne` fails the test, reporting that more than one matching request was found. It asserts *exactly* one, so it also catches accidental duplicate requests.
 
-### Exercise 24.3 ★★ Test SessionService
+### Exercise 24.3 ★★ A spec for `SessionService`
 
 Example:
 
@@ -1108,11 +1071,11 @@ Example:
 
    Use the same `TestBed.configureTestingModule` providers as in Listing 24.2.
 
-### Exercise 24.4 ★★ Two themes
+### Exercise 24.4 ★★ Both themes
 
-The two themes use different color values (Listing 21.8), so text that has enough contrast in one palette may not in the other. Checking only the light theme would leave the dark palette unverified.
+The two themes use different color values (Listing 21.9), so text that has enough contrast in one palette may not in the other. Checking only the light theme would leave the dark palette unverified.
 
-### Exercise 24.5 ★★★ Why only end-to-end catches it
+### Exercise 24.5 ★★★ Why only end-to-end
 
 The bug was in how nginx built the `X-Forwarded-For` header before passing the request to the backend, and the backend's decision to trust it. A Vitest spec runs neither. Only a test that sends real requests through the whole stack can see the header being overwritten (or not). A unit test could still add a check on the frontend side that no code sets that header itself, but that is not where the vulnerability was.
 
@@ -1121,8 +1084,6 @@ The bug was in how nginx built the `X-Forwarded-For` header before passing the r
 In `idle.ts`, change `IDLE_WARNING_SECONDS = 5 * 60` to `5 * 61`. The warning window becomes 305 seconds, so at 1,499 seconds after activity (301 seconds left) the function returns a warning instead of `active`. The test's output shows the expected value `{ kind: 'active' }` next to the received `{ kind: 'warning', secondsLeft: 301 }`. (The test "starts warning exactly when five minutes remain" would still pass, which is why the two tests are needed together to pin down both sides of the boundary.) Put the constant back afterward.
 
 ## Chapter 25 solutions
-
-# Solutions for Chapter 25
 
 ### Exercise 25.1 ★ Count the tiles
 
@@ -1134,7 +1095,7 @@ At 150 DPI the page is about 1,275 by 1,650 pixels. Columns: (1275 + 127) / 128 
 
 ### Exercise 25.3 ★★ Tamper with a token
 
-The client receives HTTP 401 with a JSON body `{"error": "..."}`. At `book-m0-mvp`, `GlobalExceptionHandler` maps `InvalidTokenException` to 401. A token whose payload was altered fails the signature comparison ("Signature mismatch"). The signature is checked first so that data nobody signed never reaches the parsing code, and the comparison is constant-time so response timing reveals nothing about how much matched.
+Change a character in the middle of the payload, not the last one, because the last base64url character can carry unused bits and may decode to the same bytes. The client then receives HTTP 401 with a JSON body `{"error": "..."}`. At `book-m0-mvp`, `GlobalExceptionHandler` maps `InvalidTokenException` to 401. A token whose payload was altered fails the signature comparison ("Signature mismatch"). The signature is checked first so that data nobody signed never reaches the parsing code, and the comparison is constant-time so response timing reveals nothing about how much matched.
 
 ### Exercise 25.4 ★★ Build a canonical string
 
@@ -1149,8 +1110,6 @@ One good answer: the token proves that the server issued it for one tile until a
 One good answer. Count after the token and session checks (so unauthenticated or forged requests can't consume a real reader's allowance) and before the disk read and watermark (so a refused request doesn't pay their cost). Use a sliding window of recent request times per key. When the count is over the limit, refuse with HTTP 429 (Too Many Requests) and a `Retry-After` header saying when to try again. Keying by session id is weak because a user can sign in again and get a fresh session with a fresh allowance; the project found this (finding `TM-3`) and moved to a per-user key in milestone 1 (Chapter 26).
 
 ## Chapter 26 solutions
-
-# Solutions for Chapter 26
 
 ### Exercise 26.1 ★ Who may upload?
 
@@ -1183,8 +1142,6 @@ One good answer: the session cookie (`SDV_SESSION`) is httpOnly, so JavaScript c
 
 ## Chapter 27 solutions
 
-# Solutions for Chapter 27
-
 ### Exercise 27.1 ★ Why 404
 
 A 403 would confirm that a document with that id exists. With 404, an outsider can't tell a hidden document from one that was never there, and the response is the only thing an outsider sees, so it is the whole disclosure (Section 27.2).
@@ -1214,8 +1171,6 @@ One good answer: the next tile request returns 404. The URL is still validly sig
 
 ## Chapter 28 solutions
 
-# Solutions for Chapter 28
-
 ### Exercise 28.1 ★ A 60 MB upload
 
 HTTP 413 with a JSON body `{"error": "The file is too large (limit 50 MB)."}`. The multipart limit (`max-file-size: 50MB`) makes the framework throw `MaxUploadSizeExceededException`, and `GlobalExceptionHandler.handleUploadTooLarge` turns it into a 413. (A browser using the project's frontend would have refused the file earlier, with a message.)
@@ -1241,8 +1196,6 @@ You should see `Content-Security-Policy` (containing `default-src 'none'` and `f
 One good answer. With MySQL running, health returns 200 with `{"status":"UP"}` and no details. With MySQL stopped, it returns 503 with status `DOWN`. `/actuator/env` stays closed because only `health` is exposed (`management.endpoints.web.exposure.include: health`), the security rules permit only the health paths, and every other route falls under `anyRequest().denyAll()`, so an anonymous caller gets 401 (403 or 404 would also satisfy `SecurityHeadersTest`).
 
 ## Chapter 29 solutions
-
-# Solutions for Chapter 29
 
 ### Exercise 29.1 ★ Idle state
 
@@ -1272,8 +1225,6 @@ One good answer. `trim()` removes the outer spaces, giving `abc 123`; `toUpperCa
 
 ## Chapter 30 solutions
 
-# Solutions for Chapter 30
-
 ### Exercise 30.1 ★ Forwarded header
 
 Any client can send a header with any value. If the backend believed `X-Forwarded-For` from every sender, a client could choose the address that the sign-in throttle and the audit log see, resetting its own lockout at will. Trust belongs to a network position: nginx overwrites the header with the real peer address, and the API accepts forwarded headers only from nginx's fixed address (`TRUSTED_PROXY_REGEX`).
@@ -1299,8 +1250,6 @@ Only the signed fields of a token are tamper-proof. A version passed as a separa
 One good answer, following `TileWorkLimiter`: create a component with `private final Semaphore slots = new Semaphore(2, true)` and a method `run(Callable<T> work)` that calls `slots.tryAcquire(...)` with a short wait; on failure throw a "busy" exception that the error handler turns into HTTP 503 with a `Retry-After` header (a message such as "Too many exports are running. Try again in a few seconds."); on success run the work inside `try`/`finally` and release the permit in the `finally`. Add a metric counter for refusals, and make the permit count configuration.
 
 ## Chapter 31 solutions
-
-# Solutions for Chapter 31
 
 ### Exercise 31.1 ★ Read the range
 
@@ -1354,7 +1303,6 @@ decision in the pull request description.
 
 ## Chapter 32 solutions
 
-
 ### Exercise 32.1 ★ Find the control
 
 - PDF: `TileGenerationService` (deletes the source after ingest) and `TileController` (the only pixel endpoint).
@@ -1393,7 +1341,6 @@ A model answer. (1) Asset and users: the page-1 thumbnail of a document; the sam
 
 ## Chapter 33 solutions
 
-
 ### Exercise 33.1 ★ Read the ports
 
 `mysql`: `127.0.0.1:3306` (configurable with `DB_PORT`). `web`: `127.0.0.1:8081` (`WEB_PORT`), mapped to nginx's 8080 inside the network. `tls`: `127.0.0.1:8443` (`TLS_PORT`), mapped to Caddy's 443. `app` publishes nothing; it only `expose`s 8080 to the compose network. None is `0.0.0.0` because each mapping starts with `127.0.0.1:`, so only the host machine itself can connect. Publishing on all interfaces is a deliberate go-live step: you edit the `tls` service's `ports` entry.
@@ -1419,7 +1366,6 @@ A reasonable order: (1) Are you actually using HTTPS end to end? A `Secure` cook
 A model answer. `.env`: strong unique `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `SIGNING_SECRET` (32+ characters), `SITE_ADDRESS=docs.example.com`, `TLS_MODE=<an email address>`, `SESSION_COOKIE_SECURE=true`, `METRICS_ALLOWED_ADDRESSES` set to the monitoring server, and the bootstrap admin password either unset (generated, read from the log once) or set and then cleared. Compose: publish 80 and 443 on the `tls` service. DNS: an A (and AAAA if used) record pointing the name at the server. First three tests: (1) `https://docs.example.com` loads with a valid certificate and the response has `Strict-Transport-Security`; (2) sign in as the admin, change the password, create a reader and confirm they can open a shared document; (3) from another machine, confirm that ports 3306 and 8080 are unreachable and that `/actuator/prometheus` is refused. Then schedule the first backup and restore drill (Chapter 34).
 
 ## Chapter 34 solutions
-
 
 ### Exercise 34.1 ★ Name the state
 
@@ -1451,7 +1397,6 @@ Two changes, in the spirit of the chapter: (1) the tile store needs a way to tak
 
 ## Chapter 35 solutions
 
-
 ### Exercise 35.1 ★ Health, metric, or audit?
 
 "Is the database reachable?" is a health check (`/actuator/health` answers `503` when it is down). "How many tiles were served today?" is a metric (`sdv_tiles_served_total`, looked at as an increase over a day). "Who opened document X?" is the audit log (`PAGE_VIEWED` events, filtered by document). "Are uploads being refused?" is a metric (`sdv_render_rejected_total`), with the audit log available afterward if you need to know which publisher was affected.
@@ -1478,7 +1423,6 @@ A Prometheus series exists only after the app first exports it. If the counter f
 
 ## Chapter 36 solutions
 
-
 ### Exercise 36.1 ★ Which job?
 
 A failing unit test: Backend tests (or Frontend tests and build for a TypeScript test). A vulnerable Maven library: the OSV job. An outdated operating system package in the nginx image: the Trivy step in the end-to-end job, which scans the built `secure-doc-viewer-web` image. A broken sign-in screen: the end-to-end job, where Playwright drives a real browser against the built stack.
@@ -1504,7 +1448,6 @@ A model answer. (1) Read the advisory: the library, the vulnerable range, and th
 The exercise is hypothetical. The `typescript` rule ignores minor and major updates, so Dependabot would not propose the newer minor version at all; the project's Angular 22 accepts only `>=6.0 <6.1`. When a person upgrades Angular, they would upgrade Angular and TypeScript together by hand, following the supported range in the new Angular release's notes, and then adjust the ignore rule to match, for example allowing patches of the new minor. The rule exists so that TypeScript moves in step with Angular, never ahead of it.
 
 ## Chapter 37 solutions
-
 
 ### Exercise 37.1 ★ Where is the choice?
 
@@ -1535,8 +1478,6 @@ With tokens: the client (mobile app) stores the token itself and sends it in a h
 Step 3 (tiles to shared storage) hides the most work: it touches URL signing, watermarking, the janitor, backups, and the atomic replace (which depends on a row lock plus a file layout under a version folder, so an object store needs an equivalent of "switch the document to version n" that readers never see half-done). A defensible reordering to reach two instances earlier: run two instances with a *shared network file system* mounted at the storage root instead of object storage, and steps 1, 2, 4, 5, and 6 (shared sessions, counters, one job runner, the same secret, a balancer). That avoids rewriting tile serving at first, at the price of a shared file system's own limits and of postponing the CDN. Another valid answer: run three instances only for the read path, with one designated instance handling uploads and replacements, so the replace logic needn't change. Any answer must name the extra work and keep sessions and counters shared before the balancer goes in front.
 
 ## Chapter 38 solutions
-
-# Solutions: Chapter 38
 
 ### Exercise 38.1 ★ Name the pattern
 
@@ -1576,7 +1517,6 @@ One good answer, using Section 37.5 (in-memory sessions and counters versus a sh
 
 ## Chapter 39 solutions
 
-
 ### Exercise 39.1 ★ Name the pattern
 
 (a) The reverse proxy or gateway at the trust boundary: nginx decides what the app is told about the caller. (b) The single-page-app fallback of client-server with a REST API: any path that isn't a real file serves `index.html`, so the client-side router handles it. (c) Secure by default, part of defense in depth: whatever no rule allows is refused. (d) Immutable versions with an atomic switch (copy-on-write): build the new version beside the old one, then move one pointer.
@@ -1601,3 +1541,46 @@ A model answer. Problem and constraints: users want a list of pages they have vi
 
 Against: rendering is CPU-heavy but happens inside the request today, bounded by the render pool (two at once) and timeout; splitting it adds a network call, a second deployable, shared storage, and new failure modes (what does the upload return if the render service is down?). The project's records show no evaluation, and one team runs one deployable. For: rendering is the resource hog, so a separate service could be scaled and limited independently and a hostile PDF could not starve sign-ins. What would have to be true: rendering load must actually slow other requests despite the bulkhead; the team or scale must justify the operational cost. What to measure first: `sdv_render_seconds`, `sdv_render_rejected_total`, and `sdv_render_abandoned_running` (Chapter 35), plus CPU and response times of unrelated endpoints during renders. If those are healthy, the split is over-engineering. A defensible middle course, noted in section 39.6: keep the monolith and improve the modules' boundaries first.
 
+## Chapter 40 solutions
+
+### Exercise 40.1 ★ Map the pieces
+
+`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). If you can do only two, take Secrets Manager plus RDS, then S3, because each improves recoverability without a second instance. Caddy's replacement, the load balancer, belongs to the later move F of Figure 41.5.
+
+### Exercise 40.2 ★ Code or documentation?
+
+Examples of what a good answer looks like. Statements checked against the app's code at `book-m6-final`: that Caddy replaces `X-Forwarded-For` and nginx accepts a forwarded address only from Caddy at `172.28.0.11` (Listings 40.1 to 40.3 are copied from the repository, and their captions name the file and the tag). Statements checked against AWS documentation: that an ALB appends the client address by default, and the name of the attribute and its default (these carry a (source N) tag that points into the list of sources at the end of the chapter, whose entry names the documentation page and the date, September 20, 2026). Statements that are design, not fact: that nginx moves to another port in the shared task (a recommendation), and anything in an Example, which is a teaching sketch that was never run. The way to tell is the caption (a listing names a file and a tag; an Example says "illustrative") or the (source N) tag; a statement with neither is a claim to question.
+
+### Exercise 40.3 ★★ Trace the header
+
+By default the ALB appends the address it sees to any existing header. So at nginx the header is `198.51.100.7, 203.0.113.9`. nginx, which trusts only the ALB's subnets and has `real_ip_recursive off`, takes the last address, `203.0.113.9`, as the client address, then `proxy_set_header X-Forwarded-For $remote_addr` overwrites the header with exactly that. So at the app the header is `203.0.113.9`, the app (trusting only loopback in the sidecar layout, with `FORWARD_HEADERS_STRATEGY=native` still set) accepts it, and the audit log records `203.0.113.9`. The forged `198.51.100.7` never reaches the app. The setting that makes the last address the one that counts is `real_ip_recursive` left at its default of `off`.
+
+### Exercise 40.4 ★★ Why the pointer is the switch
+
+Readers only ever read the tile version the database row currently points at, so objects of a version being uploaded are invisible until the pointer changes, and the pointer change is a single database update under the row lock, which is atomic. S3 therefore doesn't need to move or rename a set of objects together. If a reader could be handed a tile URL for a version the database didn't yet point at, the token's version wouldn't match the document's current version: the app's check `payload.tileVersion() != access.tileVersion()` turns that into `410 Gone`, and, worse, if the upload were still in progress the reader could see a page with missing or mixed tiles. The design prevents this by issuing tokens only for the current version and by switching the pointer only after every object exists.
+
+### Exercise 40.5 ★★★ Make the limiter shared
+
+Steps of the single atomic operation, per user: (1) remove entries from the user's sorted set whose score (timestamp) is older than now minus the window; (2) count the entries; (3) if the count is at or above the limit, refuse and report when the oldest entry expires, so the caller can compute `Retry-After`; (4) otherwise add an entry with the time as score and a unique id as member, and return that id. Refund: remove that one member by id. If pruning, counting, and adding were three separate commands, two tasks could both count 179 of 180 and both add, so 181 requests pass; a burst of parallel requests would exceed the limit, which is the same race as the sign-in bug of Chapter 32. Doing all three steps in one script makes them one uninterrupted operation. On the failure policy, one good answer: for sign-in, fail closed (refuse when the store is unreachable), because an unlimited guessing window is the risk the throttle exists for; for tile requests, fail open for a short, alarmed period, because a short outage of the limiter is less harmful than making every reader unable to read. Either choice is acceptable if you write it down, alarm on it, and test it.
+
+### Exercise 40.6 ★★★ What has to change for Redis?
+
+`SessionAdministration`: a new implementation of the same three methods (`list`, `revoke`, `revokeAllFor`), because it must take user names from the database and ask the shared store for each user's sessions instead of asking a registry for every principal. `SessionMetadata`: a new implementation, moving its data into the session or the store, because the container's destroy events no longer arrive. `LoginThrottle`: a new implementation of `reserve`, `succeeded`, `unlock` and `isLocked`, but also a new method signature, because each recorded attempt needs a unique id that `succeeded` can remove, so `reserve` can no longer return only an `Instant`. `TileRateLimiter`: the same, for `recordAndEnforce` and `refund`; `TileController` changes with it because it holds the value that `refund` needs. In short: session administration and metadata are new implementations; the two limiters are new implementations and new signatures.
+
+## Chapter 41 solutions
+
+### Exercise 41.1 ★ Idle or usage cost?
+
+Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and the two always-on tasks (a load balancer and a cache cluster belong here too). Follows use: S3 requests, data transfer out, and logs. For an app with 80 readers, worry first about the fixed group: with few readers, the always-on pieces are most of the bill, whether or not anyone reads a document, and that is exactly why staying on one machine can be the right answer (Table 41.2).
+
+### Exercise 41.2 ★★ Order the moves
+
+(a) needs move A (Secrets Manager and a task role), on top of move 0, the one task on Fargate that makes a task role possible. (b) needs move B (RDS with a Multi-AZ standby). (c) needs moves C, D, E and F: C (S3 tiles behind a storage seam), because every task must reach the same tiles; D (ElastiCache for sessions and counters), because a second task with in-memory state would double the limits and forget sessions; E (one runner for scheduled jobs), because otherwise every job runs three times; and F (the ALB, ACM, Route 53 and the tasks). So the order is A, B, C, D, E, F, with alarms, backups and the restore drill (G) last. Moves A to C alone do not give you three copies: they improve one instance, but the shared state and the front door are still missing.
+
+### Exercise 41.3 ★★★ Design the least-privilege role
+
+Service task role: `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on `arn:aws:s3:::BUCKET/tiles/*` (it reads tiles, writes new versions, and deletes superseded ones), plus `s3:ListBucket` on the bucket. That permission is required, not optional: without it S3 answers a request for a missing tile with `403` instead of `404`, and the app could not tell a replaced version (a designed `410`) from an access error. If you use SSE-KMS, add `kms:GenerateDataKey` and `kms:Decrypt` on the key. Janitor task role: `s3:ListBucket` on the bucket and `s3:DeleteObject` on `tiles/*`, with no `GetObject` and no `PutObject`, since it only lists and deletes. Neither role has access to other buckets, KMS key administration, IAM, or Secrets Manager (the execution role reads secrets). An attacker who compromised the service could not read or change anything outside the `tiles/` prefix, could not administer keys or roles, and could not reach the database credentials through AWS APIs; they could still read and delete tiles under the prefix, which is why the app's own access checks and versioning still matter.
+
+### Exercise 41.4 ★★★ Argue for staying
+
+A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take moves A to C (Secrets Manager, RDS, S3) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.

@@ -12,8 +12,7 @@
 
 ## Prerequisites
 
-Chapters 28 (hardening) and 21–23 (Angular components, services and testing), as listed in
-`book/OUTLINE.md`. Chapter 25 (the watermark's first version) and Chapter 26 (sessions and the
+Chapters 28 (hardening) and 21–23 (Angular components, services and testing). Chapter 25 (the watermark's first version) and Chapter 26 (sessions and the
 admin handle) matter too. The code is at `book-m4-reading` (pull request #4, three commits named 4a,
 4b and 4c), still Spring Boot 3.3.4 and Java 21. Pull request #4 was stacked on pull request #3. To run this tag yourself, see Table IV.3 ("What you
 need to run each tag") in the [Part IV introduction](00-part-introduction.md).
@@ -26,7 +25,7 @@ need to run each tag") in the [Part IV introduction](00-part-introduction.md).
 Milestones 1 to 3 made the viewer safe. Milestone 4 makes it pleasant, because a secure viewer
 that people find annoying gets bypassed, and the point of the product is that people read in it.
 
-The product owner's review (an AI agent playing the product owner) listed three reading problems:
+The AI product-owner reviewer (an AI agent playing the product owner) listed three reading problems:
 
 - **Sessions.** A session belonged to one browser tab and ended at a hard 30-minute cut-off with no
   warning (`PO-9`). You could lose your place in the middle of a page.
@@ -44,8 +43,7 @@ friction.
 
 ### 29.2 Deep links: the address bar as part of the interface
 
-A deep link is an address that opens the application at a specific place inside it, not just at
-its front door. For a document viewer the useful place is "page 12 of this document".
+A deep link is an address that opens the application at a specific place inside it, not only at its front door. For a document viewer the useful place is "page 12 of this document".
 
 Web addresses can carry small pieces of data after a question mark, called **query parameters**. In
 
@@ -192,10 +190,11 @@ The pieces, one at a time.
 
 - `@HostListener('document:keydown', ['$event'])` is an Angular **decorator** that says "call this
   method whenever a key is pressed anywhere in the document, and pass me the event object".
-- The `if` at the top lists reasons to do nothing: a modifier key is held (so the browser's own
-  shortcuts such as Ctrl and plus for browser zoom keep working); there is no manifest yet (the
-  document hasn't loaded); the focus is in an `INPUT`, `TEXTAREA` or `SELECT` (so typing a page
-  number in the jump box doesn't turn pages); or the element is editable content.
+- The `if` at the top lists four reasons to do nothing:
+  - a modifier key is held, so the browser's own shortcuts, such as Ctrl and plus for browser zoom, keep working;
+  - there is no manifest yet, because the document hasn't loaded;
+  - the focus is in an `INPUT`, `TEXTAREA` or `SELECT`, so typing a page number in the jump box doesn't turn pages;
+  - the element is editable content.
 - `actions` is a table: a `Record` mapping a key name to a function to call. A table replaces a long
   chain of `if` statements, and it makes the supported keys visible at a glance. Both `+` and `=`
   zoom in because on many keyboards they share a key.
@@ -285,7 +284,7 @@ this split: "Tile images are fetched with plain fetch() by the viewer, which han
 
 ### 29.7 The idle state as a pure function
 
-The clock arithmetic is isolated in one function with no dependencies, which is why it is easy to
+The clock arithmetic is isolated in one function with no dependencies, which makes it straightforward to
 test with plain numbers.
 
 **Listing 29.4 — `idle.ts` (book-m4-reading)**
@@ -378,7 +377,7 @@ warning. On `expired` the browser signs out locally and goes to the sign-in page
 parameters: `returnUrl` (where you were, so signing back in returns you there) and `reason=idle` (so
 the sign-in page can say why you're there).
 
-The banner's **Stay signed in** button calls `staySignedIn()`, which simply makes a request to
+The banner's **Stay signed in** button calls `staySignedIn()`, which makes a request to
 `/api/auth/me`. Any authenticated request extends the server's session, so the cheapest one does the
 job; the interceptor then calls `touch()`, the state returns to `active`, and the banner disappears.
 
@@ -447,10 +446,7 @@ degrees (the code does `g.rotate(-Math.PI / 6)`), and drawn at the configured op
 
 ### 29.10 A lighter mark, with limits
 
-The default opacity dropped from 0.28 to 0.2, and both opacity and spacing became configuration
-(`application.yml`: `watermark-opacity: 0.2`, `watermark-spacing: 1.5`, with a comment that says each
-mark shows the viewer, a UTC timestamp and a short trace code that matches the session column of
-the audit log).
+The default opacity dropped from 0.28 to 0.2, and both opacity and spacing became configuration. In `application.yml` they are `watermark-opacity: 0.2` and `watermark-spacing: 1.5`. A comment there says each mark shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log.
 
 **Listing 29.7 — `WatermarkService` constructor and label lines (book-m4-reading, simplified: two excerpts from the class, added lines only; `...` marks code between them)**
 
@@ -471,8 +467,7 @@ The constructor **clamps** its settings into a safe range with `Math.max(low, Ma
 opacity between 0.05 and 0.6, spacing between 0.5 and 6. A configuration typo, such as an opacity of
 5 instead of 0.5, can't make the mark invisible or the tile unreadable. The comment in `ViewerProperties`
 states the trade-off in one line: "Lower is easier to read through; higher survives recompression
-better." A stronger mark is harder to remove and harder to read a document through; the product
-owner's later sign-off on the strength (Chapter 30) is a decision about that balance.
+better." A stronger mark is harder to remove and harder to read a document through. The product owner's later sign-off on the strength (Chapter 30) is a decision about that balance.
 <!-- source: WatermarkService.java, ViewerProperties.java, application.yml at book-m4-reading -->
 
 ### 29.11 The trace code
@@ -595,58 +590,9 @@ have time. Fix: the server enforces; the banner only warns, and a 401 sends the 
 **Choosing identifiers by what parses, not by what reads.** Symptom: a code read from a screenshot
 doesn't match. Fix: an alphabet without look-alikes (Section 29.12).
 
-## In this project
-
-**Table 29.2 — Where the concepts live (at book-m4-reading)**
-
-| Concept | Where |
-|---|---|
-| Deep links, keys, resume | `frontend/src/app/features/viewer/viewer.component.ts`, `viewer.component.spec.ts` |
-| Idle warning | `core/idle.ts`, `core/idle.spec.ts`, `core/session.service.ts`, `core/session.interceptor.ts`, `app.ts` |
-| Timeout field | `AuthController.CurrentUser` (`sessionTimeoutSeconds`) |
-| Watermark | `service/WatermarkService.java`, `WatermarkServiceTest` |
-| Trace code and handles | `security/SessionKeys.java`, `controller/TileController.java`, `audit/AuditLogService.java` |
-| Configuration | `application.yml` (`watermark-opacity`, `watermark-spacing`) |
-
-Table 29.2 maps the milestone onto the source tree. The tests grow to 68 on the backend and 14 on the
-frontend (pull request #4), including four viewer navigation tests (deep link, fallback resume,
-Home/End/arrow keys, keys ignored while typing) and four idle-timer tests.
-<!-- source: PR #4 body; git diff --stat book-m3-hardening book-m4-reading -->
-
-## Try it
-
-Solutions are in `29-m4-reading.solutions.md`.
-
-### Exercise 29.1 ★ Idle state
-
-What does `idleState` return for a 30-minute timeout when 10 minutes remain? What if 4 minutes remain?
-
-### Exercise 29.2 ★ Keys while typing
-
-Why does the viewer ignore arrow keys while you type in the page-number box?
-
-### Exercise 29.3 ★★ Which page opens?
-
-The document has 20 pages, the address says `?page=25`, and storage holds `6` for this user and
-document (`rememberPage` stores the zero-based index). Which page (1-based) opens? What if the address has no `page` and storage is empty?
-
-### Exercise 29.4 ★★ Spacing arithmetic
-
-Using Listing 29.6, compute `stepX` and `stepY` for a 20-pixel line height, a 120-pixel widest line and
-`spacing = 2.0`.
-
-### Exercise 29.5 ★★ Clamped spacing
-
-Change `spacing` in `WatermarkService` on your own copy. What does the clamp do to a value of 20?
-
-### Exercise 29.6 ★★★ Design a trace lookup
-
-An administrator types `abc 123` into the trace box (an invented example). Explain, step by step, what the query receives and
-what rows match. Then explain what would go wrong if the code weren't normalized before the `LIKE`.
-
 ## Architecture blueprint v4
 
-Figure 29.1 is Blueprint v4, from `book/blueprints/v4-reading.md`.
+Figure 29.1 is Blueprint v4.
 
 ```mermaid
 flowchart LR
@@ -676,13 +622,15 @@ flowchart LR
 ```
 
 *Figure 29.1 — Blueprint v4 (`book-m4-reading`)*
+
+*Text description:* A left-to-right flowchart in two groups. In the Angular app, the Viewer (deep links, keyboard, resume) calls TileController. The idle-timer code and the session service read the session timeout from AuthController's current-user answer. The Admin page's trace filter calls AdminController, which searches AuditLogService by session-handle prefix in MySQL. In the Spring Boot app, TileController uses SessionKeys for the admin handle and WatermarkService, which reads opacity and spacing from ViewerProperties. Notice how the watermark's trace code links the tile to the audit search.
 <!-- source: book/blueprints/v4-reading.md; classes named in the diagram, present at book-m4-reading under src/main/java/com/example/securedocviewer/: controller/AdminController.java, audit/AuditLogService.java, controller/AuthController.java, security/SessionKeys.java, controller/TileController.java, document/Viewer.java, config/ViewerProperties.java, service/WatermarkService.java -->
 
 What changed since v3 is mostly at the edges: the frontend gained the idle timer, the deep links and the keyboard handling, and the backend gained the configurable watermark, the trace code and the trace filter.
 
 ## Decisions and challenges
 
-#### Incident: the I that looked like an l
+### Incident: the I that looked like an l
 
 **The problem.** The trace code in the watermark could be misread. **How it was found.** While
 checking the first version by eye, the implementer misread an `I` as an `l`. **The fix.** Switch to
@@ -690,16 +638,16 @@ Crockford Base32, with no I, L, O or U. **The lesson.** An identifier that peopl
 must be designed for the human eye, not only for the parser.
 <!-- source: PR #4 body; bugs-and-findings C5; decisions D9 -->
 
-#### Decision: a lighter watermark
+### Decision: a lighter watermark
 
 **The decision.** Lower the default opacity from 0.28 to 0.2, make opacity and spacing configurable,
 and clamp them. **The options considered.** Keep the dense mark, hide it from the reader, or lighten
-it. **Why this one.** The product owner's review found the mark too dense and colliding with content
+it. **Why this one.** The AI product-owner reviewer found the mark too dense and colliding with content
 (`PO-10`). **What it costs.** A lighter mark is easier to crop or edit out. Later milestones record
 the watermark's strength as a documented product decision.
 <!-- source: PR #4 body; decisions D5 -->
 
-#### Decision: shared activity across tabs
+### Decision: shared activity across tabs
 
 **The decision.** The last-activity time is shared by every tab through storage events. **Why.**
 Sessions were per tab before (`PO-9`); a reader active in one tab shouldn't be warned in another.
@@ -707,12 +655,64 @@ Sessions were per tab before (`PO-9`); a reader active in one tab shouldn't be w
 the authority.
 <!-- source: PR #4 body; idle.ts comments at book-m4-reading -->
 
-#### Decision: the URL follows the reader, without history clutter
+### Decision: the URL follows the reader, without history clutter
 
 **The decision.** Use `?page=N` with `replaceUrl`. **Why.** Links are shareable, and the Back button
 still leaves the viewer. **What it costs.** A reader who wants Back to step through pages can't;
 that is the deliberate trade.
 <!-- source: PR #4 body (4a) -->
+
+## In this project
+
+**Table 29.2 — Where the concepts live (at book-m4-reading)**
+
+| Concept | Where |
+|---|---|
+| Deep links, keys, resume | `frontend/src/app/features/viewer/viewer.component.ts`, `viewer.component.spec.ts` |
+| Idle warning | `core/idle.ts`, `core/idle.spec.ts`, `core/session.service.ts`, `core/session.interceptor.ts`, `app.ts` |
+| Timeout field | `AuthController.CurrentUser` (`sessionTimeoutSeconds`) |
+| Watermark | `service/WatermarkService.java`, `WatermarkServiceTest` |
+| Trace code and handles | `security/SessionKeys.java`, `controller/TileController.java`, `audit/AuditLogService.java` |
+| Configuration | `application.yml` (`watermark-opacity`, `watermark-spacing`) |
+
+Table 29.2 maps the milestone onto the source tree. The tests grow to 68 on the backend and 14 on the
+frontend (pull request #4), including four viewer navigation tests (deep link, fallback resume,
+Home/End/arrow keys, keys ignored while typing) and four idle-timer tests.
+<!-- source: PR #4 body; git diff --stat book-m3-hardening book-m4-reading -->
+
+To see any of these files as it was at this milestone, run `git show book-m4-reading:<path>`, for example `git show book-m4-reading:pom.xml`.
+
+## Try it
+
+Solutions are in Appendix C.
+
+### Exercise 29.1 ★ Idle state
+
+What does `idleState` return for a 30-minute timeout when 10 minutes remain? What if 4 minutes remain?
+
+### Exercise 29.2 ★ Keys while typing
+
+Why does the viewer ignore arrow keys while you type in the page-number box?
+
+### Exercise 29.3 ★★ Which page opens?
+
+The document has 20 pages, the address says `?page=25`, and storage holds `6` for this user and
+document (`rememberPage` stores the zero-based index). Which page (1-based) opens? What if the address has no `page` and storage is empty?
+
+### Exercise 29.4 ★★ Spacing arithmetic
+
+Using Listing 29.6, compute `stepX` and `stepY` for a two-line label (the viewer name on one line and
+the time and trace code on the second), a 20-pixel line height, a 120-pixel widest line and
+`spacing = 2.0`. (`stepY` depends on the number of lines, which is why the exercise fixes it at two.)
+
+### Exercise 29.5 ★★ Clamped spacing
+
+Change `spacing` in `WatermarkService` on your own copy. What does the clamp do to a value of 20?
+
+### Exercise 29.6 ★★★ Design a trace lookup
+
+An administrator types `abc 123` into the trace box (an invented example). Explain, step by step, what the query receives and
+what rows match. Then explain what would go wrong if the code weren't normalized before the `LIKE`.
 
 ## Summary
 

@@ -47,6 +47,8 @@ Your files live in **folders** (also called directories) that nest inside each o
 
 The shell is always "in" one folder, called the **working directory**. Table 2.1 lists the commands you use to look around.
 
+**Table 2.1 — Navigation commands**
+
 | Command | What it does |
 |---|---|
 | `pwd` | Print the working directory |
@@ -54,8 +56,6 @@ The shell is always "in" one folder, called the **working directory**. Table 2.1
 | `cd folder` | Move into `folder` |
 | `cd ..` | Move up one level |
 | `cd ~` | Move to your home folder |
-
-*Table 2.1 — Navigation commands*
 
 A path is **absolute** if it starts from the top (`/c/dev/...`) and **relative** if it starts from where you are (`src/main`). The name `.` means "this folder" and `..` means "the folder above". Your **home folder** is where your personal files live, and `~` is shorthand for it.
 
@@ -67,7 +67,7 @@ Example 2.1 shows a short session. The lines starting with `#` are comments for 
 pwd                      # where am I?
 cd secure-doc-viewer     # go into the project folder
 ls                       # what is here?
-cd src/main/resources    # a relative path, two levels at once
+cd src/main/resources    # a relative path, three levels at once
 cd ../../..              # back up three levels
 ```
 
@@ -90,6 +90,8 @@ secure-doc-viewer/
 
 *Figure 2.1 — The top of the project's folder tree (book-m6-final, abbreviated)*
 
+*Text description:* An indented list showing the project folder at the top, with `pom.xml`, `docker-compose.yml` and `.env.example` directly inside it, then `src` (holding `main`, which holds `java` and `resources`, and `test`) and `frontend`. Notice that application code lives under `src/main` and tests live separately under `src/test`.
+
 <!-- source: git ls-tree of the repository root and of src/ at book-m6-final -->
 
 
@@ -99,6 +101,8 @@ A folder inside another is written with slashes: `src/main/resources` is `resour
 
 Table 2.2 gives the essential file commands.
 
+**Table 2.2 — File commands**
+
 | Command | What it does |
 |---|---|
 | `mkdir notes` | Create a folder |
@@ -107,8 +111,6 @@ Table 2.2 gives the essential file commands.
 | `mv a.txt notes/` | Move (or rename) a file |
 | `rm b.txt` | Delete a file, permanently |
 | `rm -r notes` | Delete a folder and everything in it |
-
-*Table 2.2 — File commands*
 
 `rm` does not use a recycle bin. Read a delete command twice before pressing <kbd>Enter</kbd>. `rm -r` is the one to be most careful with, since it deletes a whole folder and everything inside it.
 
@@ -129,7 +131,7 @@ rm old.txt
 
 #### Redirection and pipes
 
-The `>` above is **redirection**: sending a command's output somewhere other than the screen. Two relatives are worth knowing. `>>` appends to a file instead of replacing it. And the **pipe** `|` feeds one command's output into another's input, so small tools combine into bigger ones:
+The `>` in the `echo` command is **redirection**: sending a command's output somewhere other than the screen. Two relatives are worth knowing. `>>` appends to a file instead of replacing it. And the **pipe** `|` feeds one command's output into another's input, so small tools combine into bigger ones:
 
 ```bash
 cat tiles.txt | wc -w
@@ -198,9 +200,11 @@ flowchart TB
 
 *Figure 2.2 — How the shell finds a program: a name with a slash skips PATH*
 
+*Text description:* A decision flow read top to bottom. The shell first asks whether the typed name contains a slash. If it does, it runs that exact file. If it does not, it reads the `PATH` list, looks in each folder in order, and runs the first program it finds, or reports "command not found" when the folders run out.
+
 <!-- source: bash behavior; ./mvnw is used in Chapter 6 (mvnw at book-m6-final) -->
 
-Notice the first decision. A name with a slash in it, like `./mvnw` (the Maven wrapper of Chapter 6), names one exact file, so the shell never consults `PATH`. That is why you type `./mvnw` and not just `mvnw`: the current folder is not on `PATH`. A bare name like `java` triggers the search, in order, and the first match wins, which is why the order of folders in `PATH` matters when two versions of Java are installed.
+Notice the first decision. A name with a slash in it, like `./mvnw` (the Maven wrapper of Chapter 6), names one exact file, so the shell never consults `PATH`. That is why you type `./mvnw` and not `mvnw` alone: the current folder is not on `PATH`. A bare name like `java` triggers the search, in order, and the first match wins, which is why the order of folders in `PATH` matters when two versions of Java are installed.
 
 A related variable is `JAVA_HOME`, which many tools (Maven among them, Chapter 6) read to find the folder where your JDK is installed. If a build complains about Java although `java -version` works, check `JAVA_HOME`.
 
@@ -266,6 +270,8 @@ A running program is a **process**. Your computer can run many at once, and each
 
 An **address** here means which of the computer's network connections the program listens on; the name `localhost` means this computer, and its numeric form is `127.0.0.1`. Two programs cannot listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. Table 2.3 lists the ports in this project.
 
+**Table 2.3 — Ports used by the project**
+
 | Port | What listens | Where it is set |
 |---|---|---|
 | `8080` | The backend (Spring Boot) | `server.port` in `application.yml` |
@@ -273,8 +279,6 @@ An **address** here means which of the computer's network connections the progra
 | `8081` | The web front door in the full Docker stack | `WEB_PORT` in `docker-compose.yml` |
 | `8443` | The optional HTTPS front end | `TLS_PORT` in `docker-compose.yml` |
 | `4200` | The Angular development server | Angular's default |
-
-*Table 2.3 — Ports used by the project*
 
 <!-- source: application.yml, docker-compose.yml at book-m6-final; frontend/README.md -->
 
@@ -306,9 +310,9 @@ Then look the process up by its number: `ps -p <pid>` on macOS and Linux, `Get-P
 
 ### 2.9 A real incident: the secret that started in a file
 
-Chapter 1 promised that real protection lives on the server, and the server's most important secret is the key that signs tile URLs. The first version of the project had a placeholder key written directly in `application.yml`. The technical-manager review (an AI review agent that examined the project) flagged it as a high-severity finding: a key in a committed file is in the history for everyone who ever clones the repository, and a placeholder tends to become the real key when nobody notices.
+Chapter 1 promised that real protection lives on the server, and the server's most important secret is the key that signs tile URLs. The first version of the project had a placeholder key written directly in `application.yml`. The technical-manager review (an AI review agent that examined the project) flagged it as a high-severity finding. A key in a committed file is in the history for everyone who ever clones the repository, and a placeholder tends to become the real key when nobody notices.
 
-The fix has three parts, all from this chapter. The key moved to an environment variable named `SIGNING_SECRET`. The `.env` file that holds it was added to `.gitignore`. And the app now refuses to start unless the key is present and at least 32 characters long, so a missing or weak key fails loudly at startup rather than quietly at the first tile. A note in the review records that the placeholder still exists in Git history, because history is permanent: the value was never a real secret, but the lesson is exactly why the secret must never be committed in the first place. <!-- source: dossier bugs-and-findings.md TM-6; ViewerProperties.java at book-m6-final -->
+The fix has three parts, all from this chapter. The key moved to an environment variable named `SIGNING_SECRET`. The `.env` file that holds it was added to `.gitignore`. And the app now refuses to start unless the key is present and at least 32 characters long, so a missing or weak key fails loudly at startup rather than quietly at the first tile. A note in the review records that the placeholder still exists in Git history, because history is permanent. The value was never a real secret. The lesson is exactly why a secret must never be committed in the first place. <!-- source: dossier bugs-and-findings.md TM-6; ViewerProperties.java at book-m6-final -->
 
 You need a good random value for such a key. The project's own automated checks generate throwaway secrets with a standard tool, and you can do the same:
 
@@ -320,7 +324,7 @@ That prints 64 random hexadecimal characters, comfortably above the 32-character
 
 ### 2.10 A real incident: OneDrive and the locked folder
 
-The second incident is about files rather than secrets. Early in development, the project lived inside a OneDrive-synced folder. OneDrive and antivirus programs briefly lock files that were just written, and on Windows a locked file cannot be renamed or deleted. The app renames and deletes folders of tiles constantly, so it began failing intermittently. Two fixes followed. The project was moved to a plain folder outside any synced location, and the code that moves and deletes directories was changed to retry. Its class comment explains the whole problem:
+The second incident is about files rather than secrets. Early in development, the project lived inside a OneDrive-synced folder. OneDrive and antivirus programs briefly lock files that were written a moment ago, and on Windows a locked file cannot be renamed or deleted. The app renames and deletes folders of tiles constantly, so it began failing intermittently. Two fixes followed. The project was moved to a plain folder outside any synced location, and the code that moves and deletes directories was changed to retry. Its class comment explains the whole problem:
 
 **Listing 2.3 — `FileOperations.java` (book-m6-final, excerpt: class comment and method `backOff`)**
 
@@ -348,7 +352,7 @@ final class FileOperations {
 
 *Path: `src/main/java/com/example/securedocviewer/service/FileOperations.java`*
 
-The method waits between attempts, and the wait grows: `50L << Math.min(attempt, 4)` shifts the number 50 left by the attempt number, doubling it each time (50, 100, 200, 400 and then 800 milliseconds, staying at 800 from the fifth wait on). The class allows eight attempts, and it waits after each failure, so the waits add up to 50 + 100 + 200 + 400 + 4 x 800 = 3,950 milliseconds, close to four seconds. The class comment above says "about two seconds", which understates what the code does; when a comment and the code disagree, believe the code. The lesson for a beginner is the operating-system one: your files are not only yours. Other programs may hold them, and a sync service can also copy your secrets and your documents to a cloud you did not intend. That is why `.env.example` carries a warning that the storage folder must not be synced. <!-- source: dossier bugs-and-findings.md C4; decisions.md (move out of OneDrive); FileOperations.java and .env.example at book-m6-final -->
+The method waits between attempts, and the wait grows. The expression `50L << Math.min(attempt, 4)` shifts the number 50 left by the attempt number, which doubles it each time. The waits are 50, 100, 200, 400 and then 800 milliseconds, and they stay at 800 from the fifth wait on. The class allows eight attempts, and it waits after each failure, so the waits add up to 50 + 100 + 200 + 400 + 4 x 800 = 3,950 milliseconds, close to four seconds. The class comment in Listing 2.3 says "about two seconds", which understates what the code does; when a comment and the code disagree, believe the code. The lesson for a beginner is the operating-system one: your files are not only yours. Other programs may hold them, and a sync service can also copy your secrets and your documents to a cloud you did not intend. That is why `.env.example` carries a warning that the storage folder must not be synced. <!-- source: dossier bugs-and-findings.md C4; decisions.md (move out of OneDrive); FileOperations.java and .env.example at book-m6-final -->
 
 ### 2.11 Common mistakes
 

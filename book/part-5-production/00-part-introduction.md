@@ -7,6 +7,10 @@ That question is not the same as "does it work?". A prototype works when everyth
 
 ## What the part covers
 
+Table V.1 lists the chapters and the question each one answers.
+
+**Table V.1 — The chapters of Part V**
+
 | Chapter | Topic | The question it answers |
 |---|---|---|
 | 32 | Security review and threat modeling | How would someone attack this, and how do you find out before they do? |
@@ -14,8 +18,6 @@ That question is not the same as "does it work?". A prototype works when everyth
 | 34 | Backups, restores and operations | If the disk dies tonight, what do you get back tomorrow? |
 | 35 | Health, metrics and alerting | How do you know what the running app is doing? |
 | 36 | Supply chain and CI | How do you trust the code and images you didn't write? |
-
-*Table 1 — The chapters of Part V*
 
 After these five chapters comes Chapter 37, "The engineering trade-offs", which steps back and weighs every major decision in the app. It sits outside Part V on purpose: it draws on all five parts of the book, and you will get more from it once you have seen the whole system in production.
 

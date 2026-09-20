@@ -1,7 +1,7 @@
 <!-- chapter: 18 | part: II | owner: writer-backend | tag: book-m6-final | status: expanded -->
 # Chapter 18: Testing the backend
 
-The Secure Document Viewer makes promises: a reader can't open someone else's document, a copied tile link stops working, twelve parallel password guesses don't become twelve guesses. Promises like these are only worth something if a machine checks them every time the code changes. This chapter teaches you how the project's more than 100 backend tests are built, from a three-line check of one method up to a test that starts a real MySQL database, and how to write tests that fail for the right reasons and never fail at random.
+The Secure Document Viewer makes promises: a reader can't open someone else's document, a copied tile link stops working, twelve parallel password guesses don't become twelve guesses. Promises like these are only worth something if a machine checks them every time the code changes. This chapter teaches you how the project's more than 100 backend tests are built, from a three-line check of one method up to a test that starts a real MySQL database. It also shows how to write tests that fail for the right reasons and never fail at random.
 
 ## Learning objectives
 
@@ -43,6 +43,8 @@ Tests come in sizes, and a healthy project has a shape, usually drawn as a pyram
 
 *Figure 18.1 — The test pyramid*
 
+*Text description:* A triangle drawn in text with three bands. The narrow top band holds a few whole-system browser tests, the middle band holds some tests that run part of the application, and the wide bottom band holds many fast tests of one class or method. The shape shows that speed and precision fall as a test covers more.
+
 <!-- source: the test classes named in Table 18.1 at book-m6-final; the top layer is the Playwright end-to-end tests of Chapter 24 -->
 
 
@@ -72,6 +74,8 @@ flowchart LR
 ```
 
 *Figure 18.2 — The layers of tests and what each one catches*
+
+*Text description:* Four rows, each with an arrow from a kind of test to the mistakes it catches best. Unit tests catch wrong rules and arithmetic, MockMvc tests catch wrong statuses, missing filters and wrong JSON, real-MySQL tests catch migration, row-lock and time-zone problems, and end-to-end browser tests catch broken user journeys and proxy behavior.
 
 <!-- source: the test classes named in Table 18.1 at book-m6-final; the end-to-end layer is Chapter 24 -->
 
@@ -164,7 +168,7 @@ class TileGridTest {
 
 *Path: `src/test/java/com/example/securedocviewer/service/TileGridTest.java`*
 
-Look at how the first test chooses its inputs. The rule under test is "round up", and the interesting values for a rounding rule are the boundaries. A page one pixel wide needs one tile. A page exactly one tile wide needs one tile, not two. A page one pixel *over* a tile (257 with 256-pixel tiles) needs two. The last two lines use the size of a US letter page in points, 612 by 792, with a small tile of 50 so the arithmetic is easy to check by hand: 612 / 50 is 12.24, which rounds up to 13. Whenever you test a rule, ask "where does its behavior change?" and put values on both sides of that line.
+Look at how the first test chooses its inputs. The rule under test is "round up", and the interesting values for a rounding rule are the boundaries. A page one pixel wide needs one tile. A page exactly one tile wide needs one tile, not two. A page one pixel *over* a tile (257 with 256-pixel tiles) needs two. The last two lines use the size of a US letter page in points, 612 by 792. They use a small tile of 50 so you can check the arithmetic by hand: 612 / 50 is 12.24, which rounds up to 13. Whenever you test a rule, ask "where does its behavior change?" and put values on both sides of that line.
 
 The second test uses `assertThrows`, which deserves a slow reading:
 
@@ -174,14 +178,14 @@ assertThrows(IllegalArgumentException.class, () -> TileGrid.tileCount(0, 256));
 
 The second argument is a lambda (Chapter 5), a small piece of code handed to `assertThrows` unrun. `assertThrows` runs it inside a `try` block, and passes only if the code throws the named exception type. Without the lambda, the exception would escape from your test line and crash it. This is also a test of a *refusal*: the project cares that bad input fails loudly rather than producing a nonsense grid.
 
-The third test builds a random image (`noiseImage`, omitted here) and checks the dimensions of the tiles cut from it. The comment `// 612 - 600 = 12px wide` is the good kind of comment in a test: it shows the arithmetic that explains the expected number. Tests that assert magic numbers with no explanation are hard to trust and harder to fix.
+The third test builds a random image (`noiseImage`, omitted here) and checks the dimensions of the tiles cut from it. The comment `// 612 - 600 = 12px wide` is the good kind of comment in a test: it shows the arithmetic that explains the expected number. Tests that assert unexplained numbers are hard to trust and harder to fix.
 
 ### 18.4 Common mistakes when starting out
 
 Some mistakes are so common that it's worth naming them early.
 
 - **Testing several things in one test.** A test called `everythingWorks` that asserts twenty things stops at its first failure and hides the other nineteen. Prefer small tests with one reason to fail. (`tileCountRoundsUpForPartialTiles` makes five assertions, but they all check one rule.)
-- **Asserting what you just wrote.** If you compute the expected value with the same formula the code uses, the test can never fail. Use a value you worked out by hand or know independently, like the 13 above.
+- **Asserting the code's own answer.** If you compute the expected value with the same formula the code uses, the test can never fail. Use a value you worked out by hand or know independently, like the 13 in Listing 18.1.
 - **Forgetting the failure cases.** Code that accepts good input is half the job. The project's tests spend as much effort on "the wrong password is refused" and "a tampered token is rejected" as on the happy path, because security is mostly about refusals.
 - **Tests that depend on each other's order.** JUnit doesn't promise an order. Each test must set up what it needs. Section 18.7 shows how tests that share one application avoid stepping on each other.
 - **Ignoring a red test.** A test that fails "sometimes" is a flaky test (Section 18.11). Don't merge over it; find the cause.
@@ -242,7 +246,7 @@ Two things are worth noticing. First, the first test is a **round trip**: issue 
 
 There is a subtle point in `setUp`. The signing secret used in the real test (shown here as a placeholder) is a short throwaway value of only 16 characters, while `ViewerProperties` demands at least 32 (Chapter 13). It works because the length rule is enforced only when *Spring* binds the settings from `application.yml`. A plain `new ViewerProperties()` in a unit test skips validation. That is convenient, and it is also a trap: a unit test proves the service works, not that the configuration is valid. The validation itself is exercised when the whole application starts in the integration tests, which use a test secret longer than 32 characters.
 
-Some classes need help that isn't so easy to build by hand. `StorageJanitor` (Chapter 14) looks at real folders on disk and asks the `DocumentRepository` which documents exist. Its test uses two tools.
+Some classes need help that isn't simple to build by hand. `StorageJanitor` (Chapter 14) looks at real folders on disk and asks the `DocumentRepository` which documents exist. Its test uses two tools.
 
 - `@TempDir` gives the test a fresh, empty folder that JUnit deletes afterward, so the test can create and delete real directories without touching your files.
 - **Mockito**, a library that comes with Spring Boot's test starter, creates a **mock**: a stand-in object whose answers you script. A mock stands in for a collaborator that is hard to construct (a repository that needs a database).
@@ -268,7 +272,7 @@ void keepsEveryVersionWhenTheCurrentOneIsMissing(@TempDir Path root) throws IOEx
 
 *Path: `src/test/java/com/example/securedocviewer/service/StorageJanitorTest.java`*
 
-Two names in the listing come from parts of the file that are not shown: `dir(...)` is a small helper that creates a folder and gives it a chosen age, and `KNOWN` is a made-up document id used throughout the class. Read the test as a story. The database (the mock) says "the document's current tile version is 2". The disk contains only `v3`. The janitor must not delete it, because it might be the only surviving copy of someone's tiles. The last argument of `assertTrue` is a message shown if the assertion fails: `"the only tiles left must be kept for recovery"`. It states the *reason*, so a future developer who breaks this rule learns why it existed. Compare it with the first test in the same class, which builds nine directories of different ages and checks that exactly four are removed, each `assertTrue` or `assertFalse` carrying a message that names the rule ("a very recent directory may be an upload in flight").
+Two names in the listing come from parts of the file that are not shown: `dir(...)` is a small helper that creates a folder and gives it a chosen age. `KNOWN` is a made-up document id used throughout the class. Read the test as a story. The database (the mock) says "the document's current tile version is 2". The disk contains only `v3`. The janitor must not delete it, because it might be the only surviving copy of someone's tiles. The last argument of `assertTrue` is a message shown if the assertion fails: `"the only tiles left must be kept for recovery"`. It states the *reason*, so a future developer who breaks this rule learns why it existed. Compare it with the first test in the same class. That test builds nine directories of different ages and checks that exactly four are removed. Each `assertTrue` or `assertFalse` carries a message that names the rule ("a very recent directory may be an upload in flight").
 
 This test also shows a rule about scope. It is about a *dangerous* action, deleting files, and it is written to prove what the action must **not** do. Tests for destructive code should spend most of their lines on the things that must survive.
 
@@ -303,7 +307,7 @@ secure-doc-viewer:
 
 *Path: `src/test/resources/application-test.yml`*
 
-Line by line: `jdbc:h2:mem:securedocs` is an **H2** database that lives in memory and vanishes when the test process ends; `MODE=MySQL` makes it accept MySQL's flavor of SQL, and `DATABASE_TO_LOWER=TRUE` mirrors MySQL's lower-case table names, so the *same* Flyway migrations (Chapter 14) run unchanged. The signing secret is a throwaway value longer than the 32-character minimum. The storage root is under `target/`, the folder Maven deletes on `clean`, so tests never litter real storage. The bootstrap admin gets a known username and password so tests can sign in as an administrator; these are test-only placeholders that exist nowhere but in the test profile.
+Line by line: `jdbc:h2:mem:securedocs` is an **H2** database that lives in memory and vanishes when the test process ends. `MODE=MySQL` makes it accept MySQL's flavor of SQL, and `DATABASE_TO_LOWER=TRUE` mirrors MySQL's lower-case table names. The *same* Flyway migrations (Chapter 14) therefore run unchanged. The signing secret is a throwaway value longer than the 32-character minimum. The storage root is under `target/`, the folder Maven deletes on `clean`, so tests never litter real storage. The bootstrap admin gets a known username and password so tests can sign in as an administrator; these are test-only placeholders that exist nowhere but in the test profile.
 
 `ErrorContractTest` shows the smallest useful integration test. Its setup is:
 
@@ -380,7 +384,7 @@ Notice the shape: each test names a promise in plain language, arranges a user o
 
 - *Mocking too much.* If you replace the security filters or the database with mocks, the test no longer proves the real thing works. Use the real components and fake only what is truly outside your control, such as the clock or the network.
 - *Asserting only the status code.* A `400` is also what you get for a hundred unrelated reasons. Check the error message too, as these tests do with `jsonPath`.
-- *Sharing users between tests.* See above: give each test its own users.
+- *Sharing users between tests.* See Listing 18.7: give each test its own users.
 - *A test that passes because the setup failed.* A test asserting "this request is refused" would pass if the sign-in helper silently failed, and you'd never notice. That is why `login` asserts `isOk()` on the sign-in itself before returning the session.
 
 ## Advanced tier: Real databases, time and concurrency
@@ -389,9 +393,9 @@ Notice the shape: each test names a promise in plain language, arranges a user o
 
 ### 18.8 A test helper that hid a bug: `CsrfCookieFlowTest`
 
-Test helpers are convenient, and every convenience hides something. The helper `csrf()` used in the tests above makes a request carry a valid CSRF token by quietly replacing Spring's token repository. It is fine for most tests. But it means those tests never exercise the *real* cookie the browser uses.
+Test helpers are convenient, and every convenience hides something. The helper `csrf()` used in Listing 18.7 makes a request carry a valid CSRF token by quietly replacing Spring's token repository. It is fine for most tests. But it means those tests never exercise the *real* cookie the browser uses.
 
-That gap concealed a real bug. At sign-in, Spring's built-in rotation of the CSRF token deleted the `XSRF-TOKEN` cookie and then re-read the token from the request, which still had the old cookie, so the browser was left with no token at all and its first write after signing in failed with `403`. Tests using `csrf()` could not see it. The fix is in `AuthController.rotateCsrfToken` (Chapter 16), and the guard is `CsrfCookieFlowTest`, which behaves like a browser: it makes a first request and takes the `XSRF-TOKEN` cookie from the response, signs in presenting that cookie and header, then checks that the sign-in response carries a *different, non-empty* token, that the old token is refused, and that the new one works immediately.
+That gap concealed a real bug. At sign-in, Spring's built-in rotation of the CSRF token deleted the `XSRF-TOKEN` cookie and then re-read the token from the request, which still had the old cookie. The browser was left with no token at all, and its first write after signing in failed with `403`. Tests using `csrf()` could not see it. The fix is in `AuthController.rotateCsrfToken` (Chapter 16), and the guard is `CsrfCookieFlowTest`, which behaves like a browser. It makes a first request and takes the `XSRF-TOKEN` cookie from the response, then signs in presenting that cookie and header. It checks three things: the sign-in response carries a *different, non-empty* token, the old token is refused, and the new one works immediately.
 
 Its class comment explains a constraint worth remembering. The `csrf()` helper permanently swaps the filter's repository in whatever application context it runs in, "after which no real XSRF-TOKEN cookie is ever written". So the test class is annotated `@DirtiesContext(classMode = BEFORE_CLASS)`, which tells Spring to throw away any cached application and start a fresh one. <!-- source: dossier bugs-and-findings C1, C2; AuthController.rotateCsrfToken and CsrfCookieFlowTest comments at book-m6-final --> The lesson is general: **when a test uses a shortcut for a mechanism, that mechanism needs at least one test without the shortcut.**
 
@@ -433,7 +437,7 @@ class MySqlIntegrationTest {
 
 The container is started with a server time zone of `-03:00`, and the test class also sets the JVM to `Asia/Kolkata` (in the omitted code). Those are two *different, non-UTC* zones on purpose. The test then writes an audit event and reads back the raw stored value to check that it is UTC anyway. The class comment describes the situation: a dev machine in India talking to a database set to local time. A test that only passes when everything is in UTC would prove nothing about that.
 
-Another test in the class starts two threads that replace the same PDF at once and checks that the row lock (Chapter 14) serialized them: the document ends at tile version 3, only the newest version directory exists on disk, and neither thread crashed. No mock can prove that. It needs a real database that really takes row locks.
+Another test in the class starts two threads that replace the same PDF at once and checks that the row lock (Chapter 14) serialized them. The document ends at tile version 3, only the newest version directory exists on disk, and neither thread crashed. No mock can prove that. It needs a real database that really takes row locks.
 
 The project's continuous-integration workflow runs `./mvnw -B verify` on every pull request; Chapter 36 covers it.
 
@@ -463,7 +467,7 @@ Then the assertions. Every response must be either `401` (the password was check
 
 A **flaky test** passes and fails without any change to the code. It is corrosive: once people stop trusting a red build, they stop reading it. The project's history has one instance, fixed in commit `ec6c1c5` (pull request 9), "Fix flaky render-slot assertion in TileGenerationServiceTest".
 
-**The problem.** The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` makes a render time out, and then asserted that every render slot was free at the same instant the second render returned. **How it was found.** The build on the main branch failed once, after an earlier pull request merged. **The cause.** The render thread frees its slot in a `finally` block that runs *just after* the caller has its result, so on a fast machine the assertion could land in that gap and read 0 where it expected 1. **The fix.** The test now waits, within a limit, for the counters to reach the expected value, and only then asserts. Production behavior was unchanged, because in production the slot frees microseconds after the upload returns. <!-- source: PR #9 description; commit ec6c1c5 --> You can see the pattern in the test: a loop of the form "until a deadline, look; if right, stop; otherwise sleep 100 ms", followed by the real assertion, with the comment "allow a moment rather than checking at the same instant."
+**The problem.** The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` makes a render time out, and then asserted that every render slot was free at the same instant the second render returned. **How it was found.** The build on the main branch failed once, after an earlier pull request merged. **The cause.** The render thread frees its slot in a `finally` block that runs *just after* the caller has its result, so on a fast machine the assertion could land in that gap and read 0 where it expected 1. **The fix.** The test now waits, within a limit, for the counters to reach the expected value, and only then asserts. Production behavior was unchanged, because in production the slot frees microseconds after the upload returns. <!-- source: PR #9 description; commit ec6c1c5 --> You can see the pattern in the test. A loop of the form "until a deadline, look; if right, stop; otherwise sleep 100 ms" is followed by the real assertion, with the comment "allow a moment rather than checking at the same instant."
 
 **The lesson.** A test that checks a state at the exact moment a result returns is racing the code it tests. Wait *for a condition*, with a generous limit, never for a fixed guess of how long something takes.
 

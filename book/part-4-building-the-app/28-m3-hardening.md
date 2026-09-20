@@ -13,8 +13,7 @@
 
 ## Prerequisites
 
-Chapters 27 (documents), 13 (validation and error handling) and 16 (Spring Security), as listed in
-`book/OUTLINE.md`. The code is at `book-m3-hardening` (pull request #3, three commits named 3a, 3b and
+Chapters 27 (documents), 13 (validation and error handling) and 16 (Spring Security). The code is at `book-m3-hardening` (pull request #3, three commits named 3a, 3b and
 3c; stacked on pull request #2), still Spring Boot 3.3.4 and Java 21. To run this tag yourself, see Table IV.3 ("What you need to run
 each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m3; timeline -->
@@ -37,7 +36,7 @@ findings, several that belong to this milestone:
   (`TM-18`).
 - There were no protective response headers (`TM-15`) and no health check for monitoring (`TM-12`).
 
-The product owner's review added a user-facing complaint: uploading a corrupt or non-PDF file returned
+The AI product-owner reviewer added a user-facing complaint: uploading a corrupt or non-PDF file returned
 a raw internal error, gave no progress feedback, and the title was not prefilled (`PO-8`).
 
 Pull request #3 answers all of these in three commits: 3a for uploads, 3b for errors, 3c for headers
@@ -106,7 +105,7 @@ at 150 DPI. So the scale from points to pixels is `150 / 72`, about 2.083.
 
 An A4 page is 595 by 842 points. Rendered at 150 DPI: 595 × 2.083 ≈ 1,240 pixels wide and
 842 × 2.083 ≈ 1,754 tall, the same page you met in Exercise 25.1. That is 1,240 × 1,754 ≈ 2.2 million
-pixels, far below the 40 million limit.
+pixels, much smaller than the 40 million limit.
 
 An A0 poster (about 2,384 by 3,370 points) comes to roughly 4,967 by 7,021 pixels, or about 34.9
 million pixels. It still passes. (The comment in the file calls the limit "roughly A1"; the
@@ -266,10 +265,7 @@ The sequence is the point.
 4. Delete the source PDF, so that the staging directory contains only tiles. "The PDF itself must
    never be committed alongside its tiles." This is the founding promise of Chapter 25: the source
    file is never available for download.
-5. On any failure, delete the staging directory. If the deletion itself fails, the code attaches
-   that failure to the original error with `addSuppressed` instead of replacing it, so the caller
-   sees the real problem, such as "not a readable PDF", and the janitor from Chapter 27 removes the
-   leftover later.
+5. On any failure, delete the staging directory. If the deletion itself fails, the code attaches that failure to the original error with `addSuppressed` instead of replacing it. The caller then sees the real problem, such as "not a readable PDF", and the janitor from Chapter 27 removes the leftover later.
 
 A separate method, `commit`, later moves the finished staging directory into place under the
 document's id. Until then nothing is visible to anyone, so a failed upload can't leave a half-built
@@ -426,8 +422,8 @@ next: (event) => {
 
 `HttpEventType.UploadProgress` events say how many bytes have been sent. When the percentage reaches
 100 the component sets the percent to `null`, which the template reads as "now rendering pages": the
-second stage, which can take longer than the upload itself. This two-step feedback answered the product owner's
-complaint that uploads gave no progress (`PO-8`).
+second stage, which can take longer than the upload itself. This two-step feedback answered the AI product-owner
+reviewer's complaint that uploads gave no progress (`PO-8`).
 <!-- source: upload.component.ts diff at book-m3-hardening; PR #3 body -->
 
 ### 28.9 Security headers
@@ -535,7 +531,7 @@ Follow one over-large file through the layers, from the outside in.
 Each layer catches things the others can't. The browser check is bypassed by anyone who scripts the
 request. The multipart cap stops the giant upload before the application reads it, but says nothing
 about what is in a small file. The limits check needs a parsed document, which is why it comes after
-cheap checks. This is **defense in depth**: several independent layers, so the failure of one doesn't
+cheap checks. This is defense in depth: several independent layers, so the failure of one doesn't
 open the whole room.
 
 The comment in `application.yml` ("Keep in step with `GlobalExceptionHandler.MAX_UPLOAD_MB` and the
@@ -568,9 +564,7 @@ The pull request lists checks made against a running stack.
 - `/actuator/env` returned 401.
 
 The pattern is worth copying. Each check exercises a failure that the design claims to handle, on
-the real system, not just the success path. The automated tests then pin the same behavior so it can't
-regress: 66 backend tests at the end of the milestone, ten of them new (page and pixel limits, the
-source PDF not being kept, the error contract, headers and health).
+the real system, not only the success path. The automated tests then pin the same behavior so it can't regress. There are 66 backend tests at the end of the milestone, ten of them new: page and pixel limits, the source PDF not being kept, the error contract, and headers and health.
 <!-- source: PR #3 body (Test plan) -->
 
 ## Common mistakes
@@ -596,6 +590,70 @@ expose only `health`, hide details, and deny everything else.
 **Setting a policy header and never testing it.** Symptom: an upgrade silently drops a header. Fix:
 assert headers in a test (`SecurityHeadersTest`).
 
+## Architecture blueprint v3
+
+Figure 28.1 is Blueprint v3.
+
+```mermaid
+flowchart LR
+    B["Angular app: upload page checks size first"]
+    subgraph API["Spring Boot app"]
+        SEC["SecurityConfig: headers (CSP default-src none, Referrer-Policy no-referrer, Permissions-Policy); health check permitted"]
+        DC["DocumentController: 50 MB cap, streamed ingest"]
+        TG["TileGenerationService: max-pages and max-page-pixels checks"]
+        GEH["GlobalExceptionHandler: JSON errors, 413, 405, 415, generic 500 with reference"]
+        VP["ViewerProperties: maxPages 500, maxPagePixels 40M"]
+        H["Actuator: /actuator/health only"]
+    end
+    M[("MySQL")]
+    D[("Disk: tiles")]
+    B --> SEC --> DC --> TG
+    TG -.-> D
+    DC -.-> M
+    DC --> GEH
+    TG --> VP
+    SEC --> H
+```
+
+*Figure 28.1 — Blueprint v3 (`book-m3-hardening`)*
+
+*Text description:* A left-to-right flowchart with no new components. The Angular app, whose upload page checks the file size first, sends requests to SecurityConfig. SecurityConfig now adds security headers and permits the health check. Requests continue to DocumentController (50 MB cap, streamed ingest) and on to TileGenerationService, which applies the page-count and page-pixel limits taken from ViewerProperties (500 pages, 40 million pixels). DocumentController reports failures to GlobalExceptionHandler, which produces the uniform JSON errors; SecurityConfig also exposes only the Actuator health endpoint. Notice that milestone 3 adds guards to the existing request path.
+<!-- source: book/blueprints/v3-hardening.md; classes named in the diagram, present at book-m3-hardening under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, controller/GlobalExceptionHandler.java, security/SecurityConfig.java, service/TileGenerationService.java, config/ViewerProperties.java -->
+
+## Decisions and challenges
+
+### Decision: limits and streaming first, background jobs later
+
+**The decision.** Stream uploads, reject bad ones early, and defer background processing. **The
+options considered.** Do the rendering in a background job with a status endpoint, or bound the work
+and keep it synchronous. **Why this one.** The pull request says that limits and streaming cover the
+main risk, and it offers to pick the background job up later if the product owner wants it. **What it
+costs.** A large upload still renders while the request waits, which later milestones bound with a
+time limit and a concurrency cap.
+<!-- source: PR #3 body ("Deferred"); milestone brief m3 -->
+
+### Decision: errors are one shape, and secrets stay in the log
+
+**The decision.** All errors use `{"error": "..."}`, and unexpected failures carry only a short
+reference. **Why.** The reviewer found inconsistent statuses and echoed input (`TM-11`, `TM-18`), and
+the project wanted no stack traces, SQL or paths reaching a client. **What it costs.** Someone has to
+read the server log to see the cause.
+<!-- source: PR #3 body; reviews record -->
+
+### Decision: `no-referrer` because URLs carry tokens
+
+**The decision.** Send `Referrer-Policy: no-referrer` on every API response. **Why.** Signed tile
+URLs contain a token, and a `Referer` header would carry that URL to another site. **What it costs.**
+Nothing the app needs: it doesn't use referrer information.
+<!-- source: PR #3 body (3c); SecurityConfig comment -->
+
+### Evidence: testing the failure, not only the success
+
+**The problem.** A defense that is never triggered is a guess. **How it was found.** The pull request's test
+plan includes live checks of each failure (Section 28.13). **The lesson.** Test the failure you designed for,
+on the real system, and then pin it with an automated test.
+<!-- source: PR #3 body (Test plan) -->
+
 ## In this project
 
 **Table 28.3 — Where the concepts live (at book-m3-hardening)**
@@ -610,9 +668,11 @@ assert headers in a test (`SecurityHeadersTest`).
 
 Table 28.3 lists the files to open at this tag.
 
+To see any of these files as it was at this milestone, run `git show book-m3-hardening:<path>`, for example `git show book-m3-hardening:pom.xml`.
+
 ## Try it
 
-Solutions are in `28-m3-hardening.solutions.md`.
+Solutions are in Appendix C.
 
 ### Exercise 28.1 ★ A 60 MB upload
 
@@ -641,68 +701,6 @@ Which of the five headers in Table 28.2 do you see, and which test asserts them?
 
 On your own copy, fetch `/actuator/health`, then stop MySQL and fetch it again. What changes, and why is
 `/actuator/env` still closed?
-
-## Architecture blueprint v3
-
-Figure 28.1 is Blueprint v3, from `book/blueprints/v3-hardening.md`.
-
-```mermaid
-flowchart LR
-    B["Angular app: upload page checks size first"]
-    subgraph API["Spring Boot app"]
-        SEC["SecurityConfig: headers (CSP default-src none, Referrer-Policy no-referrer, Permissions-Policy); health check permitted"]
-        DC["DocumentController: 50 MB cap, streamed ingest"]
-        TG["TileGenerationService: max-pages and max-page-pixels checks"]
-        GEH["GlobalExceptionHandler: JSON errors, 413, 405, 415, generic 500 with reference"]
-        VP["ViewerProperties: maxPages 500, maxPagePixels 40M"]
-        H["Actuator: /actuator/health only"]
-    end
-    M[("MySQL")]
-    D[("Disk: tiles")]
-    B --> SEC --> DC --> TG
-    TG -.-> D
-    DC -.-> M
-    DC --> GEH
-    TG --> VP
-    SEC --> H
-```
-
-*Figure 28.1 — Blueprint v3 (`book-m3-hardening`)*
-<!-- source: book/blueprints/v3-hardening.md; classes named in the diagram, present at book-m3-hardening under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, controller/GlobalExceptionHandler.java, security/SecurityConfig.java, service/TileGenerationService.java, config/ViewerProperties.java -->
-
-## Decisions and challenges
-
-#### Decision: limits and streaming first, background jobs later
-
-**The decision.** Stream uploads, reject bad ones early, and defer background processing. **The
-options considered.** Do the rendering in a background job with a status endpoint, or bound the work
-and keep it synchronous. **Why this one.** The pull request says that limits and streaming cover the
-main risk, and it offers to pick the background job up later if the product owner wants it. **What it
-costs.** A large upload still renders while the request waits, which later milestones bound with a
-time limit and a concurrency cap.
-<!-- source: PR #3 body ("Deferred"); milestone brief m3 -->
-
-#### Decision: errors are one shape, and secrets stay in the log
-
-**The decision.** All errors use `{"error": "..."}`, and unexpected failures carry only a short
-reference. **Why.** The reviewer found inconsistent statuses and echoed input (`TM-11`, `TM-18`), and
-the project wanted no stack traces, SQL or paths reaching a client. **What it costs.** Someone has to
-read the server log to see the cause.
-<!-- source: PR #3 body; reviews record -->
-
-#### Decision: `no-referrer` because URLs carry tokens
-
-**The decision.** Send `Referrer-Policy: no-referrer` on every API response. **Why.** Signed tile
-URLs contain a token, and a `Referer` header would carry that URL to another site. **What it costs.**
-Nothing the app needs: it doesn't use referrer information.
-<!-- source: PR #3 body (3c); SecurityConfig comment -->
-
-#### Evidence: testing the failure, not just the success
-
-**The problem.** A defense that is never triggered is a guess. **How it was found.** The pull request's test
-plan includes live checks of each failure (Section 28.13). **The lesson.** Test the failure you designed for,
-on the real system, and then pin it with an automated test.
-<!-- source: PR #3 body (Test plan) -->
 
 ## Summary
 

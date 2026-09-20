@@ -46,7 +46,7 @@ git config --global user.name "Your Name"
 git config --global user.email "you@example.com"
 ```
 
-The `--global` flag stores these once for your whole computer. The address above is a placeholder; a real one is written into every commit you make and travels with the repository, so choose accordingly.
+The `--global` flag stores these once for your whole computer. The address in the second command is a placeholder; a real one is written into every commit you make and travels with the repository, so choose accordingly.
 
 ### 7.3 Your first repository, step by step
 
@@ -58,7 +58,7 @@ cd tile-notes
 git init -b main
 ```
 
-`git init -b main` creates the hidden `.git` folder, and `-b main` names the first branch `main` (older Git versions call it `master`, so the flag keeps your output the same as this book's). You now have an empty repository. Create a file, then ask Git what it sees:
+`git init -b main` creates the hidden `.git` folder, and `-b main` names the first branch `main`. Older Git versions call it `master`, so the flag keeps your output the same as this book's. You now have an empty repository. Create a file, then ask Git what it sees:
 
 ```bash
 echo "Tiles are 512 px square." > notes.txt
@@ -86,6 +86,8 @@ flowchart LR
 ```
 
 *Figure 7.1 — The three places your changes move through*
+
+*Text description:* Three boxes: the working folder, the staging area and the repository, with a labeled arrow from each to the next. `git add` moves changes from the working folder to the staging area, `git commit` moves them into the repository, and `git switch` or `git restore` brings files from the repository back to the working folder.
 
 <!-- source: git behavior, as demonstrated in the scratch repository of Section 7.3 -->
 
@@ -133,7 +135,7 @@ git log --oneline
 
 ### 7.4 Getting the project
 
-If you already followed Step 7 of [Setting up your machine](../front-matter/c-setting-up-your-machine.md), you have cloned the project and can skip the command below; this section explains what that step did. To get a copy of an existing repository, you **clone** it. The address comes from the project's repository page on GitHub, the website that hosts Git repositories: open the page, click the green *Code* button, and copy the address it shows. The project's repository is named `secure-doc-viewer` under its owner's account on GitHub, and it is **private**, so you can open it (and its *Pull requests* tab, Section 7.7) only if its owner has given your GitHub account access; ask the owner, or use the copy of the code you were given with this book. Substitute the address you copied:
+If you already followed Step 7 of [Setting up your machine](../front-matter/c-setting-up-your-machine.md), you have cloned the project and can skip the `git clone` command shown in this section; this section explains what that step did. To get a copy of an existing repository, you **clone** it. The address comes from the project's repository page on GitHub, the website that hosts Git repositories: open the page, click the green *Code* button, and copy the address it shows. The project's repository is named `secure-doc-viewer` under its owner's account on GitHub, and it is **private**. You can open it, and its *Pull requests* tab (Section 7.7), only if its owner has given your GitHub account access. Ask the owner, or use the copy of the code you were given with this book. Substitute the address you copied:
 
 ```bash
 git clone <repository-address>
@@ -169,6 +171,8 @@ git show 2d10e07 --stat
 
 A **tag** is a permanent name for one commit, like a bookmark. The project has seven, and they are this book's checkpoints (Table 7.1).
 
+**Table 7.1 — The milestone tags**
+
 | Tag | Milestone | Commit |
 |---|---|---|
 | `book-m0-mvp` | Tiled viewer with signed URLs and watermarks | `b6aef4e` (the first commit) |
@@ -178,8 +182,6 @@ A **tag** is a permanent name for one commit, like a bookmark. The project has s
 | `book-m4-reading` | Reading experience, deep links, idle warning, watermark | `6459d4e` (merge of pull request 4) |
 | `book-m5-platform` | Spring Boot 4, Docker, CI, production hardening | `d1b1086` (merge of pull request 5) |
 | `book-m6-final` | The finished app | `a27e069` (merge of pull request 12) |
-
-*Table 7.1 — The milestone tags*
 
 <!-- source: book/README.md milestone table; dossier timeline.md tag map -->
 
@@ -217,9 +219,11 @@ gitGraph
 
 *Figure 7.2 — The project's history: stacked phase branches and the seven tags (simplified)*
 
+*Text description:* A branching history drawn along a main line. The first commit on `main` carries the tag `book-m0-mvp`. Five branches then stack one on top of the next, each starting from the end of the previous one. `main` later merges them in order, and each merge commit carries one milestone tag from `book-m1-accounts` to `book-m5-platform`, followed by a final commit tagged `book-m6-final`.
+
 <!-- source: git log --graph at book-m6-final; parents of 32d040f, ba00693, 3de764d, 0a6a7c1 and 2d10e07 checked with git log; dossier timeline.md -->
 
-Two simplifications: the branch names are shortened to `phase1` to `phase5` (the real ones are `hardening/review-findings`, `phase-2/documents` and so on), and the last box stands for the four small merges of pull requests 9 to 12, of which `a27e069` is the final merge. The box "review rounds" stands for the 14 further commits on the fifth branch. Notice that each `book-m` tag sits on a merge commit on `main`, except the first, which is the very first commit.
+The figure makes two simplifications. First, the branch names are shortened to `phase1` to `phase5`; the real ones are `hardening/review-findings`, `phase-2/documents` and so on. Second, the last box stands for the four small merges of pull requests 9 to 12, of which `a27e069` is the final merge. The box "review rounds" stands for the 14 further commits on the fifth branch. Notice that each `book-m` tag sits on a merge commit on `main`, except the first, which is the very first commit.
 
 List the tags, and read any file as it was at a tag without changing anything on disk. (A fresh clone normally includes the tags; if `git tag` shows none, run `git fetch --tags`.)
 
@@ -256,7 +260,7 @@ git merge add-rate-note
 cat notes.txt
 ```
 
-The line appears. Because `main` had no new commits of its own, Git could simply move `main` forward to the branch's commit, which is called a **fast-forward**. When both branches have new commits, Git creates a **merge commit** that has two parents and joins the lines of work. The project's history is full of those: the messages that begin "Merge pull request #..." are merge commits made by GitHub.
+The line appears. Because `main` had no new commits of its own, Git could move `main` forward to the branch's commit, which is called a **fast-forward**. When both branches have new commits, Git creates a **merge commit** that has two parents and joins the lines of work. The project's history is full of those: the messages that begin "Merge pull request #..." are merge commits made by GitHub.
 
 If two branches change the same lines of the same file, Git cannot decide which version wins, and it stops with a **merge conflict**. It writes both versions into the file, between marker lines `<<<<<<<`, `=======` and `>>>>>>>`. You edit the file to keep what is right, delete the markers, `git add` the file and commit. Conflicts are normal and not a sign that you did something wrong.
 
@@ -266,11 +270,11 @@ A **remote** is a copy of the repository on another computer, usually GitHub. `g
 
 On GitHub, a **pull request** (PR) is a proposal to merge one branch into another. It shows the changes, lets others comment line by line, and runs automated checks before anything is merged. **Code review** is the practice of having someone else read the change before it lands. It catches mistakes the author cannot see, spreads knowledge, and leaves a record of why decisions were made.
 
-This project used one pull request per phase, and the pull requests are a record of how it grew. For example, `book-m1-accounts` is the merge of pull request 1, "Phase 1: real accounts, roles, and admin lockdown", and `book-m5-platform` is the merge of pull request 5, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests". Pull request 5 is the largest story: after it was opened, review rounds added fixes for problems the reviewers found, and about 15 commits landed on that branch before it was merged. In this project, the reviewers were AI review agents: a senior technical manager agent and a product owner agent. The technical manager agent gave a final recommendation to merge pull request 5, "subject to the product owner's approval", and it was the project's human owner who approved the merge. The agents advised; a person decided. Part V describes what they found. <!-- source: dossier timeline.md (PR #5 commits); reviews.md (line 5964, TM recommends merge subject to product owner approval; user approves merging #5) -->
+This project used one pull request per phase, and the pull requests are a record of how it grew. For example, `book-m1-accounts` is the merge of pull request 1, "Phase 1: real accounts, roles, and admin lockdown". And `book-m5-platform` is the merge of pull request 5, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests". Pull request 5 is the largest story: after it was opened, review rounds added fixes for problems the reviewers found, and about 15 commits landed on that branch before it was merged. In this project, the reviewers were AI review agents: a senior technical manager agent and a product owner agent. The technical manager agent gave a final recommendation to merge pull request 5, "subject to the product owner's approval", and it was the project's human owner who approved the merge. The agents advised; a person decided. Part V describes what they found. <!-- source: dossier timeline.md (PR #5 commits); reviews.md (line 5964, TM recommends merge subject to product owner approval; user approves merging #5) -->
 
 You can read the pull requests on the repository's *Pull requests* tab (with access to the private repository, Section 7.4), or from the terminal with `gh pr view 5` if you have GitHub's command-line tool, `gh`, signed in.
 
-Not every pull request in the history is a feature. After pull request 5 merged, the automated checks failed once on `main` because one test was flaky: it sometimes failed and sometimes passed for the same code. The fix went through its own small pull request (number 9). Dependabot, a bot that proposes dependency updates, opened pull requests 6, 7 and 8 right after the merge; the project closed all three with an explanation, because they proposed unstable or non-LTS (long-term-support) versions, and then changed the bot's rules to propose only stable lines (pull request 10). Later Dependabot pull requests (11 and 12) were merged. The point for you: a pull request is the unit of change, whatever its size, and a healthy history has small ones. <!-- source: dossier timeline.md, PR index -->
+Not every pull request in the history is a feature. After pull request 5 merged, the automated checks failed once on `main` because one test was flaky: it sometimes failed and sometimes passed for the same code. The fix went through its own small pull request (number 9). Dependabot, a bot that proposes dependency updates, opened pull requests 6, 7 and 8 right after the merge. The project closed all three with an explanation, because they proposed unstable or non-LTS (long-term-support) versions. It then changed the bot's rules to propose only stable lines (pull request 10). Later Dependabot pull requests (11 and 12) were merged, which produced `book-m6-final`. One more pull request, number 13, was merged after that tag: it is documentation only, and it removed the stale mentions of a canvas from the README and from a comment in `PageInfo.java` (Chapter 4). So the tags stop at pull request 12, and `main` has one further commit than the last tag. The point for you: a pull request is the unit of change, whatever its size, and a healthy history has small ones. <!-- source: dossier timeline.md, PR index -->
 
 ### 7.8 `.gitignore` and why secrets never get committed
 
@@ -302,7 +306,7 @@ The same care covers where the repository lives on your disk. The project's `.en
 
 ### 7.9 Following this book with tags without breaking your work
 
-Two commands let you move to a milestone: `git checkout <tag>` and `git switch --detach <tag>`. Both put you in **detached HEAD** state. You are looking at an old commit and are not on any branch. Commits you make there belong to no branch, and are easy to lose when you switch away.
+Two commands let you move to a milestone: `git checkout <tag>` and `git switch --detach <tag>`. Both put you in **detached HEAD** state. You are looking at an old commit and are not on any branch. Commits you make there belong to no branch, and are lost easily when you switch away.
 
 The safe routine:
 
@@ -315,6 +319,8 @@ git switch -c my-m2 book-m2-documents
 ```
 
 This creates and switches to a new branch `my-m2` that starts exactly at the tag. Your experiments live on `my-m2`; the tag and `main` stay intact. Exercises in this book always ask you to work on a branch like this, never directly on a tag. To go back: `git switch main`.
+
+Being on a branch at an old tag does not make it runnable with the tools from your setup guide. The tags `book-m0-mvp` to `book-m4-reading` need a JDK 21 and a Maven you install yourself, because the Maven wrapper only arrives at `book-m5-platform` (Chapter 6, Section 6.7); Table IV.3 in [Part IV](../part-4-building-the-app/00-part-introduction.md) lists what each tag needs. Until you have those, treat the older tags as read-only and use `git show`.
 
 **We simplify here.** Git has many more commands, such as rebasing and stashing. The app's story does not need them, and you can look them up when you do.
 
@@ -344,7 +350,7 @@ git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_ve
 
 **"Permission denied" or a request for credentials when cloning.** The repository is private. Check that your GitHub account has access, and that you are signed in through the method your clone address uses.
 
-**You committed a secret.** Do not just delete it in a new commit. Treat it as leaked: replace the secret with a new one first, since that is what actually protects you. Then, if the repository is shared, ask an experienced colleague about rewriting history, which is possible but affects everyone.
+**You committed a secret.** Do not rely on deleting it in a new commit. Treat it as leaked: replace the secret with a new one first, since that is what actually protects you. Then, if the repository is shared, ask an experienced colleague about rewriting history, which is possible but affects everyone.
 
 **A merge conflict.** Read the file, decide which lines are right, remove the marker lines, `git add`, and commit. `git status` tells you which files still conflict.
 
@@ -354,7 +360,7 @@ git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_ve
 - `.gitignore` and `.env.example`: the secrets rule and the warning about synced folders.
 - `.github/workflows/ci.yml`: the automated checks that run on every pull request (Chapter 36).
 - `.github/dependabot.yml`: a bot that opens pull requests to update dependencies.
-- The project's history is short enough to read: at `book-m6-final` it holds 38 commits, and milestone 5 alone is 15 of them. <!-- source: dossier timeline.md (38 commits); git rev-list --count book-m6-final -->
+- The project's history is short enough to read: at `book-m6-final` it holds 38 commits and pull requests 1 to 12, and milestone 5 alone is 15 of the commits. A documentation-only pull request, number 13, was merged after the tag. <!-- source: dossier timeline.md (38 commits); git rev-list --count book-m6-final -->
 
 ## Try it
 

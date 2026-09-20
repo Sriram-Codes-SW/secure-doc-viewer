@@ -26,8 +26,8 @@ By the end of this chapter, you will be able to:
 - Chapter 24: end-to-end tests with Playwright (a tool that drives a real browser).
 - Chapter 30: the platform milestone (`book-m5-platform`).
 
-Chapter 33 teaches nginx and Caddy properly. This chapter needs only the idea that they are
-programs standing between the browser and the app; each is glossed where it first appears.
+Chapter 30 introduced nginx and Caddy. This chapter needs only the idea that they are programs
+standing between the browser and the app; each is glossed where it first appears.
 
 ## Beginner tier: Thinking like an attacker
 
@@ -174,6 +174,8 @@ flowchart LR
 
 *Figure 32.1 — The trust boundary: who may set the client address, and where it is believed*
 
+*Text description:* A browser connects over HTTPS to Caddy, which passes requests to nginx, which passes API requests to the app on port 8080, which uses MySQL. The labels on the arrows say what each program does with the `X-Forwarded-For` header. Two dotted arrows mark paths that are not believed: a browser reaching nginx directly over HTTP, and any other container reaching the app.
+
 Notice that belief is granted one link at a time and every link is pinned to a fixed address: nginx believes a forwarded address only from Caddy, and the app believes it only from nginx (`TRUSTED_PROXY_REGEX`). The dotted arrows are the paths that stay unbelieved: a browser talking to nginx directly, and any other container talking to the app.
 
 ### 32.7 Class 2: races
@@ -286,6 +288,9 @@ The README's Limitations section is part of the security review, not an apology.
 - **No MFA** (multi-factor authentication: a second proof of identity beyond a password), including for admins.
 - **Right-click blocking** in the browser stops nothing that DevTools cannot undo. It was added as friction, on purpose.
 - **No text layer**, so screen readers get nothing from a page image.
+- **Unprotected copies at rest.** Rendered tiles are ordinary PNG files without a watermark (the mark is stamped when a tile is served), and the app doesn't encrypt them. Anyone with the tile volume, a backup, or a shell in the container has the content, which sits outside the promise that no document is handed out. Treat backups as the documents themselves (Chapter 34).
+- **Username discovery.** Publishers can find non-admin usernames through the share picker, a two-character prefix search, by design, because they need it to share (README, Limitations).
+- **Tokens in the URL.** A tile token travels in the query string (`/api/tiles?token=...`), so it can appear in access logs for its 120-second life; nginx's default access log records the whole request line. The session binding limits the harm, because the URL is useless without the session cookie, and `Referrer-Policy: no-referrer` keeps it out of `Referer` headers, but protect the logs.
 
 ### 32.12 Doing your own review
 
@@ -374,6 +379,8 @@ flowchart TB
 ```
 
 *Figure 32.2 — The chain of checks a tile request passes, and the answer each one gives*
+
+*Text description:* A vertical chain of six checks: token, session binding, rate limit, access, render version, and work limit, ending in loading and watermarking the tile. From each check a side arrow leads to the answer given when it fails: 401 for the token and the session, 429 for the rate limit, 404 for access, 410 for an old render, and 503 for a busy server. Notice that the expensive work comes last.
 
 Every check is independent, and a request must pass all of them. Notice where the expensive work sits: the disk read and the watermark come last, after every cheap check has had its chance to refuse the request. Spring Security has already rejected requests from signed-out, expired, or revoked sessions before the method runs.
 

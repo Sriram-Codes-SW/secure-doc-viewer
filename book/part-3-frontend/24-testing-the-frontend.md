@@ -27,7 +27,7 @@ By the end of this chapter, you will be able to:
 
 A program is a pile of promises, and you can't see a broken promise by looking at code. You see it when a reader is locked out, sees a blank page, or sees a page they shouldn't. **Testing** is the practice of writing small programs that check the main program's promises, so a broken one is caught by a machine within seconds of the change that broke it, rather than by a reader weeks later.
 
-Think of a restaurant kitchen. A cook tastes each sauce before it leaves the kitchen: quick, cheap, done constantly, and it finds a badly seasoned sauce. That's a **unit test**. Before opening night, the staff also run a full dress rehearsal with real orders, real plates, and real waiters: slow, involving everyone, but it finds the problems that only appear when everything works together (the sauce is fine, but it's cold by the time it reaches the table). That's an **end-to-end test**.
+Think of a restaurant kitchen. A cook tastes each sauce before it leaves the kitchen: quick, cheap, done constantly, and it finds a badly seasoned sauce. That's a unit test. Before opening night, the staff also run a full dress rehearsal with real orders, real plates, and real waiters. It is slow and involves everyone, but it finds the problems that only appear when everything works together (the sauce is fine, but it's cold by the time it reaches the table). That's an **end-to-end test**.
 
 **Where the analogy breaks down:** a cook tastes a sauce once, by judgment. A test is code: it runs identically every time, on every change, on machines nobody is watching. Its verdict is a plain pass or fail, and it can only check what somebody thought to write down.
 
@@ -51,13 +51,15 @@ flowchart TB
 
 *Figure 24.1 — The frontend test layers and where the accessibility checks run*
 
+*Text description:* A diagram drawn top to bottom with three jobs in a box for the automated pipeline: backend tests, frontend tests and build, and end-to-end tests on the Docker stack. The frontend job runs the Vitest specs and the production build. Both the backend job and the frontend job must pass before the end-to-end job starts. The end-to-end job runs Playwright in a real browser, and that run includes the accessibility check on six screens in both themes and the regression test for the spoofed forwarding header.
+
 <!-- source: ci.yml, playwright.config.ts and secure-viewing.spec.ts at book-m6-final; the six screens are sign-in, admin, upload, manage, document list and viewer -->
 
 The end-to-end job starts only after both the backend job and the frontend job have passed (`needs: [backend, frontend]` in `ci.yml`). The frontend jobs on the left are fast and isolated; the end-to-end job on the right is slow and realistic. The accessibility check is not a separate tool run on its own: it is a step inside the end-to-end test, so it looks at the pages exactly as the real stack serves them.
 
 ### 24.2 Unit tests with Vitest
 
-A **unit test** runs a small piece of code in isolation and checks its result. **Vitest** is the test runner: it finds files ending in `.spec.ts` (a **spec** is a file of tests, short for specification), runs them, and reports which checks passed. It plays the role JUnit did for Java (Chapter 18). You run it with `npm test` (which is `ng test`, Chapter 20). The simplest specs in the project test a pure function, like the idle-timeout arithmetic from Chapter 19:
+A unit test runs a small piece of code in isolation and checks its result. **Vitest** is the test runner: it finds files ending in `.spec.ts` (a **spec** is a file of tests, short for specification), runs them, and reports which checks passed. It plays the role JUnit did for Java (Chapter 18). You run it with `npm test` (which is `ng test`, Chapter 20). The simplest specs in the project test a pure function, like the idle-timeout arithmetic from Chapter 19:
 
 **Listing 24.1 — `idle.spec.ts` (book-m6-final)**
 
@@ -91,16 +93,18 @@ describe('idleState', () => {
 - `describe('idleState', () => { ... })` groups related tests under a name.
 - `it('...', () => { ... })` is one test, named as a sentence about behavior. When it fails, the name tells you what broke.
 - `expect(actual).toEqual(expected)` compares values, looking inside objects. If they differ, the test fails and shows both.
-- `1_000_000` is just a number with underscores to make it readable. `60_000` is 60,000 milliseconds, one minute, so `t0 + 26 * 60_000` means "26 minutes after time zero".
+- `1_000_000` is a number written with underscores to make it readable. `60_000` is 60,000 milliseconds, one minute, so `t0 + 26 * 60_000` means "26 minutes after time zero".
 - Notice `describe`, `it` and `expect` are never imported. `tsconfig.spec.json` (Chapter 20) loads `vitest/globals`, which makes them available everywhere in spec files.
 
-Read the second test as arithmetic. The timeout is 1,800 seconds (30 minutes) and 26 minutes have passed, so 4 minutes, or 240 seconds, remain; that is inside the last five minutes, so the state is a warning with 240 seconds left. The last test shows a design detail: with a 120-second timeout, the warning window shrinks to half the timeout (60 seconds), so at 30 seconds in, with 90 seconds left, the state is still `active`, and at 70 seconds in, with 50 left, it is a warning.
+Read the second test as arithmetic. The timeout is 1,800 seconds (30 minutes) and 26 minutes have passed, so 4 minutes, or 240 seconds, remain; that is inside the last five minutes, so the state is a warning with 240 seconds left. The last test shows a design detail. With a 120-second timeout, the warning window shrinks to half the timeout (60 seconds). At 30 seconds in, with 90 seconds left, the state is still `active`. At 70 seconds in, with 50 left, it is a warning.
 
 Times are passed in as arguments rather than read from the clock, so the tests are instant and repeatable: this is why `idleState` was written as a pure function (Chapter 19). If it called `Date.now()` inside, the test would need to freeze or fake time, which is clumsier.
 
 > **Note:** Vitest 5.0.1 and its DOM simulator jsdom 30 are used at `book-m6-final`. Tags `book-m1-accounts` to `book-m5-platform` use Vitest 4.0.8 and jsdom 28. The specs quoted here read the same either way.
 
 The **jsdom** package is a pretend browser written in JavaScript, so component specs can create elements and read `localStorage` without opening a real browser.
+
+**Running the specs.** In a terminal, `npm test` starts in *watch mode*: it runs the specs once, then keeps running and runs them again whenever you save a file. Angular's test builder turns watch mode on when a terminal is attached and off otherwise (its schema says "Defaults to `true` in TTY environments and `false` otherwise"). That can look like a hang if you expect the command to finish. Press Ctrl+C to stop it. For a single run that exits, as in CI and in this chapter's exercises, use `npx ng test --watch=false`. No browser is needed for either: the specs run in Node with jsdom.
 
 ### 24.3 Worked example: adding a test
 
@@ -120,9 +124,9 @@ Add these to the `describe` block in `idle.spec.ts`:
   });
 ```
 
-Run `npm test` in `frontend/`. Both should pass. Now try the experiment that makes tests worth having: change `<=` to `<` in `idle.ts` (in a scratch copy) and run again. The first new test fails, and the output shows the expected `warning` and the received `active`. The test noticed a one-character change that no reader would have spotted for weeks. Put the character back.
+Run the specs from `frontend/` (Section 24.2 explains watch mode; `npx ng test --watch=false` runs once and exits). Both should pass. Now try the experiment that makes tests worth having: change `<=` to `<` in `idle.ts` (in a scratch copy) and run again. The first new test fails, and the output shows the expected `warning` and the received `active`. The test noticed a one-character change that no reader would have spotted for weeks. Put the character back.
 
-Three habits are visible in this small example: name the test after the behavior, test the edges of a rule and not just the middle, and make a test *fail* at least once to prove it can.
+Three habits are visible in this small example: name the test after the behavior, test the edges of a rule and not only the middle, and make a test *fail* at least once to prove it can.
 
 ### 24.4 Testing components and services
 
@@ -187,6 +191,8 @@ sequenceDiagram
 
 *Figure 24.2 — Testing a service with `HttpTestingController`*
 
+*Text description:* A sequence diagram with four participants: the test, the session service, HttpClient and the HttpTestingController. The test calls login and subscribes. The service posts through HttpClient, and the request is recorded by the controller instead of going to a network. The test then tells the controller which request it expects and supplies a fake JSON answer. The controller delivers that answer to the service, which stores the user, and the test checks that the reader is signed in.
+
 <!-- source: auth.guard.spec.ts at book-m6-final (signIn helper), provideHttpClientTesting -->
 
 The point to notice is that the test sits on both sides: it starts the request through the service and then plays the server through the controller. The service code under test is the same code that runs in the browser.
@@ -249,7 +255,7 @@ Several ideas at once:
 
 - `DOC` is a **fixture**: a realistic sample of the data the API would return, typed with the same `DocumentDetail` interface the app uses (Chapter 19). Because it's typed, the compiler checks that the fixture matches the interface; if the API's shape changes and the interface is updated, this fixture stops compiling, which alerts the developer to update it. That is a benefit of types: the test data can't quietly drift. (The type is still a promise about the real server, Chapter 19, Section 19.9.)
 - `Array.from({ length: 5 }, (_, page) => ({...}))` builds five page descriptions. The underscore names an argument the code doesn't use.
-- The provider `{ provide: ActivatedRoute, useValue: {...} }` replaces the real route information with a hand-made object: "the address is `.../doc-1`, and the query parameters are these". It is a **stub**, a stand-in with just enough behavior. The viewer only reads `snapshot.paramMap` and `snapshot.queryParamMap`, so that is all the stub provides. This is how a test controls "what if the address says `?page=3`?" without a browser.
+- The provider `{ provide: ActivatedRoute, useValue: {...} }` replaces the real route information with a hand-made object: "the address is `.../doc-1`, and the query parameters are these". It is a **stub**, a stand-in with only enough behavior. The viewer only reads `snapshot.paramMap` and `snapshot.queryParamMap`, so that is all the stub provides. This is how a test controls "what if the address says `?page=3`?" without a browser.
 - `component.ngOnInit()` is called by hand (Chapter 21 lifecycle hooks) so the test decides exactly when the viewer starts loading, and the `expectOne` right after it proves that it asked for the document, and `flush(DOC)` supplies the answer.
 
 With that in place, the individual tests are short, as the keyboard test shows:
@@ -282,7 +288,17 @@ The helper `expectGridRequestFor(page)` asserts that the viewer asked the API fo
 
 ### 24.6 Specs as executable requirements
 
-Read the test *names* in the project and you get a list of promises: "opens the page named in ?page= (1-based)", "ignores an out-of-range ?page= and resumes the last page read instead", "leaves keys alone while typing in a field or with modifiers held", "turns pages with a horizontal swipe, but not when zoomed in", "notices a replaced document from its tile URLs and reloads it with a notice", "stops instead of reloading forever when tiles are gone but the document has not changed", and "shows the access-lost state when the document stops being available mid-read". Each corresponds to a behavior from Chapters 22 and 23. The others cover the same ground on other screens: the document list's filter and access labels, the manage screen asking for confirmation before removing someone's access, the upload component refusing non-PDFs and oversized files before anything is uploaded, and the admin screen's polling rule.
+Read the test *names* in the project and you get a list of promises. Seven of them are about the viewer:
+
+- "opens the page named in ?page= (1-based)"
+- "ignores an out-of-range ?page= and resumes the last page read instead"
+- "leaves keys alone while typing in a field or with modifiers held"
+- "turns pages with a horizontal swipe, but not when zoomed in"
+- "notices a replaced document from its tile URLs and reloads it with a notice"
+- "stops instead of reloading forever when tiles are gone but the document has not changed"
+- "shows the access-lost state when the document stops being available mid-read"
+
+Each corresponds to a behavior from Chapters 22 and 23. The other specs cover other screens. The document list's filter and access labels are tested. So is the manage screen asking for confirmation before removing someone's access. The upload component's refusal of non-PDFs and oversized files before anything is uploaded is tested, and so is the admin screen's polling rule.
 
 A useful discipline follows from this: **name tests as sentences about behavior**, not about methods. "opens the page named in ?page=" tells a future maintainer what must stay true, even if the method that does it is renamed. A test called `testInitialPage` tells them nothing when it fails.
 
@@ -364,13 +380,13 @@ describe('UploadComponent file checks', () => {
 
 *Path: `frontend/src/app/features/documents/manage-upload.component.spec.ts`*
 
-(Excerpt: the third test, which checks that a title is suggested from the file name, is omitted.) A real file input can't be filled from code for security reasons, so `pick` builds an `<input>` element with jsdom, and uses `Object.defineProperty` to give it a `files` list. The test then hands the component a fake event whose `target` is that input. To test the size limit without creating a 60 MB file, the second test *overrides the file's reported size* with `Object.defineProperty`, a one-line trick that turns a two-byte file into a "60 MB" one. Notice the cast `as unknown as Event`: the fake event isn't a real `Event`, so the test tells the compiler "trust me", a shortcut acceptable in tests and rarely elsewhere.
+(Excerpt: the third test, which checks that a title is suggested from the file name, is omitted.) A real file input can't be filled from code for security reasons. So `pick` builds an `<input>` element with jsdom and uses `Object.defineProperty` to give it a `files` list. The test then hands the component a fake event whose `target` is that input. To test the size limit without creating a 60 MB file, the second test *overrides the file's reported size* with `Object.defineProperty`, a one-line trick that turns a two-byte file into a "60 MB" one. Notice the cast `as unknown as Event`: the fake event isn't a real `Event`, so the test tells the compiler "trust me", a shortcut acceptable in tests and rarely elsewhere.
 
 These tests protect the *convenience* checks from Chapter 23. They do not, and cannot, prove the server refuses oversized uploads; that is a backend test (Chapter 18).
 
 ### 24.9 What unit tests can't catch
 
-Not everything is testable at unit level. The specs above run with a fake network and a pretend browser. The viewer's real `fetch()` calls, the actual signed URLs, the nginx proxy, the cookies and the real backend are absent. A bug in how nginx forwards a header, or in a real cookie's attributes, is invisible to them. That is what the second layer is for. It is slower, needs a running stack, and fails for more reasons (a network hiccup, a slow machine), so the project keeps it to a few carefully chosen journeys and relies on the unit layer for detail.
+Not everything is testable at unit level. The specs in Listings 24.1 to 24.6 run with a fake network and a pretend browser. The viewer's real `fetch()` calls, the actual signed URLs, the nginx proxy, the cookies and the real backend are absent. A bug in how nginx forwards a header, or in a real cookie's attributes, is invisible to them. That is what the second layer is for. It is slower, needs a running stack, and fails for more reasons (a network hiccup, a slow machine), so the project keeps it to a few carefully chosen journeys and relies on the unit layer for detail.
 
 ### 24.10 End-to-end tests with Playwright
 
@@ -396,13 +412,57 @@ export default defineConfig({
 
 (Excerpt: the file's leading comment and import are omitted.) The comment in the file says the tests need a running full stack (`docker compose --profile full up -d --build`, served at port 8081, Chapter 10) and an admin account supplied through `E2E_ADMIN_USER` and `E2E_ADMIN_PASSWORD` environment variables. Never write a password into a file; the test reads it from the environment and skips itself if it's missing. Line by line: `timeout: 120_000` allows a test two minutes, because uploading and rendering a PDF takes time. `retries` allows one automatic retry only in CI (locally you want failures to show at once). The reporter prints a plain list, and in CI also writes an HTML report. `baseURL` lets tests write `page.goto('/login')` instead of a full address, and can be overridden with `E2E_BASE_URL`. `trace: 'retain-on-failure'` saves a recording of a failed run, screenshots and network calls included, so a failure in CI can be replayed on your machine.
 
-The main test, `e2e/secure-viewing.spec.ts`, tells one story: an administrator creates three users (a publisher, a reader, an outsider); the publisher first signs in with a temporary password, is forced to change it (the flow from Chapter 23), uploads a two-page PDF that the test generates, and shares it with the reader; the reader sees every tile load and turns the page with the keyboard (the URL changes to `?page=2`); and the outsider can neither see the document in their list nor open it by address, getting "hasn't been shared with you". Playwright's own helpers make each step readable, for example `page.fill('#username', username)` and `page.click('button[type=submit]')`. Every user name is unique per run (`e2e-pub-<time>`), and an `afterAll` disables the created accounts, with a warning in the source: never point this suite at production, since it creates accounts.
+**Running the end-to-end tests yourself.** You need the full stack running, a browser for Playwright to drive, and the administrator password. Follow these steps once, and repeat the last step whenever you want to run the suite.
+
+*Step 1.* From the repository root, start the stack: `docker compose --profile full up -d --build`. The web app is then at `http://localhost:8081`, which is where the tests look by default (the `E2E_BASE_URL` variable overrides it).
+
+*Step 2.* Find the administrator password. On an empty database the first start creates an `admin` account. Its password is the `BOOTSTRAP_ADMIN_PASSWORD` value in your own `.env` file or, if you left that empty, a random one printed once in the app's startup log (`docker compose logs app`). If you have changed it since, use the password you set. Treat it as a secret: type it into your terminal, and never put it in a file you commit.
+
+*Step 3.* Install the dependencies and the browser Playwright drives. A first run without the browser download fails with an error saying the browser executable doesn't exist.
+
+**Example 24.2 — Installing the test dependencies and the browser (teaching example, not repository code)**
+
+```bash
+cd frontend
+npm ci
+npx playwright install chromium
+```
+
+On Linux, Playwright may also need system libraries; the project's CI uses `npx playwright install --with-deps chromium` for that reason.
+
+*Step 4.* Put the password in an environment variable for the current terminal session and run the suite. The variable name is what the spec reads; the value is yours.
+
+**Example 24.3 — Running the suite on each platform (teaching example, not repository code)**
+
+```bash
+E2E_ADMIN_PASSWORD='<your-admin-password>' npm run e2e
+```
+
+```powershell
+$env:E2E_ADMIN_PASSWORD = '<your-admin-password>'
+npm run e2e
+```
+
+```text
+set E2E_ADMIN_PASSWORD=<your-admin-password>
+npm run e2e
+```
+
+The first block is for bash (macOS, Linux, and Git Bash on Windows), the second for PowerShell, and the third for the Windows Command Prompt. `E2E_ADMIN_USER` defaults to `admin`. Without `E2E_ADMIN_PASSWORD` the main test skips itself. The suite creates accounts, so run it only against a stack you can throw away.
+
+The main test, `e2e/secure-viewing.spec.ts`, tells one story in five steps:
+
+1. An administrator creates three users: a publisher, a reader and an outsider.
+2. The publisher signs in for the first time with a temporary password and is forced to change it (the flow from Chapter 23).
+3. The publisher uploads a two-page PDF that the test generates, and shares it with the reader.
+4. The reader sees every tile load and turns the page with the keyboard (the URL changes to `?page=2`).
+5. The outsider can neither see the document in their list nor open it by address, and gets "hasn't been shared with you". Playwright's own helpers make each step readable, for example `page.fill('#username', username)` and `page.click('button[type=submit]')`. Every user name is unique per run (`e2e-pub-<time>`), and an `afterAll` disables the created accounts, with a warning in the source: never point this suite at production, since it creates accounts.
 
 One story with several actors, rather than many small tests, is a deliberate economy: the setup (three users, a PDF) is the expensive part, so the test reuses it for several assertions. The cost is that a failure early in the story hides everything after it; the trace helps.
 
 ### 24.11 Why Playwright and not the alternatives
 
-The obvious alternatives are other browser-automation tools, such as Cypress or Selenium, and the simpler alternative of testing only with unit tests. The project uses Playwright with a `@axe-core/playwright` add-on; it records no comparison with other tools, so what follows are features its tests rely on, not recorded reasons: Playwright can run several independent browser contexts in one test (the administrator, publisher, reader and outsider each have their own cookies, `browser.newContext()`), it can emulate the reader's color scheme for the theme checks (Section 24.12), and it can make raw API requests with a browser's cookies for the header test (Section 24.13). Skipping the end-to-end layer would have left the proxy, the cookies and the real tile pipeline untested by any automation.
+The obvious alternatives are other browser-automation tools, such as Cypress or Selenium, and the simpler alternative of testing only with unit tests. The project uses Playwright with a `@axe-core/playwright` add-on. It records no comparison with other tools, so what follows are features its tests rely on, not recorded reasons. Playwright can run several independent browser contexts in one test (the administrator, publisher, reader and outsider each have their own cookies, `browser.newContext()`). It can emulate the reader's color scheme for the theme checks (Section 24.12). It can also make raw API requests with a browser's cookies for the header test (Section 24.13). Skipping the end-to-end layer would have left the proxy, the cookies and the real tile pipeline untested by any automation.
 
 ## Advanced tier: Accessibility checks and a regression test
 
@@ -431,7 +491,7 @@ async function expectAccessible(page: Page, screen: string): Promise<void> {
 
 *Path: `frontend/e2e/secure-viewing.spec.ts`*
 
-Read it as a recipe. For each of two color schemes, it tells the browser which theme the system prefers (`emulateMedia`), runs axe restricted to the WCAG 2.0 and 2.1 A and AA rules (`withTags`), keeps only the *serious* and *critical* findings, formats each as "rule id: help text (which elements)", and asserts the list is empty. The message string passed as the second argument to `expect` tells the reader of a failure which screen and theme it happened on. At the end it resets to light so later steps start from a known state. Because `emulateMedia` triggers the `prefers-color-scheme: dark` block of `styles.css` (Chapter 21), both palettes are checked; a contrast failure that exists only in dark mode can't hide.
+Read it as a recipe. For each of two color schemes, it tells the browser which theme the system prefers (`emulateMedia`). It runs axe restricted to the WCAG 2.0 and 2.1 A and AA rules (`withTags`), keeps only the *serious* and *critical* findings, and formats each as "rule id: help text (which elements)". Then it asserts that the list is empty. The message string passed as the second argument to `expect` tells the reader of a failure which screen and theme it happened on. At the end it resets to light so later steps start from a known state. Because `emulateMedia` triggers the `prefers-color-scheme: dark` block of `styles.css` (Chapter 21), both palettes are checked; a contrast failure that exists only in dark mode can't hide.
 
 > **Note:** Automated checks catch only a portion of accessibility problems (contrast, missing labels, wrong roles). They can't tell whether a screen makes sense to someone using a screen reader. Treat a green axe run as a floor, not a finish line.
 
@@ -454,7 +514,7 @@ The test copies the CSRF token from the `XSRF-TOKEN` cookie into the `X-XSRF-TOK
 
 ### 24.14 Testing time-dependent behavior without waiting
 
-The admin dashboard *polls* (asks the server again and again on a timer) every five seconds, but must stop when the page has been left alone: each poll counts as activity, and would keep an idle administrator signed in (Chapter 22). Nobody wants a test that waits two minutes. The project's answer was to extract the *decision* into a pure function, `shouldPoll(now, lastInputAt, hidden)`, and pass the time in:
+The admin dashboard *polls* (asks the server again and again on a timer) every five seconds. It must stop when the page has been left alone, because each poll counts as activity and would keep an idle administrator signed in (Chapter 22). Nobody wants a test that waits two minutes. The project's answer was to extract the *decision* into a pure function, `shouldPoll(now, lastInputAt, hidden)`, and pass the time in:
 
 **Listing 24.10 — `admin-dashboard.component.spec.ts` (book-m6-final, excerpt: polling)**
 
@@ -478,7 +538,7 @@ describe('admin sessions polling', () => {
 
 *Path: `frontend/src/app/features/admin/admin-dashboard.component.spec.ts`*
 
-The idea generalizes: when a behavior depends on time, randomness or the outside world, move the *decision* into a function whose inputs are all parameters. The function is trivially testable, and the thin remaining code that gathers the inputs is small enough to trust or to cover in an end-to-end test.
+The idea generalizes: when a behavior depends on time, randomness or the outside world, move the *decision* into a function whose inputs are all parameters. The function can be tested directly, and the thin remaining code that gathers the inputs is small enough to trust or to cover in an end-to-end test.
 
 ### 24.15 Running tests in CI
 

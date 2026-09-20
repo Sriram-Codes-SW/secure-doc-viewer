@@ -20,7 +20,7 @@ By the end of this chapter you can:
 
 ## How to read this chapter
 
-A trade-off is a decision where getting one good thing means giving up another. Each choice below was
+A trade-off is a decision where getting one good thing means giving up another. Each choice in this chapter was
 reasonable for a small, single-server app with one team, and
 each has a point where it stops being reasonable.
 
@@ -98,6 +98,8 @@ commit message of `b6aef4e`.
 
 **The decision.** Who signs the URL that lets a browser fetch a tile?
 
+*See also: Chapter 41, Section 41.8 works through the CloudFront option on AWS.*
+
 **What the project chose.** The app signs it with HMAC-SHA256 over document, page, row, column, render version, session binding, and expiry, with a 120-second lifetime. `SignedUrlService` deliberately mirrors the presigned-URL pattern (README, Limitations). The render version was added to the signed payload after a probe found old URLs silently serving the new render (`f682716`).
 
 **Pros.**
@@ -117,11 +119,13 @@ commit message of `b6aef4e`.
 
 **The decision.** Where do sessions and rate-limit counters live?
 
+*See also: Shared session and counter stores on ElastiCache are covered in Chapter 40, Section 40.9.*
+
 **What the project chose.** In the memory of the one app instance. Accounts, documents, shares, and the audit trail are in MySQL; sessions and the throttle counters are not. The README states this and lists Spring Session with Redis as a next step.
 
 **Pros.**
 - Nothing extra to run, secure, or back up.
-- Fast, and simple to test.
+- Fast, and straightforward to test.
 - Sessions are server-side, so an administrator can list and revoke them and a role change ends the user's sessions (PR #1).
 
 **Cons.**
@@ -157,6 +161,8 @@ commit message of `b6aef4e`.
 <!-- source: README "Backup and restore", Limitations; commits cd0f5c2, 66f7152; dossier/decisions.md D8 -->
 
 **The decision.** Where do the tiles live?
+
+*See also: Chapter 40, Section 40.8 shows how the tiles would move to S3.*
 
 **What the project chose.** On local disk, in a Docker volume, laid out as `{docId}/v{version}/page-{n}/tile-{row}_{col}.png`. A `StorageJanitor` removes folders no document points to; replacing a PDF writes a new version folder and switches under a row lock (README).
 
@@ -198,6 +204,8 @@ commit message of `b6aef4e`.
 
 **The decision.** Which database, and how does its structure change over time?
 
+*See also: RDS for MySQL 8.4 is covered in Chapter 40, Section 40.7.*
+
 **What the project chose.** MySQL 8.4 in Docker, with schema changes as Flyway migrations. The product owner chose MySQL over H2 and Postgres. Unit tests use H2 in MySQL mode; `MySqlIntegrationTest` runs on real MySQL 8.4 through Testcontainers because the technical-manager review agent asked for it (Chapter 32). Dependabot is set to stay on the 8.4 LTS line (PR #10).
 
 **Pros.**
@@ -235,6 +243,8 @@ commit message of `b6aef4e`.
 ## 37.11 One instance vs. scale-out
 
 **The decision.** How many copies of the app run?
+
+*See also: Chapters 40 and 41 map the scale-out plan onto AWS services.*
 
 **What the project chose.** One. The go-live checklist says so, and the Limitations section explains why: sessions and throttle counters are in memory and tiles are on local disk.
 
@@ -286,11 +296,11 @@ commit message of `b6aef4e`.
 
 **Cons.**
 - Two proxies mean two things to configure and to keep patched; the CI image scan covers both, but a person still has to act on it (Chapter 36).
-- Trust rests on fixed addresses and on getting five settings to agree (the compose addresses, `TRUSTED_PROXY_REGEX`, `set_real_ip_from`, the header overwrite, and the profile). The failure mode is silent: if they drift apart, the app just sees the wrong address (exercise 33.3), and this was the shape of the High finding that blocked the platform pull request (Chapter 32).
+- Trust rests on fixed addresses and on getting five settings to agree (the compose addresses, `TRUSTED_PROXY_REGEX`, `set_real_ip_from`, the header overwrite, and the profile). The failure mode is silent: if they drift apart, the app sees the wrong address (exercise 33.3), and this was the shape of the High finding that blocked the platform pull request (Chapter 32).
 - It's a single host. Nothing here spreads traffic across machines or survives losing the machine.
 - Going public isn't a switch: you edit the `ports` of the `tls` service, and HSTS decisions such as `includeSubDomains` are hard to undo.
 
-**The enterprise alternative.** A managed load balancer from a cloud provider or a platform, terminating TLS with certificates it manages, forwarding to several instances, and running health checks against `/actuator/health`. That is general industry practice; the project's records don't describe a comparison. It moves the trust boundary: the app would trust forwarded headers from the load balancer's address range instead of nginx's fixed address, and the nginx overwrite rule would have to be replaced by whatever the load balancer guarantees about the header.
+**The enterprise alternative.** A managed load balancer from a cloud provider or a platform, terminating TLS with certificates it manages, forwarding to several instances, and running health checks against `/actuator/health` (Chapter 40, section 40.5, refines this: a readiness path avoids restarting healthy tasks during a database failover). That is general industry practice; the project's records don't describe a comparison. It moves the trust boundary: the app would trust forwarded headers from the load balancer's address range instead of nginx's fixed address, and the nginx overwrite rule would have to be replaced by whatever the load balancer guarantees about the header.
 
 **When you'd switch.** When you run more than one instance (37.11), or when your platform already provides certificates and load balancing and running your own is extra work.
 
@@ -324,7 +334,7 @@ The path there matters. Phase 1 had only the first two counters. The first fix f
 
 **What the project chose.** Stop it for the few seconds a backup takes (Chapter 34). The database dump and the tile archive are then guaranteed to describe the same moment. The choice was a response to a reviewer's finding: a dump taken before a PDF replacement and an archive taken after it would leave documents pointing at tiles that no longer exist. The janitor also refuses to delete a document's other tile versions while its current one is missing.
 
-**Pros.** It works with plain tools, needs no special storage, and its correctness is easy to explain. A restore drill (Chapter 34) proved it.
+**Pros.** It works with plain tools, needs no special storage, and its correctness takes one sentence to explain. A restore drill (Chapter 34) proved it.
 
 **Cons.** Readers get errors during the window, and the approach only works because there is one instance and one machine (37.11). A longer database means a longer window.
 
@@ -337,7 +347,7 @@ The path there matters. Phase 1 had only the first two counters. The first fix f
 <!-- source: dossier/decisions.md D10, D13; PR #5 body "Platform upgrade"; PR #10 body; bugs-and-findings.md G9 -->
 **The decision.** When you start a production hardening, do you upgrade the platform first, and how new?
 
-**What the project chose.** The product owner asked to keep the technology "as new as long as it is a standard version". The platform upgrade in PR #5 went from Spring Boot 3.3.4 to 4.1.1 and Java 21 to 25, bringing Spring Security 7, Jackson 3, Hibernate 7, and Flyway 12, all "the latest GA versions checked on Maven Central". One motivation was that Spring Boot 3.3 had passed its open-source support window, and the migration also removed a Flyway warning that MySQL 8.4 was untested. Yet the project applies a different rule to runtimes and databases: PR #10 tells Dependabot to skip Node's odd-numbered releases, Java releases between LTS versions, and MySQL's non-LTS "Innovation" releases. So the policy is: newest release of the *framework*, long-term-support lines for the *runtime and data*.
+**What the project chose.** The product owner asked to keep the technology "as new as long as it is a standard version". The platform upgrade in PR #5 went from Spring Boot 3.3.4 to 4.1.1 and Java 21 to 25, bringing Spring Security 7, Jackson 3, Hibernate 7, and Flyway (11 in the pull request text, 12 as resolved by Spring Boot 4.1.1), all "the latest GA versions checked on Maven Central". One motivation was that Spring Boot 3.3 had passed its open-source support window, and the migration also removed a Flyway warning that MySQL 8.4 was untested. Yet the project applies a different rule to runtimes and databases: PR #10 tells Dependabot to skip Node's odd-numbered releases, Java releases between LTS versions, and MySQL's non-LTS "Innovation" releases. So the policy is: newest release of the *framework*, long-term-support lines for the *runtime and data*.
 
 **Pros.**
 - Supported software receives security fixes, and no deprecation warnings remain after the migration.
@@ -354,18 +364,21 @@ The path there matters. Phase 1 had only the first two counters. The first fix f
 
 ## 37.17 A worked plan: from one instance to three
 
-The decisions above are linked, and the clearest way to see it is to plan a change that touches several of them. This section is the book's design exercise, not project history: a step-by-step plan for running three instances, using only facts about the app's current code and README.
+The decisions in sections 37.1 to 37.16 are linked, and the clearest way to see it is to plan a change that touches several of them. This section is the book's design exercise, not project history: a step-by-step plan for running three instances, using only facts about the app's current code and README.
+
+*See also: Chapters 40 and 41 map each step of this plan onto AWS services (a design, not a deployment).*
 
 <!-- source: README Limitations; LoginThrottle, TileRateLimiter, AuditLogService at book-m6-final; this is the book's design exercise -->
 Figure 37.1 contrasts today's single instance with the target of the exercise. Everything shared in the second box is something that lives inside the one instance today.
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph NOW["Today: one instance"]
         N1["nginx and Caddy"] --> A1["app: sessions, counters, audit throttle in memory"]
         A1 --> D1[("MySQL")]
         A1 --> L1[("local tile volume")]
     end
+    NOW ~~~ LATER
     subgraph LATER["Design exercise: three instances"]
         LB["load balancer"] --> I1["app 1"]
         LB --> I2["app 2"]
@@ -384,7 +397,9 @@ flowchart LR
 
 *Figure 37.1 — One instance today, and what three instances would have to share*
 
-**Step 0: list the in-memory state.** Search the code for anything that lives in a map or a field rather than the database. The README names two, sessions and rate-limit counters. Reading the code at `book-m6-final` finds more: the sign-in throttle counters (`LoginThrottle`), the tile rate limiter (`TileRateLimiter`), and the audit throttle that limits how often `PAGE_VIEWED` and `ACCESS_DENIED` events are written (`AuditLogService`). Each is correct on one instance and wrong on three: a user could exceed a limit by up to three times just by being spread across instances.
+*Text description:* Two groups, the current one first. Today: nginx and Caddy in front of one app that keeps sessions, counters, and the audit throttle in memory, with one MySQL database and one local tile volume. Design exercise: a load balancer in front of three app copies, all sharing one store for sessions and counters, one shared tile storage, and one MySQL database.
+
+**Step 0: list the in-memory state.** Search the code for anything that lives in a map or a field rather than the database. The README names two, sessions and rate-limit counters. Reading the code at `book-m6-final` finds more: the sign-in throttle counters (`LoginThrottle`), the tile rate limiter (`TileRateLimiter`), the audit throttle that limits how often `PAGE_VIEWED` and `ACCESS_DENIED` events are written (`AuditLogService`), and `SessionMetadata`, the per-session map behind the admin sessions list (it sits beside the in-memory session registry). Two more per-instance limits exist by design: `TileWorkLimiter` and the render permits. With three instances a "server-wide" cap becomes a per-instance cap, which is correct, because each one protects its own CPU. Each is correct on one instance and wrong on three: a user could exceed a limit by up to three times merely by being spread across instances.
 
 **Step 1: share sessions.** Put sessions in a shared store (Spring Session with Redis, as the README suggests). Until this is done, a load balancer would send a signed-in user to an instance that has never heard of them.
 
@@ -392,11 +407,11 @@ flowchart LR
 
 **Step 3: share the tiles.** Local disk can't be seen by the other instances. Move tiles to object storage. This is the biggest change, because it touches several decisions at once: tile serving (37.4, signed URLs), watermarking (37.2), the janitor and backups (Chapter 34), and the row-lock-based atomic replace (Chapter 32), which relies on the database and the file layout agreeing.
 
-**Step 4: one place for scheduled jobs.** The janitor, the audit purge, and the device purge use `@Scheduled`, which runs on every instance. Running the audit purge three times a night is harmless; running three janitors that delete directories at the same time is the kind of thing you'd rather decide on purpose. A design has to choose one runner (for example, a leader lock or a separate job).
+**Step 4: one place for scheduled jobs.** Six methods use `@Scheduled` (five with the plain annotation and one, in `TileRateLimiter`, with its fully qualified name, which a plain search for the annotation misses): the storage janitor, the audit throttle sweep, the audit purge, the recognised-device purge, and the in-memory sweeps of `LoginThrottle` and `TileRateLimiter`. On every instance they all run. The purges are idempotent deletes and the in-memory sweeps belong to each instance, so running them three times is harmless. Three janitors deleting directories at the same time is the kind of thing you'd rather decide on purpose. A design has to choose one runner for the janitor (for example, a leader lock or a separate job).
 
 **Step 5: the same secret everywhere.** `SIGNING_SECRET` verifies tile tokens and keys the recognised-device hashes and session handles. All instances must have the same value, or a URL issued by one instance would be rejected by another.
 
-**Step 6: the front door.** Put a load balancer in front (37.13), point its health check at `/actuator/health`, and re-derive the trust boundary: the app must trust forwarded headers only from the balancer.
+**Step 6: the front door.** Put a load balancer in front (37.13), point its health check at a health path (Chapter 40, section 40.5, explains why the readiness path, not the plain `/actuator/health` that includes the database, is the better target), and re-derive the trust boundary: the app must trust forwarded headers only from the balancer.
 
 **Step 7: deploy without downtime.** Roll one instance at a time; with shared sessions, users no longer notice.
 
@@ -412,9 +427,11 @@ flowchart LR
 
 *Figure 37.2 — The order of the scale-out plan: share the state first, then add the front door*
 
+*Text description:* Seven steps in a row, each leading to the next: share sessions, share counters, share tiles, one runner for scheduled jobs, the same secret everywhere, a load balancer in front, and rolling deploys. Notice that the load balancer comes sixth, after all the state has been shared.
+
 ## 37.18 Common mistakes when weighing trade-offs
 
-- **Assuming the enterprise alternative is simply better.** Each one has its own costs, usually complexity and money. The right question is whether you have the problem it solves.
+- **Assuming the enterprise alternative is automatically better.** Each one has its own costs, usually complexity and money. The right question is whether you have the problem it solves.
 - **Switching before measuring.** Use the metrics in Chapter 35 to see which limit you are actually hitting.
 - **Ignoring coupling.** Moving one piece (tiles to S3) drags others along (watermarking, sessions, backups). List what a decision touches before you make it.
 - **Deferring without a note.** "We'll add it later" is fine when the README says what "it" is and what will have to change, as this project's Limitations section does.

@@ -3,11 +3,13 @@
 ## Reading order
 
 Read Parts I to III in order. Part IV assembles the app milestone by milestone and assumes what
-those parts taught. Part V takes the app to production, Chapter 37 weighs the trade-offs, and Part
-VI (Chapters 38 and 39) names the patterns you have been using. If
-you already know a topic, try its exercises first; if you can do the starred exercises without
-looking anything up, skim the chapter and move on. The outline (`OUTLINE.md`) lists, for every
-chapter, which earlier chapters it assumes and what its sections are.
+those parts taught. Part V takes the app to production, and Chapter 37 weighs the trade-offs. Part VI (Chapters 38 and 39)
+names the patterns you have been using, and Part VII (Chapters 40 and 41) sketches the next step: a
+cloud design that the project never deployed.
+
+If you already know a topic, try its exercises first. If you can do the starred exercises without
+looking anything up, skim the chapter and move on. Each chapter's Prerequisites section lists the
+earlier chapters it assumes, and the table of contents lists the sections of every chapter.
 
 Set up your machine (the next chapter of the front matter) before you start Chapter 1's exercises.
 
@@ -29,8 +31,8 @@ earlier chapters; a beginner tier assumes only beginner material.
 
 ## Conventions
 
-- **Bold** marks a term at its first use. The glossary (Appendix A) collects all of them, and the
-  index terms list helps you find things again.
+- **Bold** marks a term at its first use. The glossary (Appendix A) collects definitions of the terms,
+  and the index at the end of the book lists, for each term, the chapters where it appears in bold.
 - Callouts come in four kinds: **Note** (useful, not essential), **Tip** (a habit that saves
   time), **Warning** (something that can lose data or break security) and **In this project**
   (where the idea lives in the repository).
@@ -67,9 +69,9 @@ of them needs anyone else's account, credentials or deployment.
 
 ## Following along with the code
 
-The repository has seven milestone tags, one for each chapter of Part IV.
+The repository has seven milestone tags, one for each chapter of Part IV. Table F.1 lists them.
 
-**Table 1 — The milestone tags**
+**Table F.1 — The milestone tags**
 
 | Tag | Milestone | Chapter |
 |---|---|---|

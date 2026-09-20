@@ -11,7 +11,7 @@ At 150 DPI the page is about 1,275 by 1,650 pixels. Columns: (1275 + 127) / 128 
 
 ### Exercise 25.3 ★★ Tamper with a token
 
-The client receives HTTP 401 with a JSON body `{"error": "..."}`. At `book-m0-mvp`, `GlobalExceptionHandler` maps `InvalidTokenException` to 401. A token whose payload was altered fails the signature comparison ("Signature mismatch"). The signature is checked first so that data nobody signed never reaches the parsing code, and the comparison is constant-time so response timing reveals nothing about how much matched.
+Change a character in the middle of the payload, not the last one, because the last base64url character can carry unused bits and may decode to the same bytes. The client then receives HTTP 401 with a JSON body `{"error": "..."}`. At `book-m0-mvp`, `GlobalExceptionHandler` maps `InvalidTokenException` to 401. A token whose payload was altered fails the signature comparison ("Signature mismatch"). The signature is checked first so that data nobody signed never reaches the parsing code, and the comparison is constant-time so response timing reveals nothing about how much matched.
 
 ### Exercise 25.4 ★★ Build a canonical string
 

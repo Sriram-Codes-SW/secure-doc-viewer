@@ -88,13 +88,13 @@ concurrency:
 |---|---|---|
 | Backend tests | `./mvnw -B verify` on Java 25 | Unit and integration tests pass (H2 in MySQL mode, and MySQL 8.4 through Testcontainers, because the runner has Docker) |
 | Frontend tests and build | `npm ci`, `ng test`, `ng build --configuration production` on Node 24 | Frontend tests pass and the production build compiles |
-| Known-vulnerability scan (OSV) | The OSV scanner on `pom.xml` and `frontend/package-lock.json` | No Maven or npm dependency, including transitive ones, has a published advisory |
+| Known-vulnerability scan (OSV) | The OSV scanner on `pom.xml` and `frontend/package-lock.json` | No Maven or npm dependency, including transitive ones, has an advisory known to the OSV database on the day the job ran |
 | End-to-end (Docker stack) | Builds the full stack with throwaway secrets, scans both images with Trivy, then runs Playwright | The real containers work together, contain no fixable HIGH or CRITICAL vulnerabilities, and the browser journey succeeds |
 
 The `e2e` job declares `needs: [backend, frontend]`, so it starts only after both pass. That ordering saves time: there's no point building Docker images when a unit test has already failed.
 
 <!-- source: .github/workflows/ci.yml at book-m6-final -->
-Figure 36.1 shows how the four jobs relate. Any red node fails the run and blocks the pull request.
+Figure 36.1 shows how the four jobs relate. Any red node fails the run. GitHub shows the failed status on the pull request; whether a failure also blocks merging depends on branch protection or repository rulesets. On September 20, 2026 the project's private repository could not enable them (the GitHub API answered HTTP 403, "Upgrade to GitHub Pro or make this repository public"), so here a red run is a signal that the reviewer must honor, not a lock.
 
 ```mermaid
 flowchart TB
@@ -112,6 +112,8 @@ flowchart TB
 ```
 
 *Figure 36.1 — The CI jobs: three run in parallel, and the end-to-end job waits for two of them*
+
+*Text description:* A pull request or push to main starts three jobs in parallel: backend tests, frontend tests and build, and the OSV dependency scan. The end-to-end job starts only after the backend and frontend jobs pass. Inside it, five steps run in order: generate throwaway secrets, build and start the Docker stack, scan both images with Trivy, wait for the health endpoint, and run the Playwright journey.
 
 Notice that the dependency scan is not a gate for the end-to-end job; it runs alongside, and its failure still turns the whole run red.
 
@@ -159,7 +161,7 @@ They look at different things, so the project runs both.
     scan source --lockfile=/src/pom.xml --lockfile=/src/frontend/package-lock.json
 ```
 
-The scanner itself runs as a container (`docker run --rm`), pinned by digest. It mounts the repository read-only (`:ro`) at `/src`, so the scanner can read your files but can't change them. It scans two inputs: `pom.xml` for the Java side and `package-lock.json` for the JavaScript side. It exits with an error if it finds any advisory, and that error fails the job, which blocks the pull request.
+The scanner itself runs as a container (`docker run --rm`), pinned by digest. It mounts the repository read-only (`:ro`) at `/src`, so the scanner can read your files but can't change them. It scans two inputs: `pom.xml` for the Java side and `package-lock.json` for the JavaScript side. It exits with an error if it finds any advisory, and that error fails the job, which shows as a failed check on the pull request.
 
 **Trivy** scans something different: the *built container images*. An image contains an operating system (packages like `libssl`), a Java runtime, and your application. A flaw can hide in an operating system package that neither `pom.xml` nor `package-lock.json` mentions, and only an image scan sees it.
 
@@ -204,6 +206,8 @@ After the stack builds, the job scans the images (Listing 36.4), then loops up t
 
 A tag like `mysql:8.4` can point to a different image tomorrow, because the image's maintainers can push a new build under the same tag. That is often what you want (security patches), but it means your build is no longer the one you tested. The project pins each base image by digest, for example `mysql:8.4@sha256:85b9bf...` in `docker-compose.yml`, and the same in both Dockerfiles. A rebuild then gets exactly the image that was reviewed, and Dockerfile comments say so: "Pinned by digest (Dependabot updates it) so a rebuild gets exactly the reviewed image."
 
+*See also: The last mile on AWS (OpenID Connect and images by digest in ECR) is sketched in Chapter 41, Section 41.6.*
+
 *Pattern note: Pinning by digest is infrastructure as code with immutable images (Chapter 39, Section 39.13).*
 
 GitHub Actions get the same treatment. Look at a pinned line again:
@@ -236,6 +240,8 @@ flowchart TB
 ```
 
 *Figure 36.2 — How the LTS-only rules filter Dependabot's proposals*
+
+*Text description:* A decision flow. Dependabot finds a newer version and asks whether an ignore rule matches. If yes, for example a non-LTS Node or MySQL version or a TypeScript minor version, no pull request is opened. If no, a grouped pull request is opened, CI runs the tests, scans and end-to-end run, and a person reads the release notes and merges.
 
 **Table 36.2 — Dependabot rules from PR #10**
 
@@ -274,7 +280,7 @@ The general lesson: automated updates need rules about *which* versions you acce
 ### 36.10 A flaky test on `main`
 
 <!-- source: PR #9 body; commit ec6c1c5; dossier/bugs-and-findings.md C7 -->
-Your CI can also catch a problem in *your own tests*. After PR #5 merged, CI on `main` failed once. The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` asserted that every render slot was free at the same instant the second render returned. But the render thread frees its slot in a `finally` block that runs just after the caller receives its result. On a fast machine the assertion could land in that gap and read 0 free slots instead of 1.
+Your CI can also catch a problem in *your own tests*. After PR #5 merged, CI on `main` failed once. The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` asserted that every render slot was free at the same instant the second render returned. But the render thread frees its slot in a `finally` block that runs immediately after the caller receives its result. On a fast machine the assertion could land in that gap and read 0 free slots instead of 1.
 
 PR #9 changed the test to wait up to 5 seconds for the counters to reach the expected value. It was a test-only change; production behavior was unchanged, since in production the slot frees microseconds after the upload returns. The fixed test passed five times in a row locally. The lesson is one to remember whenever you test code that uses several threads: never assert on state that another thread changes after your result is returned. Poll with a timeout instead.
 

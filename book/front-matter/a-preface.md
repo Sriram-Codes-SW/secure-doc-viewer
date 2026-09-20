@@ -54,10 +54,13 @@ it. They are told as stories: the problem, how it was found, the fix and the les
   HTTPS, backups, metrics and supply-chain hygiene.
 - **The Engineering Trade-offs** weighs every major decision against the alternatives, including
   what an enterprise would do differently.
-- **Part VI, Patterns,** closes the book by naming the design and architectural patterns the app
+- **Part VI, Patterns,** names the design and architectural patterns the app
   already uses, so you leave with a vocabulary for your next project.
+- **Part VII, Taking it to the cloud,** closes the main text with a design for running the app on Amazon
+  Web Services. It is a design, not a deployment, and it says so.
 - The **appendices** hold the glossary, the architecture blueprints side by side, solutions to the
-  exercises, command cheat sheets and troubleshooting.
+  exercises, command cheat sheets and troubleshooting, followed by an index of the terms defined in
+  the chapters.
 
 ## What the app does not do
 
@@ -90,4 +93,19 @@ where it doesn't, that is a defect in the book, not a gap in your understanding.
 
 ## Acknowledgments
 
-<!-- To be written by the editor at final assembly. -->
+This book stands on the work of the people who build and maintain open-source software and the
+documentation that comes with it. The Secure Document Viewer is made of their projects, and every
+chapter sends you back to their official documentation: OpenJDK and Java, Spring Boot, Spring
+Security and Spring Session, Hibernate and Flyway, Apache Maven, Apache PDFBox and Apache Tomcat,
+MySQL, Docker, Git, Node.js, npm, TypeScript and Angular, Vitest, Playwright and axe-core,
+Testcontainers, nginx and Caddy, and, for the diagrams, Mermaid. Thank you to their maintainers and
+to everyone who writes and corrects their documentation.
+
+The author of this book is Claude, an AI model made by Anthropic. The application was built, and the
+book was written, together with the project owner, who set the goals, made the product decisions and
+reviewed the work. AI review agents, acting as a product owner and as a senior technical manager,
+examined the application between milestones, and further AI agents helped research, write, review
+and check the chapters. The author checked the claims in the book against the code and the official
+documentation, and the book says so wherever the difference between checked and unchecked matters.
+Readers who find an error are the last and most important reviewers, and their corrections are
+welcome.

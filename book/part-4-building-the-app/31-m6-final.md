@@ -14,10 +14,10 @@
 ## Prerequisites
 
 Chapter 30 (the platform), Chapter 18 (backend testing) and Chapter 24 (frontend and end-to-end
-testing), as listed in `book/OUTLINE.md`. The code is at `book-m6-final`, the tip of `main` after pull
+testing). The code is at `book-m6-final`, the tip of `main` after pull
 requests #9 to #12. The difference from `book-m5-platform` touches only four paths:
 `.github/dependabot.yml`, `frontend/package.json`, its lock file and `TileGenerationServiceTest`.
-Versions at this tag: Spring Boot 4.1.1, Java 25, and, only from this tag, Vitest 5.0.1 and jsdom
+At `book-m6-final` (commit `a27e069`) the repository has 38 commits and pull requests 1 to 12. A later documentation-only pull request, #13, corrected the README's mention of a canvas and a code comment; at the tag itself, trust the code (Chapter 21) over that README sentence. Versions at this tag: Spring Boot 4.1.1, Java 25, and, only from this tag, Vitest 5.0.1 and jsdom
 30.0.1 in the frontend (earlier tags use Vitest 4).
 <!-- source: git diff --stat book-m5-platform book-m6-final; PR #9-#12; coordinator correction in requests.md -->
 
@@ -63,7 +63,7 @@ LTS means long-term support: a release line that its maintainers promise to keep
 stated period. Not every release line gets that promise. Node.js, for example, promotes only its
 even-numbered major versions to LTS.
 
-A **flaky test** passes and fails on the same code, depending on timing or luck. Section 31.5
+A flaky test passes and fails on the same code, depending on timing or luck. Section 31.5
 takes one apart.
 
 **Analogy.** Think of a car. Selling it doesn't end the work: it needs oil changes, recalls and
@@ -112,7 +112,7 @@ Before the story of the Dependabot pull requests, you need to read the version n
 *Path: `frontend/package.json`*
 
 A version such as `5.0.1` has three parts: major, minor and patch. This convention is called
-**semantic versioning**: a patch release fixes bugs, a minor release adds features without
+semantic versioning: a patch release fixes bugs, a minor release adds features without
 breaking existing use, and a major release is allowed to break things.
 
 The characters in front of the number say which updates `npm install` may pick:
@@ -145,7 +145,7 @@ too long is abandoned, and its slot must come back. The test asserted that every
 free again at the same instant the second render returned.
 
 The trap is the order of events on two threads. The thread that runs a render gives its slot back
-in a `finally` block, which runs just after the caller has received its result. **Table 31.1**
+in a `finally` block, which runs immediately after the caller has received its result. **Table 31.1**
 shows the two orders.
 
 **Table 31.1 — Two possible orders of events in the flaky test**
@@ -224,12 +224,11 @@ merging, each with a written reason. That is a decision process, not neglect.
   project stays on Node 24 LTS until Node 26 LTS.
 - **Pull request #8: a group of three updates (TypeScript 7, Vitest 5, jsdom 30).** The group
   could not install at all. Angular 22 declares that it works only with TypeScript at least 6.0
-  and below 6.1, in a **peer dependency** entry of `@angular/build`.
+  and less than 6.1, in a **peer dependency** entry of `@angular/build`.
 <!-- source: PR #6, #7, #8 closing comments; PR #10 body -->
 
 A peer dependency is a package saying "I need my neighbor to be within this range, but I won't
-install it for you." When you bump TypeScript to 7, the range `>=6.0 <6.1` no longer contains it,
-and the install stops with an error. The lesson is that a toolchain moves as a set: TypeScript,
+install it for you." When you bump TypeScript to 7, the range `>=6.0 <6.1` no longer contains it. The install then stops with an error. The lesson is that a toolchain moves as a set: TypeScript,
 Angular, the test runner and the build tool are released against each other. An automatic bump of
 one member can conflict with a neighbor.
 
@@ -247,6 +246,9 @@ implementer's proposal.
 **Listing 31.3 — `.github/dependabot.yml` (book-m6-final, simplified: added lines only, from the `ignore` blocks of four different ecosystems shown together)**
 
 ```yaml
+# Angular pins the TypeScript range it supports; TypeScript moves with Angular upgrades.
+- dependency-name: typescript
+  update-types: ['version-update:semver-major', 'version-update:semver-minor']
 # Odd-numbered Node releases never become LTS (24 and 26 are LTS lines).
 - dependency-name: node
   versions: ['25.x', '27.x', '29.x']
@@ -256,9 +258,6 @@ implementer's proposal.
 # Stay on the MySQL 8.4 LTS line (patches only). ...
 - dependency-name: mysql
   update-types: ['version-update:semver-major']
-# Angular pins the TypeScript range it supports; TypeScript moves with Angular upgrades.
-- dependency-name: typescript
-  update-types: ['version-update:semver-major', 'version-update:semver-minor']
 ```
 
 *Path: `.github/dependabot.yml`*
@@ -267,7 +266,7 @@ Each block is an **ignore rule**: it names a dependency and says which versions 
 Dependabot must not propose. The comments are as important as the rules. A rule without its reason
 is a mystery to the next person, who will delete it the first time it annoys them.
 
-**Table 31.2** summarizes the policy in one place.
+Table 31.2 summarizes the policy in one place.
 
 **Table 31.2 — The Dependabot policy at book-m6-final**
 
@@ -305,7 +304,7 @@ exercised the running system in ways the tests didn't.
 
 Every finding then followed the same three steps. **Probe:** reproduce the problem against the
 real stack. **Fix:** change the code. **Prove:** add a test that fails without the fix and passes
-with it. The stories below each show the steps that the record preserves.
+with it. The stories in Sections 31.10 to 31.14 each show the steps that the record preserves.
 <!-- source: PR #5 body ("Ultrareview preparation" section); bugs-and-findings G -->
 
 ### 31.10 The sign-in race: nine guesses through a limit of five
@@ -352,7 +351,7 @@ when the password is right. The measured result after the fix is exactly 5 accep
 
 **The lesson.** Whenever you write "check, then do", ask what happens if two requests arrive
 between the check and the do. Put the check and the reservation in one atomic step, and test with
-real parallelism, not just sequential calls.
+real parallelism, not only sequential calls.
 <!-- source: bugs-and-findings G1; commit 1ce2c8b; LoginThrottle.java at book-m5-platform -->
 
 ### 31.11 Characters are not bytes: the 72-byte password
@@ -476,9 +475,7 @@ pull request describes as a dry run for the ultrareview.
 
 **The fix, on both sides.** The server now re-reads the document's current version and answers 410
 (Gone) only if the document really has moved on. Otherwise it logs a generic 500 and releases the
-render slot. The viewer stops and says "Some parts of this page could not be loaded" if a reload
-triggered by a 410 finds the same version again, and it tracks its reload subscription against a
-`loadGeneration` counter so stale reloads are ignored.
+render slot. The viewer stops and says "Some parts of this page could not be loaded" if a reload triggered by a 410 finds the same version again. It also tracks its reload subscription against a `loadGeneration` counter, so stale reloads are ignored.
 
 **The lesson.** Every retry loop needs a stop condition on both ends. The server must not say "try
 again" when trying again cannot help, and the client must not believe it forever.
@@ -489,9 +486,7 @@ again" when trying again cannot help, and the client must not believe it forever
 By the last round the product owner wanted a deep review of the whole codebase. An **ultrareview** is
 a cloud multi-agent code review offered by the coding tool used to build the project. The product
 owner first asked whether it could catch anything new, given that every earlier review had also been
-routed through the same tool. They then chose to run it on the whole codebase: "since it is an ultra
-review, would it not be beneficial to have it run on the whole code base?", and later, "let us merge
-PR #5 and have the ultra review do the review on the code base."
+routed through the same tool. They then chose to run it on the whole codebase. In their words: "since it is an ultra review, would it not be beneficial to have it run on the whole code base?" Later: "let us merge PR #5 and have the ultra review do the review on the code base."
 
 A temporary base branch was created for the tool to compare against, at the product owner's
 request. The tool refused. It reported a diff of 165 files and 22,096 lines, against limits of 500
@@ -550,6 +545,86 @@ and wait for the upgrade that satisfies it.
 **Checking then acting.** Symptom: a limit that holds in sequential tests and leaks under parallel
 load. Fix: reserve first, then work, and undo on success (Listing 31.4).
 
+## Architecture blueprint v6
+
+Figure 31.1 is Blueprint v6. Milestone 6 changed only policy, tooling
+and one test, so the diagram is the same architecture as Blueprint v5 (Figure 30.1), drawn here as the
+final system with the pieces that Chapters 26 to 30 added.
+
+```mermaid
+flowchart LR
+    U["User browser"]
+    subgraph Compose["Docker Compose network"]
+        CD["Caddy (profile tls): HTTPS, HSTS"]
+        NG["nginx: serves Angular, proxies /api, CSP, sets X-Forwarded-For"]
+        subgraph APP["app (Spring Boot 4)"]
+            F["Filters: SessionLifetimeFilter, PasswordChangeRequiredFilter"]
+            SEC["SecurityConfig + LoginThrottle + KnownDevices"]
+            C["Controllers: Auth, Document, PageTileUrl, Tile, Admin, UserAdmin, UserDirectory"]
+            DS["DocumentService + TileAccess"]
+            TG["TileGenerationService: staging, versions v(n), bounded renders"]
+            TW["TileWorkLimiter + TileRateLimiter"]
+            VM["ViewerMetrics: /actuator/prometheus"]
+            SJ["StorageJanitor"]
+        end
+        M[("MySQL 8.4 (V1, V2, V3)")]
+        ST[("app-storage volume: tiles")]
+    end
+    PR["Prometheus (allowed addresses only)"]
+    U --> CD --> NG --> F --> SEC --> C
+    U --> NG
+    C --> DS
+    C --> TW
+    DS -.-> M
+    C --> TG
+    TG -.-> ST
+    SJ -.-> ST
+    PR --> VM
+```
+
+*Figure 31.1 — Blueprint v6 (`book-m6-final`)*
+
+*Text description:* The same flowchart as Figure 30.1. The browser reaches nginx, optionally through Caddy. Requests pass the two session filters and SecurityConfig with the sign-in throttle and known devices. They then reach the controllers, DocumentService, the work limiters and TileGenerationService. MySQL and the tile volume are internal, and Prometheus reads metrics from allowed addresses only. Nothing structural changed in milestone 6, so, as in Figure 30.1, the drawing is a deployment-oriented view that omits components introduced earlier.
+<!-- source: book/blueprints/v6-final.md; classes named in the diagram, present at book-m6-final under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; same files as book-m5-platform -->
+
+**What changed since v5:** no structural change. The non-test changes are the Dependabot policy and the Vitest 5 and jsdom 30 bumps; the flaky-test fix is test code only.
+
+## Decisions and challenges
+
+### Decision: LTS only
+
+**The decision.** Propose only stable, long-term-support lines, approved by the product owner on the
+implementer's proposal. **The options considered.** Take every update automatically, close each
+unwanted pull request by hand, or write ignore rules. **Why this one.** Non-LTS runtime and database
+releases have a shorter support life, and a database major deserves a migration test. Rules make the
+decision once. **What it costs.** The project does not get the newest features automatically, and
+the next LTS moves (MySQL 9.7, Node 26) are chores that must be planned.
+<!-- source: PR #10 body; decisions D13 -->
+
+### Incident: asserting on state another thread changes
+
+**The problem.** A test read the render-slot counters at the instant the caller got its result.
+**How it was found.** CI failed once on `main`. **The fix.** Poll with a timeout (Listing 31.2).
+**The lesson.** Never assert on state that another thread changes after your result is returned.
+<!-- source: PR #9 body; bugs-and-findings C7 -->
+
+### Incident: an update that could not install
+
+**The problem.** A grouped update proposed TypeScript 7 next to Angular 22. **How it was found.** The
+install failed on Angular's peer-dependency range. **The fix.** Close the pull request, ignore
+TypeScript minor and major bumps, and split majors into separate pull requests. **The lesson.**
+Toolchains move together.
+<!-- source: PR #8 comment; PR #10 body -->
+
+### Decision: not to run the ultrareview
+
+**The decision.** After the tool refused a diff of 165 files and 22,096 lines, the product owner
+stopped waiting for it. **The options considered.** Splitting the history into reviewable slices,
+or relying on the rounds already done. **Why this one.** The four independent review rounds and a
+local dry run had already produced the findings in Sections 31.10 to 31.14. **What it costs.** No
+independent review of the final state as a whole.
+<!-- source: decisions D14 -->
+
 ## In this project
 
 **Table 31.3 — Where the concepts live (at book-m6-final)**
@@ -567,9 +642,11 @@ load. Fix: reserve first, then work, and undo on success (Listing 31.4).
 
 Table 31.3 lists the files behind this chapter.
 
+To see any of these files as it was at this milestone, run `git show book-m6-final:<path>`, for example `git show book-m6-final:pom.xml`.
+
 ## Try it
 
-Solutions are in `31-m6-final.solutions.md`.
+Solutions are in Appendix C.
 
 ### Exercise 31.1 ★ Read the range
 
@@ -606,84 +683,6 @@ How many bytes does the UTF-8 encoding of a 30-character password take if every 
 Draft a Dependabot `ignore` rule that keeps a library on its current major version, and write the
 comment that explains it to a future maintainer. Then describe what your project would do on the
 day that library's next major becomes the only supported one.
-
-## Architecture blueprint v6
-
-Figure 31.1 is Blueprint v6, from `book/blueprints/v6-final.md`. Milestone 6 changed only policy, tooling
-and one test, so the diagram is the same architecture as Blueprint v5 (Figure 30.1), drawn here as the
-final system with the pieces that Chapters 26 to 30 added.
-
-```mermaid
-flowchart LR
-    U["User browser"]
-    subgraph Compose["Docker Compose network"]
-        CD["Caddy (profile tls): HTTPS, HSTS"]
-        NG["nginx: serves Angular, proxies /api, CSP, sets X-Forwarded-For"]
-        subgraph APP["app (Spring Boot 4)"]
-            F["Filters: SessionLifetimeFilter, PasswordChangeRequiredFilter"]
-            SEC["SecurityConfig + LoginThrottle + KnownDevices"]
-            C["Controllers: Auth, Document, PageTileUrl, Tile, Admin, UserAdmin, UserDirectory"]
-            DS["DocumentService + TileAccess"]
-            TG["TileGenerationService: staging, versions v(n), bounded renders"]
-            TW["TileWorkLimiter + TileRateLimiter"]
-            VM["ViewerMetrics: /actuator/prometheus"]
-            SJ["StorageJanitor"]
-        end
-        M[("MySQL 8.4 (V1, V2, V3)")]
-        ST[("app-storage volume: tiles")]
-    end
-    PR["Prometheus (allowed addresses only)"]
-    U --> CD --> NG --> F --> SEC --> C
-    U --> NG
-    C --> DS
-    C --> TW
-    DS -.-> M
-    C --> TG
-    TG -.-> ST
-    SJ -.-> ST
-    PR --> VM
-```
-
-*Figure 31.1 — Blueprint v6 (`book-m6-final`)*
-<!-- source: book/blueprints/v6-final.md; classes named in the diagram, present at book-m6-final under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; same files as book-m5-platform -->
-
-**What changed since v5:** no structural change. The non-test changes are the Dependabot policy and the Vitest 5 and jsdom 30 bumps; the flaky-test fix is test code only.
-
-## Decisions and challenges
-
-#### Decision: LTS only
-
-**The decision.** Propose only stable, long-term-support lines, approved by the product owner on the
-implementer's proposal. **The options considered.** Take every update automatically, close each
-unwanted pull request by hand, or write ignore rules. **Why this one.** Non-LTS runtime and database
-releases have a shorter support life, and a database major deserves a migration test. Rules make the
-decision once. **What it costs.** The project does not get the newest features automatically, and
-the next LTS moves (MySQL 9.7, Node 26) are chores that must be planned.
-<!-- source: PR #10 body; decisions D13 -->
-
-#### Incident: asserting on state another thread changes
-
-**The problem.** A test read the render-slot counters at the instant the caller got its result.
-**How it was found.** CI failed once on `main`. **The fix.** Poll with a timeout (Listing 31.2).
-**The lesson.** Never assert on state that another thread changes after your result is returned.
-<!-- source: PR #9 body; bugs-and-findings C7 -->
-
-#### Incident: an update that could not install
-
-**The problem.** A grouped update proposed TypeScript 7 next to Angular 22. **How it was found.** The
-install failed on Angular's peer-dependency range. **The fix.** Close the pull request, ignore
-TypeScript minor and major bumps, and split majors into separate pull requests. **The lesson.**
-Toolchains move together.
-<!-- source: PR #8 comment; PR #10 body -->
-
-#### Decision: not to run the ultrareview
-
-**The decision.** After the tool refused a diff of 165 files and 22,096 lines, the product owner
-stopped waiting for it. **The options considered.** Splitting the history into reviewable slices,
-or relying on the rounds already done. **Why this one.** The four independent review rounds and a
-local dry run had already produced the findings in Sections 31.10 to 31.14. **What it costs.** No
-independent review of the final state as a whole.
-<!-- source: decisions D14 -->
 
 ## Summary
 

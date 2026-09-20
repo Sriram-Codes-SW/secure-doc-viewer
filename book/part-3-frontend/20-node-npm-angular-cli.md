@@ -60,11 +60,11 @@ The exact numbers depend on what you installed. The project's `package.json` nam
 node -e "console.log(2 + 3)"
 ```
 
-`-e` tells Node to evaluate the text that follows. `console.log` prints to the terminal. The output is `5`. This is the whole idea of Node: the same language the browser runs, but with your terminal as its screen and your files as its world. The Angular compiler is just a much bigger program run the same way.
+`-e` tells Node to evaluate the text that follows. `console.log` prints to the terminal. The output is `5`. This is the whole idea of Node: the same language the browser runs, but with your terminal as its screen and your files as its world. The Angular compiler is a much bigger program run the same way.
 
 ### 20.3 npm, `package.json`, `package-lock.json`
 
-**npm** is Node's package manager: a tool that downloads libraries (**packages**) from a public **registry** (an online catalog of published packages, at npmjs.com) and puts them in a folder called `node_modules/`. It plays the role that Maven played for Java (Chapter 6), and `package.json` is the counterpart of `pom.xml`.
+**npm** is Node's package manager: a tool that downloads libraries (packages) from a public registry (an online catalog of published packages, at npmjs.com) and puts them in a folder called `node_modules/`. It plays the role that Maven played for Java (Chapter 6), and `package.json` is the counterpart of `pom.xml`.
 
 **Listing 20.1 — `package.json` (book-m6-final)**
 
@@ -115,13 +115,13 @@ Read it top to bottom.
 - `"private": true` stops the project from being published to the public registry by accident.
 - `"packageManager"` records which npm version the project expects.
 - `"dependencies"` are libraries the shipped app uses: Angular's pieces, RxJS (Chapter 19), and `tslib`, a small helper library the compiled code shares.
-- `"devDependencies"` are tools used only while building and testing: the Angular CLI and build tooling, TypeScript, the test tools (`vitest`, `jsdom`, Chapter 24), Playwright and its accessibility add-on, and Prettier, a code formatter (`.prettierrc` sets a 100-column width and single quotes).
+- `"devDependencies"` are tools used only while building and testing. They are the Angular CLI and build tooling, TypeScript, the test tools (`vitest`, `jsdom`, Chapter 24), Playwright and its accessibility add-on, and Prettier. Prettier is a code formatter, and `.prettierrc` sets a 100-column width and single quotes.
 
 The split between the two groups matters. Anything in `dependencies` ends up, at least in part, inside the files readers download. Anything in `devDependencies` never leaves the build machine. When you add a library, ask which group it belongs to: "does the reader's browser need this code?"
 
 > **Note:** Vitest 5.0.1 and jsdom 30 appear only at `book-m6-final`. Tags `book-m1-accounts` to `book-m5-platform` use Vitest 4.0.8 and jsdom 28, and Playwright and the accessibility add-on arrive at `book-m5-platform`.
 
-`package-lock.json` is a much longer file (about 8,000 lines at this tag) that the tools write for you. `package.json` says "Angular 22.1 or newer, below 23"; the lock file records the exact version that was actually installed, along with a fingerprint of each downloaded file. Here is the first part of one entry, the one for RxJS:
+`package-lock.json` is a much longer file (about 8,000 lines at this tag) that the tools write for you. `package.json` says "Angular 22.1 or newer, but not 23"; the lock file records the exact version that was actually installed, along with a fingerprint of each downloaded file. Here is the first part of one entry, the one for RxJS:
 
 **Listing 20.2 — `package-lock.json` (book-m6-final, excerpt: the first lines of the `rxjs` entry)**
 
@@ -144,11 +144,11 @@ The **Angular CLI** (command line interface) is the `ng` program. Three commands
 ```bash
 npm ci          # first install: an exact copy of the tested versions (use npm install when you add or change a dependency)
 npm start       # ng serve: dev server at http://localhost:4200, reloads on save
-npm test        # ng test: run the Vitest specs
+npm test        # ng test: run the Vitest specs (keeps running in a terminal; see Section 24.2)
 npm run build   # ng build: produce the deployable files under dist/
 ```
 
-`ng serve` compiles the app in memory and serves it with a small **development server**, refreshing the browser whenever you save a file. `ng build` does the same once, with optimization: shrinking the code (removing spaces and shortening names) and adding a fingerprint to each filename, such as `main-AB12CD34.js`, so browsers can cache the files for a year and a changed file gets a new name (the nginx setup in Chapters 30 and 33 relies on that). The build settings live in `angular.json`, whose `build` target names the entry point (`src/main.ts`), the global stylesheet (`src/styles.css`) and size **budgets** (limits that turn a warning or an error on when the build output grows too large): in production the initial bundle warns at 500 kB and fails at 1 MB, and any one component's styles warn at 4 kB and fail at 8 kB.
+`ng serve` compiles the app in memory and serves it with a small **development server**, refreshing the browser whenever you save a file. `ng build` does the same once, with optimization. It shrinks the code (removing spaces and shortening names). It also adds a fingerprint to each filename, such as `main-AB12CD34.js`, so browsers can cache the files for a year and a changed file gets a new name. The nginx setup in Chapters 30 and 33 relies on that. The build settings live in `angular.json`. Its `build` target names the entry point (`src/main.ts`), the global stylesheet (`src/styles.css`) and size **budgets**, which are limits that raise a warning or an error when the build output grows too large. In production the initial bundle warns at 500 kB and fails at 1 MB, and any one component's styles warn at 4 kB and fail at 8 kB.
 
 ### 20.5 Worked example: from `npm start` to the browser
 
@@ -227,7 +227,7 @@ In development the pieces run on two ports: `ng serve` on 4200 and Spring Boot o
 
 *Path: `frontend/proxy.conf.json`*
 
-`angular.json` points the dev server at this file (`"proxyConfig": "proxy.conf.json"`). `target` is where Spring Boot listens; `secure: false` means it doesn't insist on a valid HTTPS certificate for the target (it's plain HTTP on your own machine); `changeOrigin: false` leaves the `Host` header as the browser sent it; `logLevel: "warn"` prints only warnings and errors.
+`angular.json` points the dev server at this file (`"proxyConfig": "proxy.conf.json"`). `target` is where Spring Boot listens. `secure: false` means the proxy doesn't insist on a valid HTTPS certificate for the target (it's plain HTTP on your own machine). `changeOrigin: false` leaves the `Host` header as the browser sent it. `logLevel: "warn"` prints only warnings and errors.
 
 Figure 20.1 shows the path a request takes while you develop.
 
@@ -246,15 +246,19 @@ sequenceDiagram
 
 *Figure 20.1 — Requests in development*
 
+*Text description:* A sequence diagram with three participants: the browser, the `ng serve` development server on port 4200, and Spring Boot on port 8080. The browser asks the development server for the page and receives `index.html` and the scripts. It then asks the same server for `/api/documents`, and the development server forwards that request to Spring Boot and passes the JSON back. Notice that the browser only ever talks to port 4200.
+
 <!-- source: proxy.conf.json and angular.json (proxyConfig) at book-m6-final; README of the frontend gives port 4200; Spring Boot on 8080 per the proxy target -->
 
 The frontend code itself stays free of this: `core/config.ts` sets `API_BASE_URL = ''`, so every call is a relative URL such as `/api/documents`. In production the same job is done by nginx, whose `location ^~ /api/` block forwards to the backend (Chapters 30 and 33). The same code therefore works unchanged in both places.
 
-**Why not let the browser call port 8080 directly?** It is the obvious alternative: fewer moving parts, and you would see the backend's errors straight away. But a page on port 4200 calling port 8080 is a cross-origin request, which the browser allows only if the backend explicitly permits it (a mechanism called CORS, cross-origin resource sharing). It would also work against the project's cookie-based sign-in design: the project relies on the browser sending its session cookie and Angular copying the CSRF cookie into a header (Chapter 22), and both are simplest and safest when the page and the API share one origin. Keeping one origin in development means the code you test is the code you ship. The price is a small config file and one more process in the picture.
+**Why not let the browser call port 8080 directly?** It is the obvious alternative: fewer moving parts, and you would see the backend's errors straight away. But a page on port 4200 calling port 8080 is a cross-origin request, which the browser allows only if the backend explicitly permits it (a mechanism called CORS, cross-origin resource sharing). It would also work against the project's cookie-based sign-in design. The project relies on the browser sending its session cookie and Angular copying the CSRF cookie into a header (Chapter 22). Both are simplest and safest when the page and the API share one origin. Keeping one origin in development means the code you test is the code you ship. The price is a small config file and one more process in the picture.
 
 ### 20.7 Project layout and tsconfig
 
-Reading `frontend/` from the top:
+Table 20.1 lists the contents of `frontend/`, from the top:
+
+**Table 20.1 — The layout of `frontend/`**
 
 | Path | Purpose |
 |---|---|
@@ -301,7 +305,7 @@ Three `tsconfig` files exist: `tsconfig.json` (shared settings), `tsconfig.app.j
 - `importHelpers` reuses the small helpers in `tslib` rather than copying them into every file.
 - `"target": "ES2022"` is the JavaScript version to produce, and `"module": "preserve"` leaves `import` statements alone for the bundler.
 
-As Chapter 19 noted, the file never mentions `strict`, and that does not mean the strict checks are off: in TypeScript 6.0 they are on by default (compiling a test file with these options rejects assigning `null` to a `string` and untyped parameters). If you need to know what a setting is at your compiler version, test it, as the chapter did, rather than reading the absence of a line as "off".
+As Chapter 19 noted, the file never mentions `strict`. That does not mean the strict checks are off: in TypeScript 6.0 they are on by default (compiling a test file with these options rejects assigning `null` to a `string` and untyped parameters). If you need to know what a setting is at your compiler version, test it, as the chapter did, rather than reading the absence of a line as "off".
 
 ### 20.8 Semantic versions, `^` and `~`
 
@@ -312,7 +316,9 @@ Most packages number releases `MAJOR.MINOR.PATCH`, such as 22.1.8. By convention
 
 The project uses `~` on TypeScript because each Angular release supports a narrow range of TypeScript versions, and on RxJS to stay on the 7.8 line. The lock file, not the range, decides what you actually get: TypeScript is `~6.0.2` in `package.json` and 6.0.3 in the lock.
 
-A quick table makes the rule concrete. Suppose a project asks for `^22.1.8` and the registry later publishes these versions:
+Table 20.2 makes the rule concrete. Suppose a project asks for `^22.1.8` and the registry later publishes these versions:
+
+**Table 20.2 — Which new versions the range `^22.1.8` accepts**
 
 | New version | Accepted by `^22.1.8`? | Reason |
 |---|---|---|
@@ -354,7 +360,7 @@ RUN npx ng build --configuration production
 
 *Path: `frontend/Dockerfile`*
 
-The order of these lines is deliberate. Docker builds an image in layers and reuses a layer if nothing above it changed (Chapter 10). Copying only `package.json` and `package-lock.json` first, and running `npm ci`, means the slow download step is repeated only when the dependency files change. Copying the rest of the source afterward means an ordinary code edit re-runs just the fast `ng build`. `.dockerignore` keeps `node_modules/`, `dist/` and `.angular/` (the compiler's cache) out of the build, so your local installation never leaks into the image.
+The order of these lines is deliberate. Docker builds an image in layers and reuses a layer if none of the earlier lines changed (Chapter 10). Copying only `package.json` and `package-lock.json` first, and running `npm ci`, means the slow download step is repeated only when the dependency files change. Copying the rest of the source afterward means an ordinary code edit re-runs only the fast `ng build`. `.dockerignore` keeps `node_modules/`, `dist/` and `.angular/` (the compiler's cache) out of the build, so your local installation never leaks into the image.
 
 ### 20.11 Automated updates, deliberately limited
 
@@ -383,7 +389,7 @@ Dependencies age, and old ones carry known security problems. The project uses G
 
 *Path: `.github/dependabot.yml`*
 
-Angular packages are grouped so they upgrade together (mixing versions of Angular's parts risks a broken build). All other packages are grouped as minor and patch updates, and major upgrades arrive as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular. The same file has a rule for container images: it ignores Node's non-LTS lines (**LTS**, "long-term support", marks the releases that receive fixes for years; the file's comment says odd-numbered Node releases never become LTS, and it skips Node 25, 27 and 29). The history shows this working: the Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes, and because they arrived in those pull requests, after `book-m5-platform`, Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
+Angular packages are grouped so they upgrade together (mixing versions of Angular's parts risks a broken build). All other packages are grouped as minor and patch updates, and major upgrades arrive as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular. The same file has a rule for container images: it ignores Node's non-LTS lines. **LTS** means "long-term support" and marks the releases that receive fixes for years. The file's comment says odd-numbered Node releases never become LTS, and it skips Node 25, 27 and 29. The history shows this working. The Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes after `book-m5-platform`, which is why Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
 
 ### 20.12 What the CI does with the frontend
 

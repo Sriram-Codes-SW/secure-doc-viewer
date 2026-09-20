@@ -44,6 +44,8 @@ flowchart TB
 
 *Figure 5.1 — List, set and map, with the code that uses each*
 
+*Text description:* A tree read top to bottom. A root box labeled Collections has three children, list, set and map, each with a one-line rule. Beneath each child is one real example from the app: a list of document summaries, a set of users a document is shared with, and a map from a key to a queue of timestamps.
+
 <!-- source: DocumentService.java, Document.java, LoginThrottle.java at book-m6-final -->
 
 The top row is the idea; the bottom row is the real code from `book-m6-final`. Ask one question to choose: do I need order (list), uniqueness (set), or lookup by a name (map)?
@@ -92,7 +94,7 @@ Read a generic type from the outside in. The throttle's field is `Map<String, De
 
 That is: for each key, a queue of when the failures happened. Reading types like this is a skill you will use all through Parts II and III.
 
-Two details save confusion. First, when you write `new HashMap<>()` the empty angle brackets, called the **diamond**, tell the compiler to copy the types from the left side, so you write them once. Second, generic collections hold objects, not the plain types of Chapter 3. The map above uses `Integer`, the object form of `int`, and Java converts between them automatically (**boxing**). You write `Map<String, Integer>`, never `Map<String, int>`.
+Two details save confusion. First, when you write `new HashMap<>()` the empty angle brackets, called the **diamond**, tell the compiler to copy the types from the left side, so you write them once. Second, generic collections hold objects, not the plain types of Chapter 3. The map in Example 5.1 uses `Integer`, the object form of `int`, and Java converts between them automatically (**boxing**). You write `Map<String, Integer>`, never `Map<String, int>`.
 
 ### 5.3 Looping over a collection
 
@@ -123,7 +125,7 @@ public class Walk {
 }
 ```
 
-`List.of(...)` builds a list that cannot be changed afterward (an **immutable** list, as in Chapter 4); calling `add` on it throws an exception. A map is not directly loopable, so you loop over its **entries**, each holding a key and a value. `getOrDefault` answers a missing key with a fallback instead of `null`, which avoids a whole class of errors that Section 5.5 discusses. The order of a `HashMap`'s entries is not something to rely on: print it twice on two machines and the order may differ.
+`List.of(...)` builds a list that cannot be changed afterward (an immutable list, as in Chapter 4); calling `add` on it throws an exception. A map is not directly loopable, so you loop over its **entries**, each holding a key and a value. `getOrDefault` answers a missing key with a fallback instead of `null`, which avoids a whole class of errors that Section 5.5 discusses. The order of a `HashMap`'s entries is not something to rely on: print it twice on two machines and the order may differ.
 
 ## Intermediate tier: Processing and failing
 
@@ -150,7 +152,7 @@ public class StreamDemo {
 
 `names.stream()` starts the pipeline. `filter` keeps items for which the lambda is true: only `pub.one` is shorter than 10 characters. `map` transforms each remaining item, here to upper case. `toList()` ends the pipeline and returns a new list. The original list is untouched, which is a useful property: a pipeline describes a new result and never edits its input.
 
-Two more pieces of vocabulary appear in the app. A **method reference** is a short form of a lambda that just calls one method: `AppUser::getUsername` means the same as `u -> u.getUsername()`. And `anyMatch` asks "is at least one item true for this?", stopping at the first yes. The app's permission check uses it.
+Two more pieces of vocabulary appear in the app. A **method reference** is a short form of a lambda that only calls one method: `AppUser::getUsername` means the same as `u -> u.getUsername()`. And `anyMatch` asks "is at least one item true for this?", stopping at the first yes. The app's permission check uses it.
 
 **Listing 5.1 — `DocumentService.java` (book-m6-final, excerpt: method `canView`)**
 
@@ -195,6 +197,8 @@ flowchart LR
 ```
 
 *Figure 5.2 — The stream pipeline in DocumentService.list*
+
+*Text description:* Five boxes in a row, read left to right. A list of documents the viewer may open goes through `stream`, then a step that converts each document to a summary, then `toList`, and ends as a list of summaries. Notice that the starting list is never changed; each step produces something new.
 
 <!-- source: DocumentService.list at book-m6-final (Listing 5.2) -->
 
@@ -335,13 +339,15 @@ Figure 5.3 follows one exception from where it is thrown to what the user sees.
 
 ```mermaid
 flowchart TB
-    A["Code finds no user and throws ResourceNotFoundException"] --> B["Callers above it do not catch it"]
+    A["Code finds no user and throws ResourceNotFoundException"] --> B["Callers of that code do not catch it"]
     B --> C["The framework hands it to GlobalExceptionHandler"]
     C --> D["handleNotFound builds the answer"]
     D --> E["Response: 404 with a JSON body that has an error field"]
 ```
 
 *Figure 5.3 — From a thrown exception to a 404 response*
+
+*Text description:* Five boxes in a column, read top to bottom. Code that finds no user throws an exception, the callers of that code do not catch it, the framework hands it to `GlobalExceptionHandler`, `handleNotFound` builds the answer, and the response is a 404 with a JSON body containing an `error` field.
 
 <!-- source: UserAccountService.java, ResourceNotFoundException.java, GlobalExceptionHandler.java at book-m6-final -->
 
@@ -420,7 +426,7 @@ Java offers collections designed for this. `ConcurrentHashMap` is a map that man
 
 *Path: `src/main/java/com/example/securedocviewer/security/LoginThrottle.java`*
 
-`computeIfAbsent(key, ...)` means "return the queue for this key, creating an empty one first if there is none", as one safe step. `synchronized (attempts)` makes other threads wait if they want the same queue. (In the real class, `prune` is only ever called from inside another `synchronized (attempts)` block, in the method `lockedFor`, so it is protected there too.) In `prune`, the queue holds failure times in order, oldest first, so `peekFirst` looks at the oldest and `pollFirst` removes it while it is older than the cutoff. What is left is exactly the failures inside the time window. You can try the same idea in a few lines.
+`computeIfAbsent(key, ...)` means "return the queue for this key, creating an empty one first if there is none", as one safe step. `synchronized (attempts)` makes other threads wait if they want the same queue. (In the real class, `prune` is only ever called from inside another `synchronized (attempts)` block, in the method `lockedFor`, so it is protected there too.) In `prune`, the queue holds failure times in order, oldest first. So `peekFirst` looks at the oldest, and `pollFirst` removes it while it is older than the cutoff. What is left is exactly the failures inside the time window. You can try the same idea in a few lines.
 
 **Example 5.8 — A sliding window of failures**
 
@@ -455,7 +461,7 @@ Care with shared data was not theoretical. In the last review rounds, the techni
 
 ### 5.10 A real incident with time: the audit rows from the future
 
-Time bugs are the same kind of problem seen through a clock. Late in development, the audit log showed events with future times. The cause was that the developer's backend, running in the Asia/Kolkata time zone, wrote local time to the database, while the Docker backend sharing the same database wrote UTC, so the two sets of rows disagreed by five and a half hours. The product-owner reviewer (also an AI review agent) found it. The fix pinned the database connection and Hibernate to UTC and made the admin audit view show UTC, to match the watermark and the CSV export. A test now stores timestamps and checks them against a MySQL server set to a different time zone. The lesson: store instants in one zone and convert only when showing them to a person. <!-- source: dossier bugs-and-findings.md C6; commit 2d82253 -->
+Time bugs are the same kind of problem seen through a clock. Late in development, the audit log showed events with future times. The cause was a mismatch between two backends that shared one database. The developer's backend ran in the Asia/Kolkata time zone and wrote local time. The Docker backend wrote UTC. So the two sets of rows disagreed by five and a half hours. The product-owner reviewer (also an AI review agent) found it. The fix pinned the database connection and Hibernate to UTC and made the admin audit view show UTC, to match the watermark and the CSV export. A test now stores timestamps and checks them against a MySQL server set to a different time zone. The lesson: store instants in one zone and convert only when showing them to a person. <!-- source: dossier bugs-and-findings.md C6; commit 2d82253 -->
 
 ### 5.11 Exceptions at the edge: one more incident
 
@@ -476,7 +482,7 @@ Where exceptions end up matters as much as where they start. Here is the handler
 
 *Path: `src/main/java/com/example/securedocviewer/controller/GlobalExceptionHandler.java`*
 
-`@ExceptionHandler(Exception.class)` says "catch any exception nobody else handled". (`ResponseEntity` is the framework's object for a whole web response, a status plus a body, which Chapter 8 teaches; for now read the method as "build a 500 answer".) The method makes a short random reference, writes the full exception to the log (the server's running record of what happened, a file or stream that developers read) with that reference, and returns a message to the user containing only the reference. The user never sees a stack trace, file paths or SQL, which would help an attacker. Yet if the user reports the reference, a developer can find the exact log entry.
+`@ExceptionHandler(Exception.class)` says "catch any exception nobody else handled". (`ResponseEntity` is the framework's object for a whole web response, a status plus a body, which Chapter 8 teaches; for now read the method as "build a 500 answer".) The method makes a short random reference. It writes the full exception to the log, with that reference. The log is the server's running record of what happened, a file or stream that developers read. Finally, the method returns a message to the user that contains only the reference. The user never sees a stack trace, file paths or SQL, which would help an attacker. Yet if the user reports the reference, a developer can find the exact log entry.
 
 This handler earned its place. Before a fix, creating a user with a 100-character password returned a plain 500 with a reference. The validation allowed passwords of 12 to 128 characters, but the password hashing (BCrypt, Chapter 15) rejects more than 72 **bytes**, and a character can be more than one byte: 30 emoji can exceed 72 bytes. The fix checked the UTF-8 byte length and added a test. The lesson from the reviewer's note: characters are not bytes. And the handler did its job even then, by turning a crash into a traceable reference. <!-- source: dossier bugs-and-findings.md G2; commit 1ce2c8b -->
 

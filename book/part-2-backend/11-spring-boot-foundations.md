@@ -50,7 +50,7 @@ Nobody in the project writes code that says "when a request for `/api/documents`
 
 **Where the analogy breaks down:** a rented kitchen has walls you can see. A framework's structure is mostly invisible: it's made of rules such as "any class with this label gets created at startup". When something goes wrong, you often need to know the rule to understand the behavior. Much of Part II is these rules.
 
-Spring is the framework the project uses. **Spring Boot** is a layer on top of it that chooses sensible defaults, so a program can start with almost no setup. The project uses Spring Boot 4.1.1 on Java 25 (`pom.xml`, tag `book-m6-final`). Two other pieces you'll meet in this chapter are Maven, which downloads the libraries (Chapter 6), and Tomcat, the web server that is built into the finished program, so that running the app is one command and needs no separate server installation.
+Spring is the framework the project uses. **Spring Boot** is a layer on top of it that chooses sensible defaults, so a program can start with almost no setup. The project uses Spring Boot 4.1.1 on Java 25 (`pom.xml`, tag `book-m6-final`). Two other pieces appear in this chapter. Maven downloads the libraries (Chapter 6). Tomcat is the web server built into the finished program, so running the app is one command and needs no separate server installation.
 
 ### 11.2 The first Spring Boot application
 
@@ -79,8 +79,8 @@ public class SecureDocViewerApplication {
 Read it from the bottom up.
 
 - `main` is the method Java runs first (Chapter 3). Its only job is to hand control to `SpringApplication.run`, which starts the framework. From this line on, Spring is in charge.
-- Words that start with `@` are **annotations**: labels attached to a class or method that tell a tool how to treat it. They don't change what the code does by themselves; the framework reads them.
-- `@SpringBootApplication` marks this class as the starting point. It switches on three behaviors: it tells Spring to search this package and every package beneath it (`com.example.securedocviewer...`) for classes to manage, which is called **component scanning**; it allows this class to declare extra configuration; and it turns on **auto-configuration**, which Section 11.5 explains.
+- Words that start with `@` are annotations: labels attached to a class or method that tell a tool how to treat it. They don't change what the code does by themselves; the framework reads them.
+- `@SpringBootApplication` marks this class as the starting point. It switches on three behaviors. First, it tells Spring to search this package and every package beneath it (`com.example.securedocviewer...`) for classes to manage, which is called **component scanning**. Second, it allows this class to declare extra configuration. Third, it turns on **auto-configuration**, which Section 11.5 explains.
 - `@EnableScheduling` turns on the feature that runs methods on a timer. The project uses it for cleanup jobs that [Chapter 14](14-jpa-and-flyway.md) describes; for now, note that one annotation is enough to activate a whole capability.
 
 What happens when you run the program? You start it with Maven's wrapper from the project folder (Chapter 6):
@@ -116,7 +116,7 @@ The labels tell Spring, and the reader, what kind of class this is. Three kinds 
 | `@Component` | Any other managed class | `StorageJanitor`, `ViewerProperties` |
 | `@Configuration` with `@Bean` methods | A class that builds beans by hand | `SecurityConfig` |
 
-Why not just write `new DocumentService(...)` wherever you need one? Because a `DocumentService` needs a `DocumentRepository`, which needs a database connection, which needs configuration. If every class built its own helpers, you'd repeat that wiring everywhere, and you couldn't swap a helper for a fake in a test. Instead, a class declares what it needs, and Spring hands it over. That is dependency injection. To keep the kitchen analogy going: the chef doesn't drive to the market. The chef writes a list ("flour, eggs, butter"), and a supplier delivers exactly those items before service begins. The class's constructor is the list, and Spring is the supplier.
+Why not write `new DocumentService(...)` wherever you need one? Because a `DocumentService` needs a `DocumentRepository`, which needs a database connection, which needs configuration. If every class built its own helpers, you'd repeat that wiring everywhere, and you couldn't swap a helper for a fake in a test. Instead, a class declares what it needs, and Spring hands it over. That is dependency injection. To keep the kitchen analogy going: the chef doesn't drive to the market. The chef writes a list ("flour, eggs, butter"), and a supplier delivers exactly those items before service begins. The class's constructor is the list, and Spring is the supplier.
 
 Listing 11.2 shows it in the smallest useful example in the repository.
 
@@ -145,7 +145,7 @@ public class DocumentController {
 
 The constructor lists two parameters. When Spring builds the controller, it looks in the application context for a bean of type `DocumentService` and one of type `RequestActors`, and passes them in. Nothing in the class says where they come from, which is the point: `DocumentController` only says what it needs. The fields are `final`, so once the object exists its dependencies can't change or be missing. This style is called constructor injection, and every controller and service in the project uses it.
 
-Why constructor injection rather than marking a field and letting Spring fill it in afterward? Three reasons. The dependencies are visible in one place, the constructor, so you can see at a glance how much a class depends on; a class with twelve parameters is asking to be split. The `final` fields make it impossible to forget one. And a test can create the class by hand, with a fake in place of a real dependency, just by calling `new`, with no Spring at all. Chapter 18 shows tests that do exactly this, such as `new SignedUrlService(properties)`.
+Why constructor injection rather than marking a field and letting Spring fill it in afterward? Three reasons. The dependencies are visible in one place, the constructor, so you can see at a glance how much a class depends on; a class with twelve parameters is asking to be split. The `final` fields make it impossible to forget one. And a test can create the class by hand, with a fake in place of a real dependency, by calling `new`, with no Spring at all. Chapter 18 shows tests that do exactly this, such as `new SignedUrlService(properties)`.
 
 Dependencies form a chain, and Spring works out the order. Figure 11.1 shows the part of the chain behind `DocumentController`.
 
@@ -164,6 +164,8 @@ graph TD
 ```
 
 *Figure 11.1 — Part of the dependency chain behind `DocumentController`*
+
+*Text description:* A top-down graph with `DocumentController` at the top, pointing to `DocumentService` and `RequestActors`. `RequestActors` points to `SessionKeys`, which points to `ViewerProperties`. `DocumentService` points to five things: two repositories, `TileGenerationService`, `AuditLogService` and the transaction manager, and `TileGenerationService` also points to `ViewerProperties`. Notice that `ViewerProperties` sits at the bottom of two branches, so one shared bean serves both.
 
 <!-- source: constructors of DocumentController, DocumentService, RequestActors, SessionKeys and TileGenerationService at book-m6-final; partial: TileGenerationService also takes ViewerMetrics, omitted here -->
 
@@ -258,7 +260,7 @@ spring:
 
 (`book-m6-final`, `application.yml`, excerpt.) This says: "if there is a file named `.env` next to the program, read it as a list of `NAME=value` lines." It is `optional`, so its absence is fine. The `.env` file is kept out of Git (Chapter 7), which is how a developer's secrets stay off GitHub. "Real environment variables win", says the comment beside it.
 
-A **profile** is a named set of extra settings that you switch on. The tests use one: `@ActiveProfiles("test")` makes Spring also read `application-test.yml`, which overrides the datasource to point at an in-memory H2 database instead of MySQL. Chapter 14 and Chapter 18 cover why. The naming rule is always `application-<profile>.yml`.
+A profile is a named set of extra settings that you switch on. The tests use one: `@ActiveProfiles("test")` makes Spring also read `application-test.yml`, which overrides the datasource to point at an in-memory H2 database instead of MySQL. Chapter 14 and Chapter 18 cover why. The naming rule is always `application-<profile>.yml`.
 
 **Relaxed binding.** One last convenience: Spring maps names loosely. The environment variable `SESSION_COOKIE_SECURE` is a legal way to set what the YAML calls `session.cookie.secure`, and `secure-doc-viewer.storage-root` in YAML maps to a `storageRoot` field in Java. That's why environment variables (upper case, underscores) and YAML (lower case, dashes) can describe the same setting.
 
@@ -331,9 +333,9 @@ The logger is created once per class and tagged with the class name, so every li
 | `info` | A normal event worth recording | `BootstrapAdmin` creating the first admin; the audit purge reporting how many rows it deleted |
 | `debug` | Detail for developers, off by default | (not used by the project's own code) |
 
-**What must never be logged.** A log is copied, backed up and searched by many people, so secrets don't belong in it. The project logs a password in exactly one place, deliberately: when no bootstrap password is configured, `BootstrapAdmin` generates one and prints it *once*, because the operator has no other way to learn it, and the account is flagged "must change password" at first sign-in (Chapter 15). Everywhere else, the audit log records that a sign-in *failed*, never what was typed.
+**What must never be logged.** A log is copied, backed up and searched by many people, so secrets don't belong in it. The project logs a password in exactly one place, deliberately. When no bootstrap password is configured, `BootstrapAdmin` generates one and prints it *once*, because the operator has no other way to learn it. The account is flagged "must change password" at first sign-in (Chapter 15). Everywhere else, the audit log records that a sign-in *failed*, never what was typed.
 
-This book doesn't reproduce a startup log, because its exact text depends on your machine and versions. When you run the app, read the output from the top. The framework reports which profile is active, the port it listens on, and any bean that failed to build. If startup fails, the last message in the output usually names the missing bean or the property that failed validation, and the lines above it show the chain of causes. When you're stuck, read the *last* "Caused by" line first: it's usually the root cause, and the earlier ones just describe how the failure travelled.
+This book doesn't reproduce a startup log, because its exact text depends on your machine and versions. When you run the app, read the output from the top. The framework reports which profile is active, the port it listens on, and any bean that failed to build. If startup fails, the last message in the output usually names the missing bean or the property that failed validation, and the lines above it show the chain of causes. When you're stuck, read the *last* "Caused by" line first: it's usually the root cause, and the earlier ones only describe how the failure travelled.
 
 ## Advanced tier: Failing early, and where the seams are
 

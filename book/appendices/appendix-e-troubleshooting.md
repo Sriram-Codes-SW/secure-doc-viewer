@@ -1,7 +1,8 @@
 # Appendix E: Troubleshooting
 
-Each entry gives the symptom, the usual cause and the fix. Writers add entries through
-`book/_team/requests.md`.
+Each entry gives the symptom, the usual cause and the fix. The entries are grouped by where you are
+in the book: setup, starting the app, using the app, and tests. Appendix D lists the commands the
+fixes use.
 
 ## Setup
 
@@ -73,3 +74,12 @@ fixed a flaky render-slot assertion in `TileGenerationServiceTest`.
 
 **MySQL integration tests are skipped.**
 `MySqlIntegrationTest` needs Docker running; without it the test is skipped rather than failed.
+
+**Playwright says its browser executable does not exist.**
+The browser that the end-to-end tests drive has not been downloaded. Run `npx playwright install chromium` in the `frontend` folder (on Linux, `npx playwright install --with-deps chromium`).
+
+**The end-to-end tests fail at the first sign-in.**
+The tests need the administrator password of the running stack in the `E2E_ADMIN_PASSWORD` environment variable. It is either the `BOOTSTRAP_ADMIN_PASSWORD` you put in your own `.env` before the first start, or the one-time password printed in the API's log (`docker compose logs app`) when the app generated it. If you started the stack before setting either, reset the local database volume (this deletes all local data) and start again.
+
+**A frontend test command seems to hang.**
+`ng test` can stay in watch mode, waiting for changes. Add `--watch=false` to run once and exit, as in Appendix D.

@@ -73,3 +73,16 @@ Run these inside the `frontend` folder.
 | `curl -X POST -H "Content-Type: application/json" -d '<json>' <url>` | Send JSON |
 
 Never put a real password in a command you save; use placeholders such as `<password>`.
+
+## End-to-end tests (Chapter 24)
+
+Run these in the `frontend` folder, with the full Docker stack running. The password is one you set or find yourself; never write a real password into a file you commit.
+
+| Command | What it does |
+|---|---|
+| `docker compose --profile full up -d --build` | Starts MySQL, the API and the web container (run from the repository root) |
+| `docker compose logs app` | Shows the API's log, which contains a generated first-administrator password once, on the first start of an empty database |
+| `npm ci` | Installs the frontend's dependencies exactly as locked |
+| `npx playwright install chromium` | Downloads the browser the tests drive (on Linux, add `--with-deps` to install its system libraries too) |
+| `export E2E_ADMIN_PASSWORD='<password>'` | Sets the administrator password for the tests in bash; in PowerShell use `$env:E2E_ADMIN_PASSWORD='<password>'`, in Windows cmd `set E2E_ADMIN_PASSWORD=<password>` |
+| `npx playwright test` | Runs the end-to-end tests against the running stack |

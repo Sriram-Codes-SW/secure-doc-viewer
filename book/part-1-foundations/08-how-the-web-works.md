@@ -55,12 +55,14 @@ Content-Type: application/json
 
 *Figure 8.1 — One request and its response (teaching example, abbreviated)*
 
+*Text description:* Two blocks of plain text. The upper block is a request: a request line saying `GET /api/documents HTTP/1.1`, then header lines for host, cookie and accepted type. The lower block is the response: a status line `HTTP/1.1 200 OK`, a `Content-Type` header, an empty line and a JSON body.
+
 <!-- source: modeled on GET /api/documents in DocumentController.java and the SDV_SESSION cookie name in application.yml at book-m6-final; the values are placeholders -->
 
 
 The top block is the request: a **request line** (method, path, protocol version), then **headers**, one per line. The bottom is the response: a **status line**, headers, an empty line, and the **body**. The id and title values are placeholders for illustration. Notice that everything is plain text. You can write a request by hand, and Section 8.10 does.
 
-Figure 8.2 shows the five steps above as a conversation between three parties.
+Figure 8.2 shows the five numbered steps of this section as a conversation between three parties.
 
 ```mermaid
 sequenceDiagram
@@ -75,6 +77,8 @@ sequenceDiagram
 ```
 
 *Figure 8.2 — What happens between typing an address and getting a response*
+
+*Text description:* A sequence read top to bottom among three parties: Browser, DNS and Server. The browser asks DNS for the address of a name and receives it, then opens a connection to the server, sends a request, and receives a response. Notice that only the last two messages are HTTP.
 
 <!-- source: HTTP and DNS behavior (RFC 9110); the server side is the app's endpoints at book-m6-final -->
 
@@ -94,6 +98,8 @@ The path can also carry a value. The app's document endpoints use `/api/document
 
 The method says what the client wants to do. Table 8.1 lists the ones the app uses, with real examples from `DocumentController`.
 
+**Table 8.1 — HTTP methods in the app**
+
 | Method | Meaning | Example in the app |
 |---|---|---|
 | `GET` | Read something; changes nothing | `GET /api/documents` lists your documents |
@@ -102,13 +108,13 @@ The method says what the client wants to do. Table 8.1 lists the ones the app us
 | `PATCH` | Change part of something | `PATCH /api/documents/{id}` renames it |
 | `DELETE` | Remove something | `DELETE /api/documents/{id}` |
 
-*Table 8.1 — HTTP methods in the app*
-
 <!-- source: DocumentController.java at book-m6-final -->
 
 Two properties explain why the methods differ. A method is **safe** if it does not change anything on the server: `GET` is safe, so a browser may repeat it, cache it or prefetch it freely. A method is **idempotent** if doing it twice has the same effect as once: `PUT` and `DELETE` are, since replacing a file twice with the same file, or deleting an already deleted document, leaves the same end state. `POST` is neither, which is why browsers warn before resubmitting one.
 
-The response's **status code** is a three-digit number telling the client what happened. They come in families: 2xx success, 3xx redirect, 4xx the client's request was wrong, 5xx the server failed. Table 8.2 lists the codes this app produces, each taken from its error handler.
+The response's **status code** is a three-digit number telling the client what happened. They come in families: 2xx success, 3xx redirect, 4xx the client's request was wrong, 5xx the server failed. Table 8.2 lists the codes this app produces, each taken from its error handler, plus `412`, which the app does not send but which Part VII needs.
+
+**Table 8.2 — Status codes the app uses**
 
 | Code | Name | When the app sends it |
 |---|---|---|
@@ -120,13 +126,12 @@ The response's **status code** is a three-digit number telling the client what h
 | `404` | Not Found | Does not exist, or you may not know it exists |
 | `409` | Conflict | The username is already taken |
 | `410` | Gone | A tile URL for a page that has since been replaced |
+| `412` | Precondition Failed | A condition attached to the request was not met. The app does not send this at `book-m6-final`; you will meet it in Part VII, where a conditional write to cloud storage answers `412` if the object already exists |
 | `413` | Content Too Large | The upload is over 50 MB |
 | `415` | Unsupported Media Type | The body's content type is not one the endpoint accepts |
 | `429` | Too Many Requests | Rate limit or sign-in lockout, with a `Retry-After` header |
 | `500` | Internal Server Error | An unexpected failure on the server |
 | `503` | Service Unavailable | The server is busy rendering; retry |
-
-*Table 8.2 — Status codes the app uses*
 
 <!-- source: GlobalExceptionHandler.java at book-m6-final -->
 
@@ -250,11 +255,11 @@ The cookie is named `SDV_SESSION`, and three settings protect it:
 - `same-site: strict` tells the browser to send it only for requests that start on the app's own site, which blocks a class of forged-request attacks;
 - `secure` makes the browser send it only over HTTPS. It is `false` by default so that local development over plain HTTP works, and the file's comment says it must be true wherever the app is served over HTTPS.
 
-The `timeout: 30m` line means a session ends after 30 minutes without a request. **Analogy.** The session cookie is a coat-check ticket. You hand over your coat at the desk (you sign in) and get a numbered ticket; whoever holds the ticket can collect the coat, which is why the ticket needs the protections above. The analogy breaks down in two ways. A coat-check ticket is used once, at the end, while the app checks the session again on every single tile request. And a coat-check ticket stays valid until the cloakroom closes, while a session ends after 30 idle minutes, and an administrator can cancel it at any time.
+The `timeout: 30m` line means a session ends after 30 minutes without a request. **Analogy.** The session cookie is a coat-check ticket. You hand over your coat at the desk (you sign in) and get a numbered ticket; whoever holds the ticket can collect the coat, which is why the ticket needs the three protections of Listing 8.3. The analogy breaks down in two ways. A coat-check ticket is used once, at the end, while the app checks the session again on every single tile request. And a coat-check ticket stays valid until the cloakroom closes, while a session ends after 30 idle minutes, and an administrator can cancel it at any time.
 
 #### The forged-request problem and the second cookie
 
-Browsers attach cookies automatically. That is convenient, and it is also the opening for **CSRF** (Cross-Site Request Forgery): a malicious page you visit in another tab makes your browser send a request to the app, and your session cookie goes along, so the app cannot tell it from a real click. `same-site: strict` is one defense. The app adds a second: a **CSRF token**, a secret value that the app's own page reads and sends back in a header on every change (`POST`, `PUT`, `PATCH`, `DELETE`). A foreign page cannot read the value, so it cannot send it.
+Browsers attach cookies automatically. That is convenient, and it is also the opening for **CSRF** (Cross-Site Request Forgery). A malicious page you visit in another tab makes your browser send a request to the app. Your session cookie goes along, so the app cannot tell the request from a real click. `same-site: strict` is one defense. The app adds a second: a **CSRF token**, a secret value that the app's own page reads and sends back in a header on every change (`POST`, `PUT`, `PATCH`, `DELETE`). A foreign page cannot read the value, so it cannot send it.
 
 Figure 8.3 shows how the two cookies arrive during sign-in, in the order the project's own test drives them.
 
@@ -271,6 +276,8 @@ sequenceDiagram
 ```
 
 *Figure 8.3 — The session cookie and the CSRF token arriving during sign-in*
+
+*Text description:* A sequence between Browser and Server, read top to bottom. A first visit gets a 401 answer that sets an `XSRF-TOKEN` cookie. The browser then signs in, sending that cookie and a matching header, and the answer sets the `SDV_SESSION` cookie and a fresh `XSRF-TOKEN`. A later change request carries the fresh token in a header and is accepted.
 
 <!-- source: CsrfCookieFlowTest.java at book-m6-final; SecurityConfig.java (csrfTokenRepository); dossier bugs-and-findings.md C1 and C2 -->
 
@@ -376,13 +383,15 @@ flowchart LR
 
 *Figure 8.4 — How the browser sees one origin in development and in the Docker stack*
 
+*Text description:* Two separate left-to-right chains in labeled groups. In development, the browser talks to the Angular development server on port 4200, which forwards paths starting with `/api` to the backend on port 8080. In the Docker stack, the browser talks to an nginx container published on port 8081, which forwards the same paths to a backend container that is not published.
+
 <!-- source: frontend/proxy.conf.json, docker-compose.yml and frontend/nginx.conf at book-m6-final -->
 
 The backend is never reached directly by the browser, so the browser sees a single origin and the same-origin rule is satisfied without any cross-origin exceptions.
 
 ### 8.9 HTTPS and TLS in one page
 
-Plain HTTP travels as readable text, so anyone on the network path can read or change it, including the session cookie. **HTTPS** is HTTP inside an encrypted channel created by **TLS** (Transport Layer Security). TLS provides three things: **encryption** (eavesdroppers see noise), **integrity** (changes are detected) and authentication (a certificate proves you reached the real host). A **certificate** is a signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. (A public key is one half of a pair of numbers used for encryption: it can be shared freely, while its partner, the private key, stays secret on the server.)
+Plain HTTP travels as readable text, so anyone on the network path can read or change it, including the session cookie. HTTPS is HTTP inside an encrypted channel created by **TLS** (Transport Layer Security). TLS provides three things: **encryption** (eavesdroppers see noise), **integrity** (changes are detected) and authentication (a certificate proves you reached the real host). A **certificate** is a signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. (A public key is one half of a pair of numbers used for encryption: it can be shared freely, while its partner, the private key, stays secret on the server.)
 
 The project's optional TLS front end is a program called Caddy, and the setting `SESSION_COOKIE_SECURE=true` is what you turn on when you use it. The Caddy configuration adds one more header, `Strict-Transport-Security` (HSTS), which tells the browser to use only HTTPS for this site from then on.
 
@@ -462,7 +471,7 @@ Three bugs from the project's history are best understood with what you now know
 
 **How it was found.** A live check against the real database in the first phase. Signing in caused the CSRF cookie of Section 8.6 to be deleted without a new one being issued, so the next change had no token to send.
 
-**The fix.** Issue a fresh CSRF cookie at sign-in, and add a test of that whole flow. A related note in the project records why an earlier test hid the bug: the test helper that Spring provides for CSRF swaps the real token repository for its own, so a test that used it passed while the real cookie flow was broken.
+**The fix.** Issue a fresh CSRF cookie at sign-in, and add a test of that whole flow. A related note in the project records why an earlier test hid the bug. The test helper that Spring provides for CSRF swaps the real token repository for its own. So a test that used it passed while the real cookie flow was broken.
 
 **The lesson.** A test that replaces the thing under test can pass while the real thing is broken. Test the real flow at least once. <!-- source: dossier bugs-and-findings.md C1 and C2; CsrfCookieFlowTest.java at book-m1-accounts -->
 
@@ -484,7 +493,7 @@ Three bugs from the project's history are best understood with what you now know
 
 **Confusing `404` and `403`.** In this app, `404` can mean "it does not exist" or "you may not know it exists". Do not assume a `404` means the id is mistyped.
 
-**A cookie that never arrives.** Common causes: the cookie is marked `Secure` but you are on plain HTTP; `SameSite=Strict` blocks it on a request that came from another site; or the request goes to a different origin than the one that set it.
+**A cookie that never arrives.** Common causes are these. The cookie is marked `Secure` but you are on plain HTTP. Or `SameSite=Strict` blocks it on a request that came from another site. Or the request goes to a different origin than the one that set it.
 
 **`415 Unsupported Media Type`.** You sent a body without the right `Content-Type`, for example JSON without `Content-Type: application/json`.
 

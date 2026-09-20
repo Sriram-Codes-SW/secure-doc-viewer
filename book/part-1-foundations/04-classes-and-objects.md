@@ -24,9 +24,9 @@ By the end of this chapter, you will be able to:
 
 ### 4.1 Classes and objects; fields, constructors
 
-Suppose the app must keep track of accounts. Each account has a username, a role and a creation time. You could use three separate variables, but you would need a new set for every account. A **class** is a blueprint that groups such values together with the code that works on them. An **object** is one thing built from that blueprint. A class is "account"; the account for `pub.one` is an object of that class, and the account for `reader.one` is another object of the same class.
+Suppose the app must keep track of accounts. Each account has a username, a role and a creation time. You could use three separate variables, but you would need a new set for every account. A class is a blueprint that groups such values together with the code that works on them. An **object** is one thing built from that blueprint. A class is "account"; the account for `pub.one` is an object of that class, and the account for `reader.one` is another object of the same class.
 
-**Analogy.** A class is a form with blank fields, and each object is a filled-in copy. The analogy breaks down in two ways. The same form can produce as many copies as you like while the program runs, and each copy is independent: changing one does not touch the others. And an object lives in the computer's memory only while the program runs; it disappears when the program ends unless the app saves it, which is what the database is for (Chapter 9). Unlike a paper form, a class can also carry behavior: it holds methods, not just blanks.
+**Analogy.** A class is a form with blank fields, and each object is a filled-in copy. The analogy breaks down in two ways. The same form can produce as many copies as you like while the program runs, and each copy is independent: changing one does not touch the others. And an object lives in the computer's memory only while the program runs; it disappears when the program ends unless the app saves it, which is what the database is for (Chapter 9). Unlike a paper form, a class can also carry behavior: it holds methods, not only blanks.
 
 The values an object holds are its **fields**. A **constructor** is special code that runs when you create an object with `new`, and sets up its fields. Example 4.1 is a tiny teaching class, not the project's.
 
@@ -127,7 +127,7 @@ Notice four things:
 - Every field is `private`. Other code must go through methods.
 - There is a getter for `username` but no setter. Once created, an account's username cannot be changed through this class; that is a deliberate rule, written into the code's shape. Other fields, such as `role`, do have setters (cut from the listing), because an administrator can change them.
 - There is a setter for `passwordHash`, because passwords change.
-- The public constructor takes the three values a new account needs and sets the creation time itself, so no caller can forget or fake it. The `protected` constructor with no parameters exists for the database library, which Chapter 14 explains. `Long` with a capital L is the object form of `long` (Chapter 5), which can be `null` before the database assigns the number.
+- The public constructor takes the three values a new account needs. It sets the creation time itself, so no caller can forget or fake it. The `protected` constructor with no parameters exists for the database library, which Chapter 14 explains. `Long` with a capital L is the object form of `long` (Chapter 5), which can be `null` before the database assigns the number.
 
 A field with no setter and set only in the constructor is **immutable**: it never changes after creation. Immutable data is easier to reason about, because nothing can alter it behind your back. `Instant.now()` gives the current moment as a point in time, which Chapter 5 explains.
 
@@ -163,7 +163,7 @@ The `Role` type of the `role` field is an enum, which we meet in Section 4.4. Th
 
 ### 4.3 Records for plain data
 
-Many types are just bundles of values that never change: a page's dimensions, a row of a table. Writing a private field, constructor and getter for each is repetitive. A **record** gives you all of that in one line. When you declare `record Point(int x, int y) { }`, Java generates the constructor, the read methods `x()` and `y()`, and sensible `equals`, `hashCode` and `toString`. `equals` decides whether two objects count as the same value; `hashCode` is a fingerprint that collections use (Chapter 5); `toString` produces readable text. Record fields are always immutable.
+Many types are plain bundles of values that never change: a page's dimensions, a row of a table. Writing a private field, constructor and getter for each is repetitive. A **record** gives you all of that in one line. When you declare `record Point(int x, int y) { }`, Java generates the constructor, the read methods `x()` and `y()`, and sensible `equals`, `hashCode` and `toString`. `equals` decides whether two objects count as the same value; `hashCode` is a fingerprint that collections use (Chapter 5); `toString` produces readable text. Record fields are always immutable.
 
 The app uses records everywhere data moves around. Here is one describing a rendered page.
 
@@ -189,7 +189,7 @@ public record PageInfo(
 
 *Path: `src/main/java/com/example/securedocviewer/model/PageInfo.java`*
 
-A note on the comment: it mentions a `<canvas>`, a drawing surface in the browser. That comment dates from the first milestone, whose static page drew tiles on a canvas. The Angular viewer in the finished app instead positions plain `div` elements and paints each tile as a CSS background image (Chapter 21), so the comment is stale in the repository; the record itself is unaffected. <!-- source: editor's note on OUTLINE 21.6; requests.md -->
+A note on the comment: it mentions a `<canvas>`, a drawing surface in the browser. That comment dates from the first milestone, whose static page drew tiles on a canvas. The Angular viewer in the finished app instead positions plain `div` elements and paints each tile as a CSS background image (Chapter 21), so the comment is stale at `book-m6-final`. A later documentation-only pull request (number 13, merged into `main` after the tag) corrected this comment in `PageInfo.java` and the matching sentence in the README, so a reader who clones `main` will not find it; the tags still say canvas. The record itself is unaffected. <!-- source: editor's note on OUTLINE 21.6; requests.md -->
 
 You create one with `new PageInfo(1, 4, 3, 512, 1275, 1650)` and read it with `info.rows()`. Note that the read method is `rows()`, not `getRows()`. Listing 3.2 in Chapter 3 used exactly this: `pageInfo.rows()` and `pageInfo.cols()`. Records also compare by value, which a plain class does not:
 
@@ -269,9 +269,11 @@ public record Viewer(String username, boolean admin, boolean publisher) {
 
 *Path: `src/main/java/com/example/securedocviewer/audit/AuditEvent.java`*
 
-An `Actor` says who did something (the username and a session handle, a short stand-in for the session's identifier that is safe to show; Chapter 16) and from where (the client address). `anonymous` builds one for a request with no signed-in user, where the first two are `null`. Naming the situation (`Actor.anonymous(ip)`) reads better than `new Actor(null, null, ip)`.
+An `Actor` says who did something and from where. "Who" is the username and a session handle, a short stand-in for the session's identifier that is safe to show (Chapter 16). "From where" is the client address. `anonymous` builds one for a request with no signed-in user, where the first two are `null`. Naming the situation (`Actor.anonymous(ip)`) reads better than `new Actor(null, null, ip)`.
 
 **When to choose which.** Use a record for plain data that does not change. Use a class when the object has changing state or must hide its fields, as `AppUser` does because the database library fills it in and updates it. Table 4.1 sums up the choice.
+
+**Table 4.1 — Class or record**
 
 | | Class | Record |
 |---|---|---|
@@ -279,8 +281,6 @@ An `Actor` says who did something (the username and a session handle, a short st
 | Changes after creation | Allowed, if you write setters | Never |
 | `equals` and `toString` | You write them, or get identity comparison | Generated, by value |
 | Typical use in the app | `AppUser`, `Document`, services | `PageInfo`, `Viewer`, `Actor`, `AuditEvent` |
-
-*Table 4.1 — Class or record*
 
 ### 4.4 Enums for fixed choices
 
@@ -307,11 +307,11 @@ public enum Role {
 
 You write `Role.ADMIN` in code, and compare with `==`: `user.getRole() == Role.ADMIN`. Two useful methods exist on every enum: `name()` returns the value as text (`"ADMIN"`), and `values()` returns them all. The database stores the name as text, which is what the annotation `@Enumerated(EnumType.STRING)` in Listing 4.1 asks for: the `role` column holds `'ADMIN'`, not a number. Storing the name rather than the position is deliberate. If someone reorders the enum, positions change but names do not, so old rows keep their meaning.
 
-The project has a second enum, `Visibility`, with the values `PRIVATE` and `EVERYONE`. It is the answer to "besides the owner and admins, who may open this document?". And a third, `AuditEventType`, lists the 22 kinds of event the audit trail records (`SIGN_IN`, `PAGE_VIEWED`, `ACCESS_DENIED`, and so on); a new kind of event means adding a value there, and the compiler then helps you find every `switch` that must handle it. Chapter 3's `switch` example works on exactly this kind of type. <!-- source: Visibility.java, AuditEventType.java at book-m6-final -->
+The project has a second enum, `Visibility`, with the values `PRIVATE` and `EVERYONE`. It is the answer to "besides the owner and admins, who may open this document?". And a third, `AuditEventType`, lists the 22 kinds of event the audit trail records (`SIGN_IN`, `PAGE_VIEWED`, `ACCESS_DENIED`, and so on); a new kind of event means adding a value there. The compiler then helps you find every `switch` that must handle it. Chapter 3's `switch` example works on exactly this kind of type. <!-- source: Visibility.java, AuditEventType.java at book-m6-final -->
 
 ## Intermediate tier: Depending on promises, and wiring objects together
 
-A note on pacing. This tier and the next show a few real listings that use things you have not met yet: the framework Spring (Part II), tests (Chapter 18), and two Java features taught in Chapter 5, `Optional` and lambdas (small unnamed methods written with `->`). Each such spot is flagged right where it appears. Read these listings for the idea they illustrate and let the unfamiliar syntax pass; you will be able to read every line after Chapter 5, and you are welcome to come back then.
+A note on pacing. This tier and the next show a few real listings that use things you have not met yet. One is the framework Spring (Part II). Another is tests (Chapter 18). The last is two Java features taught in Chapter 5: `Optional`, and lambdas, which are small unnamed methods written with `->`. Each such spot is flagged right where it appears. Read these listings for the idea they illustrate and let the unfamiliar syntax pass; you will be able to read every line after Chapter 5, and you are welcome to come back then.
 
 ### 4.5 Interfaces and why we depend on them
 
@@ -432,7 +432,7 @@ The project uses exactly that for time. A class that needs "the current time" ca
 
 Read it as a story. Create a `KnownDevices` whose clock is frozen at January 1 and remember an address. Then create two more whose clocks are frozen one minute before and one minute after the 30-day limit (`KnownDevices.RETENTION`). The first still recognizes the address, and the second does not. The test needs no waiting and no real clock, because `KnownDevices` takes its `Clock` as a constructor argument. `Clock` is technically an abstract class (a class that is meant to be extended, not created directly) rather than an interface, but the idea is identical: depend on a replaceable thing, and a test can replace it. <!-- source: KnownDevicesTest.java and KnownDevices.java at book-m6-final -->
 
-*Read now, revisit later.* This is a test, so it uses `assertTrue` and `assertFalse` (checks that fail the test if wrong), `jdbc` and `properties` (a database helper and settings that the test prepared earlier) and `Instant`, `Clock` and `Duration` from Chapter 5's time section. You do not need to follow those names to see the point: the clock is a constructor argument, so the test can set it.
+*Read now, revisit later.* This is a test, so it uses `assertTrue` and `assertFalse`, which are checks that fail the test if they are wrong. It also uses `jdbc` and `properties`, a database helper and settings that the test prepared earlier. And it uses `Instant`, `Clock` and `Duration` from Chapter 5's time section. You do not need to follow those names to see the point: the clock is a constructor argument, so the test can set it.
 
 Figure 4.1 shows how three of the app's classes depend on each other, from the web layer down to the database.
 
@@ -445,6 +445,8 @@ flowchart LR
 
 *Figure 4.1 — One request's path through the classes (simplified)*
 
+*Text description:* Four boxes in a row, read left to right: `DocumentController`, `DocumentService`, `DocumentRepository` and the database. Each arrow means the class on the left hands work to the class on the right, and a request travels along the arrows from the web layer down to the data.
+
 <!-- source: DocumentController.java, DocumentService.java and DocumentRepository.java at book-m6-final (each receives the next class through its constructor) -->
 
 
@@ -455,6 +457,8 @@ The controller receives the web request and asks the service to do the work; the
 A large program has hundreds of classes. **Packages** group them, like folders. The first line of each file declares its package, and the folder layout matches it. `PageInfo` is in `com.example.securedocviewer.model`, so its file sits in `src/main/java/com/example/securedocviewer/model/`.
 
 Table 4.2 shows the app's packages under `com.example.securedocviewer`.
+
+**Table 4.2 — The app's packages (book-m6-final)**
 
 | Package | Holds |
 |---|---|
@@ -468,8 +472,6 @@ Table 4.2 shows the app's packages under `com.example.securedocviewer`.
 | `security` | Sign-in, sessions, throttling |
 | `service` | Tile rendering, signing, watermarking |
 
-*Table 4.2 — The app's packages (book-m6-final)*
-
 <!-- source: git ls-tree of src/main/java at book-m6-final -->
 
 To use a class from another package, you **import** it: `import java.util.List;` at the top of a file lets you write `List` instead of `java.util.List`. Classes in `java.lang`, such as `String`, need no import. Packages also let two classes share a name without clashing.
@@ -478,14 +480,14 @@ The reverse-domain name `com.example` is a convention that keeps package names u
 
 Packages also matter for **access levels**, which decide who may use a class, field or method. Table 4.3 lists the four, with examples from the project.
 
+**Table 4.3 — Access levels**
+
 | Level | Written as | Who can use it | Example in the app |
 |---|---|---|---|
 | Public | `public` | Any code | `public class AppUser` |
 | Protected | `protected` | The same package, and subclasses | `protected AppUser()` for the database library |
 | Package-private | (nothing) | Only code in the same package | `final class FileOperations` in `service` |
 | Private | `private` | Only the same class | the fields of `AppUser` |
-
-*Table 4.3 — Access levels*
 
 `FileOperations` has no `public` in front of `class`, so only other classes in the `service` package can use it. That is a design choice: the file-moving helpers are an internal detail of tile handling, and hiding them stops other packages from depending on them. Make things as private as you can, and widen access only when there is a reason.
 
@@ -497,14 +499,14 @@ Look again at Listing 4.1. Lines that start with `@` are **annotations**: labels
 
 An annotation does not do anything by itself. A framework finds it, reads it, and acts. That is why the app's code can be so short: much behavior is declared with labels and carried out by libraries. Table 4.4 lists the ones you will meet most, and where each is taught.
 
+**Table 4.4 — Annotations you will meet**
+
 | Annotation | Meaning | Taught in |
 |---|---|---|
 | `@Entity`, `@Column`, `@Id` | Map a class and its fields to a database table | Chapter 14 |
 | `@RestController`, `@GetMapping`, `@PostMapping` | Turn a class and its methods into web endpoints | Chapter 12 |
 | `@Component`, `@Service` | Let the framework create and inject this class | Chapter 11 |
 | `@Override` | The compiler checks that this fulfills an interface or parent method | This chapter |
-
-*Table 4.4 — Annotations you will meet*
 
 The cost of annotations is that behavior becomes less visible. If something happens that you cannot find in the code, look for an annotation. Parts II and III return to this often.
 
@@ -516,9 +518,9 @@ You have seen `extends` twice: `interface DocumentRepository extends JpaReposito
 
 Design choices in small objects can carry security weight. Recall `Viewer` from Listing 4.5: a record of a username and two booleans, `admin` and `publisher`, built from the sign-in. The record is immutable, which means those booleans are a snapshot of what the user could do at the moment of sign-in.
 
-**The problem.** In the first version of the ownership rules, a document's owner could manage it. During the review of the fifth pull request, the technical-manager review (an AI review agent) found that a publisher who had been demoted to reader, and who therefore no longer had the right to manage anything, could still manage the documents they owned, because ownership alone was enough.
+**The problem.** In the first version of the ownership rules, a document's owner could manage it. During the review of the fifth pull request, the technical-manager review (an AI review agent) found a gap. A publisher who had been demoted to reader no longer had the right to manage anything. Yet they could still manage the documents they owned, because ownership alone was enough.
 
-**The fix.** Managing a document now requires both ownership and the publisher role (or being an administrator), and the rule lives in one small method, `canManage`. A later review round (the reviews of the fifth pull request happened in stages, called rounds, which Chapter 32 tells in full; this was the fourth) added a second method, `currentRoles`, whose comment states its purpose: to use the viewer's roles as they are in the database now, not as they were at sign-in. Both are shown here:
+**The fix.** Managing a document now requires both ownership and the publisher role (or being an administrator), and the rule lives in one small method, `canManage`. The reviews of the fifth pull request happened in stages called rounds, which Chapter 32 tells in full. In the fourth round, a second method, `currentRoles`, was added. Its comment states its purpose: to use the viewer's roles as they are in the database now, not as they were at sign-in. Both are shown here:
 
 **Listing 4.12 — `DocumentService.java` (book-m6-final, excerpt: methods `currentRoles` and `canManage`)**
 
@@ -542,7 +544,7 @@ Design choices in small objects can carry security weight. Recall `Viewer` from 
 
 Read `canManage`: an admin may manage anything; otherwise the viewer must be a publisher *and* the owner. Read `currentRoles`: look the user up again, keep them only if the account is still enabled, and build a fresh `Viewer` from their present role; if the account is gone or disabled, return a `Viewer` with no rights at all. Every step is one you now know: an `Optional` chain (Chapter 5), an enum comparison, a record constructor, a static method.
 
-*Read now, revisit later.* Two pieces of syntax here belong to Chapter 5: `AppUser::isEnabled` is a short way to write "call `isEnabled` on the user" (a *method reference*), and the chain `.filter(...).map(...).orElse(...)` works on an `Optional`, a box that may hold a user or nothing. Read the chain as: look the user up; keep them only if the account is enabled; build a `Viewer` from their current role; if there is no such user, use a `Viewer` with no rights. The lesson does not depend on the syntax.
+*Read now, revisit later.* Two pieces of syntax here belong to Chapter 5. First, `AppUser::isEnabled` is a short way to write "call `isEnabled` on the user", called a *method reference*. Second, the chain `.filter(...).map(...).orElse(...)` works on an `Optional`, a box that may hold a user or nothing. Read the chain as: look the user up; keep them only if the account is enabled; build a `Viewer` from their current role; if there is no such user, use a `Viewer` with no rights. The lesson does not depend on the syntax.
 
 **The lesson.** An immutable record is safe against being changed, but it can still be *stale*. When a decision depends on facts that can change, such as a role, re-check them at the moment of the decision. The same principle runs through the app: access to tiles is re-checked on every tile request, so unsharing a document cuts off pages that are already open. <!-- source: dossier bugs-and-findings.md D2 (TM2-3, commit 2d82253); git log -S currentRoles (commit 6cf17fa, round 4); DocumentService.java at book-m6-final -->
 

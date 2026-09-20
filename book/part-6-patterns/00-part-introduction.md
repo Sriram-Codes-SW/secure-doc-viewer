@@ -7,12 +7,14 @@ Nothing in this part is new code. Every example is a file you have already met, 
 
 ## What the part covers
 
+Table VI.1 lists the two chapters and what each gives you.
+
+**Table VI.1 — The chapters of Part VI**
+
 | Chapter | Topic | What you gain |
 |---|---|---|
 | 38 | Design patterns in the code | The names for the small-scale solutions: strategy, chain of responsibility, template method, observer, state machine, bulkhead and more, on the backend and in Angular |
 | 39 | Architectural patterns | The names for the large-scale shape: the single-page app with an API, layers, the modular monolith, the reverse proxy and trust boundary, sessions and signed URLs, the audit log as an event log, and a method for using patterns in decisions |
-
-*Table 1 — The chapters of Part VI*
 
 ## How the two chapters relate
 

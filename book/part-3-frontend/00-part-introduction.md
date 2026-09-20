@@ -28,7 +28,9 @@ Part III also follows the same three-level structure as the rest of the book (th
 
 ## The frontend at a glance
 
-Here is the map you will fill in as you read. Every path is inside `frontend/`, and every file appears in a chapter.
+Table III.1 is the map you will fill in as you read. Every path is inside `frontend/`, and every file appears in a chapter.
+
+**Table III.1 — The frontend at a glance**
 
 | Path | What it is | Chapter |
 |---|---|---|

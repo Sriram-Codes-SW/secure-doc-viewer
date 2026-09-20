@@ -486,6 +486,11 @@ who owns a document. What type is it, and why can't it be empty?
   on their own branch (`git switch -c exercise-14-2`), never on a tag directly.
 - Exercises never require real credentials, sign-ins to someone else's deployment, or anything
   the charter puts off limits.
+- **Part VII exception (allowed, not a model for other chapters).** The exercises of Chapters 40
+  and 41 also carry a line `*Level: one star.*` (or two or three stars) under the heading, a
+  `*Hint:*` line and a `*Solution:*` pointer. This was added for a design-study part that a reader
+  may attempt without any account or prior context. Other chapters keep the plain form above; the
+  build adds the wording of the level for screen readers.
 - **Solutions:** write them in `NN-slug.solutions.md` next to your chapter, same numbering and
   headings (`### Exercise 14.1 ★ Find the owner column`). ★ and ★★ get full solutions; ★★★ get
   a worked outline and the key decisions ("one good answer is..."). Solutions that show code

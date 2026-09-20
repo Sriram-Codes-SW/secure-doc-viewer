@@ -36,6 +36,8 @@ flowchart LR
 
 *Figure 3.1 — From source code to a running program*
 
+*Text description:* Three boxes in a row, read left to right. The source file `Hello.java` is turned into `Hello.class` bytecode by the `javac` compiler, and the `java` command then starts the JVM, which runs the bytecode as a program.
+
 You install the **JDK** (Java Development Kit), which contains the compiler, the JVM and the standard library, a large collection of ready-made code. The **JRE** (Java Runtime Environment) is the part needed only to run programs, without the compiler; you will meet it in the Dockerfile in Chapter 10. This book uses Java 25, a long-term-support release, which the project selected when it upgraded (Chapter 6). The project sets `<java.version>25</java.version>` in its `pom.xml`. <!-- source: pom.xml at book-m6-final; dossier decisions.md (Java 25, LTS) -->
 
 **Analogy.** Source code is a recipe in English, bytecode is the same recipe translated into a simple universal shorthand, and the JVM is a cook in each kitchen who knows the shorthand. The analogy breaks down because a cook works from the shorthand at human speed, while the JVM also optimizes the bytecode as it runs, so long-running programs get faster after a warm-up. And a cook may improvise, while the JVM does exactly what the bytecode says.
@@ -123,6 +125,8 @@ You recognize the class and `main`. The `package` and `import` lines and the `@`
 
 A **variable** is a named place to keep a value. Java is **statically typed**: every variable has a **type** that says what kind of value it holds, and the compiler checks that you use it correctly. Table 3.1 lists the types you will meet most.
 
+**Table 3.1 — Basic types**
+
 | Type | Holds | Example |
 |---|---|---|
 | `int` | Whole numbers (about -2 billion to 2 billion) | `512` |
@@ -130,8 +134,6 @@ A **variable** is a named place to keep a value. Java is **statically typed**: e
 | `double` | Decimal numbers | `1.5` |
 | `boolean` | `true` or `false` | `true` |
 | `String` | Text | `"admin"` |
-
-*Table 3.1 — Basic types*
 
 Example 3.2 declares some variables using names from the app's configuration.
 
@@ -252,9 +254,9 @@ The app uses exactly the counting pattern to hand out one URL per tile, with one
 
 *Path: `src/main/java/com/example/securedocviewer/controller/PageTileUrlController.java`*
 
-The outer loop walks the rows, the inner loop walks the columns of each row, and each pass creates a **token** (the signed part of a URL) and stores a URL in `urls`, a table of strings (`String[][]`, a two-dimensional **array**, a fixed-size row of values). Names like `pageInfo.rows()` and `signedUrlService.issueToken(...)` are calls to code defined elsewhere; you will learn to read them in Chapter 4. A page that is 3 columns by 4 rows makes the inner statement run 12 times, once per tile.
+The outer loop walks the rows, and the inner loop walks the columns of each row. Each pass creates a **token**, the signed part of a URL, and stores a URL in `urls`. The variable `urls` is a table of strings: `String[][]` is a two-dimensional **array**, a fixed-size row of values. Names like `pageInfo.rows()` and `signedUrlService.issueToken(...)` are calls to code defined elsewhere; you will learn to read them in Chapter 4. A page that is 3 columns by 4 rows makes the inner statement run 12 times, once per tile.
 
-A common source of bugs is stepping one too far. `for (int i = 0; i <= 4; i++)` runs five times, not four. Prefer `<` with a count, as above, and remember that an array of length 4 has indexes 0 to 3.
+A common source of bugs is stepping one too far. `for (int i = 0; i <= 4; i++)` runs five times, not four. Prefer `<` with a count, as in Listing 3.2, and remember that an array of length 4 has indexes 0 to 3.
 
 ### 3.7 Methods
 
@@ -335,7 +337,7 @@ Exception in thread "main" java.lang.IllegalArgumentException: lengthPx and tile
         at TileMath.main(TileMath.java:12)
 ```
 
-Read it top to bottom: the first line says what went wrong, and the first `at` line says where. Here that is line 6 of `TileMath.java`, called from line 12. (The trace above is teaching output, not from the project.) Another common one is `ArrayIndexOutOfBoundsException: Index 3 out of bounds for length 3`, which means you asked for the fourth item of a three-item array. Chapter 5 teaches how to raise and handle exceptions.
+Read it top to bottom: the first line says what went wrong, and the first `at` line says where. Here that is line 6 of `TileMath.java`, called from line 12. (This trace is teaching output, not from the project.) Another common one is `ArrayIndexOutOfBoundsException: Index 3 out of bounds for length 3`, which means you asked for the fourth item of a three-item array. Chapter 5 teaches how to raise and handle exceptions.
 
 ## Advanced tier: Real code from the app
 
@@ -388,9 +390,9 @@ The project tests this method with a synthetic image so it never needs a real PD
 
 *Path: `src/test/java/com/example/securedocviewer/service/TileGridTest.java`*
 
-`assertEquals(expected, actual)` fails the test if the two values differ. Check the last two: a US letter page is 612 by 792 points, and with 50-pixel tiles you need 13 columns and 16 rows, because `612 / 50` is 12.24, rounded up to 13, and `792 / 50` is 15.84, rounded up to 16. The tests choose their inputs on the edges: one pixel, exactly one tile, one pixel more than a tile. Those are where a rounding formula goes wrong. `assertThrows` checks that bad input raises the exception, using a small unnamed method, a lambda (Chapter 5). The test class is `TileGridTest`; the testing chapters (18 and 24) teach how tests are run.
+`assertEquals(expected, actual)` fails the test if the two values differ. Check the last two. A US letter page is 612 by 792 points. With 50-pixel tiles you need 13 columns, because `612 / 50` is 12.24, which rounds up to 13. You need 16 rows, because `792 / 50` is 15.84, which rounds up to 16. The tests choose their inputs on the edges: one pixel, exactly one tile, one pixel more than a tile. Those are where a rounding formula goes wrong. `assertThrows` checks that bad input raises the exception, using a small unnamed method, a lambda (Chapter 5). The test class is `TileGridTest`; the testing chapters (18 and 24) teach how tests are run.
 
-The same file holds the guarantee that gave the class its shape. Its own comment states: "tiles are a lossless partition of the page. Reassembling every tile at its grid offset must reproduce the source image pixel-for-pixel — no seams, no overlap, no dropped edge strips." A test builds a random image whose size is not a multiple of the tile size (613 by 457 with 64-pixel tiles), slices it, reassembles it, and compares every pixel. The lesson is bigger than the code: when a class has one clear promise, write the test that proves it. <!-- source: TileGridTest.java at book-m6-final; dossier timeline.md (round-trip test in b6aef4e) -->
+The same file holds the guarantee that gave the class its shape. Its own comment states: "tiles are a lossless partition of the page. Reassembling every tile at its grid offset must reproduce the source image pixel-for-pixel — no seams, no overlap, no dropped edge strips." A test builds a random image whose size is not a multiple of the tile size (613 by 457 with 64-pixel tiles). It slices the image, reassembles it, and compares every pixel. The lesson is bigger than the code: when a class has one clear promise, write the test that proves it. <!-- source: TileGridTest.java at book-m6-final; dossier timeline.md (round-trip test in b6aef4e) -->
 
 ### 3.10 Characters, bytes and a real limit
 
@@ -466,7 +468,7 @@ Notice the order of the checks. The cheap and most common problems come first, a
 
 ### 3.12 Common mistakes
 
-**Missing semicolon or brace.** The compiler names the line, but the mistake is often on the line above. Check that every `{` has a `}`.
+**Missing semicolon or brace.** The compiler names the line, but the mistake is often on the previous line. Check that every `{` has a `}`.
 
 **`=` versus `==`.** `=` assigns and `==` compares. `if (x = 5)` will not compile; `if (x == 5)` is what you meant.
 

@@ -14,7 +14,7 @@
 ## Prerequisites
 
 Chapters 3–6 (Java), 8 (the web), 11–12 (Spring Boot and REST), 17 (signatures and PDFs) and 18
-(testing), as listed in `book/OUTLINE.md`. At this milestone the project uses Spring Boot 3.3.4,
+(testing). At this milestone the project uses Spring Boot 3.3.4,
 Java 21 and PDFBox 3.0.3 (`pom.xml` at `book-m0-mvp`); the upgrade to Spring Boot 4 comes in Chapter
 30. To run this tag yourself, see Table IV.3 ("What you need to run each tag") in the
 [Part IV introduction](00-part-introduction.md).
@@ -66,7 +66,7 @@ and no Angular yet.
 ### 25.2 The vocabulary of a tiled viewer
 
 A PDF is a document format that describes pages of text and graphics. **Rasterizing** a page means
-drawing it into an image: a grid of colored dots called **pixels**. A **tile** is one rectangular piece
+drawing it into an image: a grid of colored dots called **pixels**. A tile is one rectangular piece
 of that image, here a square of at most 256 pixels on a side. A token is a small, opaque piece of
 text that stands for a permission. A session is the server's record that a particular person
 signed in. A watermark is a visible mark, here the viewer's name and the time, drawn over an
@@ -77,8 +77,7 @@ back of the book collects them.
 
 **Analogy.** Think of a bathroom wall covered with square tiles. You count how many tiles fit along
 the width, rounding up, because a partial tile still has to be cut and placed. **Where the analogy
-breaks down:** a real tiler fills gaps with grout; the viewer never pads. Edge tiles are simply
-smaller, so putting every tile back at its own position rebuilds the page exactly.
+breaks down:** a real tiler fills gaps with grout; the viewer never pads. Edge tiles are smaller, so putting every tile back at its own position rebuilds the page exactly.
 
 The math lives in its own class so it can be tested without any PDF library. There are two ideas.
 
@@ -136,9 +135,7 @@ That is 5 × 7 = **35 tiles per page**, which is the figure the project's later 
 about 35 tiles"). Remember it: it drives the rate-limit decisions in Chapters 26 and 30.
 
 **Why test the math separately.** `TileGridTest` includes a test that the commit message calls a
-round-trip property check. It builds a 613 by 457 pixel image of random noise (deliberately not a
-multiple of the tile size), slices it with 64-pixel tiles, draws every tile back at
-`(col * tileSize, row * tileSize)` onto a black canvas, and compares every pixel with the original.
+round-trip property check. It builds a 613 by 457 pixel image of random noise, deliberately not a multiple of the tile size. It slices the image with 64-pixel tiles and draws every tile back at `(col * tileSize, row * tileSize)` onto a black canvas. Then it compares every pixel with the original.
 
 **Listing 25.2 — `TileGridTest` (book-m0-mvp, excerpt of the reassembly loop)**
 
@@ -252,6 +249,8 @@ sequenceDiagram
 
 *Figure 25.1 — One page, request by request (book-m0-mvp)*
 
+*Text description:* A sequence diagram with two participants, the browser and the server, and time running downward. The browser signs in and receives a session id, then asks for the grid of signed tile URLs. In a loop, for each tile, the browser sends a request and the server verifies the signature and expiry, checks that the session is live, loads the raw tile, applies the watermark and returns a PNG image. Last, the browser paints each tile at its column and row offset. Notice that the two checks happen once per tile, not once per page.
+
 Three ideas follow from the figure.
 
 - **The server hands out addresses, not pictures, first.** The response to the `tile-urls` call is
@@ -289,7 +288,7 @@ is the URL for the tile in that position, so the client can paint it at `col * t
 **Analogy.** A signed URL is like a concert wristband stamped with a seal only the venue owns. Staff
 don't consult a guest list at every door; they check the seal. **Where the analogy breaks down:** a
 wristband works all night, while a token names one tile and expires at a fixed time. And a stolen
-wristband works for whoever wears it, just as a copied URL works until it expires. That is why Chapter
+wristband works for whoever wears it, in the same way a copied URL works until it expires. That is why Chapter
 26 binds tokens to a session more tightly.
 
 *Pattern note: A signed URL is a capability URL, combined here with a session (Chapter 39, Section 39.9).*
@@ -399,11 +398,15 @@ The service deliberately does not check that the session is still alive. Its Jav
 tampered or expired token and a revoked session are different failures, and separate checks keep
 them distinguishable. `TileController` performs the second check (Section 25.8).
 
-**The tests are the specification.** `SignedUrlServiceTest` covers the behaviors one by one: a token
-round-trips to the same payload; a token whose last signature character was flipped is rejected; a
-"Franken-token" made by splicing another tile's payload onto this token's signature is rejected (a
-valid-looking signature on the wrong payload); an expired token is rejected (the test sets a negative
-lifetime so the token is already old when issued); and text that isn't a token at all is rejected.
+**The tests are the specification.** `SignedUrlServiceTest` covers the behaviors one by one:
+
+- a token round-trips to the same payload;
+- a token whose last signature character was flipped is rejected;
+- a "Franken-token", made by splicing another tile's payload onto this token's signature, is rejected: it has a valid-looking signature on the wrong payload;
+- an expired token is rejected (the test sets a negative lifetime, so the token is already old when issued);
+- text that isn't a token at all is rejected.
+
+
 Each test name reads as a sentence about a security property.
 <!-- source: SignedUrlService.java, SignedTilePayload.java, SignedUrlServiceTest.java, README at book-m0-mvp -->
 
@@ -714,63 +717,9 @@ working until it expires. Fix: a separate session check per request (Listing 25.
 **Off-by-one in ceiling division.** Symptom: one tile too few, so the last column of the page is
 missing. Fix: `(length + tileSize - 1) / tileSize`, not `length / tileSize`.
 
-## In this project
-
-**Table 25.2 — Where the concepts live (at book-m0-mvp)**
-
-| Concept | Where |
-|---|---|
-| Tile math | `service/TileGrid.java`, `TileGridTest` |
-| Rendering and storage | `service/TileGenerationService.java`, `TileGenerationServiceTest` |
-| Signing | `service/SignedUrlService.java`, `model/SignedTilePayload.java`, `SignedUrlServiceTest` |
-| Watermark | `service/WatermarkService.java`, `WatermarkServiceTest` |
-| Endpoints | `controller/DocumentController`, `PageTileUrlController`, `TileController`, `SessionController` |
-| Sessions | `security/SessionService.java`, `SessionServiceTest` |
-| Client | `src/main/resources/static/index.html` |
-
-Table 25.2 lists the files to open in your copy of the repository.
-
-## Try it
-
-Solutions are in `25-m0-the-tiled-viewer.solutions.md`.
-
-### Exercise 25.1 ★ Count the tiles
-
-A page is 1,240 pixels wide and 1,754 pixels tall, and tiles are 256 pixels. How many columns and
-rows does `TileGrid.tileCount` give, and how wide is the last column?
-
-### Exercise 25.2 ★ Letter page
-
-Using Example 25.1 as a guide, how many tiles cover a US Letter page rendered at 150 DPI with
-128-pixel tiles?
-
-### Exercise 25.3 ★★ Tamper with a token
-
-Run `book-m0-mvp` on your own machine. Sign in, request tile URLs, and change one character of a
-token before the dot. Request it. Which HTTP status comes back, and why does `verifyAndDecode` check
-the signature before it parses the payload?
-
-### Exercise 25.4 ★★ Build a canonical string
-
-Write the canonical string for document `d9`, page 1, row 0, column 4, session `s7`, expiry 5000. If
-someone changes the column to 5 but keeps the old signature, which line of `verifyAndDecode` rejects
-the token?
-
-### Exercise 25.5 ★★★ Two independent checks
-
-Why does `TileController` not trust the token's expiry alone? Describe a case where a token is valid
-but the request must still be refused.
-
-### Exercise 25.6 ★★★ Design a limit
-
-The README suggests per-session rate limiting to slow a scraper. Sketch, in words, where in
-`TileController.getTile` you would count requests, what key you would count by, and what response you
-would return when the limit is exceeded. Then say why counting by session id turned out to be
-weaker than counting by user (Chapter 26 explains).
-
 ## Architecture blueprint v0
 
-Figure 25.2 shows the system at this milestone. It is the diagram from `book/blueprints/v0-mvp.md`.
+Figure 25.2 shows the system at this milestone, as Blueprint v0.
 
 ```mermaid
 flowchart LR
@@ -801,6 +750,8 @@ flowchart LR
 ```
 
 *Figure 25.2 — Blueprint v0 (`book-m0-mvp`)*
+
+*Text description:* A left-to-right flowchart. The browser, a static page that draws tiles on a canvas, calls four controllers inside the Spring Boot application. SessionController uses the in-memory SessionService. DocumentController uses TileGenerationService and the in-memory DocumentRegistry. PageTileUrlController uses SignedUrlService and SessionService. TileController uses SignedUrlService, SessionService, TileGenerationService and WatermarkService. A dotted line shows TileGenerationService writing tiles to disk. Notice that there is no database: sessions and documents live in memory and only the tiles are on disk.
 <!-- source: book/blueprints/v0-mvp.md; classes named in the diagram, present at book-m0-mvp under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, service/DocumentRegistry.java, controller/PageTileUrlController.java, controller/SessionController.java, security/SessionService.java, service/SignedUrlService.java, controller/TileController.java, service/TileGenerationService.java, service/TileGrid.java, service/WatermarkService.java -->
 
 This is the starting point, so nothing has changed since a previous version. Signing in takes only a
@@ -809,7 +760,7 @@ memory.
 
 ## Decisions and challenges
 
-#### Decision: tiles plus signed URLs
+### Decision: tiles plus signed URLs
 
 **The decision.** Never expose the source PDF: rasterize pages at ingest, slice them into tiles,
 deliver tiles through short-lived HMAC-signed URLs bound to a session, and reassemble them in the
@@ -820,14 +771,14 @@ tile request does work on the server (Section 25.7), and the design stays a dete
 guarantee.
 <!-- source: commit b6aef4e; decisions D4 -->
 
-#### Decision: watermark at serve time
+### Decision: watermark at serve time
 
 **The decision.** Stamp the viewer's identity onto each tile when it is served, not at ingest. **Why.**
 One stored tile serves every viewer while each response stays traceable. **What it costs.** A decode,
 draw and encode per request, and no shared caching, recorded later as a low-severity limitation.
 <!-- source: commit b6aef4e; decisions D5 -->
 
-#### Decision: isolate the math
+### Decision: isolate the math
 
 **The decision.** Put the grid arithmetic in a dependency-free class with a property test. **Why.**
 The commit message singles this out: the tiles must reassemble the page exactly, and a synthetic
@@ -835,14 +786,9 @@ image is enough to prove it. **What it costs.** One more class, and the discipli
 rendering out of it.
 <!-- source: commit b6aef4e message; TileGridTest.java -->
 
-#### Challenge: the MVP was a demo, and a review said so
+### Challenge: the MVP was a demo, and a review said so
 
-**The problem.** This version signed anyone in who typed a username. Later, independent reviews (by AI
-review agents playing a product owner and a senior technical manager) found that login accepted any
-username with no password (`TM-2`), that admin endpoints needed only a valid session and listed every
-live session id (`TM-1`), that the tile token contained the session id, so a leaked URL leaked a
-credential (`TM-4`), and that the signing secret was committed in `application.yml` (`TM-6`; the file
-at this tag holds a visibly demo-only value). **How it was found.** The reviews ran against the working
+**The problem.** This version signed anyone in who typed a username. Later, independent reviews by AI review agents (one playing a product owner, one a senior technical manager) found four problems. Login accepted any username with no password (`TM-2`). Admin endpoints needed only a valid session and listed every live session id (`TM-1`). The tile token contained the session id, so a leaked URL leaked a credential (`TM-4`). And the signing secret was committed in `application.yml` (`TM-6`); the file at this tag holds a visibly demo-only value. **How it was found.** The reviews ran against the working
 product after the MVP and a first Angular baseline existed. **The fix.** Milestone 1 (Chapter 26)
 addressed these: real accounts, roles, a keyed session binding in tokens, and a secret supplied
 through the environment. **Where it goes next.** Chapter 26 walks through the fixes, and Chapter 32
@@ -850,6 +796,64 @@ collects the whole review record. **The lesson.** A stand-in is fine while you l
 system, but write down what it stands in for. The MVP's own Javadoc did that, which turned the later
 findings into a to-do list instead of a surprise.
 <!-- source: reviews record; bugs record B; SessionService Javadoc and application.yml at book-m0-mvp -->
+
+## In this project
+
+**Table 25.2 — Where the concepts live (at book-m0-mvp)**
+
+| Concept | Where |
+|---|---|
+| Tile math | `service/TileGrid.java`, `TileGridTest` |
+| Rendering and storage | `service/TileGenerationService.java`, `TileGenerationServiceTest` |
+| Signing | `service/SignedUrlService.java`, `model/SignedTilePayload.java`, `SignedUrlServiceTest` |
+| Watermark | `service/WatermarkService.java`, `WatermarkServiceTest` |
+| Endpoints | `controller/DocumentController`, `PageTileUrlController`, `TileController`, `SessionController` |
+| Sessions | `security/SessionService.java`, `SessionServiceTest` |
+| Client | `src/main/resources/static/index.html` |
+
+Table 25.2 lists the files to open in your copy of the repository.
+
+To see any of these files as it was at this milestone, run `git show book-m0-mvp:<path>`, for example `git show book-m0-mvp:pom.xml`.
+
+## Try it
+
+Solutions are in Appendix C.
+
+### Exercise 25.1 ★ Count the tiles
+
+A page is 1,240 pixels wide and 1,754 pixels tall, and tiles are 256 pixels. How many columns and
+rows does `TileGrid.tileCount` give, and how wide is the last column?
+
+### Exercise 25.2 ★ Letter page
+
+Using Example 25.1 as a guide, how many tiles cover a US Letter page rendered at 150 DPI with
+128-pixel tiles?
+
+### Exercise 25.3 ★★ Tamper with a token
+
+Run `book-m0-mvp` on your own machine. Sign in, request tile URLs, and change one character in the
+middle of the payload part of a token (the part before the dot). Do not change the very last
+character: the final character of a base64url string can carry unused bits, so changing it may decode
+to the same bytes and the token would still verify. Request the altered URL. Which HTTP status comes back, and why does `verifyAndDecode` check
+the signature before it parses the payload?
+
+### Exercise 25.4 ★★ Build a canonical string
+
+Write the canonical string for document `d9`, page 1, row 0, column 4, session `s7`, expiry 5000. If
+someone changes the column to 5 but keeps the old signature, which line of `verifyAndDecode` rejects
+the token?
+
+### Exercise 25.5 ★★★ Two independent checks
+
+Why does `TileController` not trust the token's expiry alone? Describe a case where a token is valid
+but the request must still be refused.
+
+### Exercise 25.6 ★★★ Design a limit
+
+The README suggests per-session rate limiting to slow a scraper. Sketch, in words, where in
+`TileController.getTile` you would count requests, what key you would count by, and what response you
+would return when the limit is exceeded. Then say why counting by session id turned out to be
+weaker than counting by user (Chapter 26 explains).
 
 ## Summary
 

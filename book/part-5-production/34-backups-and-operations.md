@@ -71,7 +71,7 @@ Replacing a PDF renders new tiles into a new version folder, switches the docume
 2. 10:01: the publisher replaces D. Version 2 is rendered, D is switched to version 2, and version 1 is deleted.
 3. 10:02: you archive the tile volume. It contains version 2 only.
 
-After a restore, the database says D uses version 1, but version 1 isn't in the archive. Every page of D is blank. Neither file is corrupt; they just describe different moments. That is what "inconsistent" means, and no tool will warn you.
+After a restore, the database says D uses version 1, but version 1 isn't in the archive. Every page of D is blank. Neither file is corrupt; they describe different moments. That is what "inconsistent" means, and no tool will warn you.
 
 The Senior Technical Manager review agent (an AI reviewer; see Chapter 32) found this in the final review before go-live, and the runbook changed to stop the app for the few seconds a backup takes, so nothing can change between the two captures (commit `66f7152`). The trade-off is stated openly in the README: a short outage in return for backups that are correct without cleverness. Chapter 37 (section 37.7) puts it next to the alternatives.
 
@@ -79,11 +79,11 @@ The Senior Technical Manager review agent (an AI reviewer; see Chapter 32) found
 
 These are copied from the README. They run from the project folder on the machine that hosts the stack.
 
-**Listing 34.1 — Backup, `README.md`, `book-m6-final`**
+**Listing 34.1 — Backup, adapted from `README.md` at `book-m6-final` (the README passes the password with `-p`; this version passes it through the environment, as explained in the notes after this listing)**
 
 ```bash
 docker compose --profile full stop app
-docker compose exec -T mysql sh -c 'exec mysqldump --single-transaction --routines -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > securedocs.sql
+docker compose exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysqldump --single-transaction --routines -u root "$MYSQL_DATABASE"' > securedocs.sql
 docker run --rm -v secure-doc-viewer_app-storage:/data -v "$PWD":/backup alpine tar czf /backup/storage.tgz -C /data .
 docker compose --profile full start app
 ```
@@ -94,10 +94,11 @@ docker compose --profile full start app
 
 - `docker compose exec -T mysql` runs a command inside the running `mysql` container. The `-T` flag turns off the pseudo-terminal that Compose normally attaches. Without it, the output stream gets terminal control characters mixed in, and redirecting to a file would corrupt the dump.
 - `sh -c '...'` starts a shell inside the container so that variables are expanded there. The single quotes stop *your* shell from expanding `$MYSQL_ROOT_PASSWORD` and `$MYSQL_DATABASE`; the container's shell does it, using the values the container already has. The password never appears in your terminal history.
+- `export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"` puts the password into the environment of the dump program, which the MySQL client programs read as the default password. That keeps it out of the program's *argument list*, which is what a process listing (`ps`) shows.
 - `exec mysqldump` replaces the shell with the dump program, so its exit status is the command's exit status.
 - `--single-transaction` makes the dump read a consistent snapshot of the InnoDB tables in one transaction, without locking them for the duration.
 - `--routines` includes stored procedures and functions, if any. The database has none today, but the flag means a future one wouldn't be silently left out.
-- `-u root -p"$MYSQL_ROOT_PASSWORD"` connects as the root user. The `-p` is followed directly by the value, with no space; that's how `mysqldump` expects it.
+- `-u root` connects as the root user. The README at this tag writes `-p"$MYSQL_ROOT_PASSWORD"` instead; the expanded password then sits in the dump program's argument list, visible to anyone who can list processes inside the container, and MySQL prints a warning about a password on the command line. The environment variable is the same technique the project's own MySQL health check uses (Chapter 10). It isn't perfect: MySQL's 8.4 manual calls `MYSQL_PWD` deprecated and warns that other users may be able to read process environments too. A stricter option is an option file with restrictive permissions, passed with `--defaults-extra-file`.
 - `> securedocs.sql` sends the dump to a file on the host.
 
 **Line 3** archives the tiles. It starts a throwaway `alpine` container (`--rm` deletes it afterward) that mounts two things: the volume `secure-doc-viewer_app-storage` at `/data`, and your current folder (`$PWD`) at `/backup`. Then `tar czf /backup/storage.tgz -C /data .` creates a compressed archive (`c` create, `z` gzip, `f` file) of the volume's contents. `-C /data` changes into `/data` first, so the paths inside the archive are relative (`./doc-id/...`) and can be extracted anywhere.
@@ -124,15 +125,17 @@ sequenceDiagram
 
 *Figure 34.1 — The backup sequence: stop the app, capture both stores, start the app*
 
+*Text description:* A sequence of operator actions against three parts. The operator stops the app container, so nothing can write; runs the database dump in the MySQL container and receives securedocs.sql; runs an alpine container that archives the tile volume and receives storage.tgz; and finally starts the app again. Notice that the two captures happen while the app is stopped.
+
 Notice the volume name. Compose builds it from the project name (by default, the name of the folder you cloned into) and the volume name in the file, so `secure-doc-viewer_app-storage` assumes the folder is called `secure-doc-viewer`. If you cloned it elsewhere, run `docker volume ls` to find the real name. Using the wrong name doesn't fail loudly: Docker creates a new empty volume and you archive nothing. Section 34.10 lists that as a common mistake.
 
 ### 34.6 The restore commands
 
-**Listing 34.2 — Restore, `README.md`, `book-m6-final`**
+**Listing 34.2 — Restore, adapted from `README.md` at `book-m6-final` (same change as Listing 34.1)**
 
 ```bash
 docker compose --profile full stop app
-docker compose exec -T mysql sh -c 'exec mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' < securedocs.sql
+docker compose exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysql -u root "$MYSQL_DATABASE"' < securedocs.sql
 docker run --rm -v secure-doc-viewer_app-storage:/data -v "$PWD":/backup alpine sh -c 'rm -rf /data/* && tar xzf /backup/storage.tgz -C /data'
 docker compose --profile full start app
 ```
@@ -141,7 +144,7 @@ The restore mirrors the backup. It stops the app so nothing writes while you res
 
 Two details deserve attention. First, `rm -rf /data/*` deletes the current tiles before unpacking; that is what you want on a real restore, and it is exactly why you rehearse in a scratch environment first (section 34.7). Second, the `mysql` command replays SQL into the *existing* database. A `mysqldump` file contains `DROP TABLE IF EXISTS` and `CREATE TABLE` statements for each table by default, so the tables are rebuilt with the dump's contents, and the `flyway_schema_history` table comes along with them, so Flyway sees the schema as already migrated.
 
-Also keep `.env` with the backup, as the README says. A restore under a different `SIGNING_SECRET` still works, but every account's recognised devices are forgotten, because their hashes are keyed by that secret (Chapter 32). Nothing breaks visibly; users simply find that a new-device rule applies to everyone until they sign in again from each device.
+Also keep `.env` with the backup, as the README says. A restore under a different `SIGNING_SECRET` still works, but every account's recognised devices are forgotten, because their hashes are keyed by that secret (Chapter 32). Nothing breaks visibly; users find that a new-device rule applies to everyone until they sign in again from each device.
 
 ### 34.7 The restore drill
 
@@ -171,11 +174,13 @@ flowchart TB
 
 *Figure 34.2 — The restore order, followed by the drill's checks (run in a scratch environment)*
 
+*Text description:* A top-to-bottom chain. The first four boxes are the restore: stop the app, replay the SQL dump, empty the tile volume and unpack the archive, start the app. The next four are the drill's checks: every current tile version is in the archive, the app boots and Flyway validates the migrations, a reader signs in and receives a watermarked tile, and finally the timing and cleanup of the scratch environment.
+
 Notice that the checks climb from cheap to end-to-end: files present, then schema valid, then a real sign-in and tile. A failure at the first check points at a mismatched backup; a failure at the last points at something in the application.
 
 Use the same six steps for your own drills. Add a seventh that the project didn't need to write down: **time the whole thing.** The number you get is your real recovery time (RTO). If it's two hours and your business needs thirty minutes, you've learned that before an emergency rather than during one.
 
-A drill in a scratch environment means a separate compose project so that names and ports don't collide. A simple way to get one is to clone the repository into a different folder (the folder name becomes the project name, so all volumes get different names), use different `WEB_PORT`, `TLS_PORT`, and `DB_PORT` values in that folder's `.env`, and restore into it. This is the book's suggestion, not a script in the repository.
+A drill in a scratch environment means a separate compose project so that names and ports don't collide. One way to get one is to clone the repository into a different folder (the folder name becomes the project name, so all volumes get different names), use different `WEB_PORT`, `TLS_PORT`, and `DB_PORT` values in that folder's `.env`, and restore into it. This is the book's suggestion, not a script in the repository.
 
 ## Advanced tier: Retention, cleanup and living with one instance
 
@@ -184,6 +189,8 @@ A drill in a scratch environment means a separate compose project so that names 
 ### 34.8 What gets deleted automatically, and why it is careful
 
 The app deletes data on schedules. Knowing what and when tells you what a backup does and doesn't need to hold, and what could surprise you.
+
+*See also: On AWS part of this job would move to S3 lifecycle rules; see Chapter 40, Section 40.8.*
 
 **Table 34.2 — Scheduled cleanup at `book-m6-final`**
 
@@ -257,12 +264,16 @@ The README's go-live checklist says "scheduled backups as above, plus one restor
 
 Where `backup.sh` contains the four backup commands, names its output files with the date, and then copies them off the machine. Choose the time when nobody reads: the app is stopped for the seconds the dump and archive take, and readers get an error during that window. If that outage is unacceptable, you have reached one of the limits Chapter 37 describes, because a backup that doesn't stop the app needs a storage layer that supports snapshots.
 
+**Protect the copies.** The backup files are the documents themselves: `storage.tgz` holds every page of every document without a watermark, and `securedocs.sql` holds password hashes, accounts, and the audit log. Restrict who can read them, encrypt them before they leave the machine, and delete old ones on a schedule (section 32.11).
+
 A rule of thumb from general practice, not from this project: keep more than one copy, on more than one kind of storage, with at least one off the machine. And measure your retention: keeping thirty daily backups costs thirty times the storage of one, so decide how far back you might need to go before you need to.
 
 ### 34.12 Living with one instance
 
 <!-- source: README Limitations, Go-live checklist -->
 The app runs as a single instance. Sessions and rate-limit counters live in the memory of the app process, and tiles live on a local volume. Three practical consequences:
+
+*See also: Chapters 40 and 41 sketch how the limits of one instance would be lifted on AWS.*
 
 - **A restart signs everyone out and resets the throttle counters.** Plan restarts and deploys for quiet hours. The idle-session warning (section 22.8) doesn't help, because a restart isn't an idle timeout.
 - **A deploy is a short outage.** `docker compose up -d --build` builds the new image and recreates the container. While it starts, the health check (Chapter 35) reports the app as not ready, and nginx returns errors.

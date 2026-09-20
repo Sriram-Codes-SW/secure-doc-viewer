@@ -1,3 +1,4 @@
+front-matter/00-about-this-edition.md
 front-matter/a-preface.md
 front-matter/b-how-to-use-this-book.md
 front-matter/c-setting-up-your-machine.md
@@ -46,9 +47,13 @@ tradeoffs/37-engineering-tradeoffs.md
 part-6-patterns/00-part-introduction.md
 part-6-patterns/38-design-patterns.md
 part-6-patterns/39-architectural-patterns.md
+part-7-cloud/00-part-introduction.md
+part-7-cloud/40-aws-production.md
+part-7-cloud/41-aws-operations.md
 appendices/epilogue.md
 appendices/appendix-a-glossary.md
 appendices/appendix-b-blueprint-history.md
 appendices/appendix-c-exercise-solutions.md
 appendices/appendix-d-command-reference.md
 appendices/appendix-e-troubleshooting.md
+appendices/index-terms.md

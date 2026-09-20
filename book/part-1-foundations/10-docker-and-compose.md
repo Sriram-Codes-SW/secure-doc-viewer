@@ -42,7 +42,7 @@ What does this buy the project? Three things:
 Four words carry the whole idea.
 
 - An **image** is a read-only template containing a program and everything it needs. `mysql:8.4` is an image.
-- A **container** is a running instance of an image. You can start many containers from one image.
+- A container is a running instance of an image. You can start many containers from one image.
 - A **volume** is storage that lives outside a container. A container's own files vanish when it is removed; a volume survives. The database's data must live in a volume, or every restart would erase the accounts.
 - A **network** connects containers so they can reach each other by name.
 
@@ -58,10 +58,12 @@ flowchart LR
 
 *Figure 10.1 — An image, its container, its volume and its published port*
 
+*Text description:* Five boxes connected by lines. The image `mysql:8.4` starts the container `securedocs-mysql`. That container is attached to the volume `mysql-data` and to the published port `127.0.0.1:3306`, and your app running on the host connects to that port.
+
 <!-- source: docker-compose.yml, service mysql (image, container_name, volumes, ports) at book-m6-final -->
 
 
-Docker fetches images from a **registry**, a public store; Docker Hub is the default. Images have a tag after the colon (`mysql:8.4`), the same idea as Chapter 7's Git tags but for images. An image is built in **layers**, each the result of one step; Docker stores each layer once and reuses it, which is why pulling a second image that shares layers is fast.
+Docker fetches images from a **registry**, a public store; Docker Hub is the default. Images have a tag after the colon (`mysql:8.4`), the same idea as Chapter 7's Git tags but for images. An image is built in **layers**, each the result of one step. Docker stores each layer once and reuses it, which is why pulling a second image that shares layers is fast.
 
 ### 10.3 Your first containers
 
@@ -88,13 +90,13 @@ docker ps
 docker ps -a
 ```
 
-`docker images` lists the images on your computer. `docker ps` lists running containers, and `docker ps -a` adds stopped ones. After the `--rm` run above, `hello-world` shows in `docker images` but not in `docker ps -a`, because its container was removed and its image was not.
+`docker images` lists the images on your computer. `docker ps` lists running containers, and `docker ps -a` adds stopped ones. After the `--rm` run of `hello-world` in this section, `hello-world` shows in `docker images` but not in `docker ps -a`, because its container was removed and its image was not.
 
 ## Intermediate tier: Docker Compose
 
 ### 10.4 Running MySQL 8.4 with Docker
 
-You could start MySQL with one long `docker run` command, but you would have to retype it exactly, and a long command is easy to get wrong. **Docker Compose** describes one or more containers in a file, `docker-compose.yml`, and starts them with one command. It is written in YAML, the indentation-based format from Chapter 8.
+You could start MySQL with one long `docker run` command, but you would have to retype it exactly, and a long command invites typing mistakes. **Docker Compose** describes one or more containers in a file, `docker-compose.yml`, and starts them with one command. It is written in YAML, the indentation-based format from Chapter 8.
 
 The database first appears at `book-m1-accounts`, where the file held only MySQL. Here it is, in full, exactly as it was at that milestone.
 
@@ -204,7 +206,9 @@ Line by line:
 - `volumes: mysql-data:/var/lib/mysql` attaches a named volume at the folder where MySQL keeps its data. The volume is declared at the bottom of the file.
 - `healthcheck` runs a command every 5 seconds to test whether MySQL is really answering. A container can be running but not yet ready; the health check tells other services when they can begin.
 
-Compare the health check in Listing 10.1 with the one here. The early version passed the password on the command line as `-p${DB_ROOT_PASSWORD}`. The final version changed it: `$$` defers the variable's expansion until the command runs inside the container, and the password is passed through the environment variable `MYSQL_PWD`, not as an argument. The stated reason is that the password then never appears in the stored command (which `docker inspect` would reveal) or in the process's argument list (which other users of the machine could see). It is a small change with a general lesson: a secret on a command line is visible in more places than you expect. <!-- source: docker-compose.yml comments at book-m6-final; git log -S MYSQL_PWD (commit 1ce2c8b, "Ultrareview prep") -->
+Compare the health check in Listing 10.1 with the one here. The early version passed the password on the command line as `-p${DB_ROOT_PASSWORD}`. The final version changed it: `$$` defers the variable's expansion until the command runs inside the container, and the password is passed through the environment variable `MYSQL_PWD`, not as an argument. The stated reason is that the password then never appears in the stored command (which `docker inspect` would reveal) or in the process's argument list (which other users of the machine could see). It is a small change with a general lesson: a secret on a command line is visible in more places than you expect.
+
+Be honest about what the change achieves, though, because the MySQL 8.4 manual is blunt about `MYSQL_PWD`. It says that using `MYSQL_PWD` to specify a password "must be considered extremely insecure", because on some systems any user who can list processes can also see their environment. It also says that the variable "is deprecated as of MySQL 8.4" and may be removed in a future version. The trade the project made is narrower than "secure". The password is gone from the command line and from the stored command. Inside the container, only that container's own processes can see the environment. A stricter option is an **option file**, a small configuration file for the MySQL client that holds the password and is readable only by its owner (mode `400` or `600`); you point the client at it with `--defaults-extra-file`. The manual also describes `mysql_config_editor`, which stores credentials in an obscured login file. Chapter 34 uses `MYSQL_PWD` for its backup commands for the same reason as here, and you should treat either approach as a step up from `-p` on the command line, not as the last word. <!-- source: MySQL 8.4 Reference Manual, "Environment Variables" (MYSQL_PWD) and "End-User Guidelines for Password Security" (option files, file mode 400 or 600), checked 2026-09-20 --> <!-- source: docker-compose.yml comments at book-m6-final; git log -S MYSQL_PWD (commit 1ce2c8b, "Ultrareview prep") -->
 
 ### 10.6 Profiles, networks and the full stack
 
@@ -220,7 +224,7 @@ A Compose file can hold several services. The final file adds `app` (the backend
 
 *Path: `docker-compose.yml`*
 
-A service with `profiles: ["full"]` starts only when you ask for that profile, so plain `docker compose up -d` gives you just MySQL, which is what you want while developing. Here is the backend service.
+A service with `profiles: ["full"]` starts only when you ask for that profile, so plain `docker compose up -d` gives you only MySQL, which is what you want while developing. Here is the backend service.
 
 **Listing 10.4 — `docker-compose.yml` (book-m6-final, excerpt: service `app`)**
 
@@ -339,9 +343,9 @@ Reading it, stage by stage.
 - `FROM` picks a base image. The first stage uses a full JDK (`25-jdk`) because building needs the compiler. `AS build` names it.
 - `WORKDIR` sets the working folder. `COPY` brings files in. `RUN` executes a command at build time: here, the Maven wrapper from Chapter 6.
 - The order is deliberate, and it is the most important idea in this chapter about performance. Copying `pom.xml` and downloading dependencies first means that layer is cached until `pom.xml` changes; copying `src` later means a code change does not repeat the downloads. The project's own comment says: "Dependencies first, so they stay cached until pom.xml changes." Swap the order and every one-line code change would download everything again.
-- The second `FROM` starts a fresh image with only a JRE (`25-jre`, Java without the compiler). `COPY --from=build` takes just the finished JAR from the first stage. This is a **multi-stage build**: the final image is smaller and contains no build tools or source code, so there is less to attack.
+- The second `FROM` starts a fresh image with only a JRE (`25-jre`, Java without the compiler). `COPY --from=build` takes only the finished JAR from the first stage. This is a **multi-stage build**: the final image is smaller and contains no build tools or source code, so there is less to attack.
 - The long `RUN` installs three things the running app needs. `fontconfig` and `fonts-dejavu-core` are fonts, because the watermark and PDF rendering draw text with Java's graphics library, which needs real fonts even in a container with no screen. `curl` is for the health check from Listing 10.4. It also creates an unprivileged user and group named `app`, and makes the folders it will write to. The chained `&&` and the final `rm -rf /var/lib/apt/lists/*` keep the layer small by deleting package downloads in the same step that created them.
-- `USER app` runs the program as that unprivileged user rather than as `root` (the all-powerful administrator account of a Linux system). If an attacker takes over the program, they gain less.
+- `USER app` runs the program as that unprivileged user rather than as `root` (the administrator account of a Linux system, which can do anything). If an attacker takes over the program, they gain less.
 - `ENV` sets variables: the storage folder, and JVM options that cap the heap at 75 percent of the container's memory and turn off graphics that need a screen (`java.awt.headless`). `VOLUME` marks where data lives, `EXPOSE` documents the port, and `ENTRYPOINT` is the command that starts the app.
 
 <!-- source: Dockerfile at book-m6-final -->
@@ -373,24 +377,24 @@ It follows the same cache logic (package files first, source later) and the same
 
 Collect the security choices scattered through this chapter's listings:
 
-- **Digests, not just tags.** Every image is pinned by `sha256` digest, and Dependabot proposes updates, so a rebuild gets exactly the reviewed image and updates arrive as reviewable pull requests.
+- **Digests, not only tags.** Every image is pinned by `sha256` digest, and Dependabot proposes updates, so a rebuild gets exactly the reviewed image and updates arrive as reviewable pull requests.
 - **Non-root everywhere.** The backend runs as `app`, and the frontend uses the unprivileged nginx image.
 - **Published on localhost only.** MySQL and the web port are bound to `127.0.0.1`; the backend is not published at all.
 - **Resource limits.** `mem_limit` on the containers keeps one runaway process from taking the machine.
 - **Health checks.** They let Compose start services in a safe order and let operators see real status.
 - **Scanned images.** The project's CI builds the images and scans them for known vulnerabilities, failing on any high or critical issue that has a fix (Chapter 36).
 
-These were not all there at first. The threat-modeling review, an AI review agent, listed "no Dockerfile, no CI, no Maven wrapper" as a finding, and the Docker stack arrived in the fifth phase, then was tightened over several review rounds: non-root nginx and digest pinning came in the second round. <!-- source: dossier reviews.md TM-14; bugs-and-findings.md (round 2, commit f682716); ci.yml at book-m6-final -->
+These were not all there at first. The threat-modeling review, an AI review agent, listed "no Dockerfile, no CI, no Maven wrapper" as a finding. The Docker stack arrived in the fifth phase. It was then tightened over several review rounds, and non-root nginx and digest pinning came in the second round. <!-- source: dossier reviews.md TM-14; bugs-and-findings.md (round 2, commit f682716); ci.yml at book-m6-final -->
 
-A related decision concerns upgrades. When the bot Dependabot proposed moving MySQL from 8.4 to a release numbered 26.7, the project declined and told the bot to ignore major-version bumps for the database: 8.4 is a long-term-support release, 26.7 was an "innovation" release, and moving to the next long-term-support version would be a deliberate upgrade with a migration test. <!-- source: dossier decisions.md, Dependabot rules (PR #10) -->
+A related decision concerns upgrades. When the bot Dependabot proposed moving MySQL from 8.4 to a release numbered 26.7, the project declined. It told the bot to ignore major-version bumps for the database. 8.4 is a long-term-support release, and 26.7 was an "innovation" release. Moving to the next long-term-support version would be a deliberate upgrade with a migration test. <!-- source: dossier decisions.md, Dependabot rules (PR #10) -->
 
 ### 10.10 Why Docker and not the obvious alternatives?
 
-Two alternatives come to mind. You could **install MySQL directly** on your computer. That works, but the installation drifts: your version differs from a teammate's, uninstalling leaves files behind, and the steps live only in someone's head. Or you could use a **virtual machine**, which is heavier and slower for the same repeatability. The container's cost is that you must learn one more tool and keep Docker running; the benefit is that "the database" is one line, and it is the same line everywhere. For an application with a database, a web server and an optional HTTPS front end, that trade is strongly in favor of containers. Chapter 33 shows how the same images are deployed.
+Two alternatives come to mind. You could **install MySQL directly** on your computer. That works, but the installation drifts: your version differs from a teammate's, uninstalling leaves files behind, and the steps live only in someone's head. Or you could use a virtual machine, which is heavier and slower for the same repeatability. The container's cost is that you must learn one more tool and keep Docker running; the benefit is that "the database" is one line, and it is the same line everywhere. For an application with a database, a web server and an optional HTTPS front end, that trade is strongly in favor of containers. Chapter 33 shows how the same images are deployed.
 
 ### 10.11 A real incident: the address the proxy forwarded
 
-The fixed network address in Listing 10.4 exists because of a real bug found in review. The `web` container runs nginx, a **reverse proxy** (a server that sits in front of another one and forwards requests to it), which passes each request to the backend and adds the client's address in a header called `X-Forwarded-For`, so the backend's sign-in throttle and audit log can see who is calling. The first version appended to whatever `X-Forwarded-For` the client had sent. A reviewer testing through nginx showed that any client could put a fake address in that header and reset its own sign-in lockout, and the audit log filled with invented addresses. The pull request's text had even claimed direct callers could not spoof it, which was false.
+The fixed network address in Listing 10.4 exists because of a real bug found in review. The `web` container runs nginx, a **reverse proxy**: a server that sits in front of another one and forwards requests to it. Nginx passes each request to the backend and adds the client's address in a header called `X-Forwarded-For`. That header lets the backend's sign-in throttle and audit log see who is calling. The first version appended to whatever `X-Forwarded-For` the client had sent. A reviewer testing through nginx showed that any client could put a fake address in that header and reset its own sign-in lockout, and the audit log filled with invented addresses. The pull request's text had even claimed direct callers could not spoof it, which was false.
 
 The fix came in stages: nginx now overwrites the header with the true peer address; then the Compose file fixed a subnet and gave nginx a fixed address, and the backend was told to trust the header only from that address. The lesson generalizes beyond Docker: a value that a client can influence, such as a header, is only as trustworthy as the last system you actually control. Chapter 16 tells the whole story. <!-- source: dossier bugs-and-findings.md D1; decisions.md D11; commits 2d82253 and a51674c -->
 

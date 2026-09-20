@@ -94,7 +94,7 @@ final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
 
 *Path: `src/main/java/com/example/securedocviewer/security/SpaCsrfTokenRequestHandler.java`*
 
-The class has two "handlers": `plain` uses the token as it is, and `xor` scrambles it with random data each time it's rendered, which protects tokens that are embedded in server-rendered pages from an attack called BREACH (one that recovers secrets from the size of compressed responses). `handle` uses the scrambled handler and calls `csrfToken.get()` to force the token to be generated, so the `XSRF-TOKEN` cookie exists from the very first response. `resolveCsrfTokenValue` decides how to read the incoming token: if the request has the `X-XSRF-TOKEN` header, which is what Angular sends with the raw cookie value, compare it as is; otherwise fall back to the scrambled form. The class comment describes this as Spring Security's recommended handling for single-page apps.
+The class has two "handlers". The `plain` one uses the token as it is. The `xor` one scrambles it with random data each time it's rendered, which protects tokens embedded in server-rendered pages from an attack called BREACH (one that recovers secrets from the size of compressed responses). `handle` uses the scrambled handler and calls `csrfToken.get()` to force the token to be generated, so the `XSRF-TOKEN` cookie exists from the very first response. `resolveCsrfTokenValue` decides how to read the incoming token: if the request has the `X-XSRF-TOKEN` header, which is what Angular sends with the raw cookie value, compare it as is; otherwise fall back to the scrambled form. The class comment describes this as Spring Security's recommended handling for single-page apps.
 
 You can see the outcome in the `stateChangingRequestsNeedACsrfToken` test in `SecurityIntegrationTest`: a signed-in `POST` without the token gets `403` with the message `Missing or invalid CSRF token. Reload the page and try again.` (Chapter 18).
 
@@ -127,15 +127,15 @@ Authentication says who the caller is; the **authorization rules** say what each
 
 *Path: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
-Read it from top to bottom, as Spring does. Health checks are open, because monitoring tools have no account, and they reveal only a status. Sign-in must be open: nobody can sign in if they need to be signed in first. Anything under `/api/admin/` needs the `ADMIN` role. Upload (`POST /api/documents`) needs `PUBLISHER` or `ADMIN`. The comment on the replacement rule gives a reason that isn't obvious: the refusal happens *before* the request body is read, so a reader who tries to upload a 50 MB file is turned away without the server spending time receiving it. A `*` in a path stands for one path segment. Then comes a general rule: everything else under `/api/` needs *any* signed-in user. Finally, `anyRequest().denyAll()` refuses anything not mentioned. This last line is the most important habit in the list. A new endpoint you forget to think about is closed, not open.
+Read it from top to bottom, as Spring does. Health checks are open, because monitoring tools have no account, and they reveal only a status. Sign-in must be open: nobody can sign in if they need to be signed in first. Anything under `/api/admin/` needs the `ADMIN` role. Upload (`POST /api/documents`) needs `PUBLISHER` or `ADMIN`. The comment on the replacement rule gives a reason that isn't obvious. The refusal happens *before* the request body is read, so a reader who tries to upload a 50 MB file is turned away without the server spending time receiving it. A `*` in a path stands for one path segment. Then comes a general rule: everything else under `/api/` needs *any* signed-in user. Finally, `anyRequest().denyAll()` refuses anything not mentioned. This last line is the most important habit in the list. A new endpoint you forget to think about is closed, not open.
 
-Note the order matters: the specific admin rule sits *above* the general `authenticated()` rule. If they were swapped, any signed-in user would match `/api/**` first and reach the admin endpoints.
+Note the order matters: the specific admin rule comes *before* the general `authenticated()` rule in the list. If they were swapped, any signed-in user would match `/api/**` first and reach the admin endpoints.
 
 The rules are coarse: they know the path and the role, not which document is meant. Finer rules ("only the owner may share this document") live in `DocumentService`, which has the document in hand, as the comment in the listing says.
 
 **A document you can't see gives `404`, not `403`.** Suppose a reader asks for `/api/documents/<some-id>`. If the id belongs to a document they may not open, a `403 Forbidden` would say "this exists, and you're not allowed", which confirms the id is real. The class comment of `DocumentService` states the project's rule: "A document the user can't view is reported as not found, never as forbidden, so its existence isn't revealed." A `404` for a document that doesn't exist and a `404` for one you may not see look identical. The `403` is reserved for the case where you *can* see the document but may not change it, for example a reader trying to share a document that is visible to them.
 
-**Errors raised inside the filter chain.** The controller advice from Chapter 13 can't catch failures that happen in a filter, because the filter runs before any controller. `SecurityErrorResponses` fills that gap. It implements three Spring Security hooks: the authentication entry point (no one is signed in, so `401` with `Sign-in required.`), the access-denied handler (signed in, but not allowed, so `403`, with a special message for a bad CSRF token), and the expired-session strategy (a session an administrator has ended, so `401` with `Your session has ended. Please sign in again.`). All three write the same `{"error": "..."}` JSON as `GlobalExceptionHandler`, so the browser app needs only one way to read errors.
+**Errors raised inside the filter chain.** The controller advice from Chapter 13 can't catch failures that happen in a filter, because the filter runs before any controller. `SecurityErrorResponses` fills that gap. It implements three Spring Security hooks. The authentication entry point answers when no one is signed in (`401` with `Sign-in required.`). The access-denied handler answers when a signed-in caller is not allowed (`403`, with a special message for a bad CSRF token). The expired-session strategy answers when an administrator has ended a session (`401` with `Your session has ended. Please sign in again.`). All three write the same `{"error": "..."}` JSON as `GlobalExceptionHandler`, so the browser app needs only one way to read errors.
 
 ### 16.4 Security headers
 
@@ -202,7 +202,7 @@ The filter is registered before Spring's authorization filter, so an expired ses
 
 **Revocation.** `SecurityConfig` registers every session in a `SessionRegistry` and allows unlimited concurrent sessions (`maximumSessions(-1)`): the app doesn't limit how many devices you sign in from, but it knows about each one. That lets `SessionAdministration` list and end sessions. The admin page lists sessions by an opaque **handle** (Chapter 15, Section 15.9), and `revoke(handle)` calls `expireNow()` on the matching session. Spring Security then rejects that session's next request, and the message from `SecurityErrorResponses` appears. `revokeAllFor(username, exceptSessionId)` ends every session a user has, "so the change takes effect now, not when their session happens to time out": it runs when an administrator changes a user's role, disables the account or resets the password, and when users change their own password.
 
-The test `anAdminCanSignAUserOutEverywhere` shows the whole thing: one user signs in on a "laptop" and a "phone", the user's own attempt to end all sessions is refused with `403`, the administrator's succeeds with `204`, both of the user's sessions get `401` on their next request, and the administrator's own session is unaffected.
+The test `anAdminCanSignAUserOutEverywhere` shows the whole thing. One user signs in on a "laptop" and a "phone". The user's own attempt to end all sessions is refused with `403`, and the administrator's attempt succeeds with `204`. Both of the user's sessions then get `401` on their next request, and the administrator's own session is unaffected.
 
 ## Advanced tier: Abuse, proxies and forced changes
 
@@ -239,13 +239,15 @@ flowchart TB
 
 *Figure 16.1 — The three sign-in rules and the recognised-device exemption in `LoginThrottle.checkAllowed`*
 
+*Text description:* A top-down decision flow with three questions in order. Five failures for this account from this address refuses the attempt, then twenty failures from this address refuses it. Next comes the recognised-device question: a recognised device is allowed, while an unrecognised one faces a third question about twenty failures for the account from all addresses. Every "yes" to a limit ends in a `429` refusal, and every allowed path counts the attempt in advance and then checks the password.
+
 <!-- source: LoginThrottle.checkAllowed at book-m6-final -->
 
 The first two rules apply to everyone, including a recognised device: that is why someone sharing the owner's network address still can't guess freely. Only the third rule, the account-wide one, is skipped for a device the account has recently used, which is what stops a stranger from locking the owner out of their usual device.
 
 **The check-then-act race.** The obvious way to write this is: (1) check whether the caller is locked out; (2) verify the password; (3) if wrong, record a failure. There is a gap between steps 1 and 3, and a password check takes about a tenth of a second. An attacker who sends many guesses at the same moment gets them *all* past step 1 before any reaches step 3, so a limit of five doesn't stop nine simultaneous guesses. This is a **race condition**: the result depends on the timing of things that happen at once.
 
-**The incident.** During the final review rounds, a threat-modeling review (an AI agent playing a security reviewer, as Chapter 32 explains) asked whether the sign-in protection would survive a serious external review, and ran a live probe: nine concurrent wrong passwords for one account from one address, with a limit of five. All nine received `401` (their passwords were actually checked) and only the next single attempt got `429`. The cause was exactly the gap above. <!-- source: dossier bugs-and-findings G1; commit 1ce2c8b --> The fix, in commit `1ce2c8b`, is the code below: reserve the attempt *before* checking the password, and hand the reservation back on success.
+**The incident.** During the final review rounds, a threat-modeling review (an AI agent playing a security reviewer, as Chapter 32 explains) asked whether the sign-in protection would survive a serious external review. It then ran a live probe: nine concurrent wrong passwords for one account from one address, with a limit of five. All nine received `401` (their passwords were actually checked) and only the next single attempt got `429`. The cause was exactly the check-then-act gap described earlier in this section. <!-- source: dossier bugs-and-findings G1; commit 1ce2c8b --> The fix, in commit `1ce2c8b`, is the code in Listing 16.6: reserve the attempt *before* checking the password, and hand the reservation back on success.
 
 **Listing 16.6 — `LoginThrottle.java` (`book-m6-final`, excerpt: methods `reserve` and `succeeded`)**
 
@@ -271,11 +273,11 @@ public synchronized void succeeded(String username, String clientIp, Instant res
 
 Two limits of the design are stated in the class comment: the counters live in memory (a restart clears them), and attempts refused by a lock aren't counted, so being locked out doesn't extend the lock. A `@Scheduled` sweep every five minutes drops counters whose failures have all aged out (Chapter 14).
 
-**A lockout is also an attack surface.** The first version of the account-wide rule locked an account after 20 failures from *any* addresses. The reviewer then pointed out that this lets anyone lock out any user: fail 20 times as the victim from a few addresses and the real owner can't sign in. The project's answer is the **recognised device**. `KnownDevices` remembers, for 30 days, addresses an account has *successfully* signed in from, and the account-wide rule doesn't apply to those. An attacker hammering a username from elsewhere therefore can't lock the owner out of their usual device, while the per-address rule still applies to everyone. <!-- source: dossier decisions D7, bugs-and-findings E1; commit 82c24b6 --> Because an address is personal data, only a keyed hash of it is stored (IPv6 addresses grouped by their /64 prefix, since one device rotates addresses within a prefix), entries expire after 30 days, and they are forgotten when the password changes or the account is disabled. The trade-off is documented: the correct password from a *new* address is refused during an account-wide lockout until an administrator unlocks the account.
+**A lockout is also an attack surface.** The first version of the account-wide rule locked an account after 20 failures from *any* addresses. The reviewer then pointed out that this lets anyone lock out any user: fail 20 times as the victim from a few addresses and the real owner can't sign in. The project's answer is the **recognised device**. `KnownDevices` remembers, for 30 days, addresses an account has *successfully* signed in from, and the account-wide rule doesn't apply to those. An attacker hammering a username from elsewhere therefore can't lock the owner out of their usual device, while the per-address rule still applies to everyone. <!-- source: dossier decisions D7, bugs-and-findings E1; commit 82c24b6 --> Because an address is personal data, only a keyed hash of it is stored (IPv6 addresses grouped by their /64 prefix, since one device rotates addresses within a prefix). Entries expire after 30 days, and they are forgotten when the password changes or the account is disabled. The trade-off is documented: the correct password from a *new* address is refused during an account-wide lockout until an administrator unlocks the account.
 
 ### 16.7 Trusting `X-Forwarded-For` only from a proxy
 
-Throttling by address needs the real client address. In a deployment the connection reaches the app through a **reverse proxy** (a server that receives requests on the app's behalf and forwards them, covered in Part V), so the address on the connection is the proxy's, and the original address travels in a header, `X-Forwarded-For`. But any client can write that header. If the app believes it blindly, an attacker can send a different fake address with every attempt and never hit a per-address limit.
+Throttling by address needs the real client address. In a deployment the connection reaches the app through a reverse proxy (a server that receives requests on the app's behalf and forwards them, covered in Part V), so the address on the connection is the proxy's. The original address travels in a header, `X-Forwarded-For`. But any client can write that header. If the app believes it blindly, an attacker can send a different fake address with every attempt and never hit a per-address limit.
 
 *Pattern note: A proxy that owns the trust boundary is the gateway pattern (Chapter 39, Section 39.7).*
 
@@ -299,7 +301,7 @@ server:
 
 The default, `none`, ignores the header entirely: safe when the app is reached directly. Behind the project's own proxy, the setting becomes `native`, and `internal-proxies` says *which* peers Tomcat may believe; the deployment pins it to the proxy's fixed address. Only then does `request.getRemoteAddr()`, which `AuthController` uses, return the forwarded client address.
 
-**The incident.** An earlier version of the deployment did the opposite of what the setting says: nginx *appended* to an `X-Forwarded-For` header the client had supplied, and the app trusted it, so a client could reset its sign-in lockout simply by sending a fake address. The description of the pull request that introduced this had claimed direct callers couldn't spoof; that claim was false, and the pull request text was corrected in place. The reviewer found it by testing through the real proxy. The fix made nginx overwrite the header with the real peer address, and later the app trusts the header only from the proxy's fixed address. A browser test that goes through nginx now guards it. <!-- source: dossier bugs-and-findings D1 (TM2-1); commits 2d82253, a51674c --> The lesson: **a header a proxy sets is only as trustworthy as the proxy's configuration, so test through the proxy, not around it.**
+**The incident.** An earlier version of the deployment did the opposite of what the setting says: nginx *appended* to an `X-Forwarded-For` header the client had supplied, and the app trusted it, so a client could reset its sign-in lockout by sending a fake address. The description of the pull request that introduced this had claimed direct callers couldn't spoof; that claim was false, and the pull request text was corrected in place. The reviewer found it by testing through the real proxy. The fix made nginx overwrite the header with the real peer address, and later the app trusts the header only from the proxy's fixed address. A browser test that goes through nginx now guards it. <!-- source: dossier bugs-and-findings D1 (TM2-1); commits 2d82253, a51674c --> The lesson: **a header a proxy sets is only as trustworthy as the proxy's configuration, so test through the proxy, not around it.**
 
 The tests inside the Java project can't exercise a proxy, but they follow the principle in a small way. `SecurityIntegrationTest` gives every test that causes failures its own address with a helper `from("198.51.100.61")`, whose comment says why: "Tests that cause failures use their own address, so they don't use up 127.0.0.1's allowance."
 
@@ -324,7 +326,7 @@ chain.doFilter(request, response);
 
 *Path: `src/main/java/com/example/securedocviewer/security/PasswordChangeRequiredFilter.java`*
 
-While the session's flag `sdv.mustChangePassword` is set (Chapter 15's Step 7), everything under `/api/` except the `/api/auth/` endpoints (where the user can look up who they are, change the password, or sign out) gets a `403` with an explanation and `passwordChangeRequired: true`. Note the `return` without `chain.doFilter`: the request stops here. Both custom filters are added around Spring's `AuthorizationFilter` in `SecurityConfig`: the lifetime filter before it and this one after it. Figure 16.2 shows where the two filters sit among the others.
+While the session's flag `sdv.mustChangePassword` is set (Chapter 15's Step 7), everything under `/api/` gets a `403` with an explanation and `passwordChangeRequired: true`. The exception is the `/api/auth/` endpoints, where the user can look up who they are, change the password, or sign out. Note the `return` without `chain.doFilter`: the request stops here. Both custom filters are added around Spring's `AuthorizationFilter` in `SecurityConfig`: the lifetime filter before it and this one after it. Figure 16.2 shows where the two filters sit among the others.
 
 ```mermaid
 flowchart TB
@@ -336,6 +338,8 @@ flowchart TB
 ```
 
 *Figure 16.2 — Where the project's two custom filters sit in the chain*
+
+*Text description:* A top-down chain of five steps: the request, the earlier Spring Security filters, `SessionLifetimeFilter`, `AuthorizationFilter`, `PasswordChangeRequiredFilter` and finally the controller. Notice that the lifetime filter comes before the authorization rules and the password-change filter comes after them.
 
 <!-- source: SecurityConfig.securityFilterChain at book-m6-final -->
 
@@ -350,7 +354,7 @@ Section 16.2's design had a bug that only a browser could see. At sign-in, Sprin
 ### 16.10 Common mistakes
 
 - **Leaving a path open by omission.** Without `anyRequest().denyAll()`, a new endpoint could be reachable by default. Deny first; open on purpose.
-- **Ordering rules wrongly.** A broad rule above a specific one shadows it. Put the specific rules first.
+- **Ordering rules wrongly.** A broad rule listed before a specific one shadows it. Put the specific rules first.
 - **Answering 403 when you mean "doesn't exist".** It confirms the resource is real. Return `404` when the caller has no right to know.
 - **Trusting `X-Forwarded-For` everywhere.** Trust it from a named proxy only.
 - **Counting after checking.** Any limit that checks first and counts later can be beaten with parallel requests.

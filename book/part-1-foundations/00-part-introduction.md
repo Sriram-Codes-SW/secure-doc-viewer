@@ -7,6 +7,10 @@ Nothing in this part is theory for its own sake. Every chapter teaches a topic b
 
 ## What the part covers
 
+Table I.1 lists the chapters and says why the app needs each topic.
+
+**Table I.1 — The chapters of Part I**
+
 | Chapter | Topic | Why the app needs it |
 |---|---|---|
 | 1 | The big picture | The design, the three roles, and the app's honest limits |
@@ -17,8 +21,6 @@ Nothing in this part is theory for its own sake. Every chapter teaches a topic b
 | 8 | How the web works | The browser and the backend speak HTTP and JSON, and cookies carry the sign-in |
 | 9 | SQL and MySQL | Accounts, documents and the audit trail live in a database |
 | 10 | Containers and Docker | MySQL and the whole stack run in containers |
-
-*Table 1 — The chapters of Part I*
 
 ## Why this order
 

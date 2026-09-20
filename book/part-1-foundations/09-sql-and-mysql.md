@@ -26,9 +26,11 @@ By the end of this chapter, you will be able to:
 
 ### 9.1 Why a database
 
-Files on disk are fine for a PDF, but a poor place to answer "which documents can `reader.one` open?". To answer that from files, you would read every file, parse it, and hope nobody changed one while you were reading. A **database** is a program that stores data in an organized form and answers questions about it quickly, safely and for many users at once. This project uses **MySQL** 8.4, a **relational database**: one that stores data in tables and links them by keys. The language you use to talk to it is **SQL** (Structured Query Language, usually pronounced "sequel" or letter by letter).
+Files on disk are fine for a PDF, but a poor place to answer "which documents can `reader.one` open?". To answer that from files, you would read every file, parse it, and hope nobody changed one while you were reading. A database is a program that stores data in an organized form and answers questions about it quickly, safely and for many users at once. This project uses **MySQL** 8.4, a **relational database**: one that stores data in tables and links them by keys. The language you use to talk to it is **SQL** (Structured Query Language, usually pronounced "sequel" or letter by letter).
 
 What does the app keep in it? At `book-m6-final` there are six tables, listed in Table 9.1. Notice that the tiles themselves are not among them: images stay on disk, and the database holds the facts about them.
+
+**Table 9.1 — The app's tables at book-m6-final**
 
 | Table | What it holds | Created in |
 |---|---|---|
@@ -38,8 +40,6 @@ What does the app keep in it? At `book-m6-final` there are six tables, listed in
 | `document_share` | Who a private document is shared with | `V2` |
 | `audit_event` | The append-only security trail | `V2` |
 | `account_known_ip` | Recently used sign-in addresses (hashed) | `V3` |
-
-*Table 9.1 — The app's tables at book-m6-final*
 
 <!-- source: db/migration V1 to V3 at book-m6-final -->
 
@@ -61,6 +61,8 @@ erDiagram
 
 *Figure 9.1 — How four tables relate (crow's-foot notation: one on the left, many on the right)*
 
+*Text description:* An entity-relationship diagram with four tables. A user owns zero or more documents, a document has zero or more pages and zero or more shares, and a user receives zero or more shares. Notice that the share table sits between documents and users, which is how many-to-many is expressed.
+
 <!-- source: V1__create_app_user.sql and V2__documents_shares_audit.sql at book-m2-documents (unchanged at book-m6-final): foreign keys fk_document_owner, fk_document_page_document, fk_document_share_document, fk_document_share_user -->
 
 
@@ -70,10 +72,10 @@ Read `app_user ||--o{ document` as "one user owns zero or more documents". The d
 
 ### 9.3 Trying SQL against the project's database
 
-You can run every statement in this chapter yourself, but you need a running MySQL first, and Chapter 10 is where Docker and the project's `docker-compose.yml` are taught. Docker itself was installed in the setup guide, and Chapter 10 explains what the commands do. So treat this section as a read-along now, and come back to it after Chapter 10; nothing in the rest of the chapter depends on running the commands. The steps, for when you are ready:
+You can run every statement in this chapter yourself, but you need a running MySQL first. Chapter 10 is where Docker and the project's `docker-compose.yml` are taught. Docker itself was installed in the setup guide, and Chapter 10 explains what the commands do. So treat this section as a read-along now, and come back to it after Chapter 10; nothing in the rest of the chapter depends on running the commands. The steps, for when you are ready:
 
 1. Copy `.env.example` to `.env` and fill in the password lines (Chapter 2), then start MySQL with `docker compose up -d` (Chapter 10).
-2. Create the tables. Normally the app creates them itself through its migrations when it starts (Section 9.11), but the app is not running yet, so apply the three migration files yourself, in order. Each command reads one file and feeds it to the MySQL client inside the container, using the database name, user and password the container already holds, so you never type a password:
+2. Create the tables. Normally the app creates them itself through its migrations when it starts (Section 9.11), but the app is not running yet, so apply the three migration files yourself, in order. Each command reads one file and feeds it to the MySQL client inside the container, using the database name, user and password the container already holds, so you never type a password. (The command hands the password to the client through the `MYSQL_PWD` environment variable, which the MySQL 8.4 manual calls insecure and deprecated; that is acceptable for a throwaway practice database on your own machine, and Chapter 10 explains the stricter alternative.)
 
 ```bash
 for f in src/main/resources/db/migration/V*.sql; do
@@ -81,7 +83,7 @@ for f in src/main/resources/db/migration/V*.sql; do
 done
 ```
 
-The `V*.sql` pattern matches the files in order (`V1`, `V2`, `V3`). Run this at `book-m6-final`, where all three exist. Treat this as a practice database: if you later start the real app against it, the app's migration tool will refuse to run on tables it did not create, so reset first with `docker compose down -v` (this deletes the database's data; Chapter 10 explains).
+The `V*.sql` pattern matches the files in order (`V1`, `V2`, `V3`). Run this at `book-m6-final`, where all three exist. Treat this as a practice database. If you later start the real app against it, the app's migration tool will refuse to run on tables it did not create. Reset first with `docker compose down -v`, which deletes the database's data (Chapter 10 explains).
 
 3. Open a SQL prompt inside the container. The command asks for the password interactively (`-p` with no value) so it never appears on the command line or in your shell history:
 
@@ -129,6 +131,8 @@ Notice `password_hash`, not `password`. The database never stores the password i
 
 Table 9.2 lists the types you will meet in the project's migrations.
 
+**Table 9.2 — Column types used in the migrations**
+
 | Type | Holds | Example column |
 |---|---|---|
 | `INT`, `BIGINT` | Whole numbers (about 2 billion and about 9 quintillion at most) | `page_count`, `id` |
@@ -136,13 +140,11 @@ Table 9.2 lists the types you will meet in the project's migrations.
 | `BOOLEAN` | true or false | `enabled` |
 | `DATETIME(6)` | A date and time, to the microsecond | `created_at` |
 
-*Table 9.2 — Column types used in the migrations*
-
 Choosing a size is a design decision with consequences. `VARCHAR(64)` for a username means a 65th character is refused by the database. The app's Java code also checks such limits, but the database is the last line of defense.
 
 ### 9.5 INSERT, SELECT, UPDATE, DELETE
 
-Four statements cover everyday work. Example 9.1 uses the table above; the values are made up for teaching, and in the app Java code sends these statements for you (Chapter 14).
+Four statements cover everyday work. Example 9.1 uses the `app_user` table of Listing 9.1; the values are made up for teaching, and in the app Java code sends these statements for you (Chapter 14).
 
 **Example 9.1 — The four everyday statements**
 
@@ -172,7 +174,7 @@ SELECT COUNT(*) FROM app_user WHERE role = 'READER';
 SELECT username FROM app_user WHERE username LIKE 'pub%' ORDER BY username LIMIT 20;
 ```
 
-The first counts readers. The second lists up to 20 usernames that start with `pub`, in alphabetical order. That second query is exactly the shape of the app's share picker, which Chapter 14 shows being generated from a method name: `findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc` reads as "top 20, enabled true, username starting with, order by username ascending". <!-- source: AppUserRepository.java at book-m6-final -->
+The first counts readers. The second lists up to 20 usernames that start with `pub`, in alphabetical order. That second query is exactly the shape of the app's share picker. Chapter 14 shows it being generated from a method name: `findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc` reads as "top 20, enabled true, username starting with, order by username ascending". <!-- source: AppUserRepository.java at book-m6-final -->
 
 #### The danger of UPDATE and DELETE
 
@@ -229,7 +231,7 @@ Reading it:
 
 - `document.id` is a `VARCHAR(36)`, not a number. Thirty-six characters is the length of a UUID (a randomly generated identifier such as `123e4567-e89b-12d3-a456-426614174000`), so document identifiers cannot be guessed by counting up, unlike an `AUTO_INCREMENT` number. That matters for a security product: a guessable id is an invitation to probe.
 - `document.owner_id` is a foreign key to `app_user.id`. The database refuses a document whose owner does not exist.
-- `document_share` is a **join table**: each row says "this user may open this document". Its primary key is the *pair* `(document_id, user_id)`, so the same share cannot be recorded twice, which is exactly Chapter 5's set behavior, enforced by the database.
+- `document_share` is a **join table**: each row says "this user may open this document". Its primary key is the *pair* `(document_id, user_id)`, so the same share cannot be recorded twice. That is exactly Chapter 5's set behavior, enforced by the database.
 - `ON DELETE CASCADE` means: when the referenced row is deleted, delete these rows too. Deleting a document removes its shares automatically, so no orphaned shares remain.
 
 Note what is missing from `document`: a foreign key does not say what happens on `DELETE` for `owner_id`. By default the database refuses to delete a user who still owns documents. That is deliberate. The project never deletes users at all (it disables them), so their audit history and ownership stay meaningful.
@@ -264,7 +266,7 @@ The app writes such queries in a Java-flavored language called JPQL, and the fra
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentRepository.java`*
 
-Read it as English. Take documents joined to their owner, and also, if there are any, to the users they are shared with (`left join`). Keep a document if it is visible to everyone, or the caller owns it, or the caller is one of the users it is shared with. Sort newest first. `distinct` removes duplicates that the join creates when a document has several shares. The words after a colon (`:username`) are placeholders the framework fills in safely; the box below explains why that matters.
+Read it as English. Take documents joined to their owner, and also, if there are any, to the users they are shared with (`left join`). Keep a document if it is visible to everyone, or the caller owns it, or the caller is one of the users it is shared with. Sort newest first. `distinct` removes duplicates that the join creates when a document has several shares. The words after a colon (`:username`) are placeholders the framework fills in safely; the next few paragraphs explain why that matters.
 
 #### A word on SQL injection
 
@@ -276,7 +278,7 @@ Suppose a program builds its query by gluing text together, and a user types the
 String sql = "SELECT * FROM app_user WHERE username = '" + name + "'";
 ```
 
-If `name` is `pub.one`, the query is what you expect. But if a person types `x' OR '1'='1`, the text becomes `SELECT * FROM app_user WHERE username = 'x' OR '1'='1'`, and the condition `'1'='1'` is always true, so the query returns every account. The input has escaped from being data and become part of the SQL itself. This attack is called **SQL injection**, and it has caused some of the worst data breaches on record. The defense is to keep the SQL and the values separate: write the SQL with a placeholder, and hand the value over on its own, so the database treats it strictly as a value and never as SQL. That is what `:username` above does, and what every query in this project does. Chapter 14, on how the app talks to its database, shows the framework filling those placeholders in.
+If `name` is `pub.one`, the query is what you expect. But if a person types `x' OR '1'='1`, the text becomes `SELECT * FROM app_user WHERE username = 'x' OR '1'='1'`, and the condition `'1'='1'` is always true, so the query returns every account. The input has escaped from being data and become part of the SQL itself. This attack is called **SQL injection**, and it has caused some of the worst data breaches on record. The defense is to keep the SQL and the values separate: write the SQL with a placeholder, and hand the value over on its own, so the database treats it strictly as a value and never as SQL. That is what `:username` in Listing 9.3 does, and what every query in this project does. Chapter 14, on how the app talks to its database, shows the framework filling those placeholders in.
 
 ### 9.7 Summaries: COUNT and GROUP BY
 
@@ -310,7 +312,7 @@ CREATE INDEX ix_audit_event_user_time ON audit_event (username, occurred_at);
 
 *Path: `src/main/resources/db/migration/V2__documents_shares_audit.sql`*
 
-`ix_document_owner` speeds up "documents owned by this user", and `ix_document_share_user` speeds up "documents shared with this user", which the library page needs on every load. The audit table is append-only and grows without limit, so its indexes let an administrator filter by time or by user without scanning millions of rows. An index on `(username, occurred_at)` serves both "this user's events" and "this user's events in this time range", because the database can use the leftmost columns of a multi-column index on their own: a lookup by `username` alone can use the index above, while a lookup by `occurred_at` alone cannot. The migration also indexes `(document_id, occurred_at)` and `(event_type, occurred_at)`, for the audit page's other filters.
+`ix_document_owner` speeds up "documents owned by this user", and `ix_document_share_user` speeds up "documents shared with this user", which the library page needs on every load. The audit table is append-only and grows without limit, so its indexes let an administrator filter by time or by user without scanning millions of rows. An index on `(username, occurred_at)` serves both "this user's events" and "this user's events in this time range". The reason is that the database can use the leftmost columns of a multi-column index on their own. A lookup by `username` alone can use the index `ix_audit_event_user_time`, while a lookup by `occurred_at` alone cannot. The migration also indexes `(document_id, occurred_at)` and `(event_type, occurred_at)`, for the audit page's other filters.
 
 Primary keys and `UNIQUE` constraints create indexes automatically, which is why `username` is fast to look up without an explicit `CREATE INDEX`.
 
@@ -322,7 +324,7 @@ If you want to see whether a query uses an index, put `EXPLAIN` in front of it. 
 
 Two details in the migration files show real design thinking.
 
-The first is a naming decision. The `document_page` table stores the tile grid, and its columns are called `tile_rows` and `tile_cols`. The migration's own comment says why: "Column names avoid ROWS, which is reserved in MySQL 8." A **reserved word** is a word SQL already uses, so it cannot be used as a plain name. The Java class `DocumentPage` keeps the natural name `rows` for its field, and an annotation, `@Column(name = "tile_rows")` (Chapter 4's annotations), maps it to the column: the mapping absorbs the difference, and the record `PageInfo` that reaches the browser still says `rows`. <!-- source: V2__documents_shares_audit.sql comment at book-m2-documents -->
+The first is a naming decision. The `document_page` table stores the tile grid, and its columns are called `tile_rows` and `tile_cols`. The migration's own comment says why: "Column names avoid ROWS, which is reserved in MySQL 8." A **reserved word** is a word SQL already uses, so it cannot be used as a plain name. The Java class `DocumentPage` keeps the natural name `rows` for its field. An annotation, `@Column(name = "tile_rows")` (Chapter 4's annotations), maps it to the column. The mapping absorbs the difference, so the record `PageInfo` that reaches the browser still says `rows`. <!-- source: V2__documents_shares_audit.sql comment at book-m2-documents -->
 
 The second is the audit table. Here is how it is described in the migration.
 

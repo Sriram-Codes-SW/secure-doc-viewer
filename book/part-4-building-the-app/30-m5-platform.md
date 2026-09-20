@@ -15,7 +15,7 @@
 ## Prerequisites
 
 Chapters 26–29 (the earlier milestones), 10 (Docker and Compose), 24 (end-to-end tests) and 16
-(Spring Security), as listed in `book/OUTLINE.md`. The code is at `book-m5-platform`, the merge of
+(Spring Security). The code is at `book-m5-platform`, the merge of
 pull request #5. It is the largest milestone: 15 commits, `2d10e07` to `51ea941`, written over roughly
 half a day and reviewed in several rounds. Versions at this tag differ from the earlier chapters:
 Spring Boot 4.1.1, Java 25, PDFBox 3.0.8, Maven wrapper 3.9.16 (check `pom.xml` at the tag).
@@ -120,7 +120,7 @@ This is a multi-stage build: two `FROM` lines, two images. Read it in two halves
 
 **The build stage** (first `FROM`, named `build`). It starts from a full JDK (the toolkit that can
 compile), copies the wrapper and `pom.xml`, and downloads all dependencies (`dependency:go-offline`)
-*before* copying the source. That order is a caching trick. Docker builds an image in **layers**, one
+*before* copying the source. That order is a caching trick. Docker builds an image in layers, one
 per instruction, and reuses a layer if its inputs haven't changed. Dependencies change rarely and
 source changes constantly, so putting the slow, stable step first means most rebuilds skip the
 download. Then it copies the source and runs `package` (without tests: CI ran those) to produce one
@@ -170,11 +170,10 @@ second stage copies only the built files, plain HTML, CSS and JavaScript, into *
 server. The "unprivileged" nginx image runs as a non-root user and listens on port 8080, not 80,
 because non-root processes can't bind low ports.
 
-nginx has two jobs here. It serves the static Angular files, and it **proxies** `/api` to the
-backend. A **reverse proxy** receives a request on behalf of another server and passes it along.
+nginx has two jobs here. It serves the static Angular files, and it proxies `/api` to the
+backend. A reverse proxy receives a request on behalf of another server and passes it along.
 The comment at the top of the frontend Dockerfile explains why: "so the browser sees a single origin
-(the session and CSRF cookies depend on that)." From the browser's point of view, the page and the
-API live at one address, which is what the `SameSite=Strict` cookies from Chapter 26 need.
+(the session and CSRF cookies depend on that)." From the browser's point of view, the page and the API live at one address. The `SameSite=Strict` cookies from Chapter 26 need that.
 <!-- source: frontend/Dockerfile at book-m5-platform; PR #5 body -->
 
 ### 30.6 Compose: services, profiles and one published port
@@ -264,9 +263,7 @@ and pull request. It has four jobs:
   the built images with Trivy (fixable HIGH or CRITICAL findings fail the job), waits for the API to be
   healthy, runs Playwright, and uploads the report and service logs if it fails.
 
-Every third-party action in the workflow is pinned to a full commit hash with the version in a
-comment, for the same reason images are pinned by digest: a moving tag is a way for someone else's
-change to enter your build.
+Every third-party action in the workflow is pinned to a full commit hash, with the version in a comment. The reason is the same as for images pinned by digest: a moving tag lets someone else's change enter your build.
 <!-- source: ci.yml at book-m5-platform; PR #5 body -->
 
 ## Intermediate tier: Proxies, addresses, sessions and trust
@@ -279,7 +276,7 @@ reviews.*
 
 The sign-in throttle and the audit log need the caller's IP address. Behind a proxy, the backend
 sees the proxy's address, so the proxy passes the caller's address along in a header called
-`X-Forwarded-For`. The trouble is that a header is just text, and anyone can send one. If the
+`X-Forwarded-For`. The trouble is that a header is only text, and anyone can send one. If the
 backend believes it from anyone, a client can pretend to be any address.
 
 **The first version was wrong.** nginx *appended* to whatever `X-Forwarded-For` the client already
@@ -318,7 +315,9 @@ server {
         proxy_pass http://app:8080;
         proxy_set_header Host $host;
         # OVERWRITE (never append to) X-Forwarded-For with the address of the TCP
-        # peer.
+        # peer. The backend trusts this header (server.forward-headers-strategy),
+        # so passing through a client-supplied value would let anyone choose the
+        # IP that login throttling and the audit log see.
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-Proto $forwarded_proto;
@@ -672,8 +671,7 @@ and safe questions come first.
 
 The order is deliberate. The comments say the rate limit runs "after auth so unauthenticated requests
 can't burn a legitimate user's allowance, and before the disk read/render so a throttled request
-doesn't pay that cost." Cheap in-memory checks come before the database check, and all of them come
-before the expensive work of reading, watermarking and encoding a PNG.
+doesn't pay that cost." Cheap in-memory checks come before the database check. All of them come before the expensive work of reading, watermarking and encoding a PNG.
 
 Three details are worth a closer look.
 
@@ -762,8 +760,7 @@ The sequence is what matters.
    database lock held. The result waits in a staging directory.
 3. **Lock, re-check, swap.** `findByIdForUpdate` locks the row. The permission check is *repeated*,
    with a comment saying why: "Rendering can take a while: the owner may have been demoted or
-   disabled, or the document handed to someone else, since the check above." This is a
-   time-of-check to time-of-use gap, closed by checking again under the lock.
+   disabled, or the document handed to someone else, since the check above." This is a time-of-check to time-of-use gap. Checking again under the lock closes it.
 4. **Clear debris, then commit.** If an earlier replace failed after moving tiles but before the
    database committed, a directory at the next version can exist as debris. The code deletes it first
    (a review finding: without that, a leftover directory made every later replace fail until the
@@ -852,7 +849,7 @@ public class TileWorkLimiter {
 
 *Path: `src/main/java/com/example/securedocviewer/service/TileWorkLimiter.java`*
 
-A **semaphore** is a counter of permits. `tryAcquire(2000, MILLISECONDS)` waits up to two seconds for a
+A semaphore is a counter of permits. `tryAcquire(2000, MILLISECONDS)` waits up to two seconds for a
 free permit and returns false if none appears. If it fails the method counts a "busy" metric and
 throws a `ServiceBusyException` that becomes a 503 with a one-second `Retry-After`; the viewer treats
 that like a rate-limit answer and retries. If it succeeds, the work runs, and the `finally` block
@@ -870,17 +867,14 @@ per-user rate limit rose from 120 to 180 requests per minute. The reason was rea
 pixel tiles a page took about 35 tiles, and normal reading tripped the limit, leaving a blank page
 (`PO2-1`; the first finding of this kind was `PO-7`).
 
-The final technical review pointed out the cost, calling it a low-severity product decision: larger
-tiles and a higher limit let a scraper pull about six times more pixels per minute. Copying a
-500-page document by script takes about 33 minutes instead of about 2.4 hours. Documents uploaded
+The final technical review pointed out the cost and called it a low-severity product decision. Larger tiles and a higher limit let a scraper pull about six times more pixels per minute (180 requests of 512-pixel tiles against 120 of 256-pixel tiles). The review's estimate for copying a 500-page
+document by script fell from about 2.4 hours to about 33 minutes, roughly 4.4 times faster overall;
+the two ratios measure different things, pixels per minute and time for a whole document. Documents uploaded
 before the change keep 256-pixel tiles. The review asked for explicit product-owner sign-off and a
 statement in the README's Limitations.
 
-The implementer laid the options out for the product owner: normal reading at about 15 pages a minute
-before any pause against about 30 minutes to copy a 500-page document by script (now), versus about 3
-pages a minute and about 2.4 hours (earlier). Every tile is watermarked, so copies are traceable; the
-limit only slows copying. The product owner first asked how different limits for sensitive documents
-would work (which became an open idea, per-document sensitivity levels) and then decided: "I will go
+The implementer laid the options out for the product owner. Now: normal reading at about 15 pages a minute before any pause, and about 30 minutes to copy a 500-page document by script. Earlier: about 3 pages a minute, and about 2.4 hours. Every tile is watermarked, so copies are traceable; the
+limit only slows copying. The product owner first asked how different limits for sensitive documents would work, which became an open idea: per-document sensitivity levels. Then the product owner decided: "I will go
 ahead with the current setup for the rate-limits and see how things go." The README records the
 sign-off.
 <!-- source: decisions D6; PR #5 body; commits 66f7152, 51ea941 -->
@@ -907,9 +901,7 @@ deliberately odd timezone. (25 audit rows in the developer's local database had 
 product owner approved a one-off `UPDATE` to shift them back. That repair is not in the repository.)
 
 **Backups.** The runbook stops the app while backing up, so the database dump and the tile archive
-always match (a review finding). A restore drill was done: a backup was restored into a scratch MySQL
-and a scratch volume, every document's current tile version was present, the app booted on it,
-Flyway validated V1 to V3, and a reader signed in and received a watermarked tile.
+always match (a review finding). A restore drill was done. A backup was restored into a scratch MySQL and a scratch volume. Every document's current tile version was present, the app booted on it, and Flyway validated V1 to V3. A reader signed in and received a watermarked tile.
 <!-- source: PR #5 body (Operations; Final-review fixes); bugs record C6, F1 -->
 
 ## Common mistakes
@@ -938,59 +930,9 @@ and let Dependabot propose updates.
 
 **Local time in a shared database.** Symptom: events dated in the future. Fix: UTC everywhere, tested with an odd timezone.
 
-## In this project
-
-**Table 30.4 — Where the concepts live (at book-m5-platform)**
-
-| Concept | Where |
-|---|---|
-| Containers | `Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`, `deploy/Caddyfile` |
-| Proxy trust | `frontend/nginx.conf`, `docker-compose.yml` (subnet, `TRUSTED_PROXY_REGEX`) |
-| Lockout and devices | `security/LoginThrottle`, `security/KnownDevices`, `V3__...sql` |
-| Password and session rules | `security/PasswordChangeRequiredFilter`, `security/SessionLifetimeFilter` |
-| Tile gates and versions | `controller/TileController`, `model/SignedTilePayload`, `document/DocumentService` |
-| Bounded work | `service/TileGenerationService`, `service/TileWorkLimiter` |
-| CI and tests | `.github/workflows/ci.yml`, `MySqlIntegrationTest`, `frontend/e2e/secure-viewing.spec.ts` |
-
-Table 30.4 lists the places to look at this tag. Tests at the end of the review rounds: 114 backend,
-31 frontend and an end-to-end run that includes accessibility checks.
-<!-- source: PR #5 body -->
-
-## Try it
-
-Solutions are in `30-m5-platform.solutions.md`.
-
-### Exercise 30.1 ★ Forwarded header
-
-Why must a backend only trust `X-Forwarded-For` from one proxy address?
-
-### Exercise 30.2 ★ Layers of an image
-
-In Listing 30.1, why are dependencies downloaded before the source is copied?
-
-### Exercise 30.3 ★★ Lockout abuse
-
-Explain how the account-wide lockout rule let an attacker lock out a victim, and how the
-recognised-device rule stops that. What does it cost?
-
-### Exercise 30.4 ★★ Order of gates
-
-In Table 30.3, why does the rate-limit gate come before the access check, and why does the access
-check come before the disk read?
-
-### Exercise 30.5 ★★★ Version inside the token
-
-In the token format above, why is the tile version part of the signed fields rather than a separate
-query parameter?
-
-### Exercise 30.6 ★★★ Design a limit
-
-Suppose you wanted to cap concurrent audit CSV exports at 2. Sketch the code using the pattern of
-Listing 30.11, and say what the user should see when the cap is reached.
-
 ## Architecture blueprint v5
 
-Figure 30.1 is Blueprint v5, from `book/blueprints/v5-platform.md`.
+Figure 30.1 is Blueprint v5.
 
 ```mermaid
 flowchart LR
@@ -1024,11 +966,13 @@ flowchart LR
 ```
 
 *Figure 30.1 — Blueprint v5 (`book-m5-platform`)*
+
+*Text description:* A left-to-right flowchart of the Docker Compose network. The user's browser reaches nginx directly or through the optional Caddy container (HTTPS and HSTS). Inside the Spring Boot app, a request passes the SessionLifetimeFilter and PasswordChangeRequiredFilter, then SecurityConfig with LoginThrottle and KnownDevices, then the controllers. Controllers use DocumentService (backed by MySQL with migrations V1 to V3), TileWorkLimiter with TileRateLimiter, and TileGenerationService, which writes versioned tile folders to the app-storage volume; StorageJanitor cleans that volume, and Prometheus, from allowed addresses only, reads ViewerMetrics. This is a deployment-oriented view of what was added or changed since Blueprint v4: SignedUrlService, SessionKeys, WatermarkService and AuditLogService still exist at this tag but are left out to keep the drawing readable.
 <!-- source: book/blueprints/v5-platform.md; classes named in the diagram, present at book-m5-platform under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; db/migration/V1, V2, V3; Dockerfile; docker-compose.yml; frontend/nginx.conf; deploy/Caddyfile -->
 
 ## Decisions and challenges
 
-#### Decision: Spring Boot 4 and Java 25
+### Decision: Spring Boot 4 and Java 25
 
 **The decision.** Adopt the newest general-availability versions, at the product owner's instruction.
 **The options considered.** Stay on Boot 3.3 with a patch, move to the newest 3.x, or move to 4.
@@ -1038,7 +982,7 @@ Security 7, and a discovery in a later round: Boot 4.1.1 shipped a Tomcat with c
 had to be pinned to a fixed version (Chapter 31).
 <!-- source: decisions D10 -->
 
-#### Incident: the proxy that believed the client
+### Incident: the proxy that believed the client
 
 **The problem.** nginx appended to a client-supplied `X-Forwarded-For`, so a client could spoof its
 address and reset the sign-in lockout. **How it was found.** The technical review found it by testing
@@ -1049,7 +993,7 @@ request even carries the correction: a claim made when it was first submitted wa
 and replaced.
 <!-- source: PR #5 body; decisions D11; bugs record D1 -->
 
-#### Incident: a fix that created a denial of service
+### Incident: a fix that created a denial of service
 
 **The problem.** The first fix for the spoofing finding added an account-wide lockout, which let anyone
 lock out any user (`TM3-1`). **How it was found.** The technical review's re-read of the fix.
@@ -1058,7 +1002,7 @@ defense that counts failures per victim can be turned into a weapon against the 
 trigger it.
 <!-- source: decisions D7; bugs record E1 -->
 
-#### Incident: replacing a document mid-read
+### Incident: replacing a document mid-read
 
 **The problem.** Replacing a PDF while someone was reading could show a page made of old and new tiles
 (`TM2-5`). **How it was found.** A review finding, then a probe showing that stale URLs silently
@@ -1067,27 +1011,79 @@ token, with 410 for stale URLs. **The lesson.** When state has two parts (a row 
 pair one atomic switch, and make every reference name the version it means.
 <!-- source: decisions D8; bugs record D4, G8 -->
 
-#### Decision: 512-pixel tiles and 180 requests a minute
+### Decision: 512-pixel tiles and 180 requests a minute
 
 **The decision.** Larger tiles and a higher limit, accepted by the product owner. **The options
 considered.** 256 pixels and 120 a minute (safer against scraping, blank pages for real readers) or
 512 and 180. **Why this one.** Normal reading no longer trips the limit; every tile is watermarked so
-copies stay traceable. **What it costs.** A scraper is about six times faster; the README's
-Limitations say so.
+copies stay traceable. **What it costs.** A scraper pulls about six times more pixels a minute, and a 500-page
+harvest drops from about 2.4 hours to about 33 minutes; the README's Limitations state the trade-off.
 <!-- source: decisions D6 -->
 
-#### Incident: audit times in the future
+### Incident: audit times in the future
 
-**The problem.** Events appeared dated in the future. **How it was found.** The product owner's
-re-review (`PO2-5`). **The fix.** UTC pinned in JDBC, UTC shown everywhere, and a Testcontainers
+**The problem.** Events appeared dated in the future. **How it was found.** The AI product-owner
+reviewer's re-review (`PO2-5`). **The fix.** UTC pinned in JDBC, UTC shown everywhere, and a Testcontainers
 test with an odd timezone that fails without the pin. **The lesson.** Two programs writing to one
 database must agree on time.
 <!-- source: bugs record C6 -->
 
-#### Decision: the ultrareview and the review rounds
+### Decision: the ultrareview and the review rounds
 
 The last rounds of this pull request are the subject of Chapter 31, together with the review that
 never ran.
+
+## In this project
+
+**Table 30.4 — Where the concepts live (at book-m5-platform)**
+
+| Concept | Where |
+|---|---|
+| Containers | `Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`, `deploy/Caddyfile` |
+| Proxy trust | `frontend/nginx.conf`, `docker-compose.yml` (subnet, `TRUSTED_PROXY_REGEX`) |
+| Lockout and devices | `security/LoginThrottle`, `security/KnownDevices`, `V3__...sql` |
+| Password and session rules | `security/PasswordChangeRequiredFilter`, `security/SessionLifetimeFilter` |
+| Tile gates and versions | `controller/TileController`, `model/SignedTilePayload`, `document/DocumentService` |
+| Bounded work | `service/TileGenerationService`, `service/TileWorkLimiter` |
+| CI and tests | `.github/workflows/ci.yml`, `MySqlIntegrationTest`, `frontend/e2e/secure-viewing.spec.ts` |
+
+Table 30.4 lists the places to look at this tag. Tests at the end of the review rounds: 114 backend,
+31 frontend and an end-to-end run that includes accessibility checks.
+<!-- source: PR #5 body -->
+
+To see any of these files as it was at this milestone, run `git show book-m5-platform:<path>`, for example `git show book-m5-platform:pom.xml`.
+
+## Try it
+
+Solutions are in Appendix C.
+
+### Exercise 30.1 ★ Forwarded header
+
+Why must a backend only trust `X-Forwarded-For` from one proxy address?
+
+### Exercise 30.2 ★ Layers of an image
+
+In Listing 30.1, why are dependencies downloaded before the source is copied?
+
+### Exercise 30.3 ★★ Lockout abuse
+
+Explain how the account-wide lockout rule let an attacker lock out a victim, and how the
+recognised-device rule stops that. What does it cost?
+
+### Exercise 30.4 ★★ Order of gates
+
+In Table 30.3, why does the rate-limit gate come before the access check, and why does the access
+check come before the disk read?
+
+### Exercise 30.5 ★★★ Version inside the token
+
+In the token format of Section 30.13, why is the tile version part of the signed fields rather than a separate
+query parameter?
+
+### Exercise 30.6 ★★★ Design a limit
+
+Suppose you wanted to cap concurrent audit CSV exports at 2. Sketch the code using the pattern of
+Listing 30.11, and say what the user should see when the cap is reached.
 
 ## Summary
 

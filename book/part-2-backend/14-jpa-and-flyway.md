@@ -1,7 +1,7 @@
 <!-- chapter: 14 | part: II | owner: writer-backend | tag: book-m2-documents | status: expanded -->
 # Chapter 14: Storing data with JPA and Flyway
 
-The Secure Document Viewer keeps accounts, documents, shares and an audit trail in MySQL. This chapter shows how Java objects map to database tables, how the schema is created and changed safely, how transactions keep changes all-or-nothing, how a row lock stops two people from replacing the same PDF at once, and how timed cleanup jobs run. It also tells the real bugs that taught the project these lessons: audit rows that vanished, and timestamps that came out in the wrong time zone.
+The Secure Document Viewer keeps accounts, documents, shares and an audit trail in MySQL. This chapter shows how Java objects map to database tables and how the schema is created and changed safely. It then covers how transactions keep changes all-or-nothing, how a row lock stops two people from replacing the same PDF at once, and how timed cleanup jobs run. It also tells the real bugs that taught the project these lessons: audit rows that vanished, and timestamps that came out in the wrong time zone.
 
 ## Learning objectives
 
@@ -203,7 +203,7 @@ List<Document> findVisibleTo(@Param("username") String username, @Param("everyon
 
 ### 14.5 Flyway migrations (`V1`, `V2`, `V3`)
 
-Someone has to create the tables. If Hibernate did it automatically, the schema would depend on whichever code last ran, and production changes would be guesses. Instead the project sets `spring.jpa.hibernate.ddl-auto: none` ("Flyway owns the schema; Hibernate never alters it", says the comment in `application.yml`) and uses Flyway, which applies numbered SQL files in order and records what it applied in a table, so each file runs exactly once on each database.
+Someone has to create the tables. If Hibernate did it automatically, the schema would depend on whichever code last ran, and production changes would be guesses. Instead the project sets `spring.jpa.hibernate.ddl-auto: none` ("Flyway owns the schema; Hibernate never alters it", says the comment in `application.yml`) and uses Flyway. Flyway applies numbered SQL files in order and records what it applied in a table, so each file runs exactly once on each database.
 
 **Listing 14.5 — `V1__create_app_user.sql` (`book-m2-documents`, identical at `book-m6-final`)**
 
@@ -282,7 +282,7 @@ Two habits show here. New columns on tables that already hold rows get a `DEFAUL
 
 ### 14.6 Transactions: `@Transactional` and `TransactionTemplate`
 
-A transaction groups several database changes so that either all succeed or none do: it either **commits** (makes them all permanent) or **rolls back** (undoes everything it did). Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
+A transaction groups several database changes so that either all succeed or none do: it either commits (makes them all permanent) or **rolls back** (undoes everything it did). Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
 
 *Pattern note: `TransactionTemplate` is the template method idea with a callback (Chapter 38, Section 38.5).*
 
@@ -291,7 +291,7 @@ A transaction groups several database changes so that either all succeed or none
 public UserSummary create(String rawUsername, String password, Role role, boolean mustChangePassword) {
 ```
 
-(`book-m6-final`, `UserAccountService.java`, signature only.) Spring wraps the method in a proxy (a stand-in object with the same methods; Chapter 11, Section 11.8): the proxy begins a transaction, runs your method, commits if it returns normally and rolls back if it throws. Read-only methods use `@Transactional(readOnly = true)`, which lets the database and Hibernate skip work.
+(`book-m6-final`, `UserAccountService.java`, signature only.) Spring wraps the method in a proxy (a stand-in object with the same methods; Chapter 11, Section 11.8): the proxy begins a transaction and runs your method. It commits if the method returns normally. It rolls back if the method throws an unchecked exception (a `RuntimeException` or an `Error`); a checked exception does not roll back unless you configure `rollbackFor`. The project never sets `rollbackFor`. Its services report failures with runtime exceptions such as `BadRequestException`, so a failed rule rolls back. `DocumentService.replaceFile` wraps a checked `IOException` in an `UncheckedIOException` inside its transaction for the same reason: a checked exception there would commit. Read-only methods use `@Transactional(readOnly = true)`, which lets the database and Hibernate skip work.
 
 Inside a transaction, Hibernate *tracks* every entity it loaded. That's why `UserAccountService.update` can change a user with `user.setEnabled(enabled)` and never call `save`: at commit, Hibernate notices the field differs from what it loaded and writes an `UPDATE`. This is called **dirty checking**. It is convenient, and it surprises people: a setter called inside a transaction is a database write.
 
@@ -319,7 +319,7 @@ Files and rows can't be one transaction, so the code orders the steps so that a 
 
 ### 14.7 Locking rows, optimistic and pessimistic
 
-Two people replacing the same PDF at the same moment could overwrite each other or leave a mixture of old and new tiles. A **row lock** makes the second wait until the first finishes. `DocumentRepository` has:
+Two people replacing the same PDF at the same moment could overwrite each other or leave a mixture of old and new tiles. A row lock makes the second wait until the first finishes. `DocumentRepository` has:
 
 ```java
 /** Row lock for replace/delete, so concurrent changes to one document are serialised. */
@@ -354,6 +354,8 @@ sequenceDiagram
 
 *Figure 14.1 — Replacing a PDF: render outside the lock, switch versions under it, delete the old version last*
 
+*Text description:* A sequence with four participants: the publisher, `DocumentService`, the disk and MySQL. Time runs downward. Rendering to a staging folder happens before the row lock is taken. The lock, the rights check, the move to the next version and the switch of `tile_version` happen inside one transaction. The previous version is deleted and the audit event written only after the commit.
+
 <!-- source: DocumentService.replaceFile at book-m6-final -->
 
 Read the figure from top to bottom. The slow step, rendering, happens *before* the lock, so a second publisher isn't kept waiting while pages are drawn. The lock is held only for the short stretch from the `select ... for update` to the commit, which is where the version number changes. The old version is deleted *after* the commit, so a reader who still holds a link to it is never left with nothing on disk: at worst the link answers `410` (Chapter 17). The audit row is written last, in its own transaction (Section 14.8).
@@ -383,11 +385,13 @@ Two cautions about this annotation. First, the wrapper sits *between beans*: it 
 
 A `DATETIME` column has no time zone. If a laptop in one zone and a container in another read the same stored value, they disagree about *which moment* it means. The project stores UTC everywhere: the JDBC URL in `application.yml` ends with `connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`, and `hibernate.jdbc.time_zone: UTC` is set under `spring.jpa.properties`. The comment in the file explains: "DATETIME columns hold UTC regardless of the JVM's time zone, so a backend in UTC (Docker) and one in local time (a dev machine) read the same instant back."
 
-**A real incident: audit events from the future.** *The problem:* audit events appeared with times five and a half hours in the future. *How it was found:* a product-owner review (an AI agent, as Chapter 32 explains) noticed it while two copies of the backend shared one database. *The cause:* the development copy ran on a laptop in the Asia/Kolkata zone and wrote local time, while the Docker copy wrote UTC, so the same table held both. *The fix:* pin the JDBC connection to UTC, show UTC in the admin screen so it matches the watermark and the CSV export, and add a test that runs the JVM in Asia/Kolkata against a MySQL server set to `-03:00` and checks that stored values are UTC; the test was verified to fail without the pinning. <!-- source: dossier bugs-and-findings C6; commits 2d82253, a51674c --> The lesson: **store instants in UTC, and test with a deliberately odd time zone**, because a test that runs in the developer's own zone can't fail.
+**A real incident: audit events from the future.** *The problem:* audit events appeared with times five and a half hours in the future. *How it was found:* a product-owner review (an AI agent, as Chapter 32 explains) noticed it while two copies of the backend shared one database. *The cause:* the development copy ran on a laptop in the Asia/Kolkata zone and wrote local time, while the Docker copy wrote UTC, so the same table held both. *The fix:* pin the JDBC connection to UTC and show UTC in the admin screen so it matches the watermark and the CSV export. Also add a test that runs the JVM in Asia/Kolkata against a MySQL server set to `-03:00` and checks that stored values are UTC. The test was verified to fail without the pinning. <!-- source: dossier bugs-and-findings C6; commits 2d82253, a51674c --> The lesson: **store instants in UTC, and test with a deliberately odd time zone**, because a test that runs in the developer's own zone can't fail.
 
 ### 14.10 Timed sweeps with `@Scheduled`
 
 Some data must be cleaned up on a timer. Chapter 11 mentioned `@EnableScheduling`; with it on, a method marked `@Scheduled` runs by itself, on a background thread that Spring manages. The project has six.
+
+Table 14.2 shows the sweeps as they are at `book-m6-final`. This chapter's own tag, `book-m2-documents`, has only three of the six: the audit purge, the sign-in throttle sweep and the storage janitor. The others arrived in later milestones.
 
 **Table 14.2 — Scheduled sweeps (`book-m6-final`)**
 

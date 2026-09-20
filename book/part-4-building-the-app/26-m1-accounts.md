@@ -15,7 +15,7 @@
 ## Prerequisites
 
 Chapters 14–16 (data, Spring Data and Spring Security basics), 19–23 (the Angular frontend) and
-Chapter 25, the milestone this one builds on, as listed in `book/OUTLINE.md`. The code is at
+Chapter 25, the milestone this one builds on. The code is at
 `book-m1-accounts`: still Spring Boot 3.3.4 and Java 21, now with Spring Security, JPA, Flyway, MySQL
 8.4 and an Angular 22 frontend (Blueprint v1). This milestone is pull request #1: an earlier baseline
 commit (`32d040f`, the Angular frontend and admin features) followed by "Phase 1" (`68b4945`, real
@@ -37,10 +37,7 @@ findings. Two were rated critical.
   session id, and the session id was the only credential (`TM-1`, `PO-2`). A user could read another
   user's session id and act as them.
 
-A user could also see the admin screens (`PO-1`), the tile token contained the session id (`TM-4`),
-the per-session tile limit could be bypassed by signing in again (`TM-3`), the signing secret was in
-the source (`TM-6`), the session id lived in browser storage readable by any injected script
-(`TM-15`), and the session was per browser tab with a hard cut-off (`PO-9`). Pull request #1 addresses
+There were more problems. A user could see the admin screens (`PO-1`). The tile token contained the session id (`TM-4`). The per-session tile limit could be bypassed by signing in again (`TM-3`). The signing secret was in the source (`TM-6`). The session id lived in browser storage readable by any injected script (`TM-15`). And the session was per browser tab with a hard cut-off (`PO-9`). Pull request #1 addresses
 these, plus `PO-6` (uploads restricted to publishers).
 <!-- source: PR #1 body; reviews record; bugs record B -->
 
@@ -86,7 +83,7 @@ the ticket must never be shown to anyone else, which drives most of this chapter
 | ADMIN | Everything a publisher can, plus manage users, list and revoke sessions, view the audit log |
 
 The `Role` enum has exactly these three values, in this order: `READER`, `PUBLISHER`, `ADMIN`. Its
-class comment ties them to the rules above. Roles are enforced on the server; the frontend only hides
+class comment ties them to the roles in Table 26.1. Roles are enforced on the server; the frontend only hides
 what a role can't use (Section 26.9).
 <!-- source: Role.java, SecurityConfig.java at book-m1-accounts -->
 
@@ -194,11 +191,7 @@ public void run(ApplicationArguments args) {
 
 *Path: `src/main/java/com/example/securedocviewer/account/BootstrapAdmin.java`*
 
-The class comment explains the design: the password comes from the environment variable
-`BOOTSTRAP_ADMIN_PASSWORD`; "if that isn't set, a random one is generated and logged once (the same
-approach Spring Boot takes for its default user), so no credential ever has to be committed." The
-generator draws 20 characters from an alphabet without look-alike letters, using `SecureRandom`, a
-random number generator meant for security. (You will meet the same "no I, L, O" idea in Chapter 29.)
+The class comment explains the design. The password comes from the environment variable `BOOTSTRAP_ADMIN_PASSWORD`; "if that isn't set, a random one is generated and logged once (the same approach Spring Boot takes for its default user), so no credential ever has to be committed." The generator draws 20 characters from an alphabet without look-alike letters. It uses `SecureRandom`, a random number generator meant for security. (You will meet the same "no I, L, O" idea in Chapter 29.)
 On a fresh install you sign in as `admin` with the password from your own `.env` file or the startup
 log, then change it on the Account page. Never reuse a real password for a local copy.
 <!-- source: BootstrapAdmin.java at book-m1-accounts; README -->
@@ -210,7 +203,7 @@ to the controllers, and shows why the project used a cookie session.*
 
 ### 26.5 One sign-in, step by step
 
-**Figure 26.1** shows the sign-in from the browser's side and the server's.
+Figure 26.1 shows the sign-in from the browser's side and the server's.
 
 ```mermaid
 sequenceDiagram
@@ -226,6 +219,8 @@ sequenceDiagram
 ```
 
 *Figure 26.1 — Sign-in and the two cookies (book-m1-accounts)*
+
+*Text description:* A sequence diagram between the browser and the server. First the browser asks for the current user without a cookie, and the server answers 401 and sets a readable XSRF-TOKEN cookie. The browser then posts the username and password with that token in a header. The server normalizes the name, checks the sign-in throttle and authenticates, then creates a new session id, registers it and rotates the CSRF token. The reply carries the httpOnly session cookie and a new CSRF cookie, and later requests send both. Notice the two different cookies and that the token is replaced at sign-in.
 
 Now the code that implements the server's half.
 
@@ -281,7 +276,7 @@ Read it in order.
    This is called user enumeration.
 5. **Record the failure or success** with the throttle.
 6. **Create the session and change its id.** `sessionAuthenticationStrategy` gives the user a *new*
-   session id and registers it. This defeats **session fixation**, an attack where the attacker plants a
+   session id and registers it. This defeats session fixation, an attack where the attacker plants a
    known session id in your browser before you sign in and then uses it afterward. A new id after sign-in
    makes the planted one worthless.
 7. **Rotate the CSRF token.** Section 26.6 explains why this line exists.
@@ -360,7 +355,7 @@ never returned by any endpoint." Because a browser sends cookies automatically, 
 request also needs a CSRF token. Authorization "is enforced here, not in the UI: the frontend only hides
 what a role can't use."
 
-Two of the settings above deserve a sentence each.
+Two of the settings in Listing 26.5 deserve a sentence each.
 
 - **Session fixation protection** (`changeSessionId`) gives you a new session id at sign-in, as in step
   6 of the previous section.
@@ -401,7 +396,7 @@ Because the browser attaches the session cookie to every request to this site au
 website could make your browser send a request to this app, for example a hidden form that submits
 a delete. CSRF (cross-site request forgery) is that attack. `SameSite=Strict` already stops most of
 it, since the browser won't attach the cookie to a request started elsewhere. The project also uses the
-older, robust defense: a second value, the **CSRF token**, that a page on another site can't read.
+older, well-tested defense: a second value, the CSRF token, that a page on another site can't read.
 
 The design is the double-submit cookie pattern. The server sets a cookie named `XSRF-TOKEN` that
 JavaScript *can* read (this is the one cookie that is not httpOnly, on purpose). Angular's `HttpClient`
@@ -455,15 +450,14 @@ does not describe one.
 What the choice buys is that nothing secret is ever visible to page JavaScript. The frontend's
 `SessionService` comment says it exactly: "The credential itself is an httpOnly cookie the browser
 manages — nothing secret is held here or in web storage — so the session is shared across tabs and
-survives a reload: on startup we simply ask the server who we are." What it costs is CSRF protection
-(Section 26.7) and a server that holds session state, so a single instance for now.
+survives a reload: on startup we simply ask the server who we are." The choice costs two things: CSRF protection (Section 26.7) and a server that holds session state, so a single instance for now.
 <!-- source: session.service.ts at book-m1-accounts; decisions D3 -->
 
 ### 26.9 The Angular frontend appears
 
 The first commit of this milestone, `32d040f`, adds the Angular frontend: sign-in, document list,
 upload, viewer and admin pages. It replaces the m0 static page. Tiles are painted as absolutely
-positioned elements with CSS background images, not on a canvas (Chapter 21 explains the technique).
+positioned elements with CSS background images, not on a canvas (Chapter 21 explains the technique). The project README at the tags still says that the browser reassembles tiles onto a canvas; a later documentation-only pull request (#13) corrected that sentence, so trust the code.
 Angular's development-server proxy makes the app and the API share one origin during development.
 
 **Listing 26.8 — `auth.guard.ts` (book-m1-accounts)**
@@ -638,8 +632,7 @@ simultaneous requests can't both slip past the last free slot.
 
 The defaults in `application.yml` are 120 tiles per 60 seconds. The comment explains the number: "A
 150-DPI letter page is ~35 tiles, so 120 lets a reader turn ~3 pages a minute without waiting while
-still keeping a full-document scrape slow." (Example 25.1 in Chapter 25 derived the 35.) Chapter 30
-returns to this trade-off after real reading showed it was too tight.
+still keeping a full-document scrape slow." Example 25.1 in Chapter 25 derived the 35. Chapter 30 returns to this trade-off after real reading showed it was too tight.
 
 **The sign-in throttle** (`LoginThrottle`) slows password guessing. Failures are counted in a rolling
 15-minute window, per (username, client address) with a limit of 5, and separately per address with a
@@ -740,10 +733,8 @@ volumes:
 Points to notice, each a small security decision. Passwords come from a git-ignored `.env` file; the
 `${DB_PASSWORD:?Set DB_PASSWORD in .env}` form makes Compose refuse to start with a clear message if
 one is missing. The database port is published only on `127.0.0.1` (this machine), "the database is
-never exposed to the network". The data lives in a named **volume** so it survives the container. The
-health check puts the root password on the command line (`-p${DB_ROOT_PASSWORD}`), which anyone able to
-inspect the container could read; the platform milestone later removes that (Chapter 30's final-review
-rounds record "MySQL health check no longer puts the root password on the command line"). And the
+never exposed to the network". The data lives in a named volume so it survives the container. The
+health check puts the root password on the command line (`-p${DB_ROOT_PASSWORD}`), which anyone able to inspect the container could read. The platform milestone later removes that, and the final-review rounds of Chapter 30 record "MySQL health check no longer puts the root password on the command line". And the
 service is only for development: the app itself still runs from your editor at this tag.
 
 A note for later chapters: spring configuration imports a local `.env` file
@@ -792,29 +783,8 @@ class CsrfCookieFlowTest {
 
 *Path: `src/test/java/com/example/securedocviewer/security/CsrfCookieFlowTest.java`*
 
-The test drives the cookies "exactly as a browser would, with no test CSRF helper". Its steps: visit
-`/api/auth/me` anonymously (a 401, but the response sets `XSRF-TOKEN`); sign in carrying that cookie
-and header; assert that the sign-in response carries a *new*, non-empty `XSRF-TOKEN` different from the
-first; and (in the lines that the excerpt omits) check that the old token no longer works and the new
-one works at once.
+The test drives the cookies "exactly as a browser would, with no test CSRF helper". Its steps are these. Visit `/api/auth/me` anonymously: the answer is a 401, but the response sets `XSRF-TOKEN`. Sign in carrying that cookie and header. Assert that the sign-in response carries a *new*, non-empty `XSRF-TOKEN` different from the first. Then, in the lines that the excerpt omits, check that the old token no longer works and the new one works at once.
 <!-- source: CsrfCookieFlowTest.java at book-m1-accounts -->
-
-### 26.15 In this project
-
-**Table 26.3 — Where the concepts live (at book-m1-accounts)**
-
-| Concept | Where |
-|---|---|
-| Accounts | `account/AppUser`, `Role`, `UserAccountService`, `BootstrapAdmin`; `V1__create_app_user.sql` |
-| Security rules | `security/SecurityConfig`, `SpaCsrfTokenRequestHandler`, `SecurityErrorResponses` |
-| Sign-in and sign-out | `controller/AuthController`, `security/DatabaseUserDetailsService` |
-| Session binding | `security/SessionKeys` |
-| Throttles | `security/LoginThrottle`, `security/TileRateLimiter` |
-| Admin | `controller/AdminController`, `UserAdminController`, `security/SessionAdministration` |
-| Frontend | `frontend/src/app/core/*`, `features/auth/*`, `features/admin/*` |
-| Tests | `SecurityIntegrationTest`, `CsrfCookieFlowTest`, `TileRateLimiterTest` |
-
-Table 26.3 is a map for reading the repository at this tag.
 
 ## Common mistakes
 
@@ -844,47 +814,9 @@ or disabling yourself (Listing 26.11).
 **Testing with a helper that replaces the thing under test.** Symptom: a bug passes every test. Fix: a
 test that runs the real cookie flow in its own context (Section 26.14).
 
-## Try it
-
-Solutions are in `26-m1-accounts.solutions.md`.
-
-### Exercise 26.1 ★ Who may upload?
-
-In Table 26.2, which roles may call `POST /api/documents`? What does a READER receive?
-
-### Exercise 26.2 ★ Why deny by default
-
-Explain in your own words why `anyRequest().denyAll()` is the last rule in Listing 26.5 and not
-`permitAll()`.
-
-### Exercise 26.3 ★★ Normalize and validate
-
-For each of `Alice`, ` bob `, `a`, `Carol!` and `dave.smith`, say what `normalizeUsername` returns and
-whether `create` accepts it.
-
-### Exercise 26.4 ★★ Sliding window
-
-The limit is 120 requests per 60 seconds. A user made 120 requests during the first 10 seconds of a
-minute, then makes a 121st at second 20. Is it refused? What `Retry-After` value is computed
-(roughly)?
-
-### Exercise 26.5 ★★★ Bind a token
-
-Bob has a copy of a tile URL that was issued to Alice. Walk through `TileController`'s checks in order
-and say which one refuses him and why signing the token alone wasn't enough.
-
-### Exercise 26.6 ★★★ Inspect the cookies
-
-On your own copy at `book-m1-accounts`, start the app. On an empty database the first start creates an
-`admin` account. Its password is the value of `BOOTSTRAP_ADMIN_PASSWORD` in your local `.env` file, or,
-if that is empty, a random one printed once in the startup log (as the project README describes; use
-your own throwaway value and never copy a real password into notes or screenshots). Sign in and inspect
-the cookies in your browser's developer tools. Which cookie can JavaScript read, and why must it be
-readable?
-
 ## Architecture blueprint v1
 
-Figure 26.2 is Blueprint v1, copied from `book/blueprints/v1-accounts.md`.
+Figure 26.2 is Blueprint v1.
 
 ```mermaid
 flowchart LR
@@ -934,6 +866,8 @@ flowchart LR
 ```
 
 *Figure 26.2 — Blueprint v1 (`book-m1-accounts`)*
+
+*Text description:* A left-to-right flowchart. The Angular app sends every request to SecurityConfig, which fans out to AuthController, UserAdminController, AdminController, DocumentController, PageTileUrlController and TileController. AuthController uses LoginThrottle and UserAccountService with BootstrapAdmin; UserAccountService reaches MySQL, which holds only the app_user table from migration V1 (dotted line). The tile-URL and tile controllers use SignedUrlService and SessionKeys; TileController also uses TileRateLimiter, WatermarkService and AuditLogService. DocumentController uses TileGenerationService and the in-memory DocumentRegistry, and tiles are on disk. Notice that everything passes through SecurityConfig and that documents are still not in the database.
 <!-- source: book/blueprints/v1-accounts.md; classes named in the diagram, present at book-m1-accounts under src/main/java/com/example/securedocviewer/: controller/AdminController.java, service/AuditLogService.java, controller/AuthController.java, account/BootstrapAdmin.java, controller/DocumentController.java, service/DocumentRegistry.java, security/LoginThrottle.java, controller/PageTileUrlController.java, security/SecurityConfig.java, security/SessionKeys.java, service/SignedUrlService.java, controller/TileController.java, service/TileGenerationService.java, security/TileRateLimiter.java, account/UserAccountService.java, controller/UserAdminController.java, service/WatermarkService.java; db/migration/V1__create_app_user.sql; docker-compose.yml; frontend/ -->
 
 What changed since v0:
@@ -948,7 +882,7 @@ What changed since v0:
 
 ## Decisions and challenges
 
-#### Decision: built-in accounts, not an identity provider
+### Decision: built-in accounts, not an identity provider
 
 **The decision.** Spring Security with BCrypt accounts and three roles, chosen by the product owner.
 **The options considered.** Built-in accounts, or external single sign-on through OIDC as the reviewers
@@ -958,7 +892,7 @@ identity-provider registration first. **What it costs.** The project now stores 
 run the throttling, lockout and password-change logic itself (Chapters 30 and 32).
 <!-- source: decisions D1 -->
 
-#### Decision: MySQL over H2
+### Decision: MySQL over H2
 
 **The decision.** MySQL 8.4 through Docker, chosen by the product owner against the implementer's H2
 recommendation. **Why.** The product owner said they wanted to work with MySQL. **What it costs.**
@@ -966,14 +900,14 @@ Docker Desktop had to be installed first, which took several steps on the produc
 machine.
 <!-- source: decisions D2 -->
 
-#### Decision: cookie sessions
+### Decision: cookie sessions
 
 **The decision.** A server-side session in an httpOnly, SameSite=Strict cookie, with CSRF protection
 and a 30-minute sliding timeout. **Why.** It removes the credential from anything JavaScript can read
 (`TM-15`, `TM-1`). **What it costs.** CSRF protection is now required, and state lives on the server.
 <!-- source: decisions D3 -->
 
-#### Incident: signing in deleted the CSRF cookie
+### Incident: signing in deleted the CSRF cookie
 
 **The problem.** With CSRF protection on, the first write request made straight after signing in
 returned 403. **How it was found.** A live check against MySQL during Phase 1, in a real
@@ -985,10 +919,10 @@ saving explicitly sends exactly one Set-Cookie with the new value"). **The lesso
 a token don't exercise the real browser flow.
 <!-- source: bugs record C1; PR #1 body; AuthController.java at book-m1-accounts -->
 
-#### Incident: the test helper hid the bug
+### Incident: the test helper hid the bug
 
 **The problem.** The project already had `SecurityIntegrationTest`, yet it never caught the CSRF bug
-above. **How it was found.** The reason is recorded in the Javadoc of the new `CsrfCookieFlowTest`:
+of the previous incident. **How it was found.** The reason is recorded in the Javadoc of the new `CsrfCookieFlowTest`:
 `spring-security-test`'s `csrf()` helper permanently swaps the CSRF filter's repository in whatever
 Spring context it runs in, so no real `XSRF-TOKEN` cookie is ever written. **The fix.** A separate test
 class that drives the cookie as a browser does, with no test helper, and gets a fresh Spring context
@@ -996,14 +930,69 @@ class that drives the cookie as a browser does, with no test helper, and gets a 
 flow in a clean context.
 <!-- source: bugs record C2; CsrfCookieFlowTest.java at book-m1-accounts -->
 
-#### Finding: a verified session takeover
+### Finding: a verified session takeover
 
-**The problem.** `TM-1` was demonstrated, not just theorized. As one test user the reviewer read another
+**The problem.** `TM-1` was demonstrated, not only theorized. As one test user the reviewer read another
 user's session id from `/api/admin/sessions`, requested tile URLs with it, and got a tile back; the audit
 log and the watermark both named the victim. **The fix.** Roles on the admin API, and sessions listed by
 handle. **The lesson.** Never return a credential in an API, and derive identity from a verified
 principal, not from something the client sends.
 <!-- source: bugs record B (TM-1) -->
+
+## In this project
+
+**Table 26.3 — Where the concepts live (at book-m1-accounts)**
+
+| Concept | Where |
+|---|---|
+| Accounts | `account/AppUser`, `Role`, `UserAccountService`, `BootstrapAdmin`; `V1__create_app_user.sql` |
+| Security rules | `security/SecurityConfig`, `SpaCsrfTokenRequestHandler`, `SecurityErrorResponses` |
+| Sign-in and sign-out | `controller/AuthController`, `security/DatabaseUserDetailsService` |
+| Session binding | `security/SessionKeys` |
+| Throttles | `security/LoginThrottle`, `security/TileRateLimiter` |
+| Admin | `controller/AdminController`, `UserAdminController`, `security/SessionAdministration` |
+| Frontend | `frontend/src/app/core/*`, `features/auth/*`, `features/admin/*` |
+| Tests | `SecurityIntegrationTest`, `CsrfCookieFlowTest`, `TileRateLimiterTest` |
+
+Table 26.3 is a map for reading the repository at this tag.
+
+To see any of these files as it was at this milestone, run `git show book-m1-accounts:<path>`, for example `git show book-m1-accounts:pom.xml`.
+
+## Try it
+
+Solutions are in Appendix C.
+
+### Exercise 26.1 ★ Who may upload?
+
+In Table 26.2, which roles may call `POST /api/documents`? What does a READER receive?
+
+### Exercise 26.2 ★ Why deny by default
+
+Explain in your own words why `anyRequest().denyAll()` is the last rule in Listing 26.5 and not
+`permitAll()`.
+
+### Exercise 26.3 ★★ Normalize and validate
+
+For each of `Alice`, ` bob `, `a`, `Carol!` and `dave.smith`, say what `normalizeUsername` returns and
+whether `create` accepts it.
+
+### Exercise 26.4 ★★ Sliding window
+
+The limit is 120 requests per 60 seconds. A user made 120 requests during the first 10 seconds of a
+minute, then makes a 121st at second 20. Is it refused? What `Retry-After` value is computed
+(roughly)?
+
+### Exercise 26.5 ★★★ Bind a token
+
+Bob has a copy of a tile URL that was issued to Alice. Walk through `TileController`'s checks in order
+and say which one refuses him and why signing the token alone wasn't enough.
+
+### Exercise 26.6 ★★★ Inspect the cookies
+
+On your own copy at `book-m1-accounts`, start the app. On an empty database the first start creates an
+`admin` account. Its password is the value of `BOOTSTRAP_ADMIN_PASSWORD` in your local `.env` file. If that is empty, the password is a random one printed once in the startup log, as the project README describes. Use your own throwaway value, and never copy a real password into notes or screenshots. Sign in and inspect
+the cookies in your browser's developer tools. Which cookie can JavaScript read, and why must it be
+readable?
 
 ## Summary
 

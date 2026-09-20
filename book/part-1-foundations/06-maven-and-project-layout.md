@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 To turn source code into a running application you must do several things in the right order. You fetch the libraries the code uses. You compile every file. You run the tests to check that nothing is broken. Finally you bundle the result into one file that can be started. Together these steps are called a **build**.
 
-Doing a build by hand is slow, and it is easy to get wrong. You might forget to download one library, or compile files in an order that fails. Worse, two people would do it slightly differently, and then the app would work on one machine and not the other.
+Doing a build by hand is slow, and it is error-prone. You might forget to download one library, or compile files in an order that fails. Worse, two people would do it slightly differently, and then the app would work on one machine and not the other.
 
 A **build tool** does the build from a written description, the same way every time, on every machine. **Maven** is the build tool for this project. You describe the project once in a file called `pom.xml` (POM stands for Project Object Model), and Maven follows the description. The description says *what* the project is and which libraries it uses. It does not list the compile steps, because Maven already knows them. That is a deliberate design, and Section 6.9 returns to it.
 
@@ -77,7 +77,7 @@ ls target
 
 A new folder named `target` holds the compiled `.class` files (the bytecode from Chapter 3) under `target/classes`. Everything Maven produces goes in `target`. Because you can always regenerate it, the project's `.gitignore` excludes it from Git (Chapter 7). If a build ever behaves strangely, delete the folder with `./mvnw clean` and build again; the word `clean` means "remove `target`".
 
-You just ran a **phase** of Maven's lifecycle, a named step in a fixed sequence. Section 6.8 lists the sequence. First we read the file that told Maven what to do.
+You have now run a **phase** of Maven's lifecycle, a named step in a fixed sequence. Section 6.8 lists the sequence. First we read the file that told Maven what to do.
 
 ### 6.3 `pom.xml` line by line
 
@@ -125,7 +125,7 @@ Next come the properties.
 
 *Path: `pom.xml`*
 
-**Properties** are named values used elsewhere in the file or by the parent. `java.version` tells Maven to compile for Java 25. `pdfbox.version` names the release of the library that reads PDFs, so the number is written once and used wherever it is needed. `tomcat.version` is a real decision, and Section 6.11 tells its story: the project overrides the web server release that Spring Boot chose, because the chosen one had critical security advisories (published reports of exploitable flaws, each with an identifier such as `GHSA-...`). The comment says why and states when to remove the override. State the reason next to the pin; it is the difference between a decision and a mystery.
+**Properties** are named values used elsewhere in the file or by the parent. `java.version` tells Maven to compile for Java 25. `pdfbox.version` names the release of the library that reads PDFs, so the number is written once and used wherever it is needed. `tomcat.version` is a real decision, and Section 6.11 tells its story. The project overrides the web server release that Spring Boot chose. The chosen one had critical security advisories, which are published reports of exploitable flaws, each with an identifier such as `GHSA-...`. The comment says why and states when to remove the override. State the reason next to the pin; it is the difference between a decision and a mystery.
 
 ### 6.4 Dependencies and where they come from
 
@@ -160,13 +160,13 @@ Reading them one at a time:
 
 A scope says when a dependency is needed. Table 6.1 lists the two you will meet in this project. A dependency with no scope is needed for everything.
 
+**Table 6.1 — Dependency scopes used in this project**
+
 | Scope | Available when | Example in this project |
 |---|---|---|
 | (none, the default) | Compiling, testing and running | `pdfbox` |
 | `runtime` | Testing and running, but not compiling | `mysql-connector-j` |
 | `test` | Only while running tests | `h2`, `spring-boot-starter-test` |
-
-*Table 6.1 — Dependency scopes used in this project*
 
 The `runtime` scope for the MySQL driver is a small discipline with a purpose. Your own code never mentions a MySQL class directly; it talks to a general database interface, and the driver is plugged in when the program runs. Marking it `runtime` stops you from accidentally writing code that depends on a specific database.
 
@@ -274,7 +274,7 @@ distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-mav
 
 *Path: `.mvn/wrapper/maven-wrapper.properties`*
 
-The `distributionUrl` names Maven 3.9.16 exactly, down to the patch number. `distributionType=only-script` means the wrapper is just the two scripts and needs no extra JAR file. Run Maven by typing `./mvnw` instead of `mvn`; the first run downloads that version into your home folder and later runs reuse it. The Docker image build and the automated checks use the same command, so your laptop, a container and the checking service all build with the same Maven.
+The `distributionUrl` names Maven 3.9.16 exactly, down to the patch number. `distributionType=only-script` means the wrapper consists of only the two scripts and needs no extra JAR file. Run Maven by typing `./mvnw` instead of `mvn`; the first run downloads that version into your home folder and later runs reuse it. The Docker image build and the automated checks use the same command, so your laptop, a container and the checking service all build with the same Maven.
 
 Figure 6.1 shows what happens each time you type `./mvnw`.
 
@@ -290,15 +290,21 @@ flowchart TB
 
 *Figure 6.1 — How the Maven wrapper finds the exact Maven version*
 
+*Text description:* A decision flow read top to bottom. Running `./mvnw package` makes the script read the wrapper properties file and ask whether Maven 3.9.16 is already downloaded. If not, it downloads the zip named in the file, and in both cases it then reuses that copy to run Maven with your arguments.
+
 <!-- source: .mvn/wrapper/maven-wrapper.properties at book-m6-final -->
 
 Only the first run pays for the download. Every later run, on your laptop, in the Docker build or in CI, ends at the same last box, which is the point of the wrapper.
 
-The wrapper arrived late. In the first review of the project, the threat-modeling reviewer (an AI review agent, like the other reviewers you will meet) listed the missing Dockerfile, CI and Maven wrapper as one finding. The wrapper was added in the commit that moved the project to Java 25, the one behind milestone `book-m5-platform`. <!-- source: dossier reviews.md TM-14; timeline.md commit 2d10e07; git log for mvnw -->
+The wrapper arrived late. In the first review of the project, the threat-modeling reviewer (an AI review agent, like the other reviewers you will meet) listed the missing Dockerfile, CI and Maven wrapper as one finding. The wrapper was added in the commit that moved the project to Java 25, the one behind milestone `book-m5-platform`.
+
+This has a practical consequence for you. At the tags `book-m0-mvp` to `book-m4-reading` there is no `mvnw`, and the project builds with Spring Boot 3.3.4 on Java 21. To run one of those milestones you need a JDK 21 and a Maven that you install yourself (Maven 3.9 is the line the wrapper later pinned), and you start the app with `mvn` instead of `./mvnw`. Table IV.3 in [Part IV](../part-4-building-the-app/00-part-introduction.md) lists exactly what each group of tags needs. Reading the older code with `git show <tag>:<path>` (Chapter 7) needs none of that. <!-- source: dossier reviews.md TM-14; timeline.md commit 2d10e07; git log for mvnw; Table IV.3 in Part IV -->
 
 ### 6.8 Lifecycle: compile, test, package, verify
 
 Maven runs a fixed sequence of **phases**, and asking for a phase runs it and every phase before it. That is why `./mvnw package` also compiles and tests: those phases come earlier in the sequence. Table 6.2 lists the ones you will use.
+
+**Table 6.2 — Maven phases you will use**
 
 | Command | What happens |
 |---|---|
@@ -306,8 +312,6 @@ Maven runs a fixed sequence of **phases**, and asking for a phase runs it and ev
 | `./mvnw test` | Compiles, then runs all the tests, unit and integration alike (the project configures no separate integration-test plugin) |
 | `./mvnw package` | Also bundles the app into `target/secure-doc-viewer.jar` |
 | `./mvnw verify` | Runs everything through `package`, then any checks bound to a later phase; here that adds nothing beyond `package`, but it is the command **continuous integration** (CI, a service that builds and tests every proposed change automatically) runs |
-
-*Table 6.2 — Maven phases you will use*
 
 Figure 6.2 draws the same phases as a chain, with what each one does in this project.
 
@@ -320,13 +324,15 @@ flowchart LR
 
 *Figure 6.2 — The Maven phases and what each does in this project*
 
+*Text description:* Four boxes in a row, read left to right: compile, test, package and verify. Each box says what the phase does here: compiling source into classes, running the tests, building the executable JAR, and finally verify, which adds nothing extra in this project and is the phase continuous integration runs. Notice that a phase on the left must succeed before one on the right runs.
+
 <!-- source: pom.xml and .github/workflows/ci.yml at book-m6-final -->
 
 Asking for a phase runs everything to its left. A failing test in the second box stops the chain, so no JAR is produced from broken code.
 
 Two practical flags appear in the project's scripts. `-DskipTests` (a `-D` sets a property) tells Maven to compile the tests but not run them; the Dockerfile uses it, because the container build only needs the JAR. `-B` means batch mode: no colors and no interactive prompts, which suits automated runs. `-q` means quiet, printing only errors.
 
-Now build the whole thing and run it. The first command runs every test, so it takes longer than `compile`, typically a minute or two on a laptop, and prints many lines while it works (a long quiet stretch is normal; a hang is when nothing changes for ten minutes). The test that needs Docker (Section 6.5) is skipped if Docker is not running:
+Now build the whole thing and run it. The first command runs every test, so it takes longer than `compile`. Expect a minute or two on a laptop, with many lines printed while it works. A long quiet stretch is normal; a hang is when nothing changes for ten minutes. The test that needs Docker (Section 6.5) is skipped if Docker is not running:
 
 ```bash
 ./mvnw package
@@ -452,6 +458,8 @@ Table 6.3 shows the layout at `book-m6-final`, which follows Maven's conventions
 
 *Pattern note: A single deployable with clear package boundaries is a modular monolith (Chapter 39, Section 39.6).*
 
+**Table 6.3 — Where things live**
+
 | Path | Holds |
 |---|---|
 | `pom.xml` | The build description |
@@ -464,11 +472,9 @@ Table 6.3 shows the layout at `book-m6-final`, which follows Maven's conventions
 | `frontend/` | The Angular application (Part III) |
 | `Dockerfile`, `docker-compose.yml` | Packaging (Chapter 10) |
 
-*Table 6.3 — Where things live*
-
 Splitting `src/main` from `src/test` matters. Test code and test libraries never enter the packaged application, so the JAR carries nothing that exists only to check it. Files under `src/main/resources` are copied into the JAR untouched, which is how `application.yml` and the SQL migrations travel with the program. Chapter 18 covers the tests themselves, and Chapter 9 explains the migration files.
 
-The Java folders repeat the packages of Chapter 4. A class in the package `com.example.securedocviewer.document` lives in `src/main/java/com/example/securedocviewer/document/`. The same class's test lives at the same path under `src/test/java`, which makes tests easy to find.
+The Java folders repeat the packages of Chapter 4. A class in the package `com.example.securedocviewer.document` lives in `src/main/java/com/example/securedocviewer/document/`. The same class's test lives at the same path under `src/test/java`, which makes tests quick to find.
 
 ## In this project
 
@@ -494,7 +500,7 @@ With Java 25 installed and the project cloned, run `./mvnw compile`, then `./mvn
 
 ### Exercise 6.3 ★★ Why pin Tomcat?
 
-Read the comment above `tomcat.version`. In three sentences, explain what the project did, why, and when the override should be removed.
+Read the comment next to `tomcat.version` in Listing 6.2. In three sentences, explain what the project did, why, and when the override should be removed.
 
 *Solution:* Appendix C, Exercise 6.3.
 

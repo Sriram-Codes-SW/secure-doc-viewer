@@ -1,0 +1,13 @@
+# Title-page and edition metadata for the build. The editor prepared these keys; the author supplies
+# the values. Nothing here is invented: leave a value blank until the author confirms it.
+title: "Building a Secure Document Viewer"
+subtitle: "From First Line of Java to Production"
+lang: "en-US"
+author: "Claude (Anthropic)"
+edition: "First edition"
+book-version: "1.0"
+licence: "Copyright 2026. All rights reserved. Code listings are excerpts of the Secure Document Viewer source code, released under the MIT License."
+publisher: ""       # optional
+isbn: ""            # optional
+code-version: "book-m6-final"   # the repository tag the code listings come from
+# The build date is added by the build script, not written here.

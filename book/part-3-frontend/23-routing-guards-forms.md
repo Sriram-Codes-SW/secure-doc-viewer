@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 ### 23.1 Routes and pages (`app.routes.ts`)
 
-A **single-page application** (SPA) loads one HTML document once. When you click a link, Angular's **router** changes the address in the address bar, swaps which component is shown in the `<router-outlet />` (Chapter 21), and never reloads the browser. Think of a hotel lobby with one desk and many rooms: the front door never changes, but the desk directs you to a different room depending on what you ask for.
+A single-page application (SPA) loads one HTML document once. When you click a link, Angular's **router** changes the address in the address bar, swaps which component is shown in the `<router-outlet />` (Chapter 21), and never reloads the browser. Think of a hotel lobby with one desk and many rooms: the front door never changes, but the desk directs you to a different room depending on what you ask for.
 
 **Where the analogy breaks down:** a hotel's rooms exist whether or not you visit. Angular creates a route's component when you arrive and destroys it when you leave, so its signals start fresh each time.
 
@@ -73,7 +73,7 @@ export const routes: Routes = [
 
 - `path: ''` with `redirectTo: 'documents'` sends the bare address to the document list. `pathMatch: 'full'` means "only when the path is exactly empty". Without it, every address would match the empty prefix.
 - `:documentId` is a **route parameter**: `viewer/abc123` matches, with `documentId` set to `abc123`. The viewer reads it with `this.route.snapshot.paramMap.get('documentId')`.
-- `loadComponent: () => import(...)` is **lazy loading**. The `() =>` is an arrow function (Chapter 19) that Angular calls only when the route is first needed; inside, `import('./features/...')` asks the browser to download that file then, and `.then((m) => m.LoginComponent)` picks the component class out of it. The effect: the component's code is downloaded only when someone first visits that route, which keeps the initial download small. The build budget in `angular.json` (Chapter 20) enforces a size limit on the first download.
+- `loadComponent: () => import(...)` is lazy loading. The `() =>` is an arrow function (Chapter 19) that Angular calls only when the route is first needed; inside, `import('./features/...')` asks the browser to download that file then, and `.then((m) => m.LoginComponent)` picks the component class out of it. The effect: the component's code is downloaded only when someone first visits that route, which keeps the initial download small. The build budget in `angular.json` (Chapter 20) enforces a size limit on the first download.
 - `canActivate: [...]` lists **guards**, covered in Section 23.5.
 
 Routes are matched from the top of the list to the bottom, and the first match wins. That is why the catch-all `**` pattern, which matches everything, must be last: placed earlier, it would swallow every other route.
@@ -169,7 +169,9 @@ The doc comment on `roleGuard` says it plainly: **UX only**. A guard runs in the
 
 ### 23.6 Worked example: four visits
 
-Figure 23.1 shows the decision `authGuard` and `roleGuard` make, and Table 23.1 shows what `authGuard` and `roleGuard` decide in four situations. The behavior comes from `auth.guard.spec.ts` (Chapter 24) and the code above.
+Figure 23.1 shows the decision `authGuard` and `roleGuard` make, and Table 23.1 shows what `authGuard` and `roleGuard` decide in four situations. The behavior comes from `auth.guard.spec.ts` (Chapter 24) and Listing 23.2.
+
+**Table 23.1 — What the guards decide in four visits**
 
 | Who is visiting | Address | Guard result |
 |---|---|---|
@@ -194,6 +196,8 @@ flowchart TB
 ```
 
 *Figure 23.1 — The route guard decision flow (`authGuard`, then `roleGuard`)*
+
+*Text description:* A decision flow drawn top to bottom. A visit to a guarded route first asks whether the reader is signed in; if not, the reader is redirected to sign-in with a return address. If signed in, it asks whether a password change is required and the reader is not already on the account page; if so, the reader is redirected to the account page. Otherwise, a route that needs no specific role allows the visit, and a route that does need one allows it only for a user with one of those roles and redirects everyone else to the document list.
 
 <!-- source: auth.guard.ts at book-m6-final; roleGuard runs authGuard first, then checks hasAnyRole -->
 
@@ -220,6 +224,8 @@ sequenceDiagram
 ```
 
 *Figure 23.2 — A signed-out visit to a deep link, and the return trip after sign-in*
+
+*Text description:* A sequence diagram with five participants: the reader, the auth guard, the login component, the session service and the API. A signed-out reader visits a deep link and the guard redirects to the sign-in page with the address saved. The reader submits the form, the session service posts to the API and stores the returned user, and the login component cleans the saved address and navigates to it. Notice that the address travels in the sign-in address and back, with nothing stored in the browser.
 
 <!-- source: auth.guard.ts, login.component.ts (submit, safeReturnUrl), session.service.ts (login) at book-m6-final -->
 
@@ -347,7 +353,9 @@ function safeReturnUrl(returnUrl: string | null): string {
 
 *Path: `frontend/src/app/features/auth/login.component.ts`*
 
-Read the condition as three questions, all of which must be yes: is there a value (`returnUrl &&`)? Does it start with a single `/` (an address inside this site)? And does it *not* start with `//`? A browser treats a leading `//` as "same scheme, different host", so a value like `//evil.example` is exactly what you would refuse to hand to a browser-level redirect (Angular's router, as tested above, would not follow it off-site anyway). If any answer is no, the function returns the safe default, `/documents`. Table 23.2 runs it on some inputs:
+Read the condition as three questions, all of which must be yes: is there a value (`returnUrl &&`)? Does it start with a single `/` (an address inside this site)? And does it *not* start with `//`? A browser treats a leading `//` as "same scheme, different host", so a value like `//evil.example` is exactly what you would refuse to hand to a browser-level redirect. Angular's router, as tested earlier in this section, would not follow it off-site anyway. If any answer is no, the function returns the safe default, `/documents`. Table 23.2 runs it on some inputs:
+
+**Table 23.2 — `safeReturnUrl` on sample inputs**
 
 | `returnUrl` value | Result | Why |
 |---|---|---|
@@ -483,7 +491,7 @@ Readers expect arrows and Page Down to turn pages. The viewer listens for keys o
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-`@HostListener('document:keydown', ['$event'])` attaches a listener for key presses anywhere on the page and passes it the event. The first `if` lists when to do nothing: with Ctrl, Meta or Alt held (so browser shortcuts such as Ctrl+Plus still work), while the page-number field or another text box has focus (so typing "12" doesn't turn pages), when there is no document yet, or when access was lost. Otherwise the pressed key is looked up in a `Record` of actions (Chapter 19, Section 19.11). Unknown keys find nothing (`action` is `undefined`), so they fall through untouched; known ones call `preventDefault()` so the browser doesn't also scroll.
+`@HostListener('document:keydown', ['$event'])` attaches a listener for key presses anywhere on the page and passes it the event. The first `if` lists when to do nothing. It stops when Ctrl, Meta or Alt is held (so browser shortcuts such as Ctrl+Plus still work). It stops while the page-number field or another text box has focus (so typing "12" doesn't turn pages). It stops when there is no document yet, or when access was lost. Otherwise the pressed key is looked up in a `Record` of actions (Chapter 19, Section 19.11). Unknown keys find nothing (`action` is `undefined`), so they fall through untouched; known ones call `preventDefault()` so the browser doesn't also scroll.
 
 Every page turn goes through the same `loadPage` method as the Prev/Next buttons, which is a security point stated in the code: "there is no shortcut route to a page", so signed URLs, watermarking and the rate limit apply identically. A keyboard user cannot get to a page any faster or less watched than a mouse user.
 

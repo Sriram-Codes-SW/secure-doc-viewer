@@ -3,7 +3,7 @@
 *From first line of Java to production*: a beginner's guide that ends with the app in this
 repository.
 
-> **Status: expanded draft, 39 chapters in six parts,** on the `book/draft` branch. See `book/OUTLINE.md` for the
+> **Status: expanded draft, 41 chapters in seven parts,** on the `book/draft` branch. See `book/OUTLINE.md` for the
 > table of contents. Team working notes live in `book/_team/`.
 
 ## How the book is organized
@@ -18,6 +18,7 @@ repository.
 | V. Production | Security review, deployment, TLS, backups, metrics, supply chain |
 | The Engineering Trade-offs | Every major decision: the choice, its pros and cons, and the enterprise alternative |
 | VI. Patterns | The design patterns (Chapter 38) and architectural patterns (Chapter 39) the app already uses, named and compared |
+| VII. Taking it to the cloud | A design, not a deployment, for running the app on AWS (Chapters 40 and 41) |
 | Appendices | Glossary, blueprint history, exercise solutions |
 
 ## Following along with the code

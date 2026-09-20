@@ -7,6 +7,10 @@ The backend is the part of the app users never see, and everything depends on it
 
 ## What the part covers
 
+Table II.1 lists the chapters and says why the app needs each topic.
+
+**Table II.1 — The chapters of Part II**
+
 | Chapter | Topic | Why the app needs it |
 |---|---|---|
 | 11 | Spring Boot foundations | The framework that starts the server and wires its classes together |
@@ -18,11 +22,9 @@ The backend is the part of the app users never see, and everything depends on it
 | 17 | Files, images, PDFs and signatures | The core of the product: pages become watermarked tiles behind unforgeable links |
 | 18 | Testing the backend | Every promise the app makes is checked by a test |
 
-*Table 1 — The chapters of Part II*
-
 ## The path of one request
 
-The chapters follow the route a request takes through the server, so it helps to see the whole route once. Figure 1 shows it in the order the parts meet a request.
+The chapters follow the route a request takes through the server, so it helps to see the whole route once. Figure II.1 shows it in the order the parts meet a request.
 
 ```mermaid
 flowchart LR
@@ -36,10 +38,10 @@ flowchart LR
     C -. "any exception" .-> E["Error handler (13)"]
 ```
 
-*Figure 1 — The route of one request through the backend, with the chapters that teach each stop*
-
 <!-- source: SecurityConfig.java, DocumentController.java, DocumentService.java, DocumentRepository.java and GlobalExceptionHandler.java at book-m6-final -->
+*Figure II.1 — The route of one request through the backend, with the chapters that teach each stop*
 
+*Text description:* A browser sends a request that passes through the security filters (Chapters 15 and 16) to a controller (Chapter 12). The controller hands the input to validation (Chapter 13), then to a service that applies the rules. The service uses a repository (Chapter 14) to reach the MySQL database, and uses files and tiles (Chapter 17). A dotted line from the controller to the error handler (Chapter 13) shows that any exception ends there.
 
 A request first meets the security filters (Chapters 15 and 16), which decide who is calling and whether they may go further. The controller (Chapter 12) reads the path, the query string or the JSON body. Validation (Chapter 13) checks the input. The service applies the rules of the application, such as which documents a user may open, and uses repositories to read and write MySQL (Chapter 14) and, for documents, the files on disk (Chapter 17). If anything fails on the way, an exception handler (Chapter 13) turns it into the one JSON error shape the browser understands. Chapter 11 is the framework that connects all of these, and Chapter 18 shows how to test each stop.
 

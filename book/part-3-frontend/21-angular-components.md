@@ -28,7 +28,7 @@ An **Angular** component is one reusable piece of screen. Think of a name badge 
 
 **Where the analogy breaks down:** a badge holder is passive, and you swap the card by hand. A component watches its data and redraws itself when the data changes.
 
-A component has three parts: a **class** (the data and actions, in TypeScript), a **template** (the HTML that shows them; HTML is the markup language that describes the structure of a web page, such as headings, buttons and links), and a **stylesheet** (CSS, the language that sets colors, spacing and layout, that decorates them). The top-level component of the app is short enough to read whole:
+A component has three parts. The class holds the data and actions, in TypeScript. The **template** is the HTML that shows them; HTML is the markup language that describes the structure of a web page, such as headings, buttons and links. The **stylesheet** is CSS, the language that sets colors, spacing and layout. The top-level component of the app is short enough to read whole:
 
 **Listing 21.1 — `app.ts` (book-m6-final, excerpt: imports and decorator)**
 
@@ -54,7 +54,7 @@ export class App implements OnInit, OnDestroy {
 
 Line by line:
 
-- `@Component({ ... })` is a **decorator**: a label attached to the class below it that tells Angular "this class is a component, configured like so".
+- `@Component({ ... })` is a **decorator**: a label attached to the class it decorates that tells Angular "this class is a component, configured like so".
 - `selector: 'app-root'` is the custom HTML tag that shows this component. `src/index.html` contains `<app-root></app-root>` (Chapter 20, Listing 20.3), and that is where the whole application appears.
 - `standalone: true` means the component lists its own dependencies rather than relying on a shared module. (Angular 22 treats components as standalone by default; the project states it explicitly.)
 - `imports: [...]` lists the other building blocks that this component's template uses: other components, pipes (formatters, Section 21.3), and directives (extra behavior attached to an element, such as `routerLink`, which turns an ordinary link into an in-app one). If the template uses `routerLink` but `RouterLink` isn't listed here, the compiler complains.
@@ -79,6 +79,8 @@ flowchart TB
 ```
 
 *Figure 21.1 — The component tree: from `index.html` to the current screen*
+
+*Text description:* A tree diagram drawn top to bottom. `index.html` contains the `app-root` tag, which shows the App component. App has three children: the top bar, the idle banner (shown only in the warning state) and the router outlet. The router outlet holds one screen at a time: the sign-in screen, the document list, the viewer or another screen. Notice that the top bar and banner belong to App, so they stay while the screens change.
 
 <!-- source: index.html, app.ts, app.html and app.routes.ts at book-m6-final -->
 
@@ -190,7 +192,9 @@ Two more forms appear in other templates. `@for` repeats a block for each item, 
 
 `track doc.documentId` says each card is identified by its document id, so when the list is filtered, Angular keeps the cards that remain instead of rebuilding all of them. And square brackets, as in `[routerLink]="[...]"`, are a **property binding**: the attribute's value is computed from an expression instead of being fixed text. The viewer uses the same form to move tiles, for example `[style.top.px]="tile.top"` (Section 21.9) and `[class.pending]="tile.status !== 'loaded'"`.
 
-The three binding forms are worth memorizing as a table:
+Table 21.1 lists the three binding forms worth memorizing:
+
+**Table 21.1 — The three binding forms**
 
 | Syntax | Direction | Example in the project | Meaning |
 |---|---|---|---|
@@ -245,7 +249,7 @@ this.zoom.set(1.4);                 // replace the value
 this.zoom.update((z) => z + 0.2);   // compute the new value from the old
 ```
 
-Because templates call the signal (`{{ zoom() }}`), Angular knows that this template depends on `zoom`, and redraws just that part when it changes. Deciding what to redraw is **change detection**. A **computed** signal is a value derived from others; it is recalculated only when a signal it read has changed, and is otherwise cached. The document list uses one for its search box:
+Because templates call the signal (`{{ zoom() }}`), Angular knows that this template depends on `zoom`, and redraws only that part when it changes. Deciding what to redraw is **change detection**. A **computed** signal is a value derived from others; it is recalculated only when a signal it read has changed, and is otherwise cached. The document list uses one for its search box:
 
 **Listing 21.5 — `document-list.component.ts` (book-m6-final, excerpt)**
 
@@ -314,6 +318,8 @@ flowchart LR
 
 *Figure 21.2 — How signals flow through the viewer: from changed values to the parts of the screen that redraw*
 
+*Text description:* A dependency diagram drawn left to right. Changed values on the left (manifest, current page, viewport width, zoom, tiles and throttled seconds) feed computed values (page info, fit width and loaded tile count). Those and the raw signals feed the parts of the template on the right: the stage size and scale, the throttle notice and one div per tile. Notice that zoom reaches only the stage style, and tiles reach only the tile divs and the throttle notice.
+
 <!-- source: viewer.component.ts and viewer.component.html at book-m6-final (signals manifest, currentPage, tiles, zoom, throttledSeconds; computed pageInfo, fitWidth, stageStyle, loadedTileCount) -->
 
 Read it as a map of consequences. If the reader zooms, only `zoom` changes, so only `stageStyle` and the template part that uses it are recalculated; the tiles and the throttle notice are untouched. If a tile finishes loading, `tiles` changes, so the per-tile `div`s and the "N of M tiles loaded" count update, but the page size doesn't. The diagram is simplified: the viewer has more signals (errors, loading state, access-lost) and a second style computed (`stageWrapperStyle`) that follows the same pattern as `stageStyle`.
@@ -348,7 +354,7 @@ export class PageBadgeComponent {
 }
 ```
 
-A parent would write `<app-page-badge [page]="currentPage()" />`, using the same square-bracket property binding as before. Inputs are also signals, read as `page()`. The project's shape, "screens as pages, shared state in services", is a legitimate design for a small app; the price is that a screen can grow large (the viewer is about 500 lines), and a larger team might split it into smaller child components with inputs.
+A parent would write `<app-page-badge [page]="currentPage()" />`, using the same square-bracket property binding as before. Inputs are also signals, read as `page()`. The project's shape, "screens as pages, shared state in services", is a legitimate design for a small app. The price is that a screen can grow large (the viewer is about 500 lines). A larger team might split it into smaller child components with inputs.
 
 ### 21.7 Styling, light and dark themes, and accessibility basics
 
@@ -373,7 +379,7 @@ Component stylesheets are scoped: rules in `app.css` affect only the `App` compo
 
 *Path: `frontend/src/app/app.css`*
 
-`display: flex` puts the brand, the navigation and the account area side by side; `align-items: center` centers them vertically; `gap` spaces them; `padding` and `border-bottom` frame the bar; `background: var(--surface)` uses a theme color (below).
+`display: flex` puts the brand, the navigation and the account area side by side; `align-items: center` centers them vertically; `gap` spaces them; `padding` and `border-bottom` frame the bar; `background: var(--surface)` uses a theme color (Listing 21.9).
 
 Look-and-feel that every screen shares lives in one global file, `styles.css`, built on **CSS custom properties** (also called variables): named values, written `--name`, that any rule can read with `var(--name)`.
 
@@ -413,7 +419,9 @@ Look-and-feel that every screen shares lives in one global file, `styles.css`, b
 
 The naming is by *role*, not by color: `--surface` is "what cards and bars are painted on", not "white". That's why the dark block can give `--surface` a near-black value without any component changing. It is also why there is a separate `--on-accent`: "the color of text sitting on the accent color", which is white in light mode and near-black in dark mode, because the accent itself is a lighter blue in dark mode.
 
-**Contrast** is the difference in brightness between text and its background, measured as a ratio. The Web Content Accessibility Guidelines (WCAG) level AA asks for a ratio of at least 4.5:1 for normal text, so people with low vision or a dim screen can read it. Table 21.1 lists the ratios of the project's main text pairings, computed with the WCAG formula.
+**Contrast** is the difference in brightness between text and its background, measured as a ratio. The Web Content Accessibility Guidelines (WCAG) level AA asks for a ratio of at least 4.5:1 for normal text, so people with low vision or a dim screen can read it. Table 21.2 lists the ratios of the project's main text pairings, computed with the WCAG formula.
+
+**Table 21.2 — Contrast ratios (computed by the author from the token values in Listing 21.9; the automated check in Chapter 24 is the project's own guard)**
 
 | Pairing | Light theme | Dark theme |
 |---|---|---|
@@ -423,11 +431,9 @@ The naming is by *role*, not by color: `--surface` is "what cards and bars are p
 | `--on-accent` on `--accent` (buttons) | 6.1 : 1 | 6.0 : 1 |
 | `--danger` on `--surface` (error text) | 5.8 : 1 | 6.3 : 1 |
 
-*Table 21.1 — Contrast ratios (computed by the author from the token values in Listing 21.9; the automated check in Chapter 24 is the project's own guard)*
+Two things show why tokens matter. First, at `book-m5-platform` the `--muted` color in light mode was changed from `#6b7280` to `#5d6470`. The old value scored 4.8 : 1 on white and only 4.5 : 1 on the page background, right at the limit, and the new one has real margin. Second, the button text color changed from a hard-coded white to `var(--on-accent)`. With white text on the dark theme's lighter accent, the ratio would be only about 3.2 : 1, under the AA threshold; `--on-accent` fixes that by using dark text there. The git diff of `styles.css` between `book-m4-reading` and `book-m5-platform` shows both changes. Because colors live in one place, each fix was a small edit, and Chapter 24 shows the automated check that keeps this true in both themes.
 
-Two things show why tokens matter. First, at `book-m5-platform` the `--muted` color in light mode was changed from `#6b7280` to `#5d6470`: the old value scored 4.8 : 1 on white and only 4.5 : 1 on the page background, right at the limit, and the new one has real margin. Second, the button text color changed from a hard-coded white to `var(--on-accent)`. With white text on the dark theme's lighter accent, the ratio would be only about 3.2 : 1, below the AA threshold; `--on-accent` fixes that by using dark text there. The git diff of `styles.css` between `book-m4-reading` and `book-m5-platform` shows both changes. Because colors live in one place, each fix was a small edit, and Chapter 24 shows the automated check that keeps this true in both themes.
-
-Accessibility basics visible in the templates: form fields are paired with `<label for="...">`; the search box has `aria-label="Search documents"`; error text uses `role="alert"` and status messages `role="status"`, so screen readers announce them; buttons are real `<button>` elements, so they work with the keyboard for free; and the top-bar links use real `<a>` elements with meaningful text.
+Accessibility basics are visible in the templates. Form fields are paired with `<label for="...">`. The search box has `aria-label="Search documents"`. Error text uses `role="alert"` and status messages use `role="status"`, so screen readers announce them. Buttons are real `<button>` elements, so they work with the keyboard for free. The top-bar links use real `<a>` elements with meaningful text.
 
 ## Advanced tier: How the viewer paints a page
 
@@ -435,7 +441,7 @@ Accessibility basics visible in the templates: form fields are paired with `<lab
 
 ### 21.8 Tiles, briefly
 
-A PDF page is cut into rectangular **tiles** on the server (Part II), each a small image, so no single request carries the whole page and each can carry its own watermark. The frontend's job is to put the tiles back together on screen. It asks for a *grid* of signed tile addresses (Chapter 22), downloads each tile, and places it at the right position. Chapter 25 tells the story of the first prototype; here we look at how the Angular viewer does the placing.
+A PDF page is cut into rectangular tiles on the server (Part II), each a small image, so no single request carries the whole page and each can carry its own watermark. The frontend's job is to put the tiles back together on screen. It asks for a *grid* of signed tile addresses (Chapter 22), downloads each tile, and places it at the right position. Chapter 25 tells the story of the first prototype; here we look at how the Angular viewer does the placing.
 
 ### 21.9 CSS backgrounds instead of images or a canvas
 
@@ -459,7 +465,9 @@ The Angular viewer places each tile as an absolutely positioned `<div>` whose CS
 
 *Path: `frontend/src/app/features/viewer/viewer.component.html`*
 
-`tile.src` is a temporary `blob:` address the viewer creates for the bytes it fetched (Chapter 22). Each `div` is one tile, positioned by `top` and `left` in page pixels. Note the bindings: `[style.top.px]="tile.top"` sets the CSS `top` property and adds the unit `px` for you; `[class.pending]="..."` turns the `pending` class on or off; `track tile.key` identifies each tile by its row and column (`"row-col"`), so when a tile's status changes from pending to loaded, Angular updates that one `div` and leaves the others alone. The milestone-zero prototype drew the page on a `<canvas>` element (`book-m0-mvp`'s static page; Chapter 25); the Angular viewer, from its first appearance at `book-m1-accounts`, uses divs. A canvas is a rectangle you draw pixels onto with code; a `div` with a background is an ordinary page element the browser lays out. The second is simpler to position, scale and make responsive, and lets each tile appear the moment it arrives.
+`tile.src` is a temporary `blob:` address the viewer creates for the bytes it fetched (Chapter 22). Each `div` is one tile, positioned by `top` and `left` in page pixels. Note the bindings. `[style.top.px]="tile.top"` sets the CSS `top` property and adds the unit `px` for you. `[class.pending]="..."` turns the `pending` class on or off. `track tile.key` identifies each tile by its row and column (`"row-col"`), so when a tile's status changes from pending to loaded, Angular updates that one `div` and leaves the others alone. The milestone-zero prototype drew the page on a `<canvas>` element (`book-m0-mvp`'s static page; Chapter 25); the Angular viewer, from its first appearance at `book-m1-accounts`, uses divs. A canvas is a rectangle you draw pixels onto with code; a `div` with a background is an ordinary page element the browser lays out. The second is simpler to position, scale and make responsive, and lets each tile appear the moment it arrives.
+
+> **Note:** At `book-m6-final` the repository's README still says the browser reassembles the tiles on a canvas. A later documentation-only pull request (#13) corrected that sentence. At the tag, trust the code (`viewer.component.html` and `viewer.component.css`), which uses positioned `div` elements.
 
 The stylesheet's comment states the design intent:
 
@@ -489,7 +497,7 @@ Read it honestly: this stops a casual right-click "Save image as" and drag-out o
 
 ### 21.10 A rendering detail: the one-pixel overlap
 
-A second detail from the same file shows how small rendering bugs are solved. The stage is scaled by a fractional amount for zoom (`scale(0.83)`, say), and that fractional scaling left hairline gaps between neighboring tiles, clearly visible over dark page content (the stylesheet's own comment describes the problem; the usual cause is that each scaled edge lands between two screen pixels and is anti-aliased separately). The template makes each tile one pixel wider and taller than its slice (`tile.width + 1`, `tile.height + 1`), so neighbors overlap by a pixel and the seams disappear; the comment above `.tile` explains why. The trade-off is that the last row and column of a tile are drawn twice, which is invisible because they show the same image, and the tile's stretched background (`background-size: 100% 100%`) absorbs the extra pixel.
+A second detail from the same file shows how small rendering bugs are solved. The stage is scaled by a fractional amount for zoom (`scale(0.83)`, say), and that fractional scaling left hairline gaps between neighboring tiles, visible over dark page content. The stylesheet's own comment describes the problem; the usual cause is that each scaled edge lands between two screen pixels and is anti-aliased separately. The template makes each tile one pixel wider and taller than its slice (`tile.width + 1`, `tile.height + 1`), so neighbors overlap by a pixel and the seams disappear; the comment on `.tile` in the stylesheet explains why. The trade-off is that the last row and column of a tile are drawn twice, which is invisible because they show the same image, and the tile's stretched background (`background-size: 100% 100%`) absorbs the extra pixel.
 
 ### 21.11 Blending colors: the idle banner
 
@@ -549,7 +557,7 @@ Add a signal `showHint` to a scratch component with a button that toggles it (`u
 
 ### Exercise 21.4 ★★ Check the contrast
 
-Use a contrast checker to compute the ratio of `--muted` on `--surface` in both themes. Compare your numbers with Table 21.1.
+Use a contrast checker to compute the ratio of `--muted` on `--surface` in both themes. Compare your numbers with Table 21.2.
 
 *Solution:* Appendix C, Exercise 21.4.
 
