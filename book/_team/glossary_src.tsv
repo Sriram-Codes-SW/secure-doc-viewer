@@ -61,7 +61,7 @@ certificate	A signed statement, issued by an authority the browser trusts, that 
 certificate authority	An organization that browsers trust to issue certificates.
 chain of responsibility	A design pattern in which a request passes along a line of handlers, each of which may handle it, change it or pass it on.
 change detection	Angular's process of deciding which parts of the screen to redraw when data changes.
-checked exception	A Java exception, such as `IOException`, that a method must catch or declare with `throws`.	ch=5
+checked exception	A Java exception, such as `IOException`, that a method must catch or declare with `throws`.	checked;unchecked;ch=5
 CI (continuous integration)	The practice of running tests and checks automatically on every proposed change.
 CIDR	A compact way to write a range of network addresses, such as `10.0.0.0/16`.
 class	A named blueprint in Java that describes the data and the behavior of a kind of object.
@@ -382,7 +382,7 @@ trust boundary	The line between what a system controls, such as the server, and 
 twelve-factor app	A published method for building services that deploy cleanly, including keeping configuration in the environment.
 type	A label that says what kind of value something is.
 TypeScript	JavaScript with a type system that a compiler checks before the code runs.
-unchecked exception	A Java exception that the compiler does not force you to catch.	ch=5
+unchecked exception	A Java exception that the compiler does not force you to catch.	checked;unchecked;ch=5
 union type	A TypeScript type that allows one of several listed alternatives.
 unit test	A small test of one piece of code on its own, with no framework or database running.
 untracked	Describes a file that Git can see but is not recording.

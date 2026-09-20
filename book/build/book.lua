@@ -53,7 +53,7 @@ local ESC = {
 
 local function to_code(el)
   local s = el.text
-  if #s < 22 or s:find(string.char(10)) then return nil end
+  if #s < 14 or s:find(string.char(10)) then return nil end
   local out, prev = {}, ''
   for ch in s:gmatch(utf8.charpattern) do
     if ch:match('^%u$') and prev:match('^%l$') then out[#out + 1] = AB end

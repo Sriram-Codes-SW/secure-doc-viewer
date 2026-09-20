@@ -22,7 +22,18 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
+
+_T = [time.time()]
+
+
+def mark(label):
+    """Print the seconds since the previous mark (timing information only)."""
+    now = time.time()
+    print(f'[timing] {label}: {now - _T[0]:.0f} s')
+    _T[0] = now
+
 
 BACKSLASH = chr(92)
 ARGS = set(sys.argv[1:])
@@ -52,6 +63,7 @@ manuscript = '\n\n'.join(parts) + '\n'
 with open(os.path.join(OUT, 'manuscript.md'), 'w', encoding='utf-8', newline='\n') as f:
     f.write(manuscript)
 
+mark('1 manuscript assembly')
 # ---- 2. diagrams (cached on the diagram sources) ---------------------------------------------------
 blocks = re.findall(r'```mermaid\n.*?```', manuscript, flags=re.S)
 digest = hashlib.sha256('\n'.join(blocks).encode('utf-8')).hexdigest()
@@ -68,6 +80,7 @@ else:
     with open(stamp, 'w') as f:
         f.write(digest)
 
+mark('2 diagrams (render or cache check)')
 # ---- 3. alternative text -------------------------------------------------------------------------
 # The text always comes from the CURRENT manuscript: each mermaid block is replaced by a link to the image
 # mermaid-cli made for it (rendered-1.png, rendered-2.png ... in order). Only the images are cached.
@@ -116,9 +129,12 @@ def wrap_code_blocks(text, width=96):
     tagged PDF. The web editions keep the code exactly as written.
     """
     out, in_code = [], False
+    base = width
     for line in text.split('\n'):
         if line.lstrip().startswith('```'):   # fences inside list items are indented
             in_code = not in_code
+            if in_code:   # a block without a language is set in a larger, unhighlighted font: wrap it sooner
+                width = base if line.lstrip()[3:].strip() else 80
             out.append(line)
             continue
         if not in_code or len(line) <= width:
@@ -146,6 +162,7 @@ if missing:
     for c in missing:
         print('   ', c)
 
+mark('3 alt text, code wrapping, writing the source files')
 # ---- 4. Pandoc ------------------------------------------------------------------------------------
 subprocess.run(['docker', 'build', '-q', '-t', 'sdv-book-pandoc', HERE], check=True)
 metadata_file = os.path.join(HERE, 'metadata.yaml')
@@ -179,6 +196,7 @@ def add_scope(html):
     return re.sub(r'<thead.*?</thead>', head, html, flags=re.S)
 
 
+mark('4 docker image check and metadata')
 if '--no-epub' not in ARGS:
     subprocess.run(common + ['--toc', '--toc-depth=2', '--css=/data/build/book.css',
                              '--epub-metadata=/data/build/epub-metadata.xml',
@@ -203,6 +221,7 @@ if '--no-epub' not in ARGS:
             zout.writestr(item, data, compress_type=zipfile.ZIP_STORED if item.filename == 'mimetype' else zipfile.ZIP_DEFLATED)
     os.replace(tmp, path)
 
+mark('5 EPUB (pandoc and post-processing)')
 if '--no-html' not in ARGS:
     subprocess.run(common + ['--toc', '--toc-depth=2', '--template=/data/build/templates/book.html',
                              '--css=/data/build/book.css', '--embed-resources',
@@ -212,9 +231,10 @@ if '--no-html' not in ARGS:
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(add_scope(html))
 
+mark('6 HTML (pandoc and post-processing)')
 if '--no-pdf' not in ARGS:
     # LuaLaTeX book, tagged PDF/UA-2: chapters start new pages, running headers, numbered sections.
-    subprocess.run(common + ['--toc', '--toc-depth=1', '--metadata-file=/data/build/pdf-metadata.yaml',
+    pdf_cmd = common + ['--toc', '--toc-depth=1', '--metadata-file=/data/build/pdf-metadata.yaml',
                              '--pdf-engine=lualatex', '-V', 'documentclass=book', '-V', 'classoption=oneside,11pt',
                              '-V', 'papersize=a4', '-V', 'geometry:margin=2.5cm',
                              '-V', 'mainfont=texgyrepagella-regular.otf',
@@ -223,8 +243,22 @@ if '--no-pdf' not in ARGS:
                              '-V', 'linkcolor=black', '-V', 'toccolor=black', '-V', 'urlcolor=blue!60!black',
                              '--top-level-division=chapter',
                              '--include-in-header=/data/build/header.tex', '-V', 'colorlinks=true',
-                             '-o', 'secure-doc-viewer-guide.pdf', PDF], check=True, env=env)
+                             '-o', 'secure-doc-viewer-guide.pdf', PDF]
+    if os.environ.get('SDV_PROFILE'):
+        # Profiling only (set SDV_PROFILE=1): the same command plus --verbose, with the seconds at which each
+        # Pandoc/LaTeX step is reported. The output is identical; only the messages differ.
+        t0 = time.time()
+        proc = subprocess.Popen(pdf_cmd + ['--verbose'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                encoding='utf-8', errors='replace', env=env)
+        for msg in proc.stdout:
+            if msg.startswith('[') and any(k in msg for k in ('Running', 'rerun', 'Rerun', 'LaTeX', 'lualatex', 'PDF', 'Loading', 'template')):
+                print(f'[timing] {time.time() - t0:6.0f} s  {msg.strip()[:150]}')
+        if proc.wait() != 0:
+            raise subprocess.CalledProcessError(proc.returncode, pdf_cmd)
+    else:
+        subprocess.run(pdf_cmd, check=True, env=env)
 
+mark('7 PDF (pandoc and LuaLaTeX)')
 for n in sorted(os.listdir(OUT)):
     p = os.path.join(OUT, n)
     if os.path.isfile(p):

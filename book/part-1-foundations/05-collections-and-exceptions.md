@@ -314,7 +314,7 @@ public class Finally {
 }
 ```
 
-Java sorts exceptions into a family tree. Those that extend `RuntimeException` are **unchecked**: the compiler does not force you to catch them. `IllegalArgumentException` and `NumberFormatException` are unchecked. Others, such as `IOException` (which file operations throw), are **checked**: a method that can throw one must either catch it or declare `throws IOException`, which you will see in `DocumentController.upload` in Listing 5.6. The app defines its own exceptions as unchecked, so business code can throw them without cluttering every method signature.
+Java sorts exceptions into a family tree. Those that extend `RuntimeException` are **unchecked**: the compiler does not force you to catch them. `IllegalArgumentException` and `NumberFormatException` are unchecked. Others, such as `IOException` (which file operations throw), are checked: a method that can throw one must either catch it or declare `throws IOException`, which you will see in `DocumentController.upload` in Listing 5.6. The app defines its own exceptions as unchecked, so business code can throw them without cluttering every method signature.
 
 The app defines its own exception types so that each failure has a meaning. The smallest is one line of substance.
 
