@@ -1,0 +1,14 @@
+title: Building a Secure Document Viewer
+subtitle: From first line of Java to production
+lang: en-US
+subject: A beginner-to-production guide to building a secure document viewer with Spring Boot, Angular, MySQL, Docker and GitHub Actions
+keywords:
+  - Java
+  - Spring Boot
+  - Angular
+  - web security
+  - software architecture
+pdfstandard:
+  standards:
+    - ua-2
+  tagging: true

@@ -1,0 +1,481 @@
+absolute lifetime	A limit on how long a session may last after sign-in, however active it is; the app sets it to 12 hours.
+absolute path	A path that starts from the top of the file system, such as `/c/dev/secure-doc-viewer`, and so means the same wherever you are.	absolute
+access analyzer	An AWS tool that reports which resources, such as buckets, can be reached from outside your account.
+access level	A Java keyword (`public`, `private`, package-private) that decides who may use a class, field, or method.
+actor	In a threat model, a person or program that can interact with the system, such as a reader, a publisher, or an attacker.
+Actuator	The Spring Boot library that adds operational endpoints such as health checks and metrics.
+adapter	A design pattern in which a small class translates one interface into the one your code expects.
+administrator	The role that may manage users, sessions, and the audit log, and see every document; in code, `ADMIN`.
+Amazon CloudFront	The AWS content delivery network, which serves files from locations near the reader.
+Amazon CloudWatch	The AWS service that collects logs and metrics from ECS and the load balancer and raises alarms.
+Amazon ECR	Elastic Container Registry, the AWS registry that stores container images.
+Amazon ECS	Elastic Container Service, the AWS service that runs containers.
+Amazon ElastiCache	An AWS-managed in-memory store (Valkey or Redis OSS) that all tasks can share.
+Amazon EventBridge Scheduler	An AWS service that starts a task or another target on a schedule.
+Amazon Managed Service for Prometheus	An AWS-managed store that accepts Prometheus metrics, so you do not run a Prometheus server yourself.
+Amazon RDS	Relational Database Service: AWS runs a database such as MySQL for you, including patching, backups, and failover.
+Amazon Route 53	The AWS DNS service.
+Amazon S3	Simple Storage Service: AWS object storage that keeps files (objects) by key in buckets, with no real directories and no atomic folder rename.
+Angular	The framework, written in TypeScript, in which the app's browser side is built from components, services, and routes.
+Angular CLI	The `ng` command-line program that creates, serves, builds, and tests an Angular project.
+annotation	A label starting with `@` that you attach to Java code so that a framework or the compiler can read it.
+application context	Spring's container: the object that creates, holds, and connects all of the application's beans.
+Application Load Balancer (ALB)	An AWS service that receives HTTPS requests, spreads them over healthy tasks and health-checks each one.
+architectural pattern	A named, large-scale shape for arranging a whole system, such as layers, a gateway, or an event log.
+argument	A value you give to a command or to a method call so that it knows what to act on.
+ARN (Amazon Resource Name)	The unique address of one AWS resource, such as a secret or a role.
+arrow function	A short way to write a function in JavaScript and TypeScript, using `=>`.
+asset	In a threat model, something worth protecting, such as the documents, the signing secret, or the accounts.
+atomic	Describes a step that happens completely or not at all, so that nothing else can see it half done.
+audit log	The persisted record of who did what and when, which administrators can search and export; the audit trail is its content.
+audit trail	The append-only record, kept for a set retention period (180 days by default), of important actions such as sign-ins, uploads, views, and denied requests, kept so that events can be investigated later.
+authentication	Proving who you are, for example with a username and password.
+authorization	Deciding what an authenticated person is allowed to do.
+auto-configuration	Spring Boot's habit of setting up sensible defaults for the libraries it finds on the classpath.
+Availability Zone (AZ)	One or more separate data centers inside an AWS Region; using two means a failure in one does not take you down.
+AWS Backup	An AWS service that schedules and manages backups and restores of databases and storage.
+AWS Certificate Manager (ACM)	The AWS service that issues public TLS certificates and renews them.
+AWS Fargate	A way to run ECS containers without managing servers.
+AWS Secrets Manager	The AWS service that stores secrets and can inject them into a container as environment variables at start.
+AWS WAF	A web application firewall that attaches rules to a load balancer or a CloudFront distribution.
+axe-core	A library that scans a rendered page for accessibility problems, such as low contrast or missing labels.
+backend	The part of an application that runs on a server and holds the data and the rules.
+BCrypt	A password-hashing function that is deliberately slow and reads at most 72 bytes of the password.
+bean	An object that Spring creates and manages, from a class labeled with an annotation such as `@Service`.
+Bean Validation	The Java standard for declaring input rules with annotations such as `@NotBlank` and `@Size`.
+boxing	Java's automatic conversion between a primitive value such as `int` and its object form such as `Integer`.
+branch	A movable name for a line of work in Git.
+browser	The program, such as Chrome, Firefox, Safari, or Edge, that requests web pages and runs their code.
+build	The sequence of steps that turns source code into a tested, packaged program.
+build context	The folder that Docker sends to the builder when you build an image.
+build tool	A program that compiles code, runs tests, and packages the result; Maven is the one this project uses for Java.
+bulkhead	A design pattern that gives each kind of work its own limit, so that overload in one does not sink the rest.
+bytecode	The compact instructions that the Java compiler produces and the JVM runs.
+cache	A place where a copy of something is kept so that it can be served again faster.
+camel case	A naming style with no spaces in which each word after the first starts with a capital letter, such as `tileCount`.
+canonical string	The fixed, unambiguous text that is signed when a tile token is made: the payload fields joined in a set order.
+capability URL	A URL whose possession is what lets you fetch the one thing it names; a signed tile URL is an example.
+CDN (content delivery network)	A network of servers around the world that keeps copies of files near readers so that they load quickly.
+ceiling division	Division that rounds up, used to count how many tiles are needed to cover a page.
+certificate	A signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain.
+certificate authority	An organization that browsers trust to issue certificates.
+chain of responsibility	A design pattern in which a request passes along a line of handlers, each of which may handle it, change it, or pass it on.
+change detection	Angular's process of deciding which parts of the screen to redraw when data changes.
+checked exception	A Java exception, such as `IOException`, that a method must catch or declare with `throws`.	checked;unchecked;ch=5
+CI (continuous integration)	The practice of running tests and checks automatically on every proposed change.
+CIDR	A compact way to write a range of network addresses, such as `10.0.0.0/16`.
+class	A named blueprint in Java that describes the data and the behavior of a kind of object.
+clickjacking	An attack that hides a real page inside a frame on a hostile page so that you click on it without knowing.
+client	A program that asks for things over a network; your browser is a client.
+clone	To copy an existing Git repository, with its history, to your machine.
+code review	The practice of having someone else read a change before it is merged.
+collection	A Java object that holds many values, such as a list, a set, or a map.
+commit	A saved state in Git: a snapshot of every tracked file at one moment, with a message and a unique identifier.
+commit SHA	The long hexadecimal identifier that uniquely names a Git commit.
+compiler	A program that checks source code and translates it into a form that a machine can run.
+compiler error	A message from the compiler that stops the build before anything runs.
+component scanning	Spring's search of your packages for annotated classes to register as beans.
+composite primary key	A primary key made of more than one column, such as a document and a user together.
+composition	Building a class by giving it other objects to use, instead of inheriting from another class.
+computed signal	An Angular signal whose value is calculated from other signals and recalculated only when they change.
+concurrency	Several things happening at overlapping times, for example many requests handled by many threads.
+conditional expression	The `condition ? a : b` form, which gives `a` when the condition is true and `b` otherwise.
+constant-time comparison	A check whose running time does not depend on how many characters match, so that an attacker cannot learn a secret from timing.
+constraint	A rule that a database enforces on a column or table, such as `NOT NULL` or `UNIQUE`.
+constructor	Special code that runs when you create an object with `new` and sets up its fields.
+constructor injection	Dependency injection in which an object receives its dependencies as constructor parameters.
+container	A running, isolated instance of an image: a program packaged with everything it needs.
+Content-Security-Policy (CSP)	A response header that tells the browser which sources a page may load scripts, images, and connections from.
+contrast	The difference in brightness between text and its background, measured as a ratio.
+controller	A class that receives web requests and returns responses.
+convention over configuration	The design habit of choosing sensible defaults so that you configure only what differs; Maven and Spring Boot both follow it.
+cookie	A small piece of data that a server asks the browser to store and send back with later requests.
+CORS (cross-origin resource sharing)	The browser mechanism by which a server says which other origins may read its responses.
+coordinates	The three values (group, artifact, and version) that identify a Maven project or library.
+CPU	The processor that does a computer's calculations.
+cron expression	A compact schedule with fields for second, minute, hour, day, month, and weekday, such as `0 30 3 * * *`.
+CSRF (cross-site request forgery)	An attack in which another website makes your browser send a request to a site where you are signed in.
+CSRF token	A secret value that the app's own page sends back in a header on every change, so that a forged request cannot supply it.
+CSV injection	An attack in which a spreadsheet cell that starts with `=`, `+`, `-`, or `@` runs as a formula when an exported CSV file is opened.
+CVE	A public identifier, in the Common Vulnerabilities and Exposures list, for one known security flaw in some software.
+data transfer object (DTO)	A small class, often a record, that carries exactly the data of one request or response.
+database	A program that stores an application's data permanently and lets you query it.
+decompression bomb	A small file that expands to a huge amount of data or pixels when processed, exhausting memory.
+deep link	An address that leads straight to a specific state, such as the viewer at page 3 of a document.
+defense	Whatever stands in the way of a threat.
+defense in depth	The principle of layering several independent protections so that one failure does not expose everything.
+denial of service	An attack, or a side effect, that makes a service unavailable to the people who need it.
+denormalized	Storing a copy of information in more than one place instead of linking to one copy.
+deny by default	A stance in which anything not explicitly allowed is refused.
+Dependabot	A GitHub service that opens pull requests when newer versions of your dependencies exist.
+dependency	A library that your code uses.
+dependency injection	Giving an object the other objects it needs instead of letting it create them itself.
+deserialization	Turning text or bytes, such as JSON, back into an object.
+design pattern	A named, reusable solution to a problem that recurs in code.
+developer tools	The inspection panel built into browsers that shows requests, code, and errors.
+diamond	The empty angle brackets `<>` in Java, which tell the compiler to work out the type arguments from the left-hand side.
+digest	A fingerprint of exact contents, such as the SHA-256 hash that identifies one Docker image.
+discriminated union	A TypeScript union of object types that each carry a fixed tag field, so that code can tell them apart.
+DNS (Domain Name System)	The internet's phone book, which turns a name such as `docs.example.com` into a network address.
+Docker	The tool that builds and runs programs in containers.
+Docker Compose	A tool that describes several containers in one file, `docker-compose.yml`, and starts them with one command.
+Dockerfile	The recipe of steps that builds a Docker image.
+doc comment	A `/** ... */` comment that documents a class or method for people and for documentation tools.
+double-submit cookie	A CSRF defense in which the same value arrives twice, once in a cookie and once in a header that only the real page can set.
+DPI (dots per inch)	How many pixels represent one inch of a page when it is rendered as an image.
+dirty checking	Hibernate's habit of noticing that a loaded entity was changed and saving the change when the transaction ends.
+encapsulation	Hiding a class's fields and exposing only the operations you intend.
+encoding	The rule that maps characters to bytes; the project's files use UTF-8.
+encryption	Scrambling data with a key so that only someone with the key can read it.
+end-to-end test	A test that drives the whole running application through a real browser.
+entity	A Java class whose objects are stored as rows in a database table.
+enum	A Java type that lists all the allowed values of a small fixed set, such as the roles.
+environment variable	A named setting, such as `DB_PASSWORD`, that the operating system hands to every program it starts.
+epoch seconds	A time written as the number of seconds since January 1, 1970, UTC.
+event log	An ordered record of things that happened, added to and never edited.
+event sourcing	A design in which the sequence of events is the source of truth and the current state is derived from it.
+exception	An object that signals that something went wrong and interrupts normal flow until it is handled.
+exception handler	A method that turns a particular exception into a controlled HTTP response.
+executable JAR	One file that holds the application, its libraries, and the web server, so that a single command starts the whole application.
+exponential backoff	Waiting longer after each failed attempt, for example 50, 100, 200, and 400 milliseconds.
+facade	A design pattern in which one small, simple interface stands in front of a larger subsystem.
+factory method	A static method that builds an object, so that callers need not know how.
+fail fast	Refusing a bad situation at the first opportunity instead of letting it travel further into the code.
+fast-forward	A Git merge that simply moves a branch pointer forward because no other changes exist.
+fixture	Prepared sample data or state that a test starts from.
+flag	An option that changes how a command behaves, such as `-l` in `ls -l`.
+flaky test	A test that sometimes passes and sometimes fails without any change to the code.
+Flexbox	A CSS layout mode, `display: flex`, that arranges children in a row or column and spaces them.
+fluent interface	A style in which each method returns the object itself so that calls chain into one readable sentence.
+Flyway	A tool that applies numbered SQL migration files to a database in order.
+folder	A container for files and other folders; also called a directory.
+foreign key	A column that holds the primary key of a row in another table, linking the two.
+framework	A large body of ready-made code that supplies the structure of an application and calls your code at the right moments.
+frontend	The part of an application that runs in the user's browser.
+gateway	A reverse proxy at the edge that does more than forward requests, for example applying common rules to all of them.
+generic	A Java or TypeScript type that is written with a placeholder, such as `List<String>`, so that one definition works for many types.
+getter	A method that reads a private field of an object.
+Git	The version control tool that records every change to the project's files.
+Git Bash	The terminal that comes with Git for Windows and understands the bash commands used in this book.
+graceful shutdown	Stopping a server by refusing new requests and letting the ones in progress finish first.
+guard clause	A check at the top of a method that returns or throws at once when a precondition is not met.
+hash	A fixed-length, one-way fingerprint of data.
+Hibernate	The library that maps Java objects to database tables; it is the JPA implementation this project uses.
+HMAC	A keyed hash: a short code that only someone holding the secret key can compute, used to detect tampering.
+home folder	The folder where your personal files live; `~` is shorthand for it.
+host	The computer that runs Docker and its containers.
+HSTS (HTTP Strict Transport Security)	A response header that tells browsers to use only HTTPS for a site from then on.
+HTTP	The set of rules that browsers and servers use to exchange requests and responses.
+HTTPS	HTTP carried inside an encrypted channel created by TLS.
+IAM role	A set of permissions that a program assumes temporarily in AWS, with no stored password or key.
+idempotent	Describes an operation that has the same effect when done twice as when done once.
+idle cost	What a cloud resource bills while it exists, whether or not anyone uses it.
+idle timeout	The time a session may sit unused before it ends; the app sets it to 30 minutes.
+image	A read-only template from which Docker containers are started.
+immutable	Describes something that cannot change after it is created.
+import	A Java statement that lets you use a class from another package by its short name.
+index	A sorted lookup structure on one or more database columns, so that matching rows are found without reading the whole table.
+infrastructure as code	Describing servers, networks, and other infrastructure in files that can be reviewed, versioned, and re-applied.
+inheritance	Building a new class by taking everything an existing class has and adding to it.
+instant	A single point on the timeline, independent of time zones; `Instant` is the Java class for it.
+integration test	A test that starts several pieces together, for example the real security filters and a real controller.
+interceptor	A function in Angular's HTTP client that sees every request and response; the project's one interceptor records activity and reacts to `401`, while the CSRF header comes from Angular's built-in support.
+interface	A description of what an object can do (Java) or of its shape (TypeScript), without saying how.
+interpolation	Inserting the value of an expression into text in an Angular template with `{{ }}`.
+inversion of control	The principle that a framework, not your code, creates objects and decides when to call them.
+Jackson	The Java library that converts between objects and JSON.
+JAR	A Java Archive: a zip file of compiled classes.
+JavaScript	The programming language that browsers run.
+JDK	The Java Development Kit: the compiler and tools needed to build Java programs.
+join	A query operation that combines rows from two tables.
+join table	A table that holds pairs of keys to link two other tables in a many-to-many relationship.
+JPA	The Jakarta Persistence standard for mapping Java objects to database tables.
+JPQL	The JPA query language, which talks about classes and fields instead of tables and columns.
+JRE	The Java Runtime Environment: the part of Java needed only to run programs, without the compiler.
+jsdom	A pretend browser written in JavaScript, so that tests can create page elements without a real browser.
+JSON	A text format for structured data made of objects, lists, strings, numbers, and booleans.
+JWT	A JSON Web Token: a signed piece of text that carries claims and can be verified without a server-side session.
+JVM	The Java Virtual Machine: the program that runs compiled Java.
+KMS (Key Management Service)	The AWS service that creates and holds encryption keys.
+lambda	A small unnamed method that you can pass around.
+latch	A counter that makes threads wait until it reaches zero; tests use it to release parallel threads at once.
+layer	In Docker, one step of an image build, stored once and reused; in architecture, a level of code that may call only the level below it.
+layered architecture	An arrangement in which code is divided into levels, such as controllers, services, and repositories, each calling only the one below.
+lazy loading	Loading related data only when it is first used.
+least privilege	The principle of giving a process or person only the access it needs.
+library	A collection of ready-made code that your program calls when it needs it.
+lifecycle hook	A method that Angular calls when a component appears or is removed, such as `ngOnInit`.
+lifecycle rule	An S3 rule that expires old object versions or aborts incomplete uploads after a set time.
+line ending	The mark that ends a line of text: Windows uses two bytes (carriage return and line feed), macOS and Linux use one (line feed).
+list	A Java collection that keeps items in order and allows duplicates.
+literal	A value written directly in code, such as `512` or `"hello"`.
+localhost	The name a computer uses for itself; requests to it never leave the machine.
+log	The stream of text lines that a running program writes to say what it is doing.
+LTS (long-term support)	A release line that receives fixes for years, which the project prefers for MySQL, Node, and Java.
+Lua script (Redis)	A small script that Redis runs atomically, so that several commands take effect as one.
+magic number	A short, recognizable byte pattern at the start of a file that shows its type, such as `%PDF-`.
+managed service	A service in which the provider runs the software for you, including patches and backups, and you give up some control.
+many-to-many	A relationship in which each row on one side can link to many on the other and the reverse; it needs a join table.
+map	A Java collection of key and value pairs, looked up by key.
+Maven	The build tool this project uses to compile, test, and package its Java code.
+Maven Central	The public online repository from which Maven downloads libraries.
+Maven wrapper	A small script (`mvnw`) that downloads and runs the exact Maven version the project uses.
+merge	Combining the changes of one Git branch into another.
+merge commit	A commit that joins two lines of work and has two parents.
+merge conflict	A stop in a merge because two branches changed the same lines and Git cannot choose.
+method	A named block of code that does one job and can be called by name.
+method reference	A short form of a lambda that only calls one method, such as `AppUser::getUsername`.
+metric	A number that a running program exposes over time, such as how many tiles it has served.
+Micrometer	The Java library that collects metrics and hands them to a system such as Prometheus.
+microservices	A design in which each part of a system is its own separately deployed program that talks to the others over the network.
+migration	A versioned change to a database schema, applied once and in order.
+mock	A stand-in object that records how it was called, used to test code without its real collaborators.
+modular monolith	A single deployable program whose inside is divided into modules with clear responsibilities.
+module	A file or group of code that exports some things and imports others.
+multi-stage build	A Dockerfile that builds in one stage and copies only the result into a small final image.
+multipart	The request format that carries files and form fields together, used for uploads.
+Multi-AZ	A setup that keeps a synchronous standby copy in a second Availability Zone and fails over automatically.
+naive viewer	A viewer that only hides its download button in the browser, so that anyone can still fetch the file.
+NAT gateway	An AWS service that lets resources in private subnets reach the internet; it bills while it exists.
+Node.js	A program that runs JavaScript outside a browser, on your own computer.
+non-root	Running a program as an ordinary user instead of the all-powerful root user, so that a break-in does less harm.
+npm	Node's package manager, which downloads libraries from a public registry.
+object	One thing built from a class, with its own values for the fields.
+observability	How well you can tell what a running system is doing from what it reports.
+observer	A design pattern in which a publisher announces events and any number of subscribers react.
+open redirect	A flaw in which a site sends the browser to whatever address a link names, so that an attacker can dress a hostile link as a trusted one.
+OpenID Connect (OIDC)	A way for one service, such as GitHub, to prove its identity to another, such as AWS, and receive short-lived credentials with no stored key.
+operator	A symbol such as `+` or `==` that combines or compares values.
+Optional	A Java object that is either empty or holds one value, used instead of `null`.
+origin	The combination of scheme, host, and port that browsers use to decide who may read whose responses.
+ORM (object-relational mapper)	A library that translates between objects in code and rows in a database.
+OSV	Open Source Vulnerabilities: a database of published security advisories, used to check the project's dependencies.
+owner	The account that uploaded a document and may manage it.
+package	A Java folder-like namespace that groups related classes.
+parameter	A named input that a method declares; the values passed in are its arguments.
+parent POM	A Maven project file that other projects inherit defaults from, such as a tested list of library versions.
+passed by value	How Java passes arguments: the method receives a copy of a primitive value.
+path	The address of a file or folder, written with slashes between folder names.
+PATH	The environment variable that lists the folders a shell searches for commands.
+PDF	Portable Document Format: a file type that describes pages so that they look the same everywhere.
+Playwright	A tool that drives a real browser, used for the end-to-end tests.
+PNG	An image file format that stores a grid of pixels without losing detail.
+point-in-time recovery	Restoring a database to any moment within a retention period.
+port	A numbered door on a computer, from 0 to 65535, at which a server listens for network requests.
+presigned URL	An S3 URL that grants temporary access to one object to whoever holds it.	ch=41
+primary key	A column, or set of columns, whose value identifies each row uniquely.
+process	A running program.
+profile	A named set of extra Spring settings switched on for a purpose, such as the test profile.
+program	A list of instructions that a computer follows.
+Prometheus	A system that collects metrics by fetching a web page from each program at a regular interval.
+PromQL	The query language for Prometheus metrics.
+promise	A JavaScript object that stands for one result that will arrive later or fail.
+prompt	The text a shell shows to say that it is ready for your next command.
+property placeholder	A `${NAME:default}` marker in configuration that Spring replaces with an environment or file value.
+protocol	An agreed format for a conversation between programs, such as HTTP.
+proxy	A program that receives a request on behalf of another server and forwards it.
+publisher	The role that may upload documents and manage its own; in code, `PUBLISHER`.
+pull request	A proposal on GitHub to merge one branch into another, with a place for discussion and review.
+query method	A repository method whose name Spring turns into a database query.
+query string	The part of a URL after the `?`, which carries small pieces of data.
+race condition	A bug in which the result depends on the timing of things that happen at once.
+rasterize	To turn a page description, such as a PDF page, into a grid of pixels.
+rate limit	A cap on how many requests a user may make in a period.
+reader	The role that may open the documents shared with it; in code, `READER`.
+record	A compact Java class for immutable plain data.
+recognized device	A network address from which an account has signed in successfully in the last 30 days, which the sign-in throttle treats more leniently.
+RED	Three questions for watching a service: the Rate of requests, the Errors, and the Duration.
+redirection	Sending a command's output somewhere other than the screen, such as into a file.
+Region	A geographic area where AWS runs data centers.
+regression test	A test written so that a fixed bug cannot come back unnoticed.
+relational database	A database that stores data in tables linked by keys.
+relative path	A path that starts from the folder you are in.	relative
+relaxed binding	Spring's rule that `signing-secret`, `SIGNING_SECRET`, and `signingSecret` all name the same setting.
+remote	A copy of a Git repository on another computer, usually on GitHub.
+repository	A Git project (files plus the hidden `.git` folder that holds history), or in Spring a class that reads and writes one kind of entity.
+request body	The data a client sends with a request, such as the JSON of a form.
+reserved word	A word that SQL reserves for its own use, so that it cannot be used as a plain column name.
+resource	A thing that a REST API exposes at a URL, such as a document.
+response header	A named value, such as `Cache-Control`, that a server sends before the body of a response.
+REST	A style of web API built around URLs for things and HTTP methods for actions.
+retention	How long backups, logs, or records are kept before they are deleted.
+reverse proxy	A server that sits in front of an application, receives requests from browsers and passes them on.
+role	A named set of permissions attached to an account, such as reader, publisher, or administrator.
+roll back	To undo every change of a transaction because it failed.
+route guard	A function that Angular runs before it lets a user into a route, used for a better experience and never as security.
+row lock	A database lock on selected rows, so that two transactions cannot change them at once.
+RPO (recovery point objective)	How much recent data you can afford to lose, expressed as time.
+RTO (recovery time objective)	How long a restore may take before the outage is unacceptable.
+runtime error	An error that happens while the program runs rather than while it compiles.
+S3 Versioning	A bucket setting that keeps earlier versions of an object so that an overwritten or deleted object can be recovered.
+salt	Random data mixed into a password before hashing, so that equal passwords produce different hashes.
+same-origin policy	The browser rule that a script from one origin may not freely read responses from another.
+SameSite	A cookie setting that limits when the browser sends the cookie on requests that start from another site.
+schema	The set of tables and columns of a database.
+scope	A Maven setting that says when a dependency is needed, such as only for tests.
+scrape	Fetching a program's metrics page, which is how Prometheus collects data.
+secret rotation	Replacing a secret with a new one on a schedule or after a leak.	rotating;rotate
+secure by default	Describes software whose safe setting is the one you get if you configure nothing.
+security group	A firewall attached to an AWS resource that says which traffic may enter and leave.
+semaphore	A counter of permits that limits how many threads may do something at once.
+serialization	Turning an object into text or bytes, such as JSON, so that it can be sent or stored.
+server	The program that answers requests from clients; here, the Spring Boot app.
+service	In Spring, a class that holds the rules of the application, such as who may open a document.
+service layer	A layer of services that keeps the rules in one place, so that two controllers cannot apply them differently.
+servlet filter	Code that every web request passes through before it reaches a controller.
+session	The server's record that a particular browser has proven who it is, so that the browser need not send the password with every request.
+session binding	Tying a tile token to the session it was issued to, so that a token copied to another browser is refused.
+session cookie	The cookie that carries the session's identifier; here `SDV_SESSION`.
+session fixation	An attack in which someone gives you a session identifier they already know; changing the identifier at sign-in defeats it.
+shared responsibility model	The AWS rule that AWS secures the cloud itself and you secure what you put in it.
+shell	The program inside a terminal that reads your commands and runs them, such as Bash or PowerShell.
+sidecar	A helper container that runs beside the main container in the same task.
+signal	An Angular value that remembers who has read it and tells them when it changes.
+signature	A value computed from data and a secret key that proves the data was not changed.
+signed URL	A URL carrying a signature that the server can verify, so that it cannot be altered or forged.
+sliding window	A rate-limit method that counts requests in the last N seconds instead of in fixed clock periods.
+source code	The human-readable text of a program, before it is compiled.
+spec	A file of tests, named with `.spec.ts`, run by Vitest.
+SPA (single-page application)	A web app that loads once and then draws its screens in the browser, asking the server only for data.
+Spring Boot	The framework that starts the server and connects the application's classes with sensible defaults.
+Spring Data JPA	The Spring library that writes common database queries from repository interfaces.
+Spring Security	The Spring library that handles sign-in, sessions, roles, and request protection.
+SQL	The language used to query and change a relational database.
+SQL injection	An attack that smuggles SQL commands into an input so that the database runs them.
+stack trace	The list of method calls that were active when an exception occurred, printed to help find the cause.
+staging area	In Git, the place where changes wait until you commit them.
+starter	A single dependency that pulls in a matched set of libraries for one purpose, such as `spring-boot-starter-security`.
+state machine	A design that names the possible states and the allowed moves between them.
+static factory method	A static method, such as `Viewer.of(...)`, that returns a new object.
+status code	The three-digit number in a response that says what happened, such as `404`.
+stream	A Java pipeline that processes a collection step by step, filtering, transforming, and collecting.
+string	A sequence of characters; text.
+strategy	A design pattern in which interchangeable pieces of behavior are chosen at run time.
+stub	A stand-in with just enough behavior for a test.
+subnet	A division of a VPC's addresses; a private subnet has no route from the internet.
+supply chain	The libraries and images your software depends on, which other people wrote.
+table	A set of rows in a relational database, with named columns.
+tag	A permanent name for one Git commit, like a bookmark.
+task	One running copy of your containers, started by ECS from a task definition.
+task definition	The description that ECS runs: the image, CPU, memory, environment, and health check.
+task execution role	The IAM role that ECS itself uses to pull the container image and read secrets for a task.
+task role	The IAM role that your own code uses inside an ECS task to call AWS services such as S3.
+template	In Angular, the HTML that shows a component's data.
+template method	A design pattern in which a fixed skeleton is written once and the caller supplies the variable step.
+terminal	A window in which you type commands to the computer instead of clicking.
+test	Code that checks other code.
+test isolation	The rule that one test's outcome must never depend on another test having run.
+Testcontainers	A library that starts a real service, such as MySQL, in a Docker container for the length of a test.
+text file	A file that holds characters rather than, say, an image.
+thread	A path of execution inside a program; a web server handles many requests at once on many threads.
+threat	A specific way someone might misuse the system.
+threat model	A structured description of a system's assets, actors, entry points, and threats.
+throttling	Limiting how many attempts are allowed in a period.
+tile	One small square piece of a rendered page image.
+TLS	The protocol that encrypts traffic between a browser and a server; it is the S in HTTPS.
+token	A string that stands for a right to do something; here, a signed tile request.
+trace code	The short code on every watermark that leads to the sign-in in the audit log.
+transaction	A group of database statements that all succeed or all fail.
+transitive dependency	A library that you did not list but that arrives because something you listed needs it.
+Trivy	A scanner that checks built container images for known vulnerabilities.
+trust boundary	The line between what a system controls, such as the server, and what it does not, such as the browser.
+twelve-factor app	A published method for building services that deploy cleanly, including keeping configuration in the environment.
+type	A label that says what kind of value something is.
+TypeScript	JavaScript with a type system that a compiler checks before the code runs.
+unchecked exception	A Java exception that the compiler does not force you to catch.	checked;unchecked;ch=5
+union type	A TypeScript type that allows one of several listed alternatives.
+unit test	A small test of one piece of code on its own, with no framework or database running.
+untracked	Describes a file that Git can see but is not recording.
+untrusted input	Any data from outside your program, such as an upload, a form value, or a header.
+upsert	A database write that inserts a row or, if one exists, updates it.
+URL	Uniform Resource Locator: a web address such as `https://example.com/page`.
+user enumeration	Discovering which usernames exist from differences in how a service answers.
+UTC	Coordinated Universal Time, the world's reference time, with no daylight-saving changes.
+UTF-8	The common encoding that stores each character in one to four bytes.
+UUID	A universally unique identifier: a long random-looking value, such as a document's id.
+Valkey	An open-source, Redis-compatible in-memory store.
+value object	A small immutable object defined by its values, with no identity of its own.
+variable	A named place that holds a value.
+version control	A tool that records every change to a project's files so that you can return to any earlier state.
+virtual machine	A whole computer simulated by software, which is heavier than a container.
+visibility	Whether a document is private (owner, administrators, and shared users) or open to everyone.
+Vitest	The test runner used for the frontend's unit tests.
+volume	A place Docker keeps data outside a container so that it survives the container.
+VPC (virtual private cloud)	Your own private network inside AWS, divided into subnets.
+VPC endpoint	A connection that keeps traffic to an AWS service on AWS's own network.
+watermark	Text or a mark drawn onto content to identify who received it.
+workflow	A YAML file in `.github/workflows/` that tells GitHub Actions what to run.
+working directory	The folder a shell or program is currently in; relative paths start here.
+wrapper	A small script that downloads and runs the right version of a tool, such as `mvnw` for Maven.
+XML	A text format in which information sits between named tags, used in `pom.xml`.
+XSS (cross-site scripting)	An attack that gets a hostile script to run inside a trusted page.
+X-Forwarded-For	A header in which proxies list the client addresses a request has passed through.	ch=10
+YAML	A text format for configuration that uses indentation, used in `application.yml` and Compose files.
+health check	A request that a platform sends regularly to see whether a program is up and ready for traffic.
+heap	The part of memory where a Java program keeps its objects; the JVM sets its size at start.
+registry	A server that stores and serves Docker images or npm packages.
+service name	In Docker Compose, the name other containers use to reach a service on the private network, such as `mysql`.
+N+1 problem	A performance bug in which loading one list triggers one extra query for each item.
+propagation	The rule for how a transactional method behaves when a transaction is already running, such as joining it or starting its own.
+path variable	A part of a URL path, such as the document id in `/api/documents/{id}`, that a controller receives as a parameter.
+ResponseEntity	A Spring class that lets a controller set the status, headers, and body of a response.
+SLF4J	The logging interface that Spring Boot applications use to write log lines.
+log level	A label such as ERROR, WARN, INFO, or DEBUG that says how important a log line is, so that you can filter them.
+Crockford Base32	A way of writing bytes with 32 easily read characters, used for the watermark's trace code.
+Referrer-Policy	A response header that controls how much of the page's address is sent to other sites; the app sends `no-referrer`.
+Permissions-Policy	A response header that switches browser features such as the camera and location on or off for a page.
+peer dependency	A library that another package needs you to install at a compatible version, such as the TypeScript range that Angular supports.
+stacked pull requests	Pull requests whose branches start from one another, so that each one includes the changes of the one before.	stacked
+reflog	Git's private log of where your branch tips have been, which can rescue lost commits.
+blame	A Git command that shows which commit last changed each line of a file.
+thread-safe	Describes code that stays correct when several threads use it at once.
+synchronized	A Java keyword that lets only one thread at a time run a block of code.
+for-each loop	A loop that visits every item of a collection in turn.
+JAVA_HOME	The environment variable that points to the folder where the JDK is installed.
+PID (process id)	The number that the operating system gives to a running process.
+CRLF	The two-byte Windows line ending: carriage return followed by line feed.
+detached HEAD	A Git state in which you are looking at a commit that is not on any branch.
+push	To send your commits to a remote repository.
+fetch	To download new commits from a remote without changing your files.
+pull	To fetch from a remote and merge the new commits into your branch.
+request line	The first line of an HTTP request, holding the method, the path, and the protocol version.
+status line	The first line of an HTTP response, holding the protocol version and the status code.
+safe method	An HTTP method, such as GET, that is meant only to read and never to change anything.	safe
+control	In a security review, a measure that reduces a risk, such as a rate limit or a check.
+counter	A metric that only goes up, such as the number of tiles served.
+gauge	A metric that can go up and down, such as the number of renders running now.
+timer	A metric that records how long something took.
+metric tag	A label on a metric, such as the outcome of a sign-in, that lets you slice it.
+alert	A rule that notifies people when a metric shows a problem.
+off-site backup	A copy of a backup kept somewhere other than the machine that runs the app.	off-site
+restore drill	A rehearsal in which you restore a backup into a scratch environment to prove that it works.
+lockfile	A file, such as `package-lock.json`, that records the exact version of every dependency.
+reproducible build	A build that produces the same result from the same source on any machine and on any day.
+semantic versioning	A numbering scheme, major.minor.patch, in which the parts say how much changed.
+TestBed	Angular's helper that builds a component or service inside a test, with its dependencies.
+system test	A test that exercises the whole running application, as opposed to one piece.
+SPA fallback	The web-server rule that answers unknown addresses with `index.html`, so that a bookmarked deep link loads the app.	single-page-app fallback
+session-based authentication	A design in which the server keeps a record of each sign-in and the browser holds only an identifier.	session-based
+token-based authentication	A design in which the browser holds a signed token that carries the sign-in itself, with no server-side record.	token-based
+REST API	A web interface that follows the REST style, with URLs for things and HTTP methods for actions.
+pipes and filters	An architecture in which data flows through a line of small stages, each doing one job.
+copy-on-write	A technique in which a change makes a new copy and leaves the old one untouched, so that readers never see a half-changed value.
+sliding window log	A rate-limit method that keeps the timestamps of recent requests and counts those inside the window.
+rate limiter	Code that refuses requests beyond a set number in a period.
+token bucket	A rate-limit method in which requests spend tokens that refill at a steady rate.
+reserve then compensate	A technique that takes a resource before a risky step and hands it back if the step does not go ahead.	reserve;compensate
+image tag	A movable name for a Docker image, such as `24-alpine`, which can later point at a different image.
+GitHub Actions	GitHub's service that runs workflows, such as the project's tests, on every change.
+job	A group of steps that run together on one machine in a GitHub Actions workflow.
+keepalive_timeout	The nginx setting for how long an idle connection stays open; it must exceed the load balancer's idle timeout.
+stopTimeout	The ECS setting for how long a container gets to shut down after it is told to stop.
+Elastic Load Balancing	The family of AWS load-balancing services, of which the Application Load Balancer is one.
+bucket	A named container for objects in Amazon S3.	ch=40
+object storage	A kind of storage that keeps whole files as objects under keys, instead of in folders on a disk.	ch=40
+S3 Block Public Access	An S3 setting that stops any bucket or object from being made public.
+staging directory	A temporary folder where a render is built and checked before it is moved into place.
+safety net	A rule that stops a cleanup job from deleting when its inputs look wrong, such as a missing current version.
+web ACL	The set of AWS WAF rules that you attach to a load balancer or a CloudFront distribution.
+private subnet	A subnet with no route from the internet.
+IAM policy	A document that lists which actions on which resources an IAM role or user may perform.
+Terraform	A tool that creates cloud resources from files that describe them.

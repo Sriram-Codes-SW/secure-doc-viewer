@@ -1,0 +1,18 @@
+<!-- chapter: 41 | part: VII | owner: writer-production | tag: book-m6-final | status: expanded -->
+# Solutions: Chapter 41
+
+### Exercise 41.1 ★ Idle or usage cost?
+
+Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and the two always-on tasks (a load balancer and a cache cluster belong here too). Follows use: S3 requests, data transfer out, and logs. For an app with 80 readers, worry first about the fixed group: with few readers, the always-on pieces are most of the bill, whether, or not anyone reads a document, and that is exactly why staying on one machine can be the right answer (Table 41.2).
+
+### Exercise 41.2 ★★ Order the moves
+
+(a) and (b) are both covered by move A, the one cutover: Secrets Manager and a task role take the signing secret out of the `.env` file, and RDS with a Multi-AZ standby survives the loss of a database host. They come together because a Fargate task has only ephemeral storage, so the task cannot run first with a local database and tile folders (an EFS volume could bridge the gap, at the cost of a service you throw away). (c) needs moves B, C and D on top: B (ElastiCache for sessions and counters), because a second task with in-memory state would double the limits and forget sessions; C (one runner for scheduled jobs), because otherwise every job runs three times; and D (the second and third tasks). Tiles are already shared through S3 from move A. So the order is A, B, C, D, with alarms, backups and the restore drill (E) last. Move A alone does not give you three copies: it improves one instance, but the shared session and counter state and the single job runner are still missing.
+
+### Exercise 41.3 ★★★ Design the least-privilege role
+
+Service task role: `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on `arn:aws:s3:::BUCKET/tiles/*` (it reads tiles, writes new versions, and deletes superseded ones), plus `s3:ListBucket` on the bucket. That permission is required, not optional: without it S3 answers a request for a missing tile with `403` instead of `404`, and the app could not tell a replaced version (a designed `410`) from an access error. If you use SSE-KMS, add `kms:GenerateDataKey` and `kms:Decrypt` on the key. Janitor task role: `s3:ListBucket` on the bucket and `s3:DeleteObject` on `tiles/*`, with no `GetObject` and no `PutObject`, since it only lists and deletes. Neither role has access to other buckets, KMS key administration, IAM, or Secrets Manager (the execution role reads secrets). An attacker who compromised the service could not read or change anything outside the `tiles/` prefix, could not administer keys or roles, and could not reach the database credentials through AWS APIs; they could still read and delete tiles under the prefix, which is why the app's own access checks and versioning still matter.
+
+### Exercise 41.4 ★★★ Argue for staying
+
+A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take move A (Secrets Manager, RDS, and S3 in one cutover) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.

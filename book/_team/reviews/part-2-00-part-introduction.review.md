@@ -1,0 +1,11 @@
+# Review: part-2-backend/00-part-introduction.md (window 9, full read)
+
+Verified: eight chapters (11 to 18) as listed; Figure 1's route (security filters, controller, validation, service, repository, MySQL, files, error handler) matches the code and the chapters' order (the box "Validation (13)" sits between controller and service, which is where `@Valid` runs); "Flyway 12" is now correct (Boot 4.1.1 ships Flyway 12.4.0; my Chapter 30 finding is resolved here); "Java 25, Spring Boot 4.1.1, Spring Security 7, Jackson 3, Hibernate 7, MySQL 8.4" match `pom.xml`; the "If you already know Spring" bullets are all true of the code (constructor injection, one error shape including filter errors, `TransactionTemplate` in the document service, session plus `httpOnly` cookie, reserve-before-check throttling). The claim that Chapter 17 "leans on ideas from Chapters 12, 13 and 15" matches Chapter 17's prerequisites (5, 11, 12, 13, 15). No dossier or agent citations, no secrets. No blockers, no majors.
+
+## Findings
+
+1. **minor** - Figure 1 has no `<!-- source: ... -->` comment naming a tag (its boxes are chapter numbers and layers; say "conceptual; each stop is quoted at `book-m6-final` in the chapter named"). Its caption is "Figure 1", not in the "Figure N.M" scheme the other chapters use, and the text says "Figure 1 shows"; acceptable for part openers, but ask the editor to fix one scheme (Part IV uses `Table IV.1`).
+2. **minor** - "next eight chapters" is right (11 to 18). The sentence "Part IV then tells the story ... so this part teaches the concepts and leaves most of the history to Part IV" is fine, but Chapters 13, 14, 16 and 17 each tell incidents from the history; say "leaves most of the milestone-by-milestone history".
+3. **minor** - The table caption is italic below the table (`*Table 1 — ...*`); STYLE wants the bold caption above. Same in Parts III, V and VI.
+4. **minor** - "Exercises that change code tell you to work on your own branch (Chapter 7), never on a milestone tag": good; add a pointer to Part IV's Table IV.3 ("what you need to run each tag"), since Part II exercises also run `book-m6-final`.
+5. **minor** - The intro is about 1,200 words, above STYLE's "one to two pages" for a part opener only slightly; fine.

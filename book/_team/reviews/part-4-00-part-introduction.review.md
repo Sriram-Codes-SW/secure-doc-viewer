@@ -1,0 +1,15 @@
+# Review: part-4-building-the-app/00-part-introduction.md (window 9, full read)
+
+Verified: seven milestones and tags (Table IV.1); the repository has 38 commits up to `book-m6-final` (`git rev-list --count`), pull requests 1 to 12; project start date 2026-09-17 (`git log` of the first commit); the test counts in Table IV.2 are labelled as the pull-request-reported counts (my `@Test` counts are 45, 56, 67, 69, 116, differing by one or two at m3 to m5, so the labelling "the counts that the pull request descriptions report" is essential and correct; m0 has five test classes, m1 has 13 security integration tests); Angular 22 from `book-m1-accounts` (`package.json`); Vitest 4 until m5 and 5 at m6; the m0 requirements (JDK 21, no Maven wrapper, no database, a demo signing secret in `application.yml`, one static page) and the m1 to m4 requirements (`.env.example`, `docker-compose.yml` and `frontend/proxy.conf.json` all exist at `book-m1-accounts`; signing secret at least 32 characters from m1) and the m5 and m6 requirements (`mvnw`, Dockerfile, `--profile full`) are all true. The stacking caveat is right. AI-agent wording is right; the "product owner" is a person, the "implementer" an AI assistant.
+
+**Earlier major RESOLVED:** the "How to run an older milestone" box I asked for in windows 8 (Chapters 25 and 26) is now here as Table IV.3 and the notes below it. Remaining gap (item 1): the chapters do not yet point to it. No blockers, no majors.
+
+## Findings
+
+1. **minor** - Chapters 25 to 29 should say "see Table IV.3 in the Part IV introduction" where they tell the reader to run a tag (Exercise 25.3 "Run `book-m0-mvp` on your own machine" and Exercise 26.6 have no pointer; a grep for "older milestone" or "Table IV.3" in Chapters 25 to 31 finds nothing).
+2. **minor** - Length: about 2,260 words, above STYLE's "one to two pages" for a part opener. The material is useful (versions, running tags, the honest word), but "Following along with the code" and "Versions" could live in a boxed appendix or in Chapter 25's opening.
+3. **minor** - Table IV.2 counts for m3 and m4 (66, 68) and m5 (114) are PR-reported; the code has 67, 69 and 116 `@Test` methods (parameterised tests and helper counts explain the difference). The footnote handles it; keep the footnote.
+4. **minor** - "Pull requests 6 to 8 were automatic dependency updates that the project declined, and pull requests 9 to 12 are the small changes of milestone 6": PRs 11 and 12 are Dependabot updates that were *merged* (Chapter 7 says so). Say "the small changes and accepted dependency updates".
+5. **minor** - Table IV.3's m1 to m4 row says "Node and `npm ci` in `frontend/`, then the Angular dev server"; add the command (`npm start`) and the port (4200), which Chapter 20 teaches, so a reader can run it from this table alone.
+6. **minor** - The mention "`TM-1`, `PO-3`, `TM2-1`, `PO2-5`, `TM3-1`" is explained; the Chapter 26 review suggested a short decoding table; it could go here once for the whole part.
+7. **minor** - Header caption format: `**Table IV.1 — ...**` (bold, above) here, but the Part II, III, V and VI openers use `*Table 1 — ...*` below. Pick one.

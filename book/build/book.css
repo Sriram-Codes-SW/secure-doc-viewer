@@ -1,0 +1,151 @@
+/* Reading styles for the HTML and EPUB editions. Same visual identity as the PDF: Palatino-style serif text,
+   Helvetica-style headings, a deep blue accent, tinted callouts. Contrast: body text 15:1 or better,
+   headings and links 7:1 or better, in both colour schemes. Meaning never depends on colour alone. */
+:root {
+  --ink: #141a22;
+  --paper: #ffffff;
+  --accent: #1f3d5c;
+  --tint: #eef2f7;
+  --zebra: #f3f6fa;
+  --muted: #2e3944;
+  --rule: #7d8b99;
+  --link: #0b4f9c;
+  --visited: #5b2a86;
+  --focus: #0b57d0;
+  --serif: "Palatino Linotype", Palatino, "Book Antiqua", "TeX Gyre Pagella", Georgia, serif;
+  --sans: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "TeX Gyre Heros", sans-serif;
+  --mono: "DejaVu Sans Mono", "Cascadia Mono", Consolas, Menlo, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8edf3;
+    --paper: #12181f;
+    --accent: #a9c7e8;
+    --tint: #1b2530;
+    --zebra: #171f28;
+    --muted: #c3cdd8;
+    --rule: #6f7f8f;
+    --link: #8fbfff;
+    --visited: #d0aaff;
+    --focus: #8fbfff;
+  }
+}
+
+html { font-size: 100%; }
+body {
+  font-family: var(--serif);
+  font-size: 1.06rem;
+  line-height: 1.6;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+  text-rendering: optimizeLegibility;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+main { display: block; }
+p { margin: 0.7em 0; }
+
+/* links and focus */
+a { color: var(--link); }
+a:visited { color: var(--visited); }
+a:focus, button:focus, [tabindex]:focus { outline: 3px solid var(--focus); outline-offset: 2px; }
+.skip-link { position: absolute; left: -999px; top: 0; background: var(--paper); color: var(--ink); padding: 0.5rem 1rem; z-index: 10; }
+.skip-link:focus { left: 0; }
+
+/* title block and contents */
+#title-block-header { margin: 3rem 0 2rem; padding-bottom: 1.5rem; border-bottom: 4px solid var(--accent); }
+#title-block-header .motif { display: block; width: 7.5rem; height: auto; margin-bottom: 1.5rem; }
+.motif .t1 { fill: #dce4ee; }
+.motif .t2 { fill: #b9c8da; }
+.motif .t3 { fill: #eaeff5; }
+.motif .pick { fill: #1f3d5c; }
+@media (prefers-color-scheme: dark) {
+  .motif .t1 { fill: #2b4a6b; }
+  .motif .t2 { fill: #40668f; }
+  .motif .t3 { fill: #22394f; }
+  .motif .pick { fill: #e8edf3; }
+}
+h1.title { font-family: var(--sans); font-size: 2.4rem; line-height: 1.12; margin: 0 0 0.6rem; padding: 0; border: 0; color: var(--accent); }
+p.subtitle { font-size: 1.3rem; font-style: italic; margin: 0 0 1.2rem; }
+p.author { font-family: var(--sans); font-weight: bold; margin: 0.2rem 0; }
+p.edition { font-family: var(--sans); margin: 0.2rem 0; color: var(--muted); }
+nav#TOC { margin: 2rem 0; }
+nav#TOC ul { list-style: none; padding-left: 0; }
+nav#TOC ul ul { padding-left: 1.4rem; }
+nav#TOC li { margin: 0.35rem 0; }
+nav#TOC > ul > li { margin: 0.5rem 0; }
+#toc-title { font-family: var(--sans); color: var(--accent); }
+footer.colophon { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-family: var(--sans); font-size: 0.85rem; color: var(--muted); }
+footer.colophon p { margin: 0.3rem 0; }
+
+/* headings */
+h1, h2, h3, h4, h5, h6 { font-family: var(--sans); color: var(--accent); line-height: 1.25; break-after: avoid; }
+h1 { font-size: 2rem; margin: 3.2rem 0 1.4rem; padding-top: 0.8rem; border-top: 4px solid var(--accent); }
+h2 { font-size: 1.5rem; margin: 2.4rem 0 0.8rem; padding-top: 0.6rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; color: var(--ink); }
+h4 { font-size: 1rem; margin: 1.5rem 0 0.4rem; font-style: italic; }
+h5, h6 { font-size: 0.95rem; margin: 1.2rem 0 0.3rem; }
+
+/* callouts: notes and the honesty boxes are block quotes that start with their own label in bold */
+blockquote {
+  margin: 1.2rem 0;
+  padding: 0.6rem 1rem;
+  background: var(--tint);
+  border-left: 5px solid var(--accent);
+}
+blockquote > :first-child { margin-top: 0; }
+blockquote > :last-child { margin-bottom: 0; }
+
+/* lists */
+ul, ol { padding-left: 1.6rem; }
+li { margin: 0.2rem 0; }
+
+/* tables */
+table { display: table; width: auto; max-width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.93rem; line-height: 1.45; }
+th, td { padding: 0.4rem 0.65rem; vertical-align: top; text-align: left; }
+thead th { border-bottom: 2px solid var(--ink); font-family: var(--sans); }
+thead { border-top: 2px solid var(--ink); }
+tbody tr:nth-child(even) { background: var(--zebra); }
+tbody tr:last-child td { border-bottom: 2px solid var(--ink); }
+caption { caption-side: top; text-align: left; font-family: var(--sans); font-weight: bold; color: var(--accent); padding-bottom: 0.4rem; }
+
+/* code: light background in both colour schemes, so the syntax colours (5:1 or better) always have their contrast */
+pre {
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  background: #f6f8fa;
+  color: #1a1a1a;
+  border-left: 5px solid #1f3d5c;
+  padding: 0.7rem 0.9rem;
+  margin: 1rem 0;
+  tab-size: 4;
+}
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+code { font-family: var(--mono); font-size: 0.88em; overflow-wrap: anywhere; }
+:not(pre) > code { background: var(--tint); padding: 0.05em 0.3em; border-radius: 3px; }
+kbd { font-family: var(--mono); font-size: 0.88em; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.3em; }
+
+/* figures: diagrams have a white background of their own */
+img { max-width: 100%; height: auto; background: #ffffff; }
+p > img:only-child { display: block; margin: 1.2rem auto 0.3rem; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+
+/* print (the HTML edition): black on white, external addresses written out, no splitting of small blocks */
+@media print {
+  :root { --ink: #000; --paper: #fff; --accent: #1f3d5c; --tint: #eef2f7; --zebra: #f3f6fa; --link: #0b4f9c; --visited: #0b4f9c; --muted: #2e3944; }
+  html { font-size: 11pt; }
+  body { max-width: none; padding: 0; font-size: 1rem; }
+  .skip-link { display: none; }
+  a { text-decoration: none; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.85em; word-break: break-all; }
+  h1 { break-before: page; }
+  h1.title { break-before: auto; }
+  h2, h3, h4, caption { break-after: avoid; }
+  pre, table, blockquote, img, tr { break-inside: avoid; }
+  pre { white-space: pre-wrap; overflow: visible; }
+}
