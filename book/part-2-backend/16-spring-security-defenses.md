@@ -225,21 +225,21 @@ Hashing passwords slowly (Chapter 15) makes each guess expensive, but an attacke
 A refused attempt returns `429 Too Many Requests` with a `Retry-After` header saying how many seconds until the oldest counted failure ages out of the window. The window is **rolling**: it always looks at the last 15 minutes, not at fixed clock periods, so there's no boundary an attacker can wait for. Figure 16.1 shows how the three rules and the recognised-device exemption combine into one decision.
 
 ```mermaid
-flowchart LR
-    A["Sign-in attempt"] --> B{"Rule 1: 5 or more failures, this account and address"}
-    B -- "no" --> C{"Rule 2: 20 or more failures, this address"}
-    C -- "no" --> D{"Recognised device"}
-    D -- "no" --> E{"Rule 3: 20 or more failures, this account, all addresses"}
+flowchart TB
+    A["Sign-in attempt"] --> B{"Rule 1: account and address?"}
+    B -- "no" --> C{"Rule 2: address?"}
+    C -- "no" --> D{"Recognised device?"}
+    D -- "no" --> E{"Rule 3: account, all addresses?"}
     E -- "no" --> OK["Allowed"]
     D -- "yes" --> OK
-    B -- "yes" --> R["Refused: 429 with Retry-After"]
+    B -- "yes" --> R["Refused: 429"]
     C -- "yes" --> R
     E -- "yes" --> R
 ```
 
 *Figure 16.1 — The three sign-in rules and the recognised-device exemption in `LoginThrottle.checkAllowed`*
 
-*Text description:* A left-to-right decision flow with two ends. An attempt meets rule 1 (five failures for this account from this address), then rule 2 (twenty failures from this address), then asks whether the device is recognised. A recognised device goes straight to "Allowed", while an unrecognised one also meets rule 3 (twenty failures for the account from all addresses). A "yes" at any of the three rules leads to one refusal box, a `429` with `Retry-After`; an allowed attempt is counted in advance and then its password is checked.
+*Text description:* A top-to-bottom decision flow with two ends. An attempt meets rule 1 (five or more failures for this account from this address), then rule 2 (twenty or more failures from this address), then asks whether the device is recognised. A recognised device goes straight to "Allowed", while an unrecognised one also meets rule 3 (twenty failures for the account from all addresses). A "yes" at any of the three rules leads to one refusal box, a `429` with `Retry-After`; an allowed attempt is counted in advance and then its password is checked.
 
 <!-- source: LoginThrottle.checkAllowed at book-m6-final -->
 
@@ -329,17 +329,17 @@ chain.doFilter(request, response);
 While the session's flag `sdv.mustChangePassword` is set (Chapter 15's Step 7), everything under `/api/` gets a `403` with an explanation and `passwordChangeRequired: true`. The exception is the `/api/auth/` endpoints, where the user can look up who they are, change the password, or sign out. Note the `return` without `chain.doFilter`: the request stops here. Both custom filters are added around Spring's `AuthorizationFilter` in `SecurityConfig`: the lifetime filter before it and this one after it. Figure 16.2 shows where the two filters sit among the others.
 
 ```mermaid
-flowchart LR
-    R["Request"] --> P0["Earlier filters: security context, CSRF check"]
-    P0 --> L["SessionLifetimeFilter: ends an over-age session"]
-    L --> Z["AuthorizationFilter: path and role rules"]
-    Z --> P["PasswordChangeRequiredFilter: blocks api paths while a change is pending"]
+flowchart TB
+    R["Request"] --> P0["Earlier filters: context, CSRF"]
+    P0 --> L["SessionLifetimeFilter"]
+    L --> Z["AuthorizationFilter"]
+    Z --> P["PasswordChangeRequiredFilter"]
     P --> K["Controller"]
 ```
 
 *Figure 16.2 — Where the project's two custom filters sit in the chain*
 
-*Text description:* A left-to-right chain of six boxes: the request, the earlier Spring Security filters, `SessionLifetimeFilter`, `AuthorizationFilter`, `PasswordChangeRequiredFilter` and finally the controller. Notice that the lifetime filter comes before the authorization rules and the password-change filter comes after them.
+*Text description:* A top-to-bottom chain of six boxes: the request, the earlier Spring Security filters, `SessionLifetimeFilter`, `AuthorizationFilter`, `PasswordChangeRequiredFilter` and finally the controller. Notice that the lifetime filter comes before the authorization rules and the password-change filter comes after them.
 
 <!-- source: SecurityConfig.securityFilterChain at book-m6-final -->
 

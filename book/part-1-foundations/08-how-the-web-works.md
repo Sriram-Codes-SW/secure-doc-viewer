@@ -373,19 +373,20 @@ Figure 8.4 shows the two arrangements side by side. In both, the browser talks t
 flowchart TB
     subgraph Development
         direction LR
-        B1["Browser"] --> DEV["Angular dev server, port 4200"]
-        DEV -->|"paths starting with /api"| API1["Backend, port 8080"]
+        B1["Browser"] --> DEV["Angular dev server, 4200"]
+        DEV -->|"/api"| API1["Backend, 8080"]
     end
     subgraph Docker["Docker stack"]
         direction LR
-        B2["Browser"] --> NG["nginx, published on port 8081"]
-        NG -->|"paths starting with /api"| API2["Backend, port 8080, not published"]
+        B2["Browser"] --> NG["nginx, 8081"]
+        NG -->|"/api"| API2["Backend, 8080"]
     end
+    Development ~~~ Docker
 ```
 
 *Figure 8.4 — How the browser sees one origin in development and in the Docker stack*
 
-*Text description:* Two separate left-to-right chains, drawn side by side in labeled groups. In development, the browser talks to the Angular development server on port 4200, which forwards paths starting with `/api` to the backend on port 8080. In the Docker stack, the browser talks to an nginx container published on port 8081, which forwards the same paths to a backend container that is not published.
+*Text description:* Two rows, one above the other. In the top row, Development, the browser talks to the Angular development server on port 4200, which forwards paths starting with `/api` to the backend on port 8080. In the bottom row, the Docker stack, the browser talks to an nginx container published on port 8081, which forwards the same paths to a backend container on port 8080 that is not published.
 
 <!-- source: frontend/proxy.conf.json, docker-compose.yml and frontend/nginx.conf at book-m6-final -->
 

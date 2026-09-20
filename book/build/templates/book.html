@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
 $for(author-meta)$
   <meta name="author" content="$author-meta$" />
@@ -37,6 +38,7 @@ $include-before$
 $endfor$
 $if(title)$
 <header id="title-block-header">
+<svg class="motif" aria-hidden="true" focusable="false" viewBox="0 0 70 94" xmlns="http://www.w3.org/2000/svg"><rect class="t1" x="0" y="0" width="10" height="10"/><rect class="t3" x="12" y="0" width="10" height="10"/><rect class="t3" x="24" y="0" width="10" height="10"/><rect class="t1" x="36" y="0" width="10" height="10"/><rect class="t2" x="48" y="0" width="10" height="10"/><rect class="t1" x="60" y="0" width="10" height="10"/><rect class="t1" x="0" y="12" width="10" height="10"/><rect class="t3" x="12" y="12" width="10" height="10"/><rect class="t3" x="24" y="12" width="10" height="10"/><rect class="t1" x="36" y="12" width="10" height="10"/><rect class="t2" x="48" y="12" width="10" height="10"/><rect class="t1" x="60" y="12" width="10" height="10"/><rect class="t1" x="0" y="24" width="10" height="10"/><rect class="t3" x="12" y="24" width="10" height="10"/><rect class="t3" x="24" y="24" width="10" height="10"/><rect class="t1" x="36" y="24" width="10" height="10"/><rect class="t2" x="48" y="24" width="10" height="10"/><rect class="t1" x="60" y="24" width="10" height="10"/><rect class="t1" x="0" y="36" width="10" height="10"/><rect class="t3" x="12" y="36" width="10" height="10"/><rect class="pick" x="24" y="36" width="10" height="10"/><rect class="t1" x="36" y="36" width="10" height="10"/><rect class="t2" x="48" y="36" width="10" height="10"/><rect class="t1" x="60" y="36" width="10" height="10"/><rect class="t1" x="0" y="48" width="10" height="10"/><rect class="t3" x="12" y="48" width="10" height="10"/><rect class="t3" x="24" y="48" width="10" height="10"/><rect class="t1" x="36" y="48" width="10" height="10"/><rect class="t2" x="48" y="48" width="10" height="10"/><rect class="t1" x="60" y="48" width="10" height="10"/><rect class="t1" x="0" y="60" width="10" height="10"/><rect class="t3" x="12" y="60" width="10" height="10"/><rect class="t3" x="24" y="60" width="10" height="10"/><rect class="t1" x="36" y="60" width="10" height="10"/><rect class="t2" x="48" y="60" width="10" height="10"/><rect class="t1" x="60" y="60" width="10" height="10"/><rect class="t1" x="0" y="72" width="10" height="10"/><rect class="t3" x="12" y="72" width="10" height="10"/><rect class="t3" x="24" y="72" width="10" height="10"/><rect class="t1" x="36" y="72" width="10" height="10"/><rect class="t2" x="48" y="72" width="10" height="10"/><rect class="t1" x="60" y="72" width="10" height="10"/><rect class="t1" x="0" y="84" width="10" height="10"/><rect class="t3" x="12" y="84" width="10" height="10"/><rect class="t3" x="24" y="84" width="10" height="10"/><rect class="t1" x="36" y="84" width="10" height="10"/><rect class="t2" x="48" y="84" width="10" height="10"/><rect class="t1" x="60" y="84" width="10" height="10"/></svg>
 <h1 class="title">$title$</h1>
 $if(subtitle)$
 <p class="subtitle">$subtitle$</p>
@@ -44,6 +46,9 @@ $endif$
 $for(author)$
 <p class="author">$author$</p>
 $endfor$
+$if(edition)$
+<p class="edition">$edition$$if(book-version)$, version $book-version$$endif$</p>
+$endif$
 $if(date)$
 <p class="date">$date$</p>
 $endif$
@@ -69,5 +74,13 @@ $body$
 $for(include-after)$
 $include-after$
 $endfor$
+$if(licence)$
+<footer class="colophon">
+<p>$licence$</p>
+$if(code-version)$
+<p>Listings are quoted from the repository tag <code>$code-version$</code>.</p>
+$endif$
+</footer>
+$endif$
 </body>
 </html>

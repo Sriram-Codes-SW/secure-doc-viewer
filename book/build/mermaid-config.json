@@ -1,0 +1,9 @@
+{
+  "theme": "default",
+  "themeVariables": { "fontSize": "26px" },
+  "flowchart": { "nodeSpacing": 24, "rankSpacing": 26, "padding": 12, "wrappingWidth": 150, "htmlLabels": true, "useMaxWidth": false },
+  "sequence": { "useMaxWidth": false, "actorMargin": 30, "messageMargin": 26 },
+  "state": { "useMaxWidth": false },
+  "er": { "useMaxWidth": false },
+  "gitGraph": { "useMaxWidth": false }
+}

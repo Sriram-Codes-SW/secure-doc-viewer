@@ -66,7 +66,9 @@ with open(os.path.join(OUT, 'manuscript.md'), 'w', encoding='utf-8', newline='\n
 mark('1 manuscript assembly')
 # ---- 2. diagrams (cached on the diagram sources) ---------------------------------------------------
 blocks = re.findall(r'```mermaid\n.*?```', manuscript, flags=re.S)
-digest = hashlib.sha256('\n'.join(blocks).encode('utf-8')).hexdigest()
+MERMAID_CONFIG = os.path.join(HERE, 'mermaid-config.json')
+# the cache key covers the diagram sources AND the rendering settings
+digest = hashlib.sha256(('\n'.join(blocks) + open(MERMAID_CONFIG, encoding='utf-8').read()).encode('utf-8')).hexdigest()
 stamp = os.path.join(DIAGRAMS, 'sources.sha256')
 raw = os.path.join(DIAGRAMS, 'rendered-raw.md')
 cached = os.path.exists(raw) and os.path.exists(stamp) and open(stamp).read().strip() == digest
@@ -74,7 +76,7 @@ if cached:
     print(f'diagrams unchanged ({len(blocks)}), skipping the render')
 else:
     env0 = dict(os.environ, PUPPETEER_SKIP_DOWNLOAD='1')
-    subprocess.run('npx --yes -p @mermaid-js/mermaid-cli mmdc -p "' + os.path.join(HERE, 'puppeteer-config.json').replace(BACKSLASH, '/') + '" -i manuscript.md '
+    subprocess.run('npx --yes -p @mermaid-js/mermaid-cli mmdc -p "' + os.path.join(HERE, 'puppeteer-config.json').replace(BACKSLASH, '/') + '" -c "' + MERMAID_CONFIG.replace(BACKSLASH, '/') + '" -w 4000 -i manuscript.md '
                    '-o diagrams/rendered.md -e png -s 2 -b white', cwd=OUT, check=True, shell=True, env=env0)
     shutil.copyfile(os.path.join(DIAGRAMS, 'rendered.md'), raw)
     with open(stamp, 'w') as f:
@@ -122,7 +124,7 @@ web_text = '\n'.join(lines)
 pdf_text = web_text.replace('\U0001F600', BACKSLASH + 'uD83D' + BACKSLASH + 'uDE00')
 
 
-def wrap_code_blocks(text, width=96):
+def wrap_code_blocks(text, width=86):
     """PDF only: break long code lines in the source text (with a continuation mark).
 
     LaTeX's own line breaking inside code blocks cannot be used because it is not compatible with
@@ -200,6 +202,7 @@ mark('4 docker image check and metadata')
 if '--no-epub' not in ARGS:
     subprocess.run(common + ['--toc', '--toc-depth=2', '--css=/data/build/book.css',
                              '--epub-metadata=/data/build/epub-metadata.xml',
+                             '--epub-cover-image=/data/build/cover.png',
                              '-o', 'secure-doc-viewer-guide.epub', WEB], check=True, env=env)
     path = os.path.join(OUT, 'secure-doc-viewer-guide.epub')
     tmp = path + '.tmp'
@@ -235,11 +238,13 @@ mark('6 HTML (pandoc and post-processing)')
 if '--no-pdf' not in ARGS:
     # LuaLaTeX book, tagged PDF/UA-2: chapters start new pages, running headers, numbered sections.
     pdf_cmd = common + ['--toc', '--toc-depth=1', '--metadata-file=/data/build/pdf-metadata.yaml',
-                             '--pdf-engine=lualatex', '-V', 'documentclass=book', '-V', 'classoption=oneside,11pt',
-                             '-V', 'papersize=a4', '-V', 'geometry:margin=2.5cm',
+                             '--pdf-engine=lualatex', '-V', 'documentclass=book', '-V', 'classoption=twoside,openany,11pt',
+                             '-V', 'papersize=letter', '-V', 'geometry:inner=1in', '-V', 'geometry:outer=1.2in',
+                             '-V', 'geometry:top=1.05in', '-V', 'geometry:bottom=1.05in',
+                             '-V', 'geometry:headheight=14pt', '-V', 'geometry:headsep=16pt',
                              '-V', 'mainfont=texgyrepagella-regular.otf',
                              '-V', 'mainfontoptions=BoldFont=texgyrepagella-bold.otf,ItalicFont=texgyrepagella-italic.otf,BoldItalicFont=texgyrepagella-bolditalic.otf',
-                             '-V', 'monofont=DejaVu Sans Mono', '-V', 'monofontoptions=Scale=0.85',
+                             '-V', 'monofont=DejaVu Sans Mono', '-V', 'monofontoptions=Scale=0.86',
                              '-V', 'linkcolor=black', '-V', 'toccolor=black', '-V', 'urlcolor=blue!60!black',
                              '--top-level-division=chapter',
                              '--include-in-header=/data/build/header.tex', '-V', 'colorlinks=true',

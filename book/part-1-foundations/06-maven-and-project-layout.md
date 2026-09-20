@@ -279,18 +279,18 @@ The `distributionUrl` names Maven 3.9.16 exactly, down to the patch number. `dis
 Figure 6.1 shows what happens each time you type `./mvnw`.
 
 ```mermaid
-flowchart LR
-    A["You run ./mvnw package"] --> B["mvnw reads maven-wrapper.properties"]
-    B --> C{"Maven 3.9.16 already downloaded"}
-    C -->|"no"| D["Download the zip named by distributionUrl"]
+flowchart TB
+    A["Run ./mvnw package"] --> B["Read maven-wrapper.properties"]
+    B --> C{"Maven 3.9.16 present?"}
+    C -->|"no"| D["Download the zip"]
     C -->|"yes"| E["Reuse the copy"]
     D --> E
-    E --> F["Run Maven 3.9.16 with your arguments"]
+    E --> F["Run Maven 3.9.16"]
 ```
 
 *Figure 6.1 — How the Maven wrapper finds the exact Maven version*
 
-*Text description:* A decision flow read from left to right. Running `./mvnw package` makes the script read the wrapper properties file and ask whether Maven 3.9.16 is already downloaded. If not, it downloads the zip named in the file, and in both cases it then reuses that copy to run Maven with your arguments.
+*Text description:* A decision flow read from top to bottom. Running `./mvnw package` makes the script read the file `.mvn/wrapper/maven-wrapper.properties` and ask whether Maven 3.9.16 is already downloaded. If not, it downloads the zip named by `distributionUrl` in that file. In both cases it then reuses that copy to run Maven with your arguments.
 
 <!-- source: .mvn/wrapper/maven-wrapper.properties at book-m6-final -->
 

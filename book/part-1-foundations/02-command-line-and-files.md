@@ -188,19 +188,18 @@ One variable deserves special mention. `PATH` is a list of folders. When you typ
 Figure 2.2 shows exactly how the shell decides what to run when you type a command such as `java -version`.
 
 ```mermaid
-flowchart LR
-    A["You type java -version"] --> B{"Name contains a slash"}
-    B -->|"yes, like ./mvnw"| C["Run that exact file"]
-    B -->|"no, like java"| D["Read PATH: a list of folders"]
-    D --> E["Search folders in order"]
-    E --> F{"Found java"}
-    F -->|"yes"| G["Run the first one found"]
-    F -->|"no folders left"| H["Error: command not found"]
+flowchart TB
+    A["Type: java -version"] --> B{"Slash in the name?"}
+    B -->|"yes"| C["Run that exact file"]
+    B -->|"no"| D["Search each PATH folder in order"]
+    D --> F{"Found java?"}
+    F -->|"yes"| G["Run the first match"]
+    F -->|"no"| H["Error: command not found"]
 ```
 
 *Figure 2.2 — How the shell finds a program: a name with a slash skips PATH*
 
-*Text description:* A decision flow read from left to right. The shell first asks whether the typed name contains a slash. If it does, it runs that exact file. If it does not, it reads the `PATH` list, looks in each folder in order, and runs the first program it finds, or reports "command not found" when the folders run out.
+*Text description:* A decision flow read from top to bottom, starting with the typed command `java -version`. The shell first asks whether the name contains a slash, as in `./mvnw`. If it does, it runs that exact file. If it does not, it reads the `PATH` list, searches each folder in order, and runs the first program it finds, or reports "command not found" when the folders run out.
 
 <!-- source: bash behavior; ./mvnw is used in Chapter 6 (mvnw at book-m6-final) -->
 

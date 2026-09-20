@@ -31,13 +31,14 @@ more.
 
 ## Accessibility
 
-The book is published as a PDF, an EPUB and a single web page. All three contain real text in reading
-order, and every diagram has alternative text and a text description in the body. The PDF is a tagged
-PDF that passes the automated PDF/UA-2 check of the veraPDF validator, and the EPUB passes the EPUB
-validator epubcheck. In the EPUB and web editions the difficulty stars on the exercises are labelled
-in words; in the PDF they are shown only as symbols, and the exercise text says what each level asks.
-These editions were checked with automated tools and a manual review, not tested with screen readers
-or other assistive technology. If you find a barrier, report it as you would an error.
+The book is published as a PDF, an EPUB and a single web page. All three contain real text, and every
+diagram has alternative text and a text description in the body. The PDF is a tagged PDF, so a
+reading order can be followed, and it passes the automated PDF/UA-2 check of the veraPDF validator.
+The EPUB passes the EPUB validator epubcheck. In the EPUB and web editions the difficulty stars on
+the exercises are labelled in words; in the PDF they are shown only as symbols, and the meaning of
+one, two and three stars is explained in How to use this book. These editions were checked with
+automated tools (veraPDF and epubcheck) and by manual sampling, and have not been tested with screen
+readers or other assistive technology. If you find a barrier, report it as you would an error.
 
 ## Corrections and updates
 

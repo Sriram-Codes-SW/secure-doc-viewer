@@ -421,13 +421,21 @@ Figure 37.2 shows the order of the seven steps as a chain.
 
 <!-- source: the book's design exercise, built on the code named for Figure 37.1 at book-m6-final -->
 ```mermaid
-flowchart LR
-    S1["1 Share sessions"] --> S2["2 Share counters"] --> S3["3 Share tiles"] --> S4["4 One runner for scheduled jobs"] --> S5["5 Same secret everywhere"] --> S6["6 Load balancer in front"] --> S7["7 Rolling deploys"]
+flowchart TB
+    subgraph A["Share the state"]
+        direction LR
+        S1["1 Share sessions"] --> S2["2 Share counters"] --> S3["3 Share tiles"] --> S4["4 One runner for jobs"]
+    end
+    subgraph B["Then the front door"]
+        direction LR
+        S5["5 Same secret everywhere"] --> S6["6 Load balancer in front"] --> S7["7 Rolling deploys"]
+    end
+    A --> B
 ```
 
 *Figure 37.2 — The order of the scale-out plan: share the state first, then add the front door*
 
-*Text description:* Seven steps in a row, each leading to the next: share sessions, share counters, share tiles, one runner for scheduled jobs, the same secret everywhere, a load balancer in front, and rolling deploys. Notice that the load balancer comes sixth, after all the state has been shared.
+*Text description:* Seven steps in two rows, read left to right with the top row first, each leading to the next: share sessions, share counters, share tiles, one runner for scheduled jobs, the same secret everywhere, a load balancer in front, and rolling deploys. Notice that the load balancer comes sixth, after all the state has been shared.
 
 ## 37.18 Common mistakes when weighing trade-offs
 

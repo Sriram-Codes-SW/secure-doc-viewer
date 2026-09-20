@@ -104,3 +104,58 @@ Suggested wording for the book's accessibility statement, if one is added: "This
 ## Not checked
 
 Screen-reader playback; Acrobat and PAC checkers; every one of the 77 descriptions; PDF tag order on every page (two pages read); the EPUB in a reading system; browser behaviour of the HTML focus and skip link; whether the EPUB and HTML are older than the last source change (they are 20 minutes older than the PDF).
+
+---
+
+# Final pass (files written 2026-09-20: EPUB 17:26, HTML 17:27, PDF 17:49; PDF 747 pages)
+
+## Results
+
+| Check | Result |
+|---|---|
+| veraPDF PDF/UA-2 | **PASS**. |
+| veraPDF PDF/UA-1 | 102 rules passed, 4 failed: header/`pdfuaid:part` (1 each, wrong flavour for a PDF 2.0 file) and link annotations without `/Contents` (421 each, clauses 7.18.1 and 7.18.5). Same as before; UA-1 does not apply to PDF 2.0, so I read this as expected, but a UA-1 audit would fail the file. |
+| epubcheck (`npx epubchecker`) | "Everything is fine". |
+| PDF structure | `StructTreeRoot`, `Lang en-US`, 1,663 bookmarks; 130 Table, 379 TH, 81 Figure of which 81 have `/Alt`; 0 of 747 pages with clipped text. |
+| Star labels (EPUB and HTML) | Fixed. 167 "one star" on `★`, 199 "two stars" on `★★`, 126 "three stars" on `★★★`; 0 stray unlabelled stars after a span. PDF headings still show only glyphs (see the statement check). |
+| EPUB OPF | Now has `accessMode` textual and visual, `accessModeSufficient textual`, the 4 features, hazard none, `accessibilitySummary`, creator. No `conformsTo`, correctly (do not add it). Minor formatting: the `visual` line is indented differently (harmless). |
+| Tables and headings (EPUB) | 379 of 379 `th` have `scope`; 106 captions for 130 tables (the rest are exempt or unnumbered); 0 heading jumps; 81 of 81 images have alt of 5 or more characters. |
+| Contrast, PDF code colours | All text colours in the PDF measured: `#8f5903` 5.5:1, `#3d7805` 5.09:1, `#b04f00` 4.99:1 on `#f8f8f8` (5.3:1 on white), `#214a87` 8.26:1, `#0000cf` 10.4:1, `#a30000` 7.73:1. Note `#b04f00` on `#f8f8f8` is 4.99, a hair under 5.05 stated, but above the 4.5:1 AA limit. Old failures (`#4f9905`, `#cf5c00`) are gone. |
+| Contrast, HTML syntax theme | All seven colours 5.05:1 to 19.8:1 on `#f8f8f8` (`#d51010` 5.06, `#af4e00` 5.05, `#3d7805` 5.09). Pass. |
+| Contrast, EPUB CSS | Colours `#1a1a1a` text; the EPUB has no syntax colours. Links use the reading system's colours (not set). Pass by inspection. |
+| Contrast, HTML links and focus | `#0b4f9c` links, `#5b2a86` visited, `outline: 3px solid #0b57d0` on focus; all above 4.5:1 on white (not re-measured individually). |
+| Diagram size in the PDF | 81 images, narrowest 264 pt wide (tall diagrams). Nominal label size computed from the image scale: 9.3 pt for the smallest (mermaid 16 px labels at `-s 2`), matching the coordinator's 9.2 pt. On the rendered page 92 the wide flow diagram is still visibly smaller than body text (body 11 pt); acceptable for AA (text alternative exists, zooming works) but the print size is my calculation, not a measured glyph height. |
+| Code size | Code prints at 8 pt for about 195,000 characters (was the same). Not an AA failure for a PDF (the user can zoom) but small; consider 9 pt. |
+| Reading order, sample | Text extraction of p. 92 (heading, paragraph, table caption, table cells row by row, figure caption, text description, code, path line) is in a sensible order. Only a few pages read (20, 92, 594 in earlier passes); not every page. |
+| Alt text | 81 of 81 PDF figures with `/Alt`; 81 of 81 EPUB and HTML images with alt. The 77 captioned figures all have a visible text description. |
+
+## Reading the About-page accessibility statement (`front-matter/00-about-this-edition.md`, lines 32-40)
+
+Sentence by sentence against what I verified:
+
+1. "The book is published as a PDF, an EPUB and a single web page." True.
+2. "All three contain real text in reading order" Mostly true. Reading order is by structure in EPUB and HTML; in the PDF I read only a few pages. Slight overclaim on "in reading order" for the PDF.
+3. "and every diagram has alternative text and a text description in the body." True (81 of 81 alt; 77 of 77 captioned figures described; the six blueprints in Appendix B carry theirs in the appendix text).
+4. "The PDF is a tagged PDF that passes the automated PDF/UA-2 check of the veraPDF validator" True and correctly limited to "automated" and "PDF/UA-2".
+5. "and the EPUB passes the EPUB validator epubcheck." True. Correctly says nothing about EPUB Accessibility conformance.
+6. "In the EPUB and web editions the difficulty stars on the exercises are labelled in words;" True (167/199/126).
+7. "in the PDF they are shown only as symbols, and the exercise text says what each level asks." **Overclaim.** The exercise text does not say what its level asks; the levels are explained once, in "How to use this book" ("One star checks your understanding ..."). Replacement: "in the PDF they are shown only as symbols; the meaning of one, two and three stars is explained in How to use this book."
+8. "These editions were checked with automated tools and a manual review, not tested with screen readers or other assistive technology." Honest on the last point. "a manual review" is broader than what I did (sampling of pages, tags and files). Replacement: "These editions were checked with automated tools (veraPDF and epubcheck) and by manual sampling, and have not been tested with screen readers or other assistive technology."
+
+Optional tightening of sentence 2: "All three contain real text; the EPUB and web page follow the reading order of the source, and the PDF is tagged so that reading order can be followed." I would keep that softer version; do not write "conforms to WCAG", "PDF/UA compliant" or "accessible" without qualification. The OPF summary sentence "All text is real text in reading order with a navigable table of contents and heading structure" has the same slight overreach for the PDF; it is an EPUB summary, so it is acceptable for the EPUB (which it describes).
+
+## What still blocks a strict accessibility claim
+
+1. **No assistive-technology test** (NVDA/JAWS/VoiceOver on the EPUB and HTML; Acrobat, NVDA on the PDF), and no Ace by DAISY or PAC run. Ace still cannot start here (Electron); run it on a machine where it does. Without this, claim only what the About page now says.
+2. **PDF/UA-1 fails** on 421 link annotations without `/Contents` (a PDF/UA-1 requirement). Claim PDF/UA-2 only, and say "automated check". The tagging of links is otherwise done through Link structure elements.
+3. **The EPUB has no `dcterms:conformsTo`** and no `a11y:certifiedBy`; this is right until a checker or a person confirms conformance. Do not add it before item 1.
+4. **Reading order was verified on a handful of PDF pages**, not on all 747; tables were checked by tag counts and two pages, not every table.
+5. **Figure descriptions were sampled, not all read by a person who cannot see them** (77 descriptions).
+6. Small print: code at 8 pt; the widest diagrams at about 9 pt nominal; cross-references are plain text, not links; `#b04f00` code text is 4.99:1 on the code background (passes AA, misses the 5.05 the build notes state).
+7. PDF stars still carry no words (fix by the wording in the About sentence 7 or by ActualText).
+
+Nothing found that would make the current About text false apart from the two sentences above.
+
+## Final counts
+
+Earlier findings A11Y-01..20: Fixed 17, Partly 1 (A11Y-17 sentence length: 462 over 35 words), no action 2. New findings from the previous pass: A11Y-N1 and A11Y-06 now Fixed; N3 Fixed; N4 Fixed (About table has a header row); N2 open only as wording in the PDF (Minor); N5 open (Minor, by design). Open now: 1 Major (About-page sentence 7 overclaim: wording only), 4 Minor (PDF stars, code 8 pt, sentence length, cross-references not links).

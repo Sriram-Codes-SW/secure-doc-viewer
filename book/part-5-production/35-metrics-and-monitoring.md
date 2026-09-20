@@ -144,18 +144,26 @@ Also notice that `sdv_sign_in_total` has all three outcomes even though `locked`
 Figure 35.1 follows a measurement from the code that counts it to the person who is alerted. The two boxes marked "outside the repository" are yours to set up.
 
 ```mermaid
-flowchart LR
-    C["ViewerMetrics counters, gauge and timer"] --> R["Micrometer registry"]
-    R --> E["actuator prometheus endpoint"]
-    E -->|"only from metrics-allowed-addresses"| P["Prometheus scrapes it (outside the repository)"]
-    P --> Q["Rules use rate or increase over a window"]
-    Q --> AL["Alert to a person (outside the repository)"]
-    H["actuator health endpoint"] -->|"200 or 503"| D["Docker health check and monitors"]
+flowchart TB
+    subgraph M1["In the app"]
+        direction LR
+        C["Counters, gauge, timer"] --> R["Micrometer registry"] --> E["Prometheus endpoint"]
+    end
+    subgraph M2["Outside the repository"]
+        direction LR
+        P["Prometheus scrapes it"] --> Q["Rules over a window"] --> AL["Alert to a person"]
+    end
+    subgraph H["Health path"]
+        direction LR
+        HE["Health endpoint"] -->|"200 or 503"| D["Docker health check"]
+    end
+    M1 -->|"only from allowed addresses"| M2
+    M2 ~~~ H
 ```
 
 *Figure 35.1 — From a counter in the code to an alert, and the separate health path*
 
-*Text description:* Left to right: the counters, gauge, and timer in ViewerMetrics feed the Micrometer registry, which the actuator prometheus endpoint exposes. That endpoint answers only addresses on the metrics allow-list. Prometheus scrapes it, rules compute rates or increases over a window, and an alert reaches a person; the last two boxes are outside the repository. A separate arrow shows the health endpoint answering 200 or 503 to Docker and monitors.
+*Text description:* Three rows, read left to right from the top. First, in the app: the counters, gauge, and timer in ViewerMetrics feed the Micrometer registry, which the actuator prometheus endpoint exposes; that endpoint answers only addresses on the metrics allow-list. Second, outside the repository: Prometheus scrapes it, rules compute rates or increases over a window, and an alert reaches a person. Third, a separate health path: the health endpoint answers 200 or 503 to the Docker health check and monitors.
 
 Notice the address rule on the way to Prometheus and the fact that health takes a separate, simpler path: a status code for machines, no numbers.
 

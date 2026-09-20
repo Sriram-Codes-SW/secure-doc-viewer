@@ -595,15 +595,15 @@ assert headers in a test (`SecurityHeadersTest`).
 Figure 28.1 is Blueprint v3.
 
 ```mermaid
-flowchart LR
+flowchart TB
     B["Angular app: upload page checks size first"]
     subgraph API["Spring Boot app"]
-        SEC["SecurityConfig: headers (CSP default-src none, Referrer-Policy no-referrer, Permissions-Policy); health check permitted"]
+        SEC["SecurityConfig: security headers, health permitted"]
         DC["DocumentController: 50 MB cap, streamed ingest"]
-        TG["TileGenerationService: max-pages and max-page-pixels checks"]
-        GEH["GlobalExceptionHandler: JSON errors, 413, 405, 415, generic 500 with reference"]
-        VP["ViewerProperties: maxPages 500, maxPagePixels 40M"]
-        H["Actuator: /actuator/health only"]
+        TG["TileGenerationService: page and pixel limits"]
+        VP["ViewerProperties: 500 pages, 40M pixels"]
+        GEH["GlobalExceptionHandler: JSON errors"]
+        H["Actuator: health only"]
     end
     M[("MySQL")]
     D[("Disk: tiles")]

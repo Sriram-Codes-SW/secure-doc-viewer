@@ -150,7 +150,7 @@ Why constructor injection rather than marking a field and letting Spring fill it
 Dependencies form a chain, and Spring works out the order. Figure 11.1 shows the part of the chain behind `DocumentController`.
 
 ```mermaid
-graph TD
+graph LR
     DocumentController --> DocumentService
     DocumentController --> RequestActors
     RequestActors --> SessionKeys
@@ -165,7 +165,7 @@ graph TD
 
 *Figure 11.1 — Part of the dependency chain behind `DocumentController`*
 
-*Text description:* A top-down graph with `DocumentController` at the top, pointing to `DocumentService` and `RequestActors`. `RequestActors` points to `SessionKeys`, which points to `ViewerProperties`. `DocumentService` points to five things: two repositories, `TileGenerationService`, `AuditLogService` and the transaction manager, and `TileGenerationService` also points to `ViewerProperties`. Notice that `ViewerProperties` sits at the bottom of two branches, so one shared bean serves both.
+*Text description:* A left-to-right graph with `DocumentController` at the left, pointing to `DocumentService` and `RequestActors`. `RequestActors` points to `SessionKeys`, which points to `ViewerProperties`. `DocumentService` points to five things: two repositories, `TileGenerationService`, `AuditLogService` and the transaction manager, and `TileGenerationService` also points to `ViewerProperties`. Notice that `ViewerProperties` sits at the right end of two branches, so one shared bean serves both.
 
 <!-- source: constructors of DocumentController, DocumentService, RequestActors, SessionKeys and TileGenerationService at book-m6-final; partial: TileGenerationService also takes ViewerMetrics, omitted here -->
 

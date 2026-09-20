@@ -32,7 +32,8 @@ earlier chapters; a beginner tier assumes only beginner material.
 ## Conventions
 
 - **Bold** marks a term at its first use. The glossary (Appendix A) collects definitions of the terms,
-  and the index at the end of the book lists, for each term, the chapters where it appears in bold.
+  and the index at the end of the book lists, for each term, the chapters that use it, with the
+  chapter that defines it in bold.
 - Callouts come in four kinds: **Note** (useful, not essential), **Tip** (a habit that saves
   time), **Warning** (something that can lose data or break security) and **In this project**
   (where the idea lives in the repository).

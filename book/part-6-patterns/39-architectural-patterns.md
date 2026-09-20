@@ -167,19 +167,22 @@ Again, the honesty. Nothing *enforces* those boundaries. There is no module desc
 **Where it lives.** Figure 39.3 shows the path of an API request.
 
 ```mermaid
-flowchart LR
-    CA["Caddy"] --> NG["nginx: location rules and headers"]
-    NG --> SC["Security filter chain: CSRF, sessions, and others"]
-    SC --> SL["SessionLifetimeFilter"]
-    SL --> AZ["AuthorizationFilter: the rules, denyAll last"]
-    AZ --> PW["PasswordChangeRequiredFilter"]
-    PW --> CT["Controller and service checks"]
+flowchart TB
+    subgraph R1["Outside the app"]
+        direction LR
+        CA["Caddy"] --> NG["nginx"] --> SC["Security filter chain"] --> SL["Session lifetime"]
+    end
+    subgraph R2["Inside the app"]
+        direction LR
+        AZ["Authorization rules"] --> PW["Password change"] --> CT["Controller checks"]
+    end
+    R1 --> R2
 ```
 
 <!-- source: SecurityConfig.java (addFilterBefore and addFilterAfter around AuthorizationFilter) and frontend/nginx.conf at book-m6-final -->
 *Figure 39.3 — The request path as a pipeline: each stage can refuse, and the order is part of the design*
 
-*Text description:* A left-to-right pipeline: Caddy, then nginx with its location rules and headers, then the Spring Security filter chain, then the session lifetime filter, then the authorization filter with its rules, then the password-change filter, and finally the controller and service checks. Notice that each stage can refuse the request, and that the order is part of the design.
+*Text description:* Two rows, read left to right, the top row first. The top row: Caddy, then nginx (with its location rules and headers), then the Spring Security filter chain (CSRF, sessions and others), then the session lifetime filter. The bottom row: the authorization filter with its rules (`denyAll` last), then the password-change filter, and finally the controller and service checks. Notice that each stage can refuse the request, and that the order is part of the design.
 
 Two of the filters are the project's own, and their position is written in the configuration:
 

@@ -118,3 +118,29 @@ A 12 to 15 percent trim (about 1,300 words in Ch 40, 800 in Ch 41) would put bot
 - Whether Ch 7 mentions PR #13 (line 273 is one very long line I did not read).
 - Solutions files and Appendix C regeneration (the progress note says Appendix C still had Figure 41.1 in Exercise 40.1's solution until regenerated; not verified in the PDF).
 - EPUB and HTML outputs.
+
+---
+
+# Closure check (final PDF, 747 pages)
+
+Checked against the current sources and the 747-page PDF. Pages viewed as images: 383 (Fig 25.2, blueprint v0), 434 (Fig 28.1, blueprint v3), 469 (Fig 30.1, blueprint v5). Image sizes for all full-width figures were measured by script (printed size against pixel size).
+
+| Item | Status | Evidence |
+|---|---|---|
+| NEW-1 migration order | **Closed** | Fig 41.5 is now moves A to E; A is "One cutover: Fargate task, ALB, Secrets Manager, RDS MySQL 8.4, S3 tiles behind a storage seam". 41.11 explains the ephemeral-storage reason and the EFS interim option; Exercise 41.2 and its solution use A, B, C, D, E and say move A alone does not give three copies. Correct. |
+| Counter-rewind case (NEW-2) | **Closed** | 41.5 now says "In a real recovery, a restore rewinds the version counter", says the drill as drawn restores both stores to the same moment, and Fig 41.3 has an `opt Real recovery: the bucket is newer than the restored database` block. The text description matches. |
+| Two-container shutdown (NEW-3a) | **Closed** | 41.6 names nginx's `SIGQUIT`/`SIGTERM` behavior, tells the reader to check the image's `STOPSIGNAL`, and adds a start-order dependency so nginx stops first and drains before the app. Sound (the ECS stop-order behavior is stated as documented; I did not re-read the AWS page). |
+| Flyway rollback (NEW-3b) | **Closed** | 41.6: "A rollback does not undo Flyway migrations that the one-off task already ran" with the backward-compatibility rule; repeated in the Summary. |
+| SA-02 blueprint and wide diagrams | **Open (Minor to Major)** | Tall figures were restructured and read well (v0 on p.383 has labels of about 7 to 8 pt). Still small: blueprint v5 (Fig 30.1, p.469) and its repeats in Ch 31 (p.483) and Appendix B (p.673, 675) are 454 pt wide by about 157 pt tall from a 1568 x 544 px image, so node labels print at roughly 3 to 4 pt; blueprint v3 (Fig 28.1, p.434) at roughly 5 pt. Text descriptions cover screen-reader users but the printed drawing is not readable. Fix: draw v3 to v6 top-to-bottom (as was done for v0 to v2), or two rows, or shorten node labels. I would rate it Major only for v5 and v6; the rest are Minor. |
+| SA-10 Listing 38.4 caption | **Closed** | The second excerpt is now its own Listing 38.5 (`AuditLogService.java`) with its own Path line; Listing 38.4 is two excerpts from `DocumentService.java`. |
+| SA-14 Part IV intro PR #13 | **Closed** | "the seven tags cover 38 commits and pull requests numbered 1 to 12, and a thirteenth pull request, described below, came after the last tag." |
+| SA-17 epilogue wording | **Closed** | Now: "several of the early protections ... had a gap that a reviewer found ... That shows why review matters. It does not show that every gap was found." Part V reads "took the app toward production"; Part VII "on paper"; the limitations list states the cloud design was never deployed. |
+| Length after trimming | **Accepted** | Prose excluding code, comments and the Sources list: Ch 40 about 8,440 words (file 9,970 with code), Ch 41 about 6,310 (file 7,580). That is inside the Part IV ceiling of 10,000 words for a whole file and close to the 8,000 general target for prose. Reading effort is still high in 40.8 to 40.9, but the length is now defensible given the density of decisions; no further cut is needed for publication. Optional: compress the 40.9 Spring Session paragraph into a table. |
+
+## Overall verdict on the architecture content
+
+Sound and honest. Every architectural claim I traced matches the code at `book-m6-final`; the trade-offs in Chapter 37 are balanced and labeled as recorded versus general practice; the layering, trust-boundary, signed-URL, rate-limit and scaling discussions are technically correct and now state their own limits (package cycles, capability-shaped URLs, unwatermarked copies at rest, Redis as hard dependency, AZ not Region, deleted documents that are not gone, restore hazards). Part VII is consistently a design, not a deployment, and its recommendation (stay on one server unless Table 41.2 fails; do one cutover first) is realistic.
+
+**Must-fix before publication:** none. There are no Blockers or Majors that block release.
+
+**Should-fix if time allows (Minor):** SA-02, the blueprint figures v5 and v6 (and v3): the drawings are decorative at print size, though their text descriptions and the surrounding prose carry the content. This is the only open item from my reviews.

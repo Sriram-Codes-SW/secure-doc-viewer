@@ -331,14 +331,14 @@ sequenceDiagram
     participant P as PageTileUrlController
     participant U as SignedUrlService
     participant T as TileController
-    B->>P: GET the tile URLs of one page
-    P->>U: issueToken for each tile (document, page, row, column, version, session binding)
-    U-->>P: payload, a dot, and the HMAC signature
-    P-->>B: a grid of URLs, each carrying its token
-    B->>T: GET /api/tiles with one token
+    B->>P: GET tile URLs of a page
+    P->>U: issueToken per tile
+    U-->>P: payload, dot, signature
+    P-->>B: grid of URLs with tokens
+    B->>T: GET /api/tiles, one token
     T->>U: verifyAndDecode
-    U-->>T: the payload, or InvalidTokenException (bad signature or expired)
-    T-->>B: one watermarked PNG, or an error status
+    U-->>T: payload or exception
+    T-->>B: one PNG or an error
 ```
 
 *Figure 17.2 — Issuing and checking a signed tile token*

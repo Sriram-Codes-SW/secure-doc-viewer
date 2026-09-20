@@ -181,19 +181,19 @@ sequenceDiagram
     participant T as LoginThrottle
     participant M as AuthenticationManager
     participant S as Session
-    B->>A: POST /api/auth/login with username and password
-    A->>T: reserve (check the limits and count this attempt in advance)
-    A->>M: authenticate (user lookup and BCrypt match)
-    alt wrong password, unknown user or disabled account
+    B->>A: POST /api/auth/login
+    A->>T: reserve an attempt
+    A->>M: authenticate
+    alt any failure
         M-->>A: AuthenticationException
-        A-->>B: 401 with one fixed message
+        A-->>B: 401, one fixed message
     else correct password
-        M-->>A: the authenticated user
-        A->>T: succeeded (hand the reserved attempt back)
-        A->>S: change the session id and register it
-        A->>S: rotate the CSRF token and store the security context
-        A->>S: set the password-change flag and the sign-in time
-        A-->>B: 200 with the current user and the session and CSRF cookies
+        M-->>A: authenticated user
+        A->>T: succeeded, hand back
+        A->>S: change the session id
+        A->>S: rotate the CSRF token
+        A->>S: set the flag and sign-in time
+        A-->>B: 200 and two cookies
     end
 ```
 
