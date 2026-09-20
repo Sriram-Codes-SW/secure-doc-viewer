@@ -36,8 +36,8 @@ The analogy breaks down in two places. First, a real backup is a set of files, a
 - Volume (Chapter 10): a Docker-managed folder that outlives the container that uses it. This app uses `mysql-data` and `app-storage`.
 - **Consistent:** every part of the backup describes the same moment in time.
 - **Restore drill:** restoring a backup into a scratch environment to prove it works, without touching production.
-- **Recovery point objective (RPO):** how much recent work you can afford to lose. A nightly backup means an RPO of up to a day.
-- **Recovery time objective (RTO):** how long you can afford to be down while restoring. A drill measures it.
+- **RPO (recovery point objective):** how much recent work you can afford to lose. A nightly backup means an RPO of up to a day.
+- **RTO (recovery time objective):** how long you can afford to be down while restoring. A drill measures it.
 - **Retention:** how long data, or old backups, are kept before deletion.
 - **Off-site:** stored on a different machine, ideally a different location, so one disaster can't take both the original and the copy.
 
@@ -163,18 +163,20 @@ Figure 34.2 lays the restore order and the drill checks in one chain. The restor
 
 ```mermaid
 flowchart TB
-    S1["1 Stop the app"] --> S2["2 Replay securedocs.sql into MySQL"]
-    S2 --> S3["3 Empty the tile volume and unpack storage.tgz"]
-    S3 --> S4["4 Start the app"]
-    S4 --> C1["Check: each document's current tile version is in the archive"]
-    C1 --> C2["Check: the app boots and Flyway validates the migrations"]
-    C2 --> C3["Check: a reader signs in and receives a watermarked tile"]
-    C3 --> C4["Time it, then delete the scratch environment and backup files"]
+    subgraph R["Restore"]
+        direction LR
+        S1["1 Stop the app"] --> S2["2 Replay securedocs.sql into MySQL"] --> S3["3 Empty the tile volume, unpack storage.tgz"] --> S4["4 Start the app"]
+    end
+    subgraph D["Drill checks"]
+        direction LR
+        C1["Each current tile version is in the archive"] --> C2["The app boots and Flyway validates"] --> C3["A reader signs in and gets a watermarked tile"] --> C4["Time it, delete the scratch environment and backup files"]
+    end
+    R --> D
 ```
 
 *Figure 34.2 — The restore order, followed by the drill's checks (run in a scratch environment)*
 
-*Text description:* A top-to-bottom chain. The first four boxes are the restore: stop the app, replay the SQL dump, empty the tile volume and unpack the archive, start the app. The next four are the drill's checks: every current tile version is in the archive, the app boots and Flyway validates the migrations, a reader signs in and receives a watermarked tile, and finally the timing and cleanup of the scratch environment.
+*Text description:* Two rows of four boxes, read left to right, the top row before the bottom row. The top row is the restore: stop the app, replay the SQL dump, empty the tile volume and unpack the archive, start the app. The bottom row is the drill's checks: every current tile version is in the archive, the app boots and Flyway validates the migrations, a reader signs in and receives a watermarked tile, and finally the timing and cleanup of the scratch environment.
 
 Notice that the checks climb from cheap to end-to-end: files present, then schema valid, then a real sign-in and tile. A failure at the first check points at a mismatched backup; a failure at the last points at something in the application.
 
@@ -299,7 +301,7 @@ For each of these, say whether a backup must capture it and why: the login sessi
 
 ### Exercise 34.2 ★ Read a command
 
-Explain what each part of `docker compose exec -T mysql sh -c 'exec mysqldump --single-transaction --routines -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' > securedocs.sql` does, including why the `$` variables are inside single quotes.
+Explain what each part of `docker compose exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysqldump --single-transaction --routines -u root "$MYSQL_DATABASE"' > securedocs.sql` does, including why the `$` variables are inside single quotes and what `export MYSQL_PWD` achieves compared with `-p`.
 
 ### Exercise 34.3 ★★ Break the match
 

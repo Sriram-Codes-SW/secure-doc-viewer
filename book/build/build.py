@@ -69,7 +69,17 @@ else:
         f.write(digest)
 
 # ---- 3. alternative text -------------------------------------------------------------------------
-lines = open(raw, encoding='utf-8').read().split('\n')
+# The text always comes from the CURRENT manuscript: each mermaid block is replaced by a link to the image
+# mermaid-cli made for it (rendered-1.png, rendered-2.png ... in order). Only the images are cached.
+_n = [0]
+
+
+def _image_link(_m):
+    _n[0] += 1
+    return f'![diagram](./rendered-{_n[0]}.png)'
+
+
+lines = re.sub(r'```mermaid\n.*?```', _image_link, manuscript, flags=re.S).split('\n')
 missing = []
 for i, line in enumerate(lines):
     m = re.match(r'!\[diagram\]\((.+?)\)$', line)
@@ -155,7 +165,8 @@ common = ['docker', 'run', '--rm', '-v', BOOK.replace(BACKSLASH, '/') + ':/data'
           'sdv-book-pandoc', '--from', 'gfm', '--standalone', '--resource-path=.:' + OUTC + '/diagrams',
           '--metadata', 'title=Building a Secure Document Viewer',
           '--metadata', 'subtitle=From first line of Java to production', '--metadata', 'lang=en-US',
-          '--lua-filter=/data/build/book.lua'] + extra_meta
+          '--lua-filter=/data/build/book.lua',
+          '--syntax-highlighting=/data/build/contrast.theme'] + extra_meta
 env = dict(os.environ, MSYS_NO_PATHCONV='1')
 WEB = 'diagrams/rendered-web.md'
 PDF = 'diagrams/rendered-pdf.md'
@@ -179,6 +190,16 @@ if '--no-epub' not in ARGS:
             data = zin.read(item.filename)
             if item.filename.endswith('.xhtml'):
                 data = add_scope(data.decode('utf-8')).encode('utf-8')
+            elif item.filename.endswith('.opf'):
+                # Pandoc's --epub-metadata import drops some of the <meta> lines (for example the accessibility
+                # summary and the second accessMode), so add every line of epub-metadata.xml that is missing.
+                opf = data.decode('utf-8')
+                wanted = [ln.strip() for ln in open(os.path.join(HERE, 'epub-metadata.xml'), encoding='utf-8')
+                          if ln.strip().startswith('<meta ')]
+                extra = [ln for ln in wanted if ln not in opf]
+                if extra:
+                    opf = opf.replace('</metadata>', '    ' + '\n    '.join(extra) + '\n  </metadata>', 1)
+                data = opf.encode('utf-8')
             zout.writestr(item, data, compress_type=zipfile.ZIP_STORED if item.filename == 'mimetype' else zipfile.ZIP_DEFLATED)
     os.replace(tmp, path)
 
@@ -200,7 +221,7 @@ if '--no-pdf' not in ARGS:
                              '-V', 'mainfontoptions=BoldFont=texgyrepagella-bold.otf,ItalicFont=texgyrepagella-italic.otf,BoldItalicFont=texgyrepagella-bolditalic.otf',
                              '-V', 'monofont=DejaVu Sans Mono', '-V', 'monofontoptions=Scale=0.85',
                              '-V', 'linkcolor=black', '-V', 'toccolor=black', '-V', 'urlcolor=blue!60!black',
-                             '--top-level-division=chapter', '--syntax-highlighting=tango',
+                             '--top-level-division=chapter',
                              '--include-in-header=/data/build/header.tex', '-V', 'colorlinks=true',
                              '-o', 'secure-doc-viewer-guide.pdf', PDF], check=True, env=env)
 

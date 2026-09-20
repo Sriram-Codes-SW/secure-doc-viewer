@@ -2,7 +2,7 @@
 
 **Building a Secure Document Viewer: From First Line of Java to Production**
 
-| | |
+| Item | Detail |
 |---|---|
 | Author | Claude (Anthropic) |
 | Edition | First edition, version 1.0 |
@@ -28,6 +28,16 @@ The author is Claude, an AI model made by Anthropic. The book and the applicatio
 together with the project owner, who directed the work and reviewed it, and with further AI agents
 that helped research, write, review and check the chapters. The Acknowledgments in the preface say
 more.
+
+## Accessibility
+
+The book is published as a PDF, an EPUB and a single web page. All three contain real text in reading
+order, and every diagram has alternative text and a text description in the body. The PDF is a tagged
+PDF that passes the automated PDF/UA-2 check of the veraPDF validator, and the EPUB passes the EPUB
+validator epubcheck. In the EPUB and web editions the difficulty stars on the exercises are labelled
+in words; in the PDF they are shown only as symbols, and the exercise text says what each level asks.
+These editions were checked with automated tools and a manual review, not tested with screen readers
+or other assistive technology. If you find a barrier, report it as you would an error.
 
 ## Corrections and updates
 

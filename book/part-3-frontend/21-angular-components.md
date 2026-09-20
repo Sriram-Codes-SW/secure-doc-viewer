@@ -249,7 +249,7 @@ this.zoom.set(1.4);                 // replace the value
 this.zoom.update((z) => z + 0.2);   // compute the new value from the old
 ```
 
-Because templates call the signal (`{{ zoom() }}`), Angular knows that this template depends on `zoom`, and redraws only that part when it changes. Deciding what to redraw is **change detection**. A **computed** signal is a value derived from others; it is recalculated only when a signal it read has changed, and is otherwise cached. The document list uses one for its search box:
+Because templates call the signal (`{{ zoom() }}`), Angular knows that this template depends on `zoom`, and redraws only that part when it changes. Deciding what to redraw is **change detection**. A **computed signal** is a value derived from others; it is recalculated only when a signal it read has changed, and is otherwise cached. The document list uses one for its search box:
 
 **Listing 21.5 — `document-list.component.ts` (book-m6-final, excerpt)**
 

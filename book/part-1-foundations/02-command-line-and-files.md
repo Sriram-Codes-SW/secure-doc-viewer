@@ -188,25 +188,25 @@ One variable deserves special mention. `PATH` is a list of folders. When you typ
 Figure 2.2 shows exactly how the shell decides what to run when you type a command such as `java -version`.
 
 ```mermaid
-flowchart TB
-    A["You type java -version"] --> B{"Does the name contain a slash"}
+flowchart LR
+    A["You type java -version"] --> B{"Name contains a slash"}
     B -->|"yes, like ./mvnw"| C["Run that exact file"]
-    B -->|"no, like java"| D["Read PATH, a list of folders"]
-    D --> E["Look in the first folder, then the next"]
-    E --> F{"Found a program named java"}
+    B -->|"no, like java"| D["Read PATH: a list of folders"]
+    D --> E["Search folders in order"]
+    E --> F{"Found java"}
     F -->|"yes"| G["Run the first one found"]
     F -->|"no folders left"| H["Error: command not found"]
 ```
 
 *Figure 2.2 — How the shell finds a program: a name with a slash skips PATH*
 
-*Text description:* A decision flow read top to bottom. The shell first asks whether the typed name contains a slash. If it does, it runs that exact file. If it does not, it reads the `PATH` list, looks in each folder in order, and runs the first program it finds, or reports "command not found" when the folders run out.
+*Text description:* A decision flow read from left to right. The shell first asks whether the typed name contains a slash. If it does, it runs that exact file. If it does not, it reads the `PATH` list, looks in each folder in order, and runs the first program it finds, or reports "command not found" when the folders run out.
 
 <!-- source: bash behavior; ./mvnw is used in Chapter 6 (mvnw at book-m6-final) -->
 
 Notice the first decision. A name with a slash in it, like `./mvnw` (the Maven wrapper of Chapter 6), names one exact file, so the shell never consults `PATH`. That is why you type `./mvnw` and not `mvnw` alone: the current folder is not on `PATH`. A bare name like `java` triggers the search, in order, and the first match wins, which is why the order of folders in `PATH` matters when two versions of Java are installed.
 
-A related variable is `JAVA_HOME`, which many tools (Maven among them, Chapter 6) read to find the folder where your JDK is installed. If a build complains about Java although `java -version` works, check `JAVA_HOME`.
+A related variable is **JAVA_HOME**, which many tools (Maven among them, Chapter 6) read to find the folder where your JDK is installed. If a build complains about Java although `java -version` works, check `JAVA_HOME`.
 
 ### 2.6 Configuration through the environment: `.env` files
 
@@ -252,13 +252,13 @@ spring:
 
 *Path: `src/main/resources/application.yml`*
 
-Read `${DB_HOST:localhost}` as "the value of `DB_HOST`, or `localhost` if it is not set". The `import` line tells the app to read a `.env` file if there is one (`optional:` means no error if it is missing), and the comment states the rule that matters: a real environment variable, if set, overrides the file. That precedence lets one machine, such as a production server, use environment variables and never have a `.env` file at all. YAML is a settings format where indentation shows nesting (Chapter 8); Chapter 13 explains the whole file.
+Read `${DB_HOST:localhost}` as "the value of `DB_HOST`, or `localhost` if it is not set". The `import` line tells the app to read a `.env` file if there is one (`optional:` means no error if it is missing), and the comment states the rule that matters: a real environment variable, if set, overrides the file. That precedence lets one machine, such as a production server, use environment variables and never have a `.env` file at all. **YAML** is a settings format where indentation shows nesting (Chapter 8); Chapter 13 explains the whole file.
 
 ### 2.7 Text files, encodings and line endings
 
 A **text file** holds characters. Computers store everything as numbers called bytes, so an **encoding** is the rule that maps characters to bytes. The project's files use **UTF-8**, which stores plain English letters in one byte each and other characters, such as accented letters or emoji, in more. So a character is not always one byte, a fact that has a surprising consequence for passwords in Chapter 3.
 
-A **line ending** marks where a line stops. Windows uses two bytes for it (a carriage return then a line feed, often written `CRLF`), while macOS and Linux use one (`LF`). Git and editors can convert between them, which matters in Chapter 7 and in Chapter 6, where a script with the wrong line endings fails with an error that mentions `\r`. The project's frontend includes an `.editorconfig` file that tells editors to save in UTF-8 and end each file with a newline, so every contributor's editor produces the same bytes. <!-- source: frontend/.editorconfig at book-m6-final -->
+A **line ending** marks where a line stops. Windows uses two bytes for it (a carriage return then a line feed, often written **CRLF**), while macOS and Linux use one (`LF`). Git and editors can convert between them, which matters in Chapter 7 and in Chapter 6, where a script with the wrong line endings fails with an error that mentions `\r`. The project's frontend includes an `.editorconfig` file that tells editors to save in UTF-8 and end each file with a newline, so every contributor's editor produces the same bytes. <!-- source: frontend/.editorconfig at book-m6-final -->
 
 Now the reason for `.env` in one sentence. Secrets such as the database password and the key used to sign tile URLs must never be committed to version control. **Version control** is a tool that records every change to a project's files so that you can go back to any earlier state; Git is the one this project uses, and [Chapter 7](07-git-and-github.md) teaches it. Its history is permanent and shared, so a secret committed once is exposed for good. So the project keeps a template, `.env.example`, in the repository, and asks you to copy it to `.env`. A file named `.gitignore` lists the files Git must not record, and it lists `.env`. The real values stay on your machine. <!-- source: .gitignore and .env.example at book-m6-final -->
 
@@ -268,7 +268,7 @@ Now the reason for `.env` in one sentence. Secrets such as the database password
 
 A running program is a **process**. Your computer can run many at once, and each gets its own number. A **port** is a numbered door on your computer, from 0 to 65535. A server process **listens** on a port: it asks the operating system to hand it any network request addressed to that number.
 
-An **address** here means which of the computer's network connections the program listens on; the name `localhost` means this computer, and its numeric form is `127.0.0.1`. Two programs cannot listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. Table 2.3 lists the ports in this project.
+An **address** here means which of the computer's network connections the program listens on; the name **localhost** means this computer, and its numeric form is `127.0.0.1`. Two programs cannot listen on the same port on the same address. If you start the backend and see an error that port 8080 is already in use, another process holds it. Table 2.3 lists the ports in this project.
 
 **Table 2.3 — Ports used by the project**
 
@@ -294,7 +294,7 @@ On macOS and Linux:
 lsof -i :8080
 ```
 
-You should see a line naming the program and its process number (PID). On Windows, in Git Bash or PowerShell, Windows' own `netstat` tool works in both:
+You should see a line naming the program and its process number (**PID**). On Windows, in Git Bash or PowerShell, Windows' own `netstat` tool works in both:
 
 ```bash
 netstat -ano | findstr :8080

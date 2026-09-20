@@ -9,52 +9,52 @@ In `DocumentDetail`, `sharedWith: string[] | null` is `null` for anyone who can'
 
 Example solution:
 
-   ```typescript
-   type Direction = 'next' | 'previous';
+```typescript
+type Direction = 'next' | 'previous';
 
-   function step(current: number, d: Direction): number {
-     return d === 'next' ? current + 1 : current - 1;
-   }
-   ```
+function step(current: number, d: Direction): number {
+  return d === 'next' ? current + 1 : current - 1;
+}
+```
 
-   `step(3, 'back')` is a compile error.
+`step(3, 'back')` is a compile error.
 
 ### Exercise 19.3 ★★ Extend IdleState
 
-In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative simply falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
+In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
 
 ### Exercise 19.4 ★★ A fetchOrNull helper
 
 Example solution:
 
-   ```typescript
-   async function fetchOrNull(url: string, signal: AbortSignal): Promise<Response | null> {
-     try {
-       return await fetch(url, { signal, cache: 'no-store' });
-     } catch {
-       return null;
-     }
-   }
-   ```
+```typescript
+async function fetchOrNull(url: string, signal: AbortSignal): Promise<Response | null> {
+  try {
+    return await fetch(url, { signal, cache: 'no-store' });
+  } catch {
+    return null;
+  }
+}
+```
 
-   An aborted request also gives `null`, so the caller must check `signal.aborted` to tell the two apart, as the viewer does.
+An aborted request also gives `null`, so the caller must check `signal.aborted` to tell the two apart, as the viewer does.
 
 ### Exercise 19.5 ★★★ A generic firstWhere
 
 Example solution:
 
-   ```typescript
-   function firstWhere<T>(items: T[], test: (item: T) => boolean): T | null {
-     for (const item of items) {
-       if (test(item)) {
-         return item;
-       }
-     }
-     return null;
-   }
+```typescript
+function firstWhere<T>(items: T[], test: (item: T) => boolean): T | null {
+  for (const item of items) {
+    if (test(item)) {
+      return item;
+    }
+  }
+  return null;
+}
 
-   const firstLoaded = firstWhere(tiles, (t) => t.status === 'loaded');
-   ```
+const firstLoaded = firstWhere(tiles, (t) => t.status === 'loaded');
+```
 
 ### Exercise 19.6 ★★ Tile arithmetic
 

@@ -266,7 +266,7 @@ If two branches change the same lines of the same file, Git cannot decide which 
 
 ### 7.7 Remotes, pull requests and code review
 
-A **remote** is a copy of the repository on another computer, usually GitHub. `git clone` sets one up for you, under the name `origin`. Three commands move commits between copies: `git push` sends yours to the remote, `git fetch` downloads new commits without touching your files, and `git pull` fetches and then merges.
+A **remote** is a copy of the repository on another computer, usually GitHub. `git clone` sets one up for you, under the name `origin`. Three commands move commits between copies. To **push** is to send your commits to the remote (`git push`). To **fetch** is to download new commits without touching your files (`git fetch`). To **pull** is to fetch and then merge the new commits into your branch (`git pull`).
 
 On GitHub, a **pull request** (PR) is a proposal to merge one branch into another. It shows the changes, lets others comment line by line, and runs automated checks before anything is merged. **Code review** is the practice of having someone else read the change before it lands. It catches mistakes the author cannot see, spreads knowledge, and leaves a record of why decisions were made.
 
@@ -306,7 +306,7 @@ The same care covers where the repository lives on your disk. The project's `.en
 
 ### 7.9 Following this book with tags without breaking your work
 
-Two commands let you move to a milestone: `git checkout <tag>` and `git switch --detach <tag>`. Both put you in **detached HEAD** state. You are looking at an old commit and are not on any branch. Commits you make there belong to no branch, and are lost easily when you switch away.
+Two commands let you move to a milestone: `git checkout <tag>` and `git switch --detach <tag>`. Both put you in **detached HEAD** state. You are looking at an old commit and are not on any branch. Commits you make there belong to no branch, and can be lost when you switch away.
 
 The safe routine:
 
@@ -336,7 +336,7 @@ git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_ve
 
 `--diff-filter=A` keeps only commits that **added** the file. The answer is a commit titled "Atomic PDF replace via versioned tiles; bounded rendering", made during the review rounds of pull request 5. So the reason for the `tile_version` column in Chapter 9 is a replace-a-PDF bug found in review, which Chapter 30 tells in full. The history led you to the story. <!-- source: git log --diff-filter=A for V3 (commit cd0f5c2); dossier timeline.md -->
 
-`git blame <file>` shows, line by line, which commit last changed each line. It is not for blaming people; it is the quickest route from a puzzling line to the commit message that explains it. And `git log --stat` shows which files each commit touched, so you can see the size and shape of a change before you read it.
+`git blame <file>`, called **blame** for short, shows, line by line, which commit last changed each line. It is not for blaming people; it is the quickest route from a puzzling line to the commit message that explains it. And `git log --stat` shows which files each commit touched, so you can see the size and shape of a change before you read it.
 
 ### 7.11 Common mistakes
 
@@ -344,7 +344,7 @@ git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_ve
 
 **You edited a file but the change is not in the commit.** You forgot `git add`. `git status` lists changes "not staged for commit" and tells you what to do.
 
-**Your changes vanished after switching to a tag.** You committed while in detached HEAD, then switched away. If you have not yet switched, save the work with `git switch -c rescue` while you are still there. If you have already switched, ask Git for the lost commit's identifier with `git reflog`, which lists where `HEAD` has been, then `git switch -c rescue <id>`.
+**Your changes vanished after switching to a tag.** You committed while in detached HEAD, then switched away. If you have not yet switched, save the work with `git switch -c rescue` while you are still there. If you have already switched, ask Git for the lost commit's identifier with `git reflog`, the **reflog**, which lists where `HEAD` has been, then `git switch -c rescue <id>`.
 
 **"LF will be replaced by CRLF" warnings on Windows.** This is Git converting line endings (Chapter 2) between the Windows and Unix styles. It is normal. If a script such as `mvnw` fails with a strange `\r` error, the conversion went too far for that file (Chapter 6).
 

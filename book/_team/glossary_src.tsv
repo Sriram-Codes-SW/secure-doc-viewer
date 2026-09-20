@@ -61,7 +61,7 @@ certificate	A signed statement, issued by an authority the browser trusts, that 
 certificate authority	An organization that browsers trust to issue certificates.
 chain of responsibility	A design pattern in which a request passes along a line of handlers, each of which may handle it, change it or pass it on.
 change detection	Angular's process of deciding which parts of the screen to redraw when data changes.
-checked exception	A Java exception, such as `IOException`, that a method must catch or declare with `throws`.
+checked exception	A Java exception, such as `IOException`, that a method must catch or declare with `throws`.	ch=5
 CI (continuous integration)	The practice of running tests and checks automatically on every proposed change.
 CIDR	A compact way to write a range of network addresses, such as `10.0.0.0/16`.
 class	A named blueprint in Java that describes the data and the behavior of a kind of object.
@@ -70,7 +70,6 @@ client	A program that asks for things over a network; your browser is a client.
 clone	To copy an existing Git repository, with its history, to your machine.
 code review	The practice of having someone else read a change before it is merged.
 collection	A Java object that holds many values, such as a list, a set or a map.
-command line	A text interface in which you type commands to the computer; see terminal.
 commit	A saved state in Git: a snapshot of every tracked file at one moment, with a message and a unique identifier.
 commit SHA	The long hexadecimal identifier that uniquely names a Git commit.
 compiler	A program that checks source code and translates it into a form that a machine can run.
@@ -184,7 +183,6 @@ interceptor	A function in Angular's HTTP client that sees every request and resp
 interface	A description of what an object can do (Java) or of its shape (TypeScript), without saying how.
 interpolation	Inserting the value of an expression into text in an Angular template with `{{ }}`.
 inversion of control	The principle that a framework, not your code, creates objects and decides when to call them.
-IP address	The number that identifies a computer on a network, such as `203.0.113.9`.
 Jackson	The Java library that converts between objects and JSON.
 JAR	A Java Archive: a zip file of compiled classes.
 JavaScript	The programming language that browsers run.
@@ -264,7 +262,7 @@ Playwright	A tool that drives a real browser, used for the end-to-end tests.
 PNG	An image file format that stores a grid of pixels without losing detail.
 point-in-time recovery	Restoring a database to any moment within a retention period.
 port	A numbered door on a computer, from 0 to 65535, at which a server listens for network requests.
-presigned URL	An S3 URL that grants temporary access to one object to whoever holds it.
+presigned URL	An S3 URL that grants temporary access to one object to whoever holds it.	ch=41
 primary key	A column, or set of columns, whose value identifies each row uniquely.
 process	A running program.
 profile	A named set of extra Spring settings switched on for a purpose, such as the test profile.
@@ -384,7 +382,7 @@ trust boundary	The line between what a system controls, such as the server, and 
 twelve-factor app	A published method for building services that deploy cleanly, including keeping configuration in the environment.
 type	A label that says what kind of value something is.
 TypeScript	JavaScript with a type system that a compiler checks before the code runs.
-unchecked exception	A Java exception that the compiler does not force you to catch.
+unchecked exception	A Java exception that the compiler does not force you to catch.	ch=5
 union type	A TypeScript type that allows one of several listed alternatives.
 unit test	A small test of one piece of code on its own, with no framework or database running.
 untracked	Describes a file that Git can see but is not recording.
@@ -411,7 +409,7 @@ working directory	The folder a shell or program is currently in; relative paths 
 wrapper	A small script that downloads and runs the right version of a tool, such as `mvnw` for Maven.
 XML	A text format in which information sits between named tags, used in `pom.xml`.
 XSS (cross-site scripting)	An attack that gets a hostile script to run inside a trusted page.
-X-Forwarded-For	A header in which proxies list the client addresses a request has passed through.
+X-Forwarded-For	A header in which proxies list the client addresses a request has passed through.	ch=10
 YAML	A text format for configuration that uses indentation, used in `application.yml` and Compose files.
 health check	A request that a platform sends regularly to see whether a program is up and ready for traffic.
 heap	The part of memory where a Java program keeps its objects; the JVM sets its size at start.
@@ -472,8 +470,8 @@ job	A group of steps that run together on one machine in a GitHub Actions workfl
 keepalive_timeout	The nginx setting for how long an idle connection stays open; it must exceed the load balancer's idle timeout.
 stopTimeout	The ECS setting for how long a container gets to shut down after it is told to stop.
 Elastic Load Balancing	The family of AWS load-balancing services, of which the Application Load Balancer is one.
-bucket	A named container for objects in Amazon S3.
-object storage	A kind of storage that keeps whole files as objects under keys, instead of in folders on a disk.
+bucket	A named container for objects in Amazon S3.	ch=40
+object storage	A kind of storage that keeps whole files as objects under keys, instead of in folders on a disk.	ch=40
 S3 Block Public Access	An S3 setting that stops any bucket or object from being made public.
 staging directory	A temporary folder where a render is built and checked before it is moved into place.
 safety net	A rule that stops a cleanup job from deleting when its inputs look wrong, such as a missing current version.

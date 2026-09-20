@@ -3,7 +3,7 @@
 
 In Part I you learned the language (Java), the tools (Maven, Git, Docker), and the web and database basics the rest of the book stands on. Part II builds the server side of the Secure Document Viewer on top of them.
 
-The backend is the part of the app users never see, and everything depends on it. It decides who you are, what you may open, and whether a request is honest. The browser is easy to bypass: anyone can send requests to the server with a script, so every rule that matters lives here and not in the user interface. That single idea explains most of the design you'll read in the next eight chapters, and it's why a good deal of this part is about refusing things politely and consistently.
+The backend is the part of the app users never see, and everything depends on it. It decides who you are, what you may open, and whether a request is honest. Anyone can bypass the browser by sending requests to the server with a script, so every rule that matters lives here and not in the user interface. That single idea explains most of the design you'll read in the next eight chapters, and it's why a good deal of this part is about refusing things politely and consistently.
 
 ## What the part covers
 

@@ -336,7 +336,7 @@ server:
 
 | Question | Session cookie | Token in the browser |
 |---|---|---|
-| Can the server end it instantly? | Yes: delete the session record | Not easily: it stays valid until it expires |
+| Can the server end it instantly? | Yes: delete the session record | Not without extra work: it stays valid until it expires |
 | Can JavaScript steal it? | Not with `httpOnly` | Often yes, because scripts must send it |
 | Does the server store state? | Yes, one record per sign-in | No |
 | Does the browser send it automatically? | Yes, which is why CSRF protection is needed | No, the app attaches it |

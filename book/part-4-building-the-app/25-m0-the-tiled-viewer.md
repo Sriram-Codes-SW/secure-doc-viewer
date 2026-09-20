@@ -38,7 +38,7 @@ project's own README explains why that fails: both tricks live entirely in the b
 undone in about ten seconds with the browser's developer tools. The protection has to live on the
 server, where the person at the keyboard can't reach it.
 
-The README lists each concern and the answer to it. **Table 25.1** condenses it.
+The README lists each concern and the answer to it. Table 25.1 condenses it.
 
 **Table 25.1 — Concerns and how the first version answers them**
 
@@ -250,6 +250,8 @@ sequenceDiagram
 *Figure 25.1 — One page, request by request (book-m0-mvp)*
 
 *Text description:* A sequence diagram with two participants, the browser and the server, and time running downward. The browser signs in and receives a session id, then asks for the grid of signed tile URLs. In a loop, for each tile, the browser sends a request and the server verifies the signature and expiry, checks that the session is live, loads the raw tile, applies the watermark and returns a PNG image. Last, the browser paints each tile at its column and row offset. Notice that the two checks happen once per tile, not once per page.
+<!-- source: request flow at book-m0-mvp: controller/SessionController.java, controller/PageTileUrlController.java, controller/TileController.java, security/SessionService.java, service/SignedUrlService.java, service/TileGenerationService.java, service/WatermarkService.java (all under src/main/java/com/example/securedocviewer/) and src/main/resources/static/index.html -->
+
 
 Three ideas follow from the figure.
 
@@ -378,7 +380,7 @@ Walk through `verifyAndDecode` in order, because the order is the design.
 1. **Shape.** Split at the first dot. Two parts, or reject.
 2. **Decode** the payload. Text that isn't base64url is rejected.
 3. **Recompute** the signature from the decoded payload with the server's secret and compare it with
-   the one supplied. The comparison uses `MessageDigest.isEqual`, a **constant-time** check: an
+   the one supplied. The comparison uses `MessageDigest.isEqual`, a constant-time comparison, a check whose running time does not depend on how many characters match: an
    ordinary string comparison stops at the first difference, so an attacker who measures response
    times could learn how many leading characters were right. A constant-time comparison always takes
    the same time.

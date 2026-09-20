@@ -282,7 +282,7 @@ Two habits show here. New columns on tables that already hold rows get a `DEFAUL
 
 ### 14.6 Transactions: `@Transactional` and `TransactionTemplate`
 
-A transaction groups several database changes so that either all succeed or none do: it either commits (makes them all permanent) or **rolls back** (undoes everything it did). Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
+A transaction groups several database changes so that either all succeed or none do: it either commits (makes them all permanent) or is rolled back. To **roll back** is to undo every change the transaction made. Without one, a crash halfway through "create the document row, then its page rows" would leave half a document. `UserAccountService` uses the simplest form: an annotation.
 
 *Pattern note: `TransactionTemplate` is the template method idea with a callback (Chapter 38, Section 38.5).*
 

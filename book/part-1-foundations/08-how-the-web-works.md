@@ -92,7 +92,7 @@ A URL has parts. Take `https://docs.example.com:8080/api/tiles?token=<signed-tok
 - `docs.example.com` is the host, the computer to contact;
 - `8080` is the port (Chapter 2);
 - `/api/tiles` is the path, chosen by the app;
-- `?token=<signed-token>` is the query string: extra named values after a question mark, in `name=value` pairs joined by `&`.
+- `?token=<signed-token>` is the **query string**: extra named values after a question mark, in `name=value` pairs joined by `&`.
 
 The path can also carry a value. The app's document endpoints use `/api/documents/{documentId}`, where `{documentId}` stands for a real identifier, so `/api/documents/123e4567-e89b-12d3-a456-426614174000` names one document. The app's real identifiers are random UUIDs, so they cannot be guessed by counting upward. A path that names a thing is called a **resource**, and the design style of naming resources by path and acting on them with methods is called **REST** (Chapter 12).
 
@@ -147,7 +147,7 @@ Two rows deserve comment. Despite its name, `401 Unauthorized` really means "not
 - `Retry-After` tells a client how many seconds to wait before trying again;
 - `Cookie` and `Set-Cookie` carry cookies (Section 8.6).
 
-The **body** carries the data: JSON for the app's API (Section 8.4), the bytes of an image for a tile, or the bytes of a PDF for an upload. A `GET` request usually has no body.
+A header in a request is a request header, and one in a response is a **response header**. The **body** carries the data. In a request, the data a client sends is the **request body**, such as the bytes of an uploaded PDF or a JSON document. In a response, the body is what the server returns: JSON for the app's API (Section 8.4) or the bytes of an image for a tile. A `GET` request usually has no body.
 
 The header names are case-insensitive, and there are dozens more, but these are enough to read almost everything the app sends. Section 8.7 covers a second group, the security headers.
 
@@ -251,8 +251,8 @@ At sign-in, the server creates a session (Chapter 1) and sends its identifier as
 
 The cookie is named `SDV_SESSION`, and three settings protect it:
 
-- `http-only: true` hides the cookie from JavaScript (the programming language that browsers run inside web pages; Part III covers its typed sibling, TypeScript) running in the page, so a script injected into the page (the attack is called cross-site scripting, or XSS) cannot steal it;
-- `same-site: strict` tells the browser to send it only for requests that start on the app's own site, which blocks a class of forged-request attacks;
+- `http-only: true` hides the cookie from JavaScript (the programming language that browsers run inside web pages; Part III covers its typed sibling, TypeScript) running in the page, so a script injected into the page (the attack is called **XSS**, for cross-site scripting) cannot steal it;
+- `same-site: strict` sets the cookie's **SameSite** rule. It tells the browser to send the cookie only for requests that start on the app's own site, which blocks a class of forged-request attacks;
 - `secure` makes the browser send it only over HTTPS. It is `false` by default so that local development over plain HTTP works, and the file's comment says it must be true wherever the app is served over HTTPS.
 
 The `timeout: 30m` line means a session ends after 30 minutes without a request. **Analogy.** The session cookie is a coat-check ticket. You hand over your coat at the desk (you sign in) and get a numbered ticket; whoever holds the ticket can collect the coat, which is why the ticket needs the three protections of Listing 8.3. The analogy breaks down in two ways. A coat-check ticket is used once, at the end, while the app checks the session again on every single tile request. And a coat-check ticket stays valid until the cloakroom closes, while a session ends after 30 idle minutes, and an administrator can cancel it at any time.
@@ -325,7 +325,7 @@ The server also sends headers whose only job is to tell the browser to be strict
 Reading them in turn:
 
 - **Content-Security-Policy** (CSP) is an allow-list (a list of what is permitted, with everything else refused) that tells the browser what a response may do. `default-src 'none'` means "load nothing from anywhere"; `frame-ancestors 'none'` means "no other page may embed this one in a frame". Since the API returns only JSON and images, it needs no permissions, so it grants none. If an attacker ever got script into a response, the browser would refuse to run it.
-- **Referrer-Policy: no-referrer** stops the browser from telling the next site which page the visitor came from. This matters because tile URLs carry signed tokens (Chapter 1). Without the policy, following a link from a page could leak a token in the `Referer` header.
+- **Referrer-Policy**: `no-referrer` stops the browser from telling the next site which page the visitor came from. This matters because tile URLs carry signed tokens (Chapter 1). Without the policy, following a link from a page could leak a token in the `Referer` header.
 - **Permissions-Policy** switches off browser features the app never uses (camera, microphone, location, payment), so nothing can request them.
 
 The tile endpoint sets one more header, the one that matters most for the watermark.
@@ -365,25 +365,27 @@ The consequence for this project: the Angular frontend (the pages you see, built
 
 *Path: `frontend/proxy.conf.json`*
 
-The Angular development server, on port 4200, forwards every request whose path starts with `/api` to the backend on 8080, so the browser sees only one origin. In the Docker stack a web server called nginx does the same job (Chapters 10 and 33). The project avoids opening cross-origin access (a browser feature called CORS) rather than granting it; there is no cross-origin configuration in the backend at `book-m6-final`. <!-- source: git grep for "cors" at book-m6-final finds none; frontend/nginx.conf and frontend/Dockerfile comments -->
+The Angular development server, on port 4200, forwards every request whose path starts with `/api` to the backend on 8080, so the browser sees only one origin. In the Docker stack a web server called nginx does the same job (Chapters 10 and 33). The project avoids opening cross-origin access (a browser feature called **CORS**, for cross-origin resource sharing) rather than granting it; there is no cross-origin configuration in the backend at `book-m6-final`. <!-- source: git grep for "cors" at book-m6-final finds none; frontend/nginx.conf and frontend/Dockerfile comments -->
 
 Figure 8.4 shows the two arrangements side by side. In both, the browser talks to one address only.
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Development
-        B1["Browser"] --> DEV["Angular development server on port 4200"]
-        DEV -->|"paths starting with /api"| API1["Backend on port 8080"]
+        direction LR
+        B1["Browser"] --> DEV["Angular dev server, port 4200"]
+        DEV -->|"paths starting with /api"| API1["Backend, port 8080"]
     end
-    subgraph Docker stack
-        B2["Browser"] --> NG["nginx web container, published on port 8081"]
-        NG -->|"paths starting with /api"| API2["Backend container on port 8080, not published"]
+    subgraph Docker["Docker stack"]
+        direction LR
+        B2["Browser"] --> NG["nginx, published on port 8081"]
+        NG -->|"paths starting with /api"| API2["Backend, port 8080, not published"]
     end
 ```
 
 *Figure 8.4 — How the browser sees one origin in development and in the Docker stack*
 
-*Text description:* Two separate left-to-right chains in labeled groups. In development, the browser talks to the Angular development server on port 4200, which forwards paths starting with `/api` to the backend on port 8080. In the Docker stack, the browser talks to an nginx container published on port 8081, which forwards the same paths to a backend container that is not published.
+*Text description:* Two separate left-to-right chains, drawn side by side in labeled groups. In development, the browser talks to the Angular development server on port 4200, which forwards paths starting with `/api` to the backend on port 8080. In the Docker stack, the browser talks to an nginx container published on port 8081, which forwards the same paths to a backend container that is not published.
 
 <!-- source: frontend/proxy.conf.json, docker-compose.yml and frontend/nginx.conf at book-m6-final -->
 

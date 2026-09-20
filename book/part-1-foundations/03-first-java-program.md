@@ -150,7 +150,7 @@ boolean fits = pageWidthPx <= tileSize;      // false
 String label = owner + " owns this";         // text joining
 ```
 
-Each line has the shape `type name = value;`. The `=` **assigns**: it stores the value on the right in the variable on the left. **Operators** combine values: `+ - * /` for arithmetic, `<=`, `<`, `==` (equal), `!=` (not equal) for comparison, and `&&` (and), `||` (or), `!` (not) for booleans. With `+`, text and other values are joined. Names follow a convention: start with a lowercase letter and capitalize each later word (`pageWidthPx`), called camel case. Java is case-sensitive, so `tileSize` and `TileSize` are different names.
+Each line has the shape `type name = value;`. The `=` **assigns**: it stores the value on the right in the variable on the left. **Operators** combine values: `+ - * /` for arithmetic, `<=`, `<`, `==` (equal), `!=` (not equal) for comparison, and `&&` (and), `||` (or), `!` (not) for booleans. With `+`, text and other values are joined. Names follow a convention: start with a lowercase letter and capitalize each later word (`pageWidthPx`), called **camel case**. Java is case-sensitive, so `tileSize` and `TileSize` are different names.
 
 Two more pieces of vocabulary. A variable declared `final` cannot be changed after it is set, which is the right choice for a value that should stay fixed. And a number written directly in code, such as `512`, is a **literal**. When the same number matters in several places, give it a name so its meaning is clear.
 

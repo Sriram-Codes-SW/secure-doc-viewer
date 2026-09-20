@@ -40,8 +40,8 @@ request was submitted, reviewed, corrected and re-reviewed several times before 
 
 ### 30.2 The upgrade
 
-The product owner instructed: "Start Phase 5 but can we use Spring Boot 4 if possible? Let us keep
-tech as new as long as it is a standard version." The implementer chose the latest GA (general
+The product owner asked to start Phase 5 and to use Spring Boot 4 if possible, on the principle of
+keeping the technology as new as it can be while it is still a standard release. The implementer chose the latest GA (general
 availability, meaning final, not preview) versions, checked on Maven Central, the public repository
 of Java libraries:
 
@@ -410,7 +410,7 @@ which the Angular app reads to route the user to the Account page. The class com
 lives here: "Enforced here, not just in the UI." A user who skips the screen and calls the API
 directly still gets refused.
 
-**Absolute lifetime.** The idle timeout from Chapter 29 slides: activity extends it. If something keeps
+**Absolute lifetime.** An absolute lifetime is a limit on how long a session may last after sign-in, however active it is. The idle timeout from Chapter 29 slides: activity extends it. If something keeps
 using a stolen or forgotten session, it never expires.
 
 **Listing 30.6 — `SessionLifetimeFilter` (book-m5-platform, simplified: imports and Javadoc trimmed)**
@@ -471,7 +471,7 @@ The final design, commit `82c24b6`, uses a 15-minute window and three rules.
 | Account-wide | 20 failures | only *unrecognised* devices |
 
 The third rule is what stops rotating addresses from buying unlimited guesses. The exemption is what
-stops the attack on victims: a device is **recognised** after a successful sign-in from it within the
+stops the attack on victims: a recognised device is a network address from which the account has signed in successfully within the
 last 30 days, and a recognised device isn't blocked by the account-wide count.
 
 **Listing 30.7 — `KnownDevices` (book-m5-platform, simplified: constructors, hash and normalization removed)**
@@ -874,8 +874,8 @@ before the change keep 256-pixel tiles. The review asked for explicit product-ow
 statement in the README's Limitations.
 
 The implementer laid the options out for the product owner. Now: normal reading at about 15 pages a minute before any pause, and about 30 minutes to copy a 500-page document by script. Earlier: about 3 pages a minute, and about 2.4 hours. Every tile is watermarked, so copies are traceable; the
-limit only slows copying. The product owner first asked how different limits for sensitive documents would work, which became an open idea: per-document sensitivity levels. Then the product owner decided: "I will go
-ahead with the current setup for the rate-limits and see how things go." The README records the
+limit only slows copying. The product owner first asked how different limits for sensitive documents would work, which became an open idea: per-document sensitivity levels. Then the product owner decided to go ahead with the
+current rate-limit setup and to watch how it works in practice. The README records the
 sign-off.
 <!-- source: decisions D6; PR #5 body; commits 66f7152, 51ea941 -->
 

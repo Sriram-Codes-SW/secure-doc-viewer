@@ -31,8 +31,10 @@ unit tests can't.
 by name to an application with accounts, ownership, sharing, an audit trail, upload and API
 hardening, a good reading experience and a container platform with continuous integration. At each
 step you saw the architecture blueprint change and read the decisions and challenges that caused the
-change. The recurring lesson is that the design that survived review was rarely the first one: the
-first version of nearly every protection had a gap that someone found by trying to get around it.
+change. The recurring lesson is that the design that survived review was rarely the first one:
+several of the early protections, such as the sign-in throttle, the tile links and the trusted client
+address, had a gap that a reviewer found by trying to get around them, and each was fixed and tested.
+That shows why review matters. It does not show that every gap was found.
 
 **Part V took the app toward production.** A security review is a method, not a mood: name your
 assets, your actors and their entry points, then attack your own work. Deployment brought HTTPS, a

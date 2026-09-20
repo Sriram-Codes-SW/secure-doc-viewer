@@ -843,52 +843,52 @@ In `DocumentDetail`, `sharedWith: string[] | null` is `null` for anyone who can'
 
 Example solution:
 
-   ```typescript
-   type Direction = 'next' | 'previous';
+```typescript
+type Direction = 'next' | 'previous';
 
-   function step(current: number, d: Direction): number {
-     return d === 'next' ? current + 1 : current - 1;
-   }
-   ```
+function step(current: number, d: Direction): number {
+  return d === 'next' ? current + 1 : current - 1;
+}
+```
 
-   `step(3, 'back')` is a compile error.
+`step(3, 'back')` is a compile error.
 
 ### Exercise 19.3 ★★ Extend IdleState
 
-In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative simply falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
+In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
 
 ### Exercise 19.4 ★★ A fetchOrNull helper
 
 Example solution:
 
-   ```typescript
-   async function fetchOrNull(url: string, signal: AbortSignal): Promise<Response | null> {
-     try {
-       return await fetch(url, { signal, cache: 'no-store' });
-     } catch {
-       return null;
-     }
-   }
-   ```
+```typescript
+async function fetchOrNull(url: string, signal: AbortSignal): Promise<Response | null> {
+  try {
+    return await fetch(url, { signal, cache: 'no-store' });
+  } catch {
+    return null;
+  }
+}
+```
 
-   An aborted request also gives `null`, so the caller must check `signal.aborted` to tell the two apart, as the viewer does.
+An aborted request also gives `null`, so the caller must check `signal.aborted` to tell the two apart, as the viewer does.
 
 ### Exercise 19.5 ★★★ A generic firstWhere
 
 Example solution:
 
-   ```typescript
-   function firstWhere<T>(items: T[], test: (item: T) => boolean): T | null {
-     for (const item of items) {
-       if (test(item)) {
-         return item;
-       }
-     }
-     return null;
-   }
+```typescript
+function firstWhere<T>(items: T[], test: (item: T) => boolean): T | null {
+  for (const item of items) {
+    if (test(item)) {
+      return item;
+    }
+  }
+  return null;
+}
 
-   const firstLoaded = firstWhere(tiles, (t) => t.status === 'loaded');
-   ```
+const firstLoaded = firstWhere(tiles, (t) => t.status === 'loaded');
+```
 
 ### Exercise 19.6 ★★ Tile arithmetic
 
@@ -934,16 +934,16 @@ Every screen whose CSS uses `var(--accent)`: buttons, the active navigation unde
 
 Example:
 
-   ```typescript
-   readonly showHint = signal(false);
-   ```
+```typescript
+readonly showHint = signal(false);
+```
 
-   ```html
-   <button (click)="showHint.update((v) => !v)">Toggle hint</button>
-   @if (showHint()) {
-     <p>This is the hint.</p>
-   }
-   ```
+```html
+<button (click)="showHint.update((v) => !v)">Toggle hint</button>
+@if (showHint()) {
+  <p>This is the hint.</p>
+}
+```
 
 ### Exercise 21.4 ★★ Check the contrast
 
@@ -1017,14 +1017,14 @@ The guard only decides which screen the browser shows. The document's tiles come
 
 Example:
 
-   ```typescript
-   {
-     path: 'about',
-     loadComponent: () => import('./features/about/about.component').then((m) => m.AboutComponent),
-   },
-   ```
+```typescript
+{
+  path: 'about',
+  loadComponent: () => import('./features/about/about.component').then((m) => m.AboutComponent),
+},
+```
 
-   placed before the catch-all `**` route (routes match in order).
+placed before the catch-all `**` route (routes match in order).
 
 ### Exercise 23.5 ★★★ Keys and text fields
 
@@ -1043,13 +1043,13 @@ Typing "1" or "-" in the page box would also trigger the key actions: "-" would 
 
 Add inside the `describe` block:
 
-   ```typescript
-   it('is active when only a sixth of a long timeout has passed', () => {
-     expect(idleState(t0 + 100_000, t0, 600)).toEqual({ kind: 'active' });
-   });
-   ```
+```typescript
+it('is active when only a sixth of a long timeout has passed', () => {
+  expect(idleState(t0 + 100_000, t0, 600)).toEqual({ kind: 'active' });
+});
+```
 
-   With 600 seconds of timeout, 500 seconds are left; the warning window is the smaller of 300 seconds and half the timeout (300), so 500 is outside it. Run with `npm test` in `frontend/`.
+With 600 seconds of timeout, 500 seconds are left; the warning window is the smaller of 300 seconds and half the timeout (300), so 500 is outside it. Run with `npm test` in `frontend/`.
 
 ### Exercise 24.2 ★ Two requests, one expectation
 
@@ -1059,17 +1059,17 @@ Add inside the `describe` block:
 
 Example:
 
-   ```typescript
-   it('is signed in after login', () => {
-     const session = TestBed.inject(SessionService);
-     session.login('someone', 'pw').subscribe();
-     TestBed.inject(HttpTestingController).expectOne('/api/auth/login')
-       .flush({ username: 'someone', role: 'READER', sessionTimeoutSeconds: 1800, mustChangePassword: false });
-     expect(session.isLoggedIn()).toBe(true);
-   });
-   ```
+```typescript
+it('is signed in after login', () => {
+  const session = TestBed.inject(SessionService);
+  session.login('someone', 'pw').subscribe();
+  TestBed.inject(HttpTestingController).expectOne('/api/auth/login')
+    .flush({ username: 'someone', role: 'READER', sessionTimeoutSeconds: 1800, mustChangePassword: false });
+  expect(session.isLoggedIn()).toBe(true);
+});
+```
 
-   Use the same `TestBed.configureTestingModule` providers as in Listing 24.2.
+Use the same `TestBed.configureTestingModule` providers as in Listing 24.2.
 
 ### Exercise 24.4 ★★ Both themes
 
@@ -1377,7 +1377,7 @@ A model answer. `.env`: strong unique `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `SIGNIN
 
 ### Exercise 34.2 ★ Read a command
 
-`docker compose exec -T mysql` runs a command in the running `mysql` container; `-T` disables the pseudo-terminal so redirecting the output to a file doesn't mix in terminal control characters. `sh -c '...'` starts a shell inside the container. The single quotes stop the host shell from expanding `$MYSQL_ROOT_PASSWORD` and `$MYSQL_DATABASE`; the container's shell expands them from the container's own environment, so the password doesn't appear in your terminal or history. `exec mysqldump` replaces the shell with the dump program. `--single-transaction` reads a consistent snapshot of the InnoDB tables without long locks; `--routines` includes stored routines; `-u root -p"..."` gives the user and password; the last word is the database name. `> securedocs.sql` writes the dump to a file on the host.
+`docker compose exec -T mysql` runs a command in the running `mysql` container; `-T` disables the pseudo-terminal so redirecting the output to a file doesn't mix in terminal control characters. `sh -c '...'` starts a shell inside the container. The single quotes stop the host shell from expanding `$MYSQL_ROOT_PASSWORD` and `$MYSQL_DATABASE`; the container's shell expands them from the container's own environment, so the password doesn't appear in your terminal or history. `export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"` puts the password into the environment of the dump program, which reads it as the default password; that keeps it out of the program's argument list, which is what a process listing shows (the README at the tag uses `-p"$MYSQL_ROOT_PASSWORD"` instead, which puts the password in that list and makes MySQL print a warning). The environment is not perfect either, and MySQL 8.4's manual calls the variable deprecated. `exec mysqldump` replaces the shell with the dump program. `--single-transaction` reads a consistent snapshot of the InnoDB tables without long locks; `--routines` includes stored routines; `-u root` gives the user; the last word is the database name. `> securedocs.sql` writes the dump to a file on the host.
 
 ### Exercise 34.3 ★★ Break the match
 
@@ -1545,7 +1545,7 @@ Against: rendering is CPU-heavy but happens inside the request today, bounded by
 
 ### Exercise 40.1 ★ Map the pieces
 
-`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). If you can do only two, take Secrets Manager plus RDS, then S3, because each improves recoverability without a second instance. Caddy's replacement, the load balancer, belongs to the later move F of Figure 41.5.
+`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). They belong in one cutover, because a Fargate task has only ephemeral storage and cannot run first with a local database and tile folders (move A of Figure 41.5). Caddy's replacement, the load balancer with its certificate and DNS record, is part of that first cutover too, so that even one task is reachable, but it is not one of the three state moves.
 
 ### Exercise 40.2 ★ Code or documentation?
 
@@ -1575,7 +1575,7 @@ Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and th
 
 ### Exercise 41.2 ★★ Order the moves
 
-(a) needs move A (Secrets Manager and a task role), on top of move 0, the one task on Fargate that makes a task role possible. (b) needs move B (RDS with a Multi-AZ standby). (c) needs moves C, D, E and F: C (S3 tiles behind a storage seam), because every task must reach the same tiles; D (ElastiCache for sessions and counters), because a second task with in-memory state would double the limits and forget sessions; E (one runner for scheduled jobs), because otherwise every job runs three times; and F (the ALB, ACM, Route 53 and the tasks). So the order is A, B, C, D, E, F, with alarms, backups and the restore drill (G) last. Moves A to C alone do not give you three copies: they improve one instance, but the shared state and the front door are still missing.
+(a) and (b) are both covered by move A, the one cutover: Secrets Manager and a task role take the signing secret out of the `.env` file, and RDS with a Multi-AZ standby survives the loss of a database host. They come together because a Fargate task has only ephemeral storage, so the task cannot run first with a local database and tile folders (an EFS volume could bridge the gap, at the cost of a service you throw away). (c) needs moves B, C and D on top: B (ElastiCache for sessions and counters), because a second task with in-memory state would double the limits and forget sessions; C (one runner for scheduled jobs), because otherwise every job runs three times; and D (the second and third tasks). Tiles are already shared through S3 from move A. So the order is A, B, C, D, with alarms, backups and the restore drill (E) last. Move A alone does not give you three copies: it improves one instance, but the shared session and counter state and the single job runner are still missing.
 
 ### Exercise 41.3 ★★★ Design the least-privilege role
 
@@ -1583,4 +1583,4 @@ Service task role: `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on `arn:aws
 
 ### Exercise 41.4 ★★★ Argue for staying
 
-A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take moves A to C (Secrets Manager, RDS, S3) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.
+A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take move A (Secrets Manager, RDS and S3 in one cutover) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.

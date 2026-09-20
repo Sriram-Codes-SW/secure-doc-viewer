@@ -19,9 +19,16 @@ end
 -- ★ runs get an accessible name for screen readers (HTML and EPUB only)
 function Str(el)
   if not is_web then return nil end
-  local pre, stars, post = el.text:match('^(.-)(★+)(.*)$')
-  if not stars then return nil end
-  local n = utf8.len(stars)
+  -- (a Lua pattern like '★+' would repeat only the last BYTE of the character, so walk the run by hand)
+  local s = el.text
+  local first = s:find('★', 1, true)
+  if not first then return nil end
+  local pos, n = first, 0
+  while s:sub(pos, pos + 2) == '★' do
+    n = n + 1
+    pos = pos + 3
+  end
+  local pre, stars, post = s:sub(1, first - 1), s:sub(first, pos - 1), s:sub(pos)
   local label = STAR_WORDS[n] or (n .. ' stars')
   return {
     pandoc.Str(pre),

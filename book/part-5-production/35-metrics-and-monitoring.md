@@ -229,7 +229,7 @@ The endpoint came from a finding by the Senior Technical Manager review agent (C
 
 ### 35.10 Rates, not totals
 
-A counter is a running total since the last restart, so its raw value is nearly useless: "18,432 tiles served" says nothing about whether that happened in an hour or a month. What you want is a **rate**, how fast the counter rises. Prometheus gives you two functions for this. They belong to Prometheus's query language, PromQL, and the examples in this section are the book's own illustrations, not queries stored in the repository.
+A counter is a running total since the last restart, so its raw value is nearly useless: "18,432 tiles served" says nothing about whether that happened in an hour or a month. What you want is a **rate**, how fast the counter rises. Prometheus gives you two functions for this. They belong to Prometheus's query language, **PromQL**, and the examples in this section are the book's own illustrations, not queries stored in the repository.
 
 *Pattern note: Rates, errors and durations are the RED idea (Chapter 39, Section 39.15).*
 

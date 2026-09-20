@@ -86,6 +86,54 @@ project's Maven wrapper (`./mvnw`) downloads the right version (3.9.16) the firs
 > them, with `git show <tag>:<path>` (Chapter 7). Table IV.3 in the Part IV introduction lists what
 > each tag needs.
 
+**Optional: build the older tags (JDK 21 and Maven).** Skip this unless you want to run
+`book-m0-mvp` to `book-m4-reading` yourself. It keeps JDK 25 for everything else.
+
+1. **Install JDK 21 next to JDK 25.** Use the same vendor as before (Eclipse Temurin, from the
+   Adoptium project at https://adoptium.net) or your package manager's JDK 21. On macOS,
+   `brew install --cask temurin@21`. On Linux, install your distribution's `openjdk-21` package or
+   unpack the Temurin 21 archive in its own folder. Installing a second JDK does not remove the first.
+2. **Install Maven 3.9.** Download the binary archive from the Apache Maven project
+   (https://maven.apache.org/download.cgi), unpack it, and add its `bin` folder to your `PATH`. On
+   macOS, `brew install maven` gives a current 3.9 release; on Linux, your package manager's Maven may
+   be older than 3.9, so check the version in step 4 and use the archive if it is.
+3. **Point one terminal at JDK 21.** Set `JAVA_HOME` to the JDK 21 folder and put its `bin` folder
+   first on the `PATH`, only in the terminal window where you build an older tag. Replace the path
+   with the folder your installer created.
+
+   In bash (macOS, Linux, Git Bash on Windows):
+
+   ```bash
+   export JAVA_HOME="<path to your JDK 21 folder>"
+   export PATH="$JAVA_HOME/bin:$PATH"
+   ```
+
+   On macOS you can find the folder with `/usr/libexec/java_home -v 21`.
+
+   In Windows PowerShell:
+
+   ```powershell
+   $env:JAVA_HOME = "<path to your JDK 21 folder>"
+   $env:Path = "$env:JAVA_HOME\bin;$env:Path"
+   ```
+
+   In Windows cmd:
+
+   ```text
+   set JAVA_HOME=<path to your JDK 21 folder>
+   set PATH=%JAVA_HOME%\bin;%PATH%
+   ```
+
+4. **Check it.** In that terminal:
+
+   ```bash
+   java -version
+   mvn -version
+   ```
+
+   `java -version` should report 21, and `mvn -version` should report Maven 3.9 and Java 21. Close
+   the terminal when you are done, and the next one uses JDK 25 again.
+
 ## Step 4. Node.js 24
 
 Node.js runs JavaScript outside a browser, and npm (installed with it) downloads the libraries

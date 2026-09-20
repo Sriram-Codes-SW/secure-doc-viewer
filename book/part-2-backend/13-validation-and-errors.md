@@ -313,7 +313,7 @@ Two smaller rules follow from the same idea. First, decide which exceptions carr
 
 ### 13.9 Limits: upload size, page count, decompression bombs
 
-Validation isn't only about shape; it's about *size and cost*. A PDF can be small on disk and enormous once drawn: a **decompression bomb**, a file crafted to expand into something that exhausts memory or time. So the project sets limits in layers, cheapest first, and each layer rejects with an ordinary error.
+Validation isn't only about shape; it's about *size and cost*. A PDF can be small on disk and enormous once drawn: a **decompression bomb**, a file crafted to expand into something that exhausts memory or time. So the project sets limits in layers, cheapest first, and each layer rejects with an ordinary error. The last layers deal with **concurrency**: several things happening at overlapping times, for example many requests handled by many threads.
 
 **Table 13.3 — The layers of upload limits (`book-m6-final`)**
 

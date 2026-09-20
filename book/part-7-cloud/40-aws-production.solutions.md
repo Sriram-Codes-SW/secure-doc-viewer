@@ -3,7 +3,7 @@
 
 ### Exercise 40.1 ★ Map the pieces
 
-`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). If you can do only two, take Secrets Manager plus RDS, then S3, because each improves recoverability without a second instance. Caddy's replacement, the load balancer, belongs to the later move F of Figure 41.5.
+`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). They belong in one cutover, because a Fargate task has only ephemeral storage and cannot run first with a local database and tile folders (move A of Figure 41.5). Caddy's replacement, the load balancer with its certificate and DNS record, is part of that first cutover too, so that even one task is reachable, but it is not one of the three state moves.
 
 ### Exercise 40.2 ★ Code or documentation?
 

@@ -34,7 +34,7 @@ where most of the learning is.
 
 The project was built in stages, and the repository keeps a bookmark (a git tag) at the end of
 each stage. Part IV walks through those stages in order, so you watch the design grow: from a
-one-page demo that signs anyone in with just a name, to an application that has survived several
+one-page demo that signs anyone in with only a name, to an application that has survived several
 rounds of independent review. Along the way you meet the bugs and the review findings that shaped
 it. They are told as stories: the problem, how it was found, the fix and the lesson.
 

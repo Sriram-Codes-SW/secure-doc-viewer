@@ -137,17 +137,23 @@ So the page is a grid of 4 rows by 3 columns, 12 tiles. Nine are full 512 × 512
 
 ```mermaid
 flowchart TB
-    U["Uploaded file is streamed into a file in a staging folder"] --> S["Check for the PDF marker in the first kilobyte"]
-    S --> L["Open the PDF and check the page count and page size"]
-    L --> R["Render each page at 150 DPI into an image"]
-    R --> T["Slice each page image into 512 pixel tiles"]
-    T --> P["Save each tile as a PNG under the staging folder"]
-    P --> M["Move the staging folder to the version folder in one step"]
+    subgraph ROW1["Accept and check"]
+        direction LR
+        U["Stream the upload into the staging folder"] --> S["Check the PDF marker"]
+        S --> L["Check page count and page size"]
+    end
+    subgraph ROW2["Render and publish"]
+        direction LR
+        R["Render each page at 150 DPI"] --> T["Slice into 512 pixel tiles"]
+        T --> P["Save PNG files in staging"]
+        P --> M["Move staging to the version folder"]
+    end
+    ROW1 --> ROW2
 ```
 
 *Figure 17.1 — How an uploaded PDF becomes tiles on disk*
 
-*Text description:* A top-down chain of six steps. The upload is streamed into a staging folder, the PDF marker is checked, and the PDF is opened and checked for page count and size. Each page is then rendered at 150 DPI, sliced into 512-pixel tiles and saved as PNG files. Finally the staging folder is moved to the version folder in one step. The cheap checks come first and the expensive rendering last.
+*Text description:* A chain in two rows, read left to right and then down, with seven boxes. The upload is streamed into a staging folder, the PDF marker is checked, and the PDF is opened and checked for page count and size. Each page is then rendered at 150 DPI, sliced into 512-pixel tiles and saved as PNG files. Finally the staging folder is moved to the version folder in one step. The cheap checks come first and the expensive rendering last.
 
 <!-- source: TileGenerationService.java at book-m6-final -->
 
@@ -315,7 +321,7 @@ public SignedTilePayload verifyAndDecode(String token) {
 
 Read it as a recipe. `issueToken` fills in one tile's details plus an expiry time (now plus the configured lifetime), writes them as one canonical string, encodes it, and appends the HMAC. `verifyAndDecode` splits the token at the dot, recomputes the HMAC from the received payload with its own key, and compares. A mismatch means the token was altered or forged, so it is refused with `InvalidTokenException`, which `GlobalExceptionHandler` maps to `401`. Only after the signature checks out is the payload parsed and the expiry compared with the clock.
 
-Two details matter. `constantTimeEquals` compares with `MessageDigest.isEqual`, which takes the same time however many characters match. An attacker therefore can't learn a signature one character at a time by measuring how fast the server refuses ("Avoids leaking timing information about how much of the signature matched", per the source). And the signature covers every field, which the class comment states directly: holders "cannot forge a new one, extend it, or repurpose it for a different tile". The key never leaves the server, and `ViewerProperties` refuses to start without one at least 32 characters long (Chapter 13).
+Two details matter. The first is a **constant-time comparison**, a check whose running time does not depend on how many characters match. `constantTimeEquals` compares with `MessageDigest.isEqual`, which takes the same time however many characters match. An attacker therefore can't learn a signature one character at a time by measuring how fast the server refuses ("Avoids leaking timing information about how much of the signature matched", per the source). And the signature covers every field, which the class comment states directly: holders "cannot forge a new one, extend it, or repurpose it for a different tile". The key never leaves the server, and `ViewerProperties` refuses to start without one at least 32 characters long (Chapter 13).
 
 Figure 17.2 shows the life of a token: issued once for a whole page, then presented once per tile.
 
@@ -475,19 +481,25 @@ Figure 17.3 lays the checks out in the order `TileController` applies them, with
 
 ```mermaid
 flowchart TB
-    Q["Tile request with a token"] --> A0["Spring Security: a live signed-in session, else 401"]
-    A0 --> A1["Signature and expiry, else 401"]
-    A1 --> A2["Session binding matches this session, else 401"]
-    A2 --> A3["Per-user rate limit, else 429"]
-    A3 --> A4["The user may still view the document, else 404"]
-    A4 --> A5["Token version equals the current version, else 410"]
-    A5 --> A6["Server-wide tile work limit, else 503"]
-    A6 --> A7["Load, watermark and encode the tile"]
+    subgraph ROW1["Who is asking"]
+        direction LR
+        Q["Tile request with a token"] --> A0["Live session, else 401"]
+        A0 --> A1["Signature and expiry, else 401"]
+        A1 --> A2["Session binding, else 401"]
+    end
+    subgraph ROW2["May they have it now"]
+        direction LR
+        A3["Rate limit, else 429"] --> A4["Still allowed to view, else 404"]
+        A4 --> A5["Current version, else 410"]
+        A5 --> A6["Work limit, else 503"]
+        A6 --> A7["Load, watermark, encode"]
+    end
+    ROW1 --> ROW2
 ```
 
 *Figure 17.3 — The chain of checks a tile request passes*
 
-*Text description:* A top-down chain of eight steps, each with the status returned when it fails: a live session (`401`), signature and expiry (`401`), session binding (`401`), rate limit (`429`), access to the document (`404`), token version (`410`) and the server-wide work limit (`503`). Only a request that passes all of them reaches the last step, which loads, watermarks and encodes the tile.
+*Text description:* A chain in two rows, read left to right and then down, of eight steps after the request, each with the status returned when it fails: a live session (`401`), signature and expiry (`401`), session binding (`401`), rate limit (`429`), access to the document (`404`), token version (`410`) and the server-wide work limit (`503`). Only a request that passes all of them reaches the last step, which loads, watermarks and encodes the tile.
 
 <!-- source: TileController.getTile at book-m6-final -->
 

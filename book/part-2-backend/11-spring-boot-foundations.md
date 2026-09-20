@@ -300,7 +300,7 @@ Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-sta
 
 A comment in the project's `pom.xml` notes that "Spring Boot 4 splits the old all-in-one starters into focused ones", which is why the web starter is named `webmvc` and Flyway has its own starter. Other dependencies (the MySQL driver, PDFBox, the Prometheus registry) are ordinary libraries with no starter.
 
-**Where do the versions come from?** The top of the `pom.xml` declares `spring-boot-starter-parent` version `4.1.1` as its parent. That parent contains a table of tested versions for hundreds of libraries, so most dependencies in the file have *no version number at all*: Maven takes it from the parent. Upgrading Spring Boot upgrades the whole tested set at once.
+**Where do the versions come from?** The top of the `pom.xml` declares `spring-boot-starter-parent` version `4.1.1` as its **parent POM**, a Maven project file that other projects inherit defaults from, such as a tested list of library versions. That parent contains a table of tested versions for hundreds of libraries, so most dependencies in the file have *no version number at all*: Maven takes it from the parent. Upgrading Spring Boot upgrades the whole tested set at once.
 
 Auto-configuration is the second half of the trick. When Spring Boot starts, it looks at what is on the classpath and at your settings, and creates sensible beans for you. With the JPA starter and a MySQL driver present and `spring.datasource.url` set, it builds the database connection pool and the transaction manager without you writing a line. With the Flyway starter present, it runs the migrations at startup (Chapter 14). With the web starter, it starts Tomcat. If you define your own bean of the same kind, yours takes priority: that's exactly what `SecurityConfig` does when it declares its own `PasswordEncoder` and `SecurityFilterChain` (Chapter 15). The rule of thumb is that Boot provides a default and you override only what you must.
 
@@ -322,7 +322,7 @@ log.info("Created initial admin account '{}' from BOOTSTRAP_ADMIN_PASSWORD.", us
 
 *Path: `src/main/java/com/example/securedocviewer/account/BootstrapAdmin.java`*
 
-The logger is created once per class and tagged with the class name, so every line says which class wrote it. The `{}` in the message is a placeholder that SLF4J fills with the arguments that follow. Use placeholders, not string concatenation: the text is only assembled if that level is switched on, which is cheaper.
+The logger is created once per class and tagged with the class name, so every line says which class wrote it. The `{}` in the message is a placeholder that SLF4J fills with the arguments that follow. Use placeholders, not string concatenation: the text is only assembled if that level is switched on, which is cheaper. That severity label is the **log level**: a label such as `error`, `warn`, `info` or `debug` that says how important a log line is, so that you can filter them.
 
 **Table 11.3 — Log levels**
 

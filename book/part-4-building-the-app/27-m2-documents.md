@@ -32,8 +32,9 @@ request, were not recorded at all (`TM-9`).
 The reviewers, AI review agents playing a product owner and a senior technical manager, listed more. There was no delete, rename or replace. Uploads that failed showed a raw error (`PO-8`). The audit log had only tile hits, truncated ids and no filters or export (`PO-12`). And the document list had no owner, date or search (`PO-13`). Pull request #2 answers `PO-4`, `PO-5`, `PO-6`, `PO-8`, `PO-12`, `PO-13` and
 `TM-7`, `TM-8`, `TM-9`.
 
-The product owner also made one design choice when asked how visibility should work: "Go ahead with
-Phase 2, users plus everyone." That means two kinds of visibility. A document can be shared with named users, or it can be open to everyone who is signed in.
+The product owner also made one design choice when asked how visibility should work. They approved
+Phase 2 with both options: sharing with named users, and a document open to everyone. That means two
+kinds of visibility. A document can be shared with named users, or it can be open to everyone who is signed in.
 <!-- source: PR #2 body; reviews record; decisions D15 -->
 
 ### 27.2 Ownership and visibility
@@ -320,7 +321,7 @@ built from the Spring Security authentication.
 
 Note that the same rule is written twice: once as a database query (for the cheap per-tile check and
 for the list) and once as Java (for operations that already loaded the entity). The two must agree,
-which is why the integration test in Section 27.11 exercises both paths.
+which is why the integration test in Section 27.14 exercises both paths.
 <!-- source: DocumentRepository.java, DocumentService.java at book-m2-documents -->
 
 ### 27.6 Sharing, and the share picker
@@ -389,7 +390,7 @@ becomes a flooding problem, fixed in Chapter 30, where one `PAGE_VIEWED` event r
 
 The admin screen filters events by type, user and document, pages through them, lets an
 administrator click a user or document to filter by it, and exports the result as CSV. A retention
-job removes events older than a configurable number of days (180 by default), once a day.
+job removes events older than a configurable number of days (180 by default), once a day. The schedule is a cron expression, a compact timetable with fields for second, minute, hour, day, month and weekday. The default is `0 30 3 * * *`, which means 03:30:00 every day, and it can be changed in configuration.
 
 **Listing 27.7 — `AuditLogService.record` (book-m2-documents, simplified: one method)**
 
@@ -759,7 +760,7 @@ from "unshared", which the "access lost" screen of Chapter 30 handles in the int
 ### Decision: users plus everyone
 
 **The decision.** Two visibilities: private with explicit shares, and everyone. **Why.** The product
-owner chose it ("Go ahead with Phase 2, users plus everyone"). **What it costs.** No groups, so
+owner chose to have both per-user sharing and an open-to-everyone setting in Phase 2. **What it costs.** No groups, so
 sharing with ten people is ten shares.
 <!-- source: decisions D15 -->
 

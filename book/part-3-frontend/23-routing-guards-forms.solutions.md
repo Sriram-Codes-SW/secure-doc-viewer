@@ -17,14 +17,14 @@ The guard only decides which screen the browser shows. The document's tiles come
 
 Example:
 
-   ```typescript
-   {
-     path: 'about',
-     loadComponent: () => import('./features/about/about.component').then((m) => m.AboutComponent),
-   },
-   ```
+```typescript
+{
+  path: 'about',
+  loadComponent: () => import('./features/about/about.component').then((m) => m.AboutComponent),
+},
+```
 
-   placed before the catch-all `**` route (routes match in order).
+placed before the catch-all `**` route (routes match in order).
 
 ### Exercise 23.5 ★★★ Keys and text fields
 

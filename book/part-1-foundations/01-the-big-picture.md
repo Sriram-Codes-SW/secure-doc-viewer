@@ -131,7 +131,7 @@ The *Database* in the figure is a separate program that stores the app's account
 
 ### 1.6 The parts of the app and the tools you'll meet
 
-The app has four moving parts, and this book has a part for each layer of tooling around them. Table 1.1 is the map. Each tool in it is explained where the book teaches it, so treat the names as labels for now.
+The app has four moving parts, and this book has a part for each layer of tooling around them. The **backend** is the part that runs on a server and holds the data and the rules. The **frontend** is the part that runs in your browser and draws the pages you see. Table 1.1 is the map. Each tool in it is explained where the book teaches it, so treat the names as labels for now.
 
 **Table 1.1 — The parts of the app and the tools that build them**
 
@@ -203,7 +203,7 @@ The analogy breaks down in one respect: a museum guard can see you. The server c
 
 Put the pieces together by following one reader, `reader.one`, as they open page 3 of a document that was shared with them. Every step is a request from the browser to the server (Chapter 8 teaches the vocabulary), and the paths in this list are the app's real ones.
 
-1. **Sign in.** The browser sends the username and password to `/api/auth/login`. The server checks them, starts a session, and answers with a session cookie: a small piece of text the browser stores and sends back with every later request, so the server knows which session it is.
+1. **Sign in.** The browser sends the username and password to `/api/auth/login`. The server checks them, starts a session, and answers with a **session cookie**: a small piece of text the browser stores and sends back with every later request, so the server knows which session it is.
 2. **List the library.** The browser asks `/api/documents`. The server answers with only the documents this reader may open, not the whole library.
 3. **Open a document.** The browser asks `/api/documents/{documentId}`, where `{documentId}` stands for the document's identifier. The answer describes each page: how many rows and columns of tiles it has, and how big each is. It contains no image and no link to a PDF.
 4. **Ask for page 3's tile addresses.** The browser asks `/api/documents/{documentId}/pages/3/tile-urls`. The server checks permission again and answers with a grid of signed addresses of the form `/api/tiles?token=<signed-token>`, one per tile: 12 for a letter page.

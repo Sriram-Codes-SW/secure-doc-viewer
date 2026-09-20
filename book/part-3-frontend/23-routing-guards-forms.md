@@ -183,16 +183,16 @@ Figure 23.1 shows the decision `authGuard` and `roleGuard` make, and Table 23.1 
 In the first row, the address is *encoded* (`%2F` for `/`, `%3F` for `?`) so that it can travel inside another address as a query value. After the reader signs in, the login component decodes and validates it (Section 23.8) and returns them to the same page.
 
 ```mermaid
-flowchart TB
+flowchart LR
     A["Visit a guarded route"] --> B{"Signed in?"}
-    B -->|no| C["Redirect to login with returnUrl"]
-    B -->|yes| D{"Password must be changed, and not already on the account page?"}
-    D -->|yes| E["Redirect to account with required and returnUrl"]
-    D -->|no| F{"Does the route need specific roles?"}
+    B -->|no| C["Sign-in page, with returnUrl"]
+    B -->|yes| D{"Password change pending?"}
+    D -->|yes| E["Account page, with returnUrl"]
+    D -->|no| F{"Route needs roles?"}
     F -->|no| G["Allow"]
-    F -->|yes| H{"Does the user have one of the roles?"}
+    F -->|yes| H{"User has one?"}
     H -->|yes| G
-    H -->|no| I["Redirect to the documents list"]
+    H -->|no| I["Documents list"]
 ```
 
 *Figure 23.1 — The route guard decision flow (`authGuard`, then `roleGuard`)*
@@ -201,7 +201,7 @@ flowchart TB
 
 <!-- source: auth.guard.ts at book-m6-final; roleGuard runs authGuard first, then checks hasAnyRole -->
 
-The first two questions belong to `authGuard`, which every guarded route uses. `roleGuard` runs `authGuard` first and adds the last two questions. Every "redirect" leaves the reader somewhere that makes sense, and none of the boxes says "deny with an error": the guard's job is to steer, and the server does the refusing (Section 23.4).
+In the diagram, "password change pending" stands for the guard's exact test: a change is required and the visit is not already to the account page, so the account page itself always opens. The first two questions belong to `authGuard`, which every guarded route uses. `roleGuard` runs `authGuard` first and adds the last two questions. Every "redirect" leaves the reader somewhere that makes sense, and none of the boxes says "deny with an error": the guard's job is to steer, and the server does the refusing (Section 23.4).
 
 Figure 23.2 follows one signed-out visit from start to finish, including the round trip of `returnUrl`.
 

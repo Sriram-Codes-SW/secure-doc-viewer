@@ -221,6 +221,8 @@ sequenceDiagram
 *Figure 26.1 — Sign-in and the two cookies (book-m1-accounts)*
 
 *Text description:* A sequence diagram between the browser and the server. First the browser asks for the current user without a cookie, and the server answers 401 and sets a readable XSRF-TOKEN cookie. The browser then posts the username and password with that token in a header. The server normalizes the name, checks the sign-in throttle and authenticates, then creates a new session id, registers it and rotates the CSRF token. The reply carries the httpOnly session cookie and a new CSRF cookie, and later requests send both. Notice the two different cookies and that the token is replaced at sign-in.
+<!-- source: sign-in flow at book-m1-accounts: controller/AuthController.java (login, rotateCsrfToken), security/LoginThrottle.java, security/DatabaseUserDetailsService.java, security/SecurityConfig.java, security/SpaCsrfTokenRequestHandler.java (under src/main/java/com/example/securedocviewer/) and application.yml session cookie settings -->
+
 
 Now the code that implements the server's half.
 
@@ -384,8 +386,9 @@ server:
 
 *Path: `src/main/resources/application.yml`*
 
-The session cookie is named `SDV_SESSION`, is `http-only` and `same-site: strict`, and lasts 30 idle
-minutes, extended by every request (a **sliding** timeout). The `secure` flag makes a browser send the
+The session cookie is named `SDV_SESSION`, is `http-only` and `same-site: strict`, and has a 30-minute
+idle timeout: the session ends after that long without a request, and every request extends it (a
+**sliding** timeout). The `secure` flag makes a browser send the
 cookie only over HTTPS; it must be true wherever the app is served over HTTPS, and is driven by an
 environment variable so local development over plain HTTP still works.
 <!-- source: SecurityConfig.java, application.yml at book-m1-accounts; decisions D3 -->
@@ -592,7 +595,7 @@ Two guards arrive, and each counts something different on purpose.
 says why: "signing in again (or in several tabs/browsers at once) doesn't hand out a fresh
 allowance." At m0 a script could sign in again to reset a per-session limit (`TM-3`). The limit is a
 **sliding window**: it remembers the times of a user's recent tile requests, drops those older than
-the window, and refuses if the count reaches the limit.
+the window, and refuses if the count reaches the limit. The aim is to make a **scrape** slow: a scrape is a script that copies content by requesting all of it in bulk, here every tile of every page.
 
 **Listing 26.10 — `TileRateLimiter.recordAndEnforce` (book-m1-accounts, simplified: fields, other methods and Javadoc removed)**
 

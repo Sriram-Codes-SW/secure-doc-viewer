@@ -486,7 +486,7 @@ again" when trying again cannot help, and the client must not believe it forever
 By the last round the product owner wanted a deep review of the whole codebase. An **ultrareview** is
 a cloud multi-agent code review offered by the coding tool used to build the project. The product
 owner first asked whether it could catch anything new, given that every earlier review had also been
-routed through the same tool. They then chose to run it on the whole codebase. In their words: "since it is an ultra review, would it not be beneficial to have it run on the whole code base?" Later: "let us merge PR #5 and have the ultra review do the review on the code base."
+routed through the same tool. They then reasoned that a review this deep should cover the whole codebase and not only the latest change, and later decided to merge pull request #5 first and run the review on the merged code.
 
 A temporary base branch was created for the tool to compare against, at the product owner's
 request. The tool refused. It reported a diff of 165 files and 22,096 lines, against limits of 500

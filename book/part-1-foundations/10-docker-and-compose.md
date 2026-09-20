@@ -275,7 +275,7 @@ Several ideas appear at once, and each one connects to something you know.
 - `expose` (not `ports`) makes port 8080 reachable by other containers but not from your computer. Only the web container is published to the host, so all outside traffic passes through it.
 - The `healthcheck` here uses `curl` against the app's health endpoint from Chapter 8. `start_period: 60s` gives the app a minute to start before failures count.
 
-The fixed address matters. The `web` service is pinned to `172.28.0.10` on a network whose subnet (a reserved block of network addresses) the file declares, and `TRUSTED_PROXY_REGEX` tells the backend to believe the client address in `X-Forwarded-For` only when the request comes from that one address. Section 10.11 tells why. <!-- source: docker-compose.yml at book-m6-final; dossier decisions.md D11 -->
+The fixed address matters. The `web` service is pinned to `172.28.0.10` on a network whose subnet (a reserved block of network addresses) the file declares, and `TRUSTED_PROXY_REGEX` tells the backend to believe the client address in the **X-Forwarded-For** header (a header in which proxies list the client addresses a request has passed through) only when the request comes from that one address. Section 10.11 tells why. <!-- source: docker-compose.yml at book-m6-final; dossier decisions.md D11 -->
 
 ### 10.7 Environment variables and secrets in containers
 

@@ -5,13 +5,13 @@
 
 Add inside the `describe` block:
 
-   ```typescript
-   it('is active when only a sixth of a long timeout has passed', () => {
-     expect(idleState(t0 + 100_000, t0, 600)).toEqual({ kind: 'active' });
-   });
-   ```
+```typescript
+it('is active when only a sixth of a long timeout has passed', () => {
+  expect(idleState(t0 + 100_000, t0, 600)).toEqual({ kind: 'active' });
+});
+```
 
-   With 600 seconds of timeout, 500 seconds are left; the warning window is the smaller of 300 seconds and half the timeout (300), so 500 is outside it. Run with `npm test` in `frontend/`.
+With 600 seconds of timeout, 500 seconds are left; the warning window is the smaller of 300 seconds and half the timeout (300), so 500 is outside it. Run with `npm test` in `frontend/`.
 
 ### Exercise 24.2 ★ Two requests, one expectation
 
@@ -21,17 +21,17 @@ Add inside the `describe` block:
 
 Example:
 
-   ```typescript
-   it('is signed in after login', () => {
-     const session = TestBed.inject(SessionService);
-     session.login('someone', 'pw').subscribe();
-     TestBed.inject(HttpTestingController).expectOne('/api/auth/login')
-       .flush({ username: 'someone', role: 'READER', sessionTimeoutSeconds: 1800, mustChangePassword: false });
-     expect(session.isLoggedIn()).toBe(true);
-   });
-   ```
+```typescript
+it('is signed in after login', () => {
+  const session = TestBed.inject(SessionService);
+  session.login('someone', 'pw').subscribe();
+  TestBed.inject(HttpTestingController).expectOne('/api/auth/login')
+    .flush({ username: 'someone', role: 'READER', sessionTimeoutSeconds: 1800, mustChangePassword: false });
+  expect(session.isLoggedIn()).toBe(true);
+});
+```
 
-   Use the same `TestBed.configureTestingModule` providers as in Listing 24.2.
+Use the same `TestBed.configureTestingModule` providers as in Listing 24.2.
 
 ### Exercise 24.4 ★★ Both themes
 

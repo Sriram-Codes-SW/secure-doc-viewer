@@ -416,7 +416,9 @@ export default defineConfig({
 
 *Step 1.* From the repository root, start the stack: `docker compose --profile full up -d --build`. The web app is then at `http://localhost:8081`, which is where the tests look by default (the `E2E_BASE_URL` variable overrides it).
 
-*Step 2.* Find the administrator password. On an empty database the first start creates an `admin` account. Its password is the `BOOTSTRAP_ADMIN_PASSWORD` value in your own `.env` file or, if you left that empty, a random one printed once in the app's startup log (`docker compose logs app`). If you have changed it since, use the password you set. Treat it as a secret: type it into your terminal, and never put it in a file you commit.
+*Step 2.* Make sure you know a working administrator password. On an empty database the first start creates an `admin` account, and how its password was chosen matters. If you set `BOOTSTRAP_ADMIN_PASSWORD` in your own `.env` file before that first start, that password works as it is. If you left it empty, the app generates a random password, prints it once in the startup log (`docker compose logs app`), and marks the account as *must change password*. The suite signs in as `admin` and expects to land on the document list, but an account with that flag is sent to the account page (Chapter 23, section 23.15), so the run fails there.
+
+The simplest way is to set `BOOTSTRAP_ADMIN_PASSWORD=<your-admin-password>` in `.env` before you start a stack for the first time, which is what the project's own CI does with a throwaway value. If the stack has already started with a generated password, sign in once in the browser at `http://localhost:8081`, choose your own password on the account page, and use that new password as `E2E_ADMIN_PASSWORD`. (On a throwaway stack you can also delete its data with `docker compose down -v` and start again with the variable set.) Treat the password as a secret: type it into your terminal, and never put it in a file you commit.
 
 *Step 3.* Install the dependencies and the browser Playwright drives. A first run without the browser download fails with an error saying the browser executable doesn't exist.
 

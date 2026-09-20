@@ -46,7 +46,7 @@ The path names *nouns* (documents, shares, sessions) and the method supplies the
 
 A controller is a class whose methods answer web requests. Listing 12.1 is the start of the class that handles the document library.
 
-*Pattern note: Keeping controllers thin and putting the rules in a service is the service layer pattern (Chapter 38, Section 38.2; layered architecture, Chapter 39, Section 39.5).*
+*Pattern note: Keeping controllers thin and putting the rules in a service is the service layer pattern (Chapter 38, Section 38.2; the whole arrangement is covered in Chapter 39, Section 39.5).*
 
 **Listing 12.1 — `DocumentController.java` (`book-m6-final`, simplified: the nested records, fields and constructor are omitted, see Listing 11.2; the other methods and the closing brace are left out)**
 
@@ -74,7 +74,7 @@ Reading it line by line:
 - `Authentication authentication` is a parameter Spring fills in with the signed-in user (Chapter 15). You never call this method yourself. The framework calls it, and it decides what to pass, which is the inversion of control from Chapter 11. `HttpServletRequest`, which appears in other methods, is the raw request; you can mostly ignore it for now.
 - The method body is one line. It hands the real work to `DocumentService` and returns the result. The class comment says: "Who may see or change what is decided in `DocumentService`; this layer only adapts HTTP."
 
-That last point is a design rule worth stating: **keep controllers thin.** A controller's job is to translate between HTTP (paths, headers, JSON, status codes) and Java (method calls). The rules of the business, such as who may see which document, live in a service class. This keeps the rules testable without starting a web server (Chapter 18), and it means the same rule can't be accidentally implemented twice in two controllers.
+That last point is a design rule worth stating: **keep controllers thin.** A controller's job is to translate between HTTP (paths, headers, JSON, status codes) and Java (method calls). The rules of the business, such as who may see which document, live in a service class. This keeps the rules testable without starting a web server (Chapter 18), and it means the same rule can't be accidentally implemented twice in two controllers. Dividing the code into levels like this, with controllers calling services and services calling repositories, is called **layered architecture**.
 
 The return type `List<DocumentSummary>` is turned into a JSON array automatically, as Section 12.4 explains.
 
@@ -114,7 +114,7 @@ public DocumentDetail update(@PathVariable String documentId, @RequestBody Updat
 
 *Path: `src/main/java/com/example/securedocviewer/controller/DocumentController.java`*
 
-`{documentId}` in the path is a placeholder. When a request for `/api/documents/123e4567-e89b-12d3-a456-426614174000` arrives, `@PathVariable` copies that part of the real URL into the parameter, so `documentId` holds the identifier. Use a path variable to say *which resource*.
+`{documentId}` in the path is a placeholder. When a request for `/api/documents/123e4567-e89b-12d3-a456-426614174000` arrives, `@PathVariable` copies that part of the real URL into the parameter, so `documentId` holds the identifier. The placeholder is called a **path variable**: a part of a URL path that a controller receives as a parameter. Use one to say *which resource*.
 
 For `@RequestBody`, Spring reads the JSON body and builds an `UpdateDocumentRequest` from it. That class is a Java record (Chapter 4): a short way to declare a class that only carries data. Its component names, `title` and `visibility`, are the JSON keys the client must send. Use a body to say *what to change* or *what to create*.
 
@@ -305,7 +305,7 @@ public ResponseEntity<byte[]> getTile(@RequestParam String token,
 
 `produces = MediaType.IMAGE_PNG_VALUE` declares that this method answers with `image/png`. The return type `ResponseEntity<byte[]>` lets the method control the whole response: the status (`ok()` is 200), the headers (`cacheControl(CacheControl.noStore())` sets `Cache-Control: no-store`) and the body (the PNG bytes, unchanged). Returning `byte[]` skips Jackson, because the bytes are already in their final format.
 
-`ResponseEntity` is worth knowing. When a method returns a plain object, Spring assumes the answer is `200 OK` with default headers. When you need a different status or a header, you return a `ResponseEntity`, which is an object holding all three parts of a response. The project returns plain objects when 200 is right (`DocumentController.list`) and `ResponseEntity` whenever it needs more.
+**`ResponseEntity`** is worth knowing. When a method returns a plain object, Spring assumes the answer is `200 OK` with default headers. When you need a different status or a header, you return a `ResponseEntity`, which is an object holding all three parts of a response: the status, the headers and the body. The project returns plain objects when 200 is right (`DocumentController.list`) and `ResponseEntity` whenever it needs more.
 
 The `no-store` header matters for security. Each tile has the viewer's name and a timestamp drawn into it, so no cache, in the browser or at any proxy in between, may keep it and hand it to someone else. There is a reason the content is at the *end* of the method: everything before it (which you'll read in Chapter 17) is a series of checks, and a request that fails any of them never gets a tile.
 

@@ -13,16 +13,16 @@ Every screen whose CSS uses `var(--accent)`: buttons, the active navigation unde
 
 Example:
 
-   ```typescript
-   readonly showHint = signal(false);
-   ```
+```typescript
+readonly showHint = signal(false);
+```
 
-   ```html
-   <button (click)="showHint.update((v) => !v)">Toggle hint</button>
-   @if (showHint()) {
-     <p>This is the hint.</p>
-   }
-   ```
+```html
+<button (click)="showHint.update((v) => !v)">Toggle hint</button>
+@if (showHint()) {
+  <p>This is the hint.</p>
+}
+```
 
 ### Exercise 21.4 ★★ Check the contrast
 

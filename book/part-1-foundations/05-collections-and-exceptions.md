@@ -393,7 +393,7 @@ public class Clock101 {
 }
 ```
 
-`Instant.parse` reads a timestamp; the trailing `Z` means UTC. `getEpochSecond()` gives the seconds since midnight UTC on January 1, 1970, a plain number, which is how the app stores a token's expiry (`expiresAtEpochSeconds` in Listing 4.4). `Duration` is a length of time, and `plus` moves an instant forward. The app's signed tile URLs live 120 seconds (Chapter 1), so this example computes exactly such an expiry.
+`Instant.parse` reads a timestamp; the trailing `Z` means UTC. `getEpochSecond()` gives the **epoch seconds**: the number of seconds since midnight UTC on January 1, 1970, a plain number, which is how the app stores a token's expiry (`expiresAtEpochSeconds` in Listing 4.4). `Duration` is a length of time, and `plus` moves an instant forward. The app's signed tile URLs live 120 seconds (Chapter 1), so this example computes exactly such an expiry.
 
 The app also stores every database timestamp as UTC. Why? A server in a Docker container (Chapter 10) runs in UTC, while a developer's laptop may run in local time. If they disagreed about what "9:00" means, the same stored value would be read as different moments. Two settings in `application.yml` fix that: `connectionTimeZone=UTC` in the database connection address, and `hibernate.jdbc.time_zone: UTC` for Hibernate, the library that moves Java objects in and out of the database (Chapter 14). Watermarks also show a UTC timestamp for the same reason. <!-- source: application.yml comment at book-m6-final -->
 
@@ -405,7 +405,7 @@ This tier is a first look at ideas that professional programmers spend years mas
 
 A web server handles many requests at the same time, each on its own **thread**: a path of execution inside the program. Code is **thread-safe** if it stays correct when several threads use it at once. An **atomic** step is one that cannot be interrupted halfway: it happens completely or not at all, and no other thread can see it half done. Two threads can touch the same collection in the same instant, and an ordinary `HashMap` or `ArrayDeque` breaks if they do, sometimes corrupting its contents without any error message.
 
-Java offers collections designed for this. `ConcurrentHashMap` is a map that many threads can use safely. The app's sign-in throttle keeps one of them, and inside it a queue of failure times for each key. The code that adds and expires those times shows both tools: the safe map, and a `synchronized` block that lets only one thread at a time change one queue.
+Java offers collections designed for this. `ConcurrentHashMap` is a map that many threads can use safely. The app's sign-in throttle keeps one of them, and inside it a queue of failure times for each key. The code that adds and expires those times shows both tools: the safe map, and a **synchronized** block, a Java feature that lets only one thread at a time change one queue.
 
 **Listing 5.7 — `LoginThrottle.java` (book-m6-final, excerpt: methods `append` and `prune`)**
 

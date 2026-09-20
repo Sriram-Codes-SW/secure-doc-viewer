@@ -3,7 +3,7 @@
 
 Parts I to V taught you to build, and to defend, one application. This part steps back and gives you the words that experienced engineers use when they talk about designs like it. Those words are the names of **patterns**: proven shapes of solutions to problems that recur. Knowing the names doesn't make you a better designer by itself. What it gives you is the ability to read a design quickly, to describe one in a sentence, and to explain a decision to someone else, including the cost of the alternatives.
 
-Nothing in this part is new code. Every example is a file you have already met, and every claim about where a pattern lives was checked in the repository at a named tag. Where the project follows a pattern closely, the chapter says so; where it only approximates one, the chapter says that too. And because a beginner who has just learned a name is tempted to use it everywhere, each pattern comes with the situations in which it would be clutter.
+Nothing in this part is new code. Every example is a file you have already met, and every claim about where a pattern lives was checked in the repository at a named tag. Where the project follows a pattern closely, the chapter says so; where it only approximates one, the chapter says that too. And because a beginner who has recently learned a name is tempted to use it everywhere, each pattern comes with the situations in which it would be clutter.
 
 ## What the part covers
 

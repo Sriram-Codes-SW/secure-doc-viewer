@@ -46,7 +46,8 @@ table are the snapshots of that history.
 | 30 | `book-m5-platform` | Spring Boot 4, Docker, CI and the review rounds |
 | 31 | `book-m6-final` | A flaky test fixed and a dependency policy |
 
-Table IV.1 is your map. In total the repository has 38 commits and pull requests numbered 1 to 12. Pull
+Table IV.1 is your map. In total the seven tags cover 38 commits and pull requests numbered 1 to 12, and
+a thirteenth pull request, described below, came after the last tag. Pull
 requests 1 to 5 delivered milestones 1 to 5. Pull requests 6 to 8 were automatic dependency updates
 that the project declined, and pull requests 9 to 12 are the small changes of milestone 6. A thirteenth
 pull request merged later, after the last tag, and is not part of any milestone: it corrected the

@@ -193,7 +193,7 @@ export function idleState(nowMs: number, lastActivityMs: number, timeoutSeconds:
 
 Read the arithmetic once, because the rest of the chapter assumes you can follow such lines. `nowMs - lastActivityMs` is how many milliseconds have passed since the last activity. Dividing by 1000 converts to seconds, and subtracting that from the timeout gives the seconds left. `Math.ceil` rounds up, so 0.2 seconds left still counts as one second (the countdown never shows zero while there is time). If nothing is left, the session has expired. Otherwise the reader is warned when the seconds left are within the warning window: the smaller of five minutes and half the timeout.
 
-Small functions are often written as **arrow functions**, `(x) => expression`, which are the same idea as Java lambdas (Chapter 5). `this.tiles().filter((t) => t.status === 'loaded')` passes an arrow function that answers "is this tile loaded?" for each element.
+Small functions are often written as an **arrow function**, `(x) => expression`, which is the same idea as a Java lambda (Chapter 5). `this.tiles().filter((t) => t.status === 'loaded')` passes an arrow function that answers "is this tile loaded?" for each element.
 
 A **module** is a file that lists what it shares with `export` and pulls in what it needs with `import`. That's how `viewer.component.ts` uses code from other files:
 
