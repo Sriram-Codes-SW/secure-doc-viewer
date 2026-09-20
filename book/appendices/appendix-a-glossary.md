@@ -7,11 +7,11 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **absolute lifetime** | A limit on how long a session may last after sign-in, however active it is; the app sets it to 12 hours. | Ch 16 |
 | **absolute path** | A path that starts from the top of the file system, such as `/c/dev/secure-doc-viewer`, and so means the same wherever you are. | Ch 2 |
 | **access analyzer** | An AWS tool that reports which resources, such as buckets, can be reached from outside your account. | Ch 41 |
-| **access level** | A Java keyword (`public`, `private`, package-private) that decides who may use a class, field or method. | Ch 4 |
-| **actor** | In a threat model, a person or program that can interact with the system, such as a reader, a publisher or an attacker. | Ch 32 |
+| **access level** | A Java keyword (`public`, `private`, package-private) that decides who may use a class, field, or method. | Ch 4 |
+| **actor** | In a threat model, a person or program that can interact with the system, such as a reader, a publisher, or an attacker. | Ch 32 |
 | **Actuator** | The Spring Boot library that adds operational endpoints such as health checks and metrics. | Ch 28 |
 | **adapter** | A design pattern in which a small class translates one interface into the one your code expects. | Ch 38 |
-| **administrator** | The role that may manage users, sessions and the audit log, and see every document; in code, `ADMIN`. | Ch 1 |
+| **administrator** | The role that may manage users, sessions, and the audit log, and see every document; in code, `ADMIN`. | Ch 1 |
 | **alert** | A rule that notifies people when a metric shows a problem. | Ch 35 |
 | **Amazon CloudFront** | The AWS content delivery network, which serves files from locations near the reader. | Ch 41 |
 | **Amazon CloudWatch** | The AWS service that collects logs and metrics from ECS and the load balancer and raises alarms. | Ch 40 |
@@ -20,22 +20,22 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **Amazon ElastiCache** | An AWS-managed in-memory store (Valkey or Redis OSS) that all tasks can share. | Ch 40 |
 | **Amazon EventBridge Scheduler** | An AWS service that starts a task or another target on a schedule. | Ch 40 |
 | **Amazon Managed Service for Prometheus** | An AWS-managed store that accepts Prometheus metrics, so you do not run a Prometheus server yourself. | Ch 40 |
-| **Amazon RDS** | Relational Database Service: AWS runs a database such as MySQL for you, including patching, backups and failover. | Ch 40 |
+| **Amazon RDS** | Relational Database Service: AWS runs a database such as MySQL for you, including patching, backups, and failover. | Ch 40 |
 | **Amazon Route 53** | The AWS DNS service. | Ch 40 |
 | **Amazon S3** | Simple Storage Service: AWS object storage that keeps files (objects) by key in buckets, with no real directories and no atomic folder rename. | Ch 40 |
-| **Angular** | The framework, written in TypeScript, in which the app's browser side is built from components, services and routes. | Ch 21 |
-| **Angular CLI** | The `ng` command-line program that creates, serves, builds and tests an Angular project. | Ch 20 |
+| **Angular** | The framework, written in TypeScript, in which the app's browser side is built from components, services, and routes. | Ch 21 |
+| **Angular CLI** | The `ng` command-line program that creates, serves, builds, and tests an Angular project. | Ch 20 |
 | **annotation** | A label starting with `@` that you attach to Java code so that a framework or the compiler can read it. | Ch 4 |
-| **application context** | Spring's container: the object that creates, holds and connects all of the application's beans. | Ch 11 |
+| **application context** | Spring's container: the object that creates, holds, and connects all of the application's beans. | Ch 11 |
 | **Application Load Balancer (ALB)** | An AWS service that receives HTTPS requests, spreads them over healthy tasks and health-checks each one. | Ch 40 |
-| **architectural pattern** | A named, large-scale shape for arranging a whole system, such as layers, a gateway or an event log. | Ch 39 |
+| **architectural pattern** | A named, large-scale shape for arranging a whole system, such as layers, a gateway, or an event log. | Ch 39 |
 | **argument** | A value you give to a command or to a method call so that it knows what to act on. | Ch 2 |
 | **ARN (Amazon Resource Name)** | The unique address of one AWS resource, such as a secret or a role. | Ch 40 |
 | **arrow function** | A short way to write a function in JavaScript and TypeScript, using `=>`. | Ch 19 |
-| **asset** | In a threat model, something worth protecting, such as the documents, the signing secret or the accounts. | Ch 32 |
+| **asset** | In a threat model, something worth protecting, such as the documents, the signing secret, or the accounts. | Ch 32 |
 | **atomic** | Describes a step that happens completely or not at all, so that nothing else can see it half done. | Ch 5 |
 | **audit log** | The persisted record of who did what and when, which administrators can search and export; the audit trail is its content. | Ch 35 |
-| **audit trail** | The permanent, append-only record of important actions such as sign-ins, uploads, views and denied requests, kept so that events can be investigated later. | Ch 1 |
+| **audit trail** | The append-only record, kept for a set retention period (180 days by default), of important actions such as sign-ins, uploads, views, and denied requests, kept so that events can be investigated later. | Ch 1 |
 | **authentication** | Proving who you are, for example with a username and password. | Ch 1 |
 | **authorization** | Deciding what an authenticated person is allowed to do. | Ch 1 |
 | **auto-configuration** | Spring Boot's habit of setting up sensible defaults for the libraries it finds on the classpath. | Ch 11 |
@@ -53,11 +53,11 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **blame** | A Git command that shows which commit last changed each line of a file. | Ch 7 |
 | **boxing** | Java's automatic conversion between a primitive value such as `int` and its object form such as `Integer`. | Ch 5 |
 | **branch** | A movable name for a line of work in Git. | Ch 7 |
-| **browser** | The program, such as Chrome, Firefox, Safari or Edge, that requests web pages and runs their code. | Ch 19 |
+| **browser** | The program, such as Chrome, Firefox, Safari, or Edge, that requests web pages and runs their code. | Ch 19 |
 | **bucket** | A named container for objects in Amazon S3. | Ch 40 |
 | **build** | The sequence of steps that turns source code into a tested, packaged program. | Ch 6 |
 | **build context** | The folder that Docker sends to the builder when you build an image. | Ch 10 |
-| **build tool** | A program that compiles code, runs tests and packages the result; Maven is the one this project uses for Java. | Ch 6 |
+| **build tool** | A program that compiles code, runs tests, and packages the result; Maven is the one this project uses for Java. | Ch 6 |
 | **bulkhead** | A design pattern that gives each kind of work its own limit, so that overload in one does not sink the rest. | Ch 38 |
 | **bytecode** | The compact instructions that the Java compiler produces and the JVM runs. | Ch 3 |
 | **cache** | A place where a copy of something is kept so that it can be served again faster. | Ch 1 |
@@ -68,7 +68,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **ceiling division** | Division that rounds up, used to count how many tiles are needed to cover a page. | Ch 3 |
 | **certificate** | A signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. | Ch 8 |
 | **certificate authority** | An organization that browsers trust to issue certificates. | Ch 33 |
-| **chain of responsibility** | A design pattern in which a request passes along a line of handlers, each of which may handle it, change it or pass it on. | Ch 38 |
+| **chain of responsibility** | A design pattern in which a request passes along a line of handlers, each of which may handle it, change it, or pass it on. | Ch 38 |
 | **change detection** | Angular's process of deciding which parts of the screen to redraw when data changes. | Ch 21 |
 | **checked exception** | A Java exception, such as `IOException`, that a method must catch or declare with `throws`. | Ch 5 |
 | **CI (continuous integration)** | The practice of running tests and checks automatically on every proposed change. | Ch 6 |
@@ -78,7 +78,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **client** | A program that asks for things over a network; your browser is a client. | Ch 1 |
 | **clone** | To copy an existing Git repository, with its history, to your machine. | Ch 7 |
 | **code review** | The practice of having someone else read a change before it is merged. | Ch 7 |
-| **collection** | A Java object that holds many values, such as a list, a set or a map. | Ch 5 |
+| **collection** | A Java object that holds many values, such as a list, a set, or a map. | Ch 5 |
 | **commit** | A saved state in Git: a snapshot of every tracked file at one moment, with a message and a unique identifier. | Ch 7 |
 | **commit SHA** | The long hexadecimal identifier that uniquely names a Git commit. | Ch 36 |
 | **compiler** | A program that checks source code and translates it into a form that a machine can run. | Ch 3 |
@@ -94,23 +94,23 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **constructor** | Special code that runs when you create an object with `new` and sets up its fields. | Ch 4 |
 | **constructor injection** | Dependency injection in which an object receives its dependencies as constructor parameters. | Ch 4 |
 | **container** | A running, isolated instance of an image: a program packaged with everything it needs. | Ch 10 |
-| **Content-Security-Policy (CSP)** | A response header that tells the browser which sources a page may load scripts, images and connections from. | Ch 8 |
+| **Content-Security-Policy (CSP)** | A response header that tells the browser which sources a page may load scripts, images, and connections from. | Ch 8 |
 | **contrast** | The difference in brightness between text and its background, measured as a ratio. | Ch 21 |
 | **control** | In a security review, a measure that reduces a risk, such as a rate limit or a check. | Ch 32 |
 | **controller** | A class that receives web requests and returns responses. | Ch 11 |
 | **convention over configuration** | The design habit of choosing sensible defaults so that you configure only what differs; Maven and Spring Boot both follow it. | Ch 6 |
 | **cookie** | A small piece of data that a server asks the browser to store and send back with later requests. | Ch 8 |
-| **coordinates** | The three values (group, artifact and version) that identify a Maven project or library. | Ch 6 |
+| **coordinates** | The three values (group, artifact, and version) that identify a Maven project or library. | Ch 6 |
 | **copy-on-write** | A technique in which a change makes a new copy and leaves the old one untouched, so that readers never see a half-changed value. | Ch 39 |
 | **CORS (cross-origin resource sharing)** | The browser mechanism by which a server says which other origins may read its responses. | Ch 8 |
 | **counter** | A metric that only goes up, such as the number of tiles served. | Ch 35 |
 | **CPU** | The processor that does a computer's calculations. | Ch 17 |
 | **CRLF** | The two-byte Windows line ending: carriage return followed by line feed. | Ch 2 |
 | **Crockford Base32** | A way of writing bytes with 32 easily read characters, used for the watermark's trace code. | Ch 29 |
-| **cron expression** | A compact schedule with fields for second, minute, hour, day, month and weekday, such as `0 30 3 * * *`. | Ch 14 |
+| **cron expression** | A compact schedule with fields for second, minute, hour, day, month, and weekday, such as `0 30 3 * * *`. | Ch 14 |
 | **CSRF (cross-site request forgery)** | An attack in which another website makes your browser send a request to a site where you are signed in. | Ch 8 |
 | **CSRF token** | A secret value that the app's own page sends back in a header on every change, so that a forged request cannot supply it. | Ch 8 |
-| **CSV injection** | An attack in which a spreadsheet cell that starts with `=`, `+`, `-` or `@` runs as a formula when an exported CSV file is opened. | Ch 27 |
+| **CSV injection** | An attack in which a spreadsheet cell that starts with `=`, `+`, `-`, or `@` runs as a formula when an exported CSV file is opened. | Ch 27 |
 | **CVE** | A public identifier, in the Common Vulnerabilities and Exposures list, for one known security flaw in some software. | Ch 31 |
 | **data transfer object (DTO)** | A small class, often a record, that carries exactly the data of one request or response. | Ch 38 |
 | **database** | A program that stores an application's data permanently and lets you query it. | Ch 1 |
@@ -127,7 +127,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **deserialization** | Turning text or bytes, such as JSON, back into an object. | Ch 12 |
 | **design pattern** | A named, reusable solution to a problem that recurs in code. | Ch 38 |
 | **detached HEAD** | A Git state in which you are looking at a commit that is not on any branch. | Ch 7 |
-| **developer tools** | The inspection panel built into browsers that shows requests, code and errors. | Ch 1 |
+| **developer tools** | The inspection panel built into browsers that shows requests, code, and errors. | Ch 1 |
 | **diamond** | The empty angle brackets `<>` in Java, which tell the compiler to work out the type arguments from the left-hand side. | Ch 5 |
 | **digest** | A fingerprint of exact contents, such as the SHA-256 hash that identifies one Docker image. | Ch 10 |
 | **dirty checking** | Hibernate's habit of noticing that a loaded entity was changed and saving the change when the transaction ends. | Ch 14 |
@@ -152,8 +152,8 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **event sourcing** | A design in which the sequence of events is the source of truth and the current state is derived from it. | Ch 38 |
 | **exception** | An object that signals that something went wrong and interrupts normal flow until it is handled. | Ch 3 |
 | **exception handler** | A method that turns a particular exception into a controlled HTTP response. | Ch 13 |
-| **executable JAR** | One file that holds the application, its libraries and the web server, so that a single command starts the whole application. | Ch 6 |
-| **exponential backoff** | Waiting longer after each failed attempt, for example 50, 100, 200 and 400 milliseconds. | Ch 27 |
+| **executable JAR** | One file that holds the application, its libraries, and the web server, so that a single command starts the whole application. | Ch 6 |
+| **exponential backoff** | Waiting longer after each failed attempt, for example 50, 100, 200, and 400 milliseconds. | Ch 27 |
 | **facade** | A design pattern in which one small, simple interface stands in front of a larger subsystem. | Ch 38 |
 | **factory method** | A static method that builds an object, so that callers need not know how. | Ch 38 |
 | **fail fast** | Refusing a bad situation at the first opportunity instead of letting it travel further into the code. | Ch 38 |
@@ -199,11 +199,11 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **immutable** | Describes something that cannot change after it is created. | Ch 4 |
 | **import** | A Java statement that lets you use a class from another package by its short name. | Ch 4 |
 | **index** | A sorted lookup structure on one or more database columns, so that matching rows are found without reading the whole table. | Ch 9 |
-| **infrastructure as code** | Describing servers, networks and other infrastructure in files that can be reviewed, versioned and re-applied. | Ch 39 |
+| **infrastructure as code** | Describing servers, networks, and other infrastructure in files that can be reviewed, versioned, and re-applied. | Ch 39 |
 | **inheritance** | Building a new class by taking everything an existing class has and adding to it. | Ch 4 |
 | **instant** | A single point on the timeline, independent of time zones; `Instant` is the Java class for it. | Ch 5 |
 | **integration test** | A test that starts several pieces together, for example the real security filters and a real controller. | Ch 18 |
-| **interceptor** | A function in Angular's HTTP client that sees every request and response, used for the CSRF header and for reacting to `401`. | Ch 22 |
+| **interceptor** | A function in Angular's HTTP client that sees every request and response; the project's one interceptor records activity and reacts to `401`, while the CSRF header comes from Angular's built-in support. | Ch 22 |
 | **interface** | A description of what an object can do (Java) or of its shape (TypeScript), without saying how. | Ch 4 |
 | **interpolation** | Inserting the value of an expression into text in an Angular template with `{{ }}`. | Ch 21 |
 | **inversion of control** | The principle that a framework, not your code, creates objects and decides when to call them. | Ch 11 |
@@ -219,7 +219,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **JPQL** | The JPA query language, which talks about classes and fields instead of tables and columns. | Ch 27 |
 | **JRE** | The Java Runtime Environment: the part of Java needed only to run programs, without the compiler. | Ch 3 |
 | **jsdom** | A pretend browser written in JavaScript, so that tests can create page elements without a real browser. | Ch 24 |
-| **JSON** | A text format for structured data made of objects, lists, strings, numbers and booleans. | Ch 8 |
+| **JSON** | A text format for structured data made of objects, lists, strings, numbers, and booleans. | Ch 8 |
 | **JVM** | The Java Virtual Machine: the program that runs compiled Java. | Ch 3 |
 | **JWT** | A JSON Web Token: a signed piece of text that carries claims and can be verified without a server-side session. | Ch 15 |
 | **keepalive_timeout** | The nginx setting for how long an idle connection stays open; it must exceed the load balancer's idle timeout. | Ch 40 |
@@ -227,7 +227,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **lambda** | A small unnamed method that you can pass around. | Ch 5 |
 | **latch** | A counter that makes threads wait until it reaches zero; tests use it to release parallel threads at once. | Ch 18 |
 | **layer** | In Docker, one step of an image build, stored once and reused; in architecture, a level of code that may call only the level below it. | Ch 10 |
-| **layered architecture** | An arrangement in which code is divided into levels, such as controllers, services and repositories, each calling only the one below. | Ch 12 |
+| **layered architecture** | An arrangement in which code is divided into levels, such as controllers, services, and repositories, each calling only the one below. | Ch 12 |
 | **lazy loading** | Loading related data only when it is first used. | Ch 14 |
 | **least privilege** | The principle of giving a process or person only the access it needs. | Ch 36 |
 | **library** | A collection of ready-made code that your program calls when it needs it. | Ch 11 |
@@ -239,14 +239,14 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **localhost** | The name a computer uses for itself; requests to it never leave the machine. | Ch 2 |
 | **lockfile** | A file, such as `package-lock.json`, that records the exact version of every dependency. | Ch 36 |
 | **log** | The stream of text lines that a running program writes to say what it is doing. | Ch 11 |
-| **log level** | A label such as ERROR, WARN, INFO or DEBUG that says how important a log line is, so that you can filter them. | Ch 11 |
-| **LTS (long-term support)** | A release line that receives fixes for years, which the project prefers for MySQL, Node and Java. | Ch 20 |
+| **log level** | A label such as ERROR, WARN, INFO, or DEBUG that says how important a log line is, so that you can filter them. | Ch 11 |
+| **LTS (long-term support)** | A release line that receives fixes for years, which the project prefers for MySQL, Node, and Java. | Ch 20 |
 | **Lua script (Redis)** | A small script that Redis runs atomically, so that several commands take effect as one. | Ch 40 |
 | **magic number** | A short, recognizable byte pattern at the start of a file that shows its type, such as `%PDF-`. | Ch 28 |
 | **managed service** | A service in which the provider runs the software for you, including patches and backups, and you give up some control. | Ch 40 |
 | **many-to-many** | A relationship in which each row on one side can link to many on the other and the reverse; it needs a join table. | Ch 9 |
 | **map** | A Java collection of key and value pairs, looked up by key. | Ch 5 |
-| **Maven** | The build tool this project uses to compile, test and package its Java code. | Ch 6 |
+| **Maven** | The build tool this project uses to compile, test, and package its Java code. | Ch 6 |
 | **Maven Central** | The public online repository from which Maven downloads libraries. | Ch 6 |
 | **Maven wrapper** | A small script (`mvnw`) that downloads and runs the exact Maven version the project uses. | Ch 30 |
 | **merge** | Combining the changes of one Git branch into another. | Ch 7 |
@@ -280,7 +280,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **OpenID Connect (OIDC)** | A way for one service, such as GitHub, to prove its identity to another, such as AWS, and receive short-lived credentials with no stored key. | Ch 40 |
 | **operator** | A symbol such as `+` or `==` that combines or compares values. | Ch 3 |
 | **Optional** | A Java object that is either empty or holds one value, used instead of `null`. | Ch 5 |
-| **origin** | The combination of scheme, host and port that browsers use to decide who may read whose responses. | Ch 8 |
+| **origin** | The combination of scheme, host, and port that browsers use to decide who may read whose responses. | Ch 8 |
 | **ORM (object-relational mapper)** | A library that translates between objects in code and rows in a database. | Ch 14 |
 | **OSV** | Open Source Vulnerabilities: a database of published security advisories, used to check the project's dependencies. | Ch 36 |
 | **owner** | The account that uploaded a document and may manage it. | Ch 27 |
@@ -324,9 +324,9 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **rate limit** | A cap on how many requests a user may make in a period. | Ch 1 |
 | **rate limiter** | Code that refuses requests beyond a set number in a period. | Ch 38 |
 | **reader** | The role that may open the documents shared with it; in code, `READER`. | Ch 1 |
-| **recognised device** | A network address from which an account has signed in successfully in the last 30 days, which the sign-in throttle treats more leniently. | Ch 16 |
+| **recognized device** | A network address from which an account has signed in successfully in the last 30 days, which the sign-in throttle treats more leniently. | Ch 16 |
 | **record** | A compact Java class for immutable plain data. | Ch 4 |
-| **RED** | Three questions for watching a service: the Rate of requests, the Errors and the Duration. | Ch 39 |
+| **RED** | Three questions for watching a service: the Rate of requests, the Errors, and the Duration. | Ch 39 |
 | **redirection** | Sending a command's output somewhere other than the screen, such as into a file. | Ch 2 |
 | **Referrer-Policy** | A response header that controls how much of the page's address is sent to other sites; the app sends `no-referrer`. | Ch 8 |
 | **reflog** | Git's private log of where your branch tips have been, which can rescue lost commits. | Ch 7 |
@@ -335,23 +335,23 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **regression test** | A test written so that a fixed bug cannot come back unnoticed. | Ch 24 |
 | **relational database** | A database that stores data in tables linked by keys. | Ch 9 |
 | **relative path** | A path that starts from the folder you are in. | Ch 2 |
-| **relaxed binding** | Spring's rule that `signing-secret`, `SIGNING_SECRET` and `signingSecret` all name the same setting. | Ch 11 |
+| **relaxed binding** | Spring's rule that `signing-secret`, `SIGNING_SECRET`, and `signingSecret` all name the same setting. | Ch 11 |
 | **remote** | A copy of a Git repository on another computer, usually on GitHub. | Ch 7 |
 | **repository** | A Git project (files plus the hidden `.git` folder that holds history), or in Spring a class that reads and writes one kind of entity. | Ch 7 |
 | **reproducible build** | A build that produces the same result from the same source on any machine and on any day. | Ch 36 |
 | **request body** | The data a client sends with a request, such as the JSON of a form. | Ch 8 |
-| **request line** | The first line of an HTTP request, holding the method, the path and the protocol version. | Ch 8 |
+| **request line** | The first line of an HTTP request, holding the method, the path, and the protocol version. | Ch 8 |
 | **reserve then compensate** | A technique that takes a resource before a risky step and hands it back if the step does not go ahead. | Ch 38 |
 | **reserved word** | A word that SQL reserves for its own use, so that it cannot be used as a plain column name. | Ch 9 |
 | **resource** | A thing that a REST API exposes at a URL, such as a document. | Ch 8 |
 | **response header** | A named value, such as `Cache-Control`, that a server sends before the body of a response. | Ch 8 |
-| **ResponseEntity** | A Spring class that lets a controller set the status, headers and body of a response. | Ch 12 |
+| **ResponseEntity** | A Spring class that lets a controller set the status, headers, and body of a response. | Ch 12 |
 | **REST** | A style of web API built around URLs for things and HTTP methods for actions. | Ch 8 |
 | **REST API** | A web interface that follows the REST style, with URLs for things and HTTP methods for actions. | Ch 39 |
 | **restore drill** | A rehearsal in which you restore a backup into a scratch environment to prove that it works. | Ch 34 |
-| **retention** | How long backups, logs or records are kept before they are deleted. | Ch 34 |
+| **retention** | How long backups, logs, or records are kept before they are deleted. | Ch 34 |
 | **reverse proxy** | A server that sits in front of an application, receives requests from browsers and passes them on. | Ch 10 |
-| **role** | A named set of permissions attached to an account, such as reader, publisher or administrator. | Ch 1 |
+| **role** | A named set of permissions attached to an account, such as reader, publisher, or administrator. | Ch 1 |
 | **roll back** | To undo every change of a transaction because it failed. | Ch 14 |
 | **route guard** | A function that Angular runs before it lets a user into a route, used for a better experience and never as security. | Ch 23 |
 | **row lock** | A database lock on selected rows, so that two transactions cannot change them at once. | Ch 9 |
@@ -399,7 +399,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **spec** | A file of tests, named with `.spec.ts`, run by Vitest. | Ch 24 |
 | **Spring Boot** | The framework that starts the server and connects the application's classes with sensible defaults. | Ch 11 |
 | **Spring Data JPA** | The Spring library that writes common database queries from repository interfaces. | Ch 14 |
-| **Spring Security** | The Spring library that handles sign-in, sessions, roles and request protection. | Ch 15 |
+| **Spring Security** | The Spring library that handles sign-in, sessions, roles, and request protection. | Ch 15 |
 | **SQL** | The language used to query and change a relational database. | Ch 9 |
 | **SQL injection** | An attack that smuggles SQL commands into an input so that the database runs them. | Ch 9 |
 | **stack trace** | The list of method calls that were active when an exception occurred, printed to help find the cause. | Ch 3 |
@@ -413,7 +413,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **status line** | The first line of an HTTP response, holding the protocol version and the status code. | Ch 8 |
 | **stopTimeout** | The ECS setting for how long a container gets to shut down after it is told to stop. | Ch 41 |
 | **strategy** | A design pattern in which interchangeable pieces of behavior are chosen at run time. | Ch 38 |
-| **stream** | A Java pipeline that processes a collection step by step, filtering, transforming and collecting. | Ch 5 |
+| **stream** | A Java pipeline that processes a collection step by step, filtering, transforming, and collecting. | Ch 5 |
 | **string** | A sequence of characters; text. | Ch 3 |
 | **stub** | A stand-in with just enough behavior for a test. | Ch 24 |
 | **subnet** | A division of a VPC's addresses; a private subnet has no route from the internet. | Ch 40 |
@@ -423,7 +423,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **table** | A set of rows in a relational database, with named columns. | Ch 9 |
 | **tag** | A permanent name for one Git commit, like a bookmark. | Ch 7 |
 | **task** | One running copy of your containers, started by ECS from a task definition. | Ch 40 |
-| **task definition** | The description that ECS runs: the image, CPU, memory, environment and health check. | Ch 40 |
+| **task definition** | The description that ECS runs: the image, CPU, memory, environment, and health check. | Ch 40 |
 | **task execution role** | The IAM role that ECS itself uses to pull the container image and read secrets for a task. | Ch 40 |
 | **task role** | The IAM role that your own code uses inside an ECS task to call AWS services such as S3. | Ch 40 |
 | **template** | In Angular, the HTML that shows a component's data. | Ch 21 |
@@ -438,7 +438,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **thread** | A path of execution inside a program; a web server handles many requests at once on many threads. | Ch 5 |
 | **thread-safe** | Describes code that stays correct when several threads use it at once. | Ch 5 |
 | **threat** | A specific way someone might misuse the system. | Ch 1 |
-| **threat model** | A structured description of a system's assets, actors, entry points and threats. | Ch 32 |
+| **threat model** | A structured description of a system's assets, actors, entry points, and threats. | Ch 32 |
 | **throttling** | Limiting how many attempts are allowed in a period. | Ch 16 |
 | **tile** | One small square piece of a rendered page image. | Ch 1 |
 | **timer** | A metric that records how long something took. | Ch 35 |
@@ -458,7 +458,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **union type** | A TypeScript type that allows one of several listed alternatives. | Ch 19 |
 | **unit test** | A small test of one piece of code on its own, with no framework or database running. | Ch 18 |
 | **untracked** | Describes a file that Git can see but is not recording. | Ch 7 |
-| **untrusted input** | Any data from outside your program, such as an upload, a form value or a header. | Ch 28 |
+| **untrusted input** | Any data from outside your program, such as an upload, a form value, or a header. | Ch 28 |
 | **upsert** | A database write that inserts a row or, if one exists, updates it. | Ch 30 |
 | **URL** | Uniform Resource Locator: a web address such as `https://example.com/page`. | Ch 1 |
 | **user enumeration** | Discovering which usernames exist from differences in how a service answers. | Ch 15 |
@@ -470,7 +470,7 @@ Definitions of the terms this book bolds at first use, in alphabetical order. Th
 | **variable** | A named place that holds a value. | Ch 3 |
 | **version control** | A tool that records every change to a project's files so that you can return to any earlier state. | Ch 2 |
 | **virtual machine** | A whole computer simulated by software, which is heavier than a container. | Ch 10 |
-| **visibility** | Whether a document is private (owner, administrators and shared users) or open to everyone. | Ch 1 |
+| **visibility** | Whether a document is private (owner, administrators, and shared users) or open to everyone. | Ch 1 |
 | **Vitest** | The test runner used for the frontend's unit tests. | Ch 24 |
 | **volume** | A place Docker keeps data outside a container so that it survives the container. | Ch 10 |
 | **VPC (virtual private cloud)** | Your own private network inside AWS, divided into subnets. | Ch 40 |

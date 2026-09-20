@@ -44,6 +44,6 @@ flowchart LR
 
 ## What changed since v1
 - New `document/` package (`Document`, `Visibility`, `DocumentService`, `DocumentRepository`, `Viewer`) replaces the in-memory `DocumentRegistry`; migration `V2__documents_shares_audit.sql`.
-- Documents have an owner and a visibility plus per-user shares; new endpoints for rename, replace file, delete and shares.
+- Documents have an owner and a visibility plus per-user shares; new endpoints for rename, replace file, delete, and shares.
 - The audit log becomes persistent (`audit/` package) with search and CSV export.
 - `UserDirectoryController` (share picker), `StorageJanitor` and `FileOperations` added; a Manage page in the frontend.

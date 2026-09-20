@@ -18,8 +18,8 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
-- Chapter 4: classes, objects, records and interfaces (Java's version of the ideas here).
-- Chapter 5: collections, generics, lambdas and exceptions.
+- Chapter 4: classes, objects, records, and interfaces (Java's version of the ideas here).
+- Chapter 5: collections, generics, lambdas, and exceptions.
 - Chapter 8: how the web works (a browser sends HTTP requests and receives JSON).
 
 ## Beginner tier: A language that checks your work
@@ -30,7 +30,7 @@ A **browser** runs one programming language natively: **JavaScript**. Every inte
 
 **TypeScript** is JavaScript with a layer of labels added, called types. A type says what kind of value a name holds: `number`, `string`, or a shape you define. A program called the compiler reads your TypeScript before anything runs, checks that every use matches its label, and then removes the labels, producing plain JavaScript for the browser. The browser never sees a type.
 
-Think of a form at a doctor's office with boxes marked "date of birth" and "phone number". The boxes don't make you honest, but the clerk can spot at once that you wrote a phone number in the date box. TypeScript is the clerk, and the compiler runs the check at your desk, before the form is sent.
+Think of a form at a doctor's office with boxes marked "date of birth" and "phone number." The boxes don't make you honest, but the clerk can spot at once that you wrote a phone number in the date box. TypeScript is the clerk, and the compiler runs the check at your desk, before the form is sent.
 
 **Where the analogy breaks down:** a clerk checks the form once, at the counter, and after that the paperwork is trusted. TypeScript checks only your own code. Data that arrives later from the network, such as the JSON from the backend, is not checked at all when the program runs, because the labels are gone by then. Section 19.9 returns to this.
 
@@ -65,7 +65,7 @@ Before reading real code, learn the vocabulary of values. TypeScript's basic typ
 | `null` | Deliberately "no value" | `null` | `null` |
 | `undefined` | "Never given a value" | (a variable never set) | (no direct equivalent) |
 
-Two differences from Java matter immediately. First, there is only one kind of number: the same `number` type holds page counts, pixel sizes and timestamps. That's why the Java record in Section 19.9 has `int` and `long` fields where the TypeScript interface has `number` for all of them. Second, JavaScript has two "nothing" values, `null` (put there on purpose) and `undefined` (never assigned). The project's own types use `null` for "not applicable"; `undefined` shows up when you read something that isn't there, such as a missing property.
+Two differences from Java matter immediately. First, there is only one kind of number: the same `number` type holds page counts, pixel sizes, and timestamps. That's why the Java record in Section 19.9 has `int` and `long` fields where the TypeScript interface has `number` for all of them. Second, JavaScript has two "nothing" values, `null` (put there on purpose) and `undefined` (never assigned). The project's own types use `null` for "not applicable"; `undefined` shows up when you read something that isn't there, such as a missing property.
 
 Text can be assembled with **template literals**, written with backticks, where `${...}` inserts a value. You have already met them: `documents.service.ts` builds its address with `` `${API_BASE_URL}/api/documents` ``, and the viewer builds CSS values such as `` `${info.pageWidthPx}px` ``.
 
@@ -81,7 +81,7 @@ note = 'Reviewed';                   // allowed: it's a string
 // pages = 'twelve';                 // compile error: a string is not a number
 ```
 
-Line by line: the first three lines declare a text, a number and a list, with their types after the colons. The fourth uses `let` because `note` will change, and `string | null` says "text or nothing" (Section 19.3 explains the `|`). `summary` has no type written: TypeScript **infers** it from the right-hand side, so `const summary = ...` is a `string` without anyone saying so. The project relies on inference heavily; types are written where the compiler can't guess, such as function parameters and the data shapes in `*.models.ts`. The last line is commented out because it would not compile: assigning text to a `number` is exactly the mistake TypeScript exists to catch.
+Line by line: the first three lines declare a text, a number, and a list, with their types after the colons. The fourth uses `let` because `note` will change, and `string | null` says "text or nothing" (Section 19.3 explains the `|`). `summary` has no type written: TypeScript **infers** it from the right-hand side, so `const summary = ...` is a `string` without anyone saying so. The project relies on inference heavily; types are written where the compiler can't guess, such as function parameters and the data shapes in `*.models.ts`. The last line is commented out because it would not compile: assigning text to a `number` is exactly the mistake TypeScript exists to catch.
 
 ### 19.3 Types, interfaces, unions
 
@@ -123,7 +123,7 @@ export interface DocumentSummary {
 Reading it top to bottom:
 
 - `export` makes the name available to other files (Section 19.4).
-- `type Visibility = 'PRIVATE' | 'EVERYONE'` defines a **union type**: a value that must be one of the listed alternatives. Here the alternatives are two exact pieces of text. Writing `'PUBLIC'` where a `Visibility` is expected is a compile error, and so is a typo like `'PRIVAT'`. The `|` reads as "or".
+- `type Visibility = 'PRIVATE' | 'EVERYONE'` defines a **union type**: a value that must be one of the listed alternatives. Here the alternatives are two exact pieces of text. Writing `'PUBLIC'` where a `Visibility` is expected is a compile error, and so is a typo like `'PRIVAT'`. The `|` reads as "or."
 - `interface PageInfo { ... }` lists six properties, all numbers.
 - `sharedWithCount: number | null` is another union: a number, or `null`. The comment says when it's `null`. The compiler forces every piece of code that reads this property to handle both cases; you can see that in `accessLabel` in `document-list.component.ts`, which checks `doc.sharedWithCount === null` first.
 - `/** ... */` is a documentation comment; editors show it when you hover over the name.
@@ -160,11 +160,11 @@ stateDiagram-v2
 
 *Figure 19.1 — The idle states of `IdleState` and what moves between them*
 
-*Text description:* A state diagram with three states: active, warning and expired. The reader starts in active. Active moves to warning when the seconds left fall into the warning window, and warning moves to expired when no seconds are left. Active can also move straight to expired if the check is late, for example after the computer slept. Any API request returns active or warning to active, and expired ends the diagram with the reader signed out and sent to the sign-in page.
+*Text description:* A state diagram with three states: active, warning, and expired. The reader starts in active. Active moves to warning when the seconds left fall into the warning window, and warning moves to expired when no seconds are left. Active can also move straight to expired if the check is late, for example after the computer slept. Any API request returns active or warning to active, and expired ends the diagram with the reader signed out and sent to the sign-in page.
 
 <!-- source: idle.ts (idleState) and app.ts (checkIdle, forceLogout) at book-m6-final; touch() in session.service.ts records activity -->
 
-Notice that the diagram has exactly the states the type has, and no others: a value can never be "half-expired". `idleState` itself only *computes* which state applies from the current time and the last activity. The arrows that reset to `active` happen because every successful API request updates the last-activity time (Chapter 22). The last arrow happens in `App.checkIdle`, which signs the reader out when the state is `expired`.
+Notice that the diagram has exactly the states the type has, and no others: a value can never be "half-expired." `idleState` itself only *computes* which state applies from the current time and the last activity. The arrows that reset to `active` happen because every successful API request updates the last-activity time (Chapter 22). The last arrow happens in `App.checkIdle`, which signs the reader out when the state is `expired`.
 
 ### 19.4 Functions, arrow functions, modules
 
@@ -189,7 +189,7 @@ export function idleState(nowMs: number, lastActivityMs: number, timeoutSeconds:
 
 *Path: `frontend/src/app/core/idle.ts`*
 
-`IDLE_WARNING_SECONDS` is a constant defined near the top of `idle.ts`, before the function (`export const IDLE_WARNING_SECONDS = 5 * 60;`, so 300 seconds), left out of this excerpt. The function takes three numbers, returns an `IdleState`, and has no side effects (it changes nothing outside itself and reads nothing but its inputs): given the same three numbers it always gives the same answer. The compiler checks every `return` against `IdleState`; returning `{ kind: 'warnng' }` would be rejected. Notice `{ kind: 'warning', secondsLeft }`: when a variable has the same name as the property, TypeScript lets you write it once (`secondsLeft` instead of `secondsLeft: secondsLeft`). The condition `cond ? a : b` is the **conditional expression**, the same as in Java: "if `cond`, then `a`, otherwise `b`".
+`IDLE_WARNING_SECONDS` is a constant defined near the top of `idle.ts`, before the function (`export const IDLE_WARNING_SECONDS = 5 * 60;`, so 300 seconds), left out of this excerpt. The function takes three numbers, returns an `IdleState`, and has no side effects (it changes nothing outside itself and reads nothing but its inputs): given the same three numbers it always gives the same answer. The compiler checks every `return` against `IdleState`; returning `{ kind: 'warnng' }` would be rejected. Notice `{ kind: 'warning', secondsLeft }`: when a variable has the same name as the property, TypeScript lets you write it once (`secondsLeft` instead of `secondsLeft: secondsLeft`). The condition `cond ? a : b` is the **conditional expression**, the same as in Java: "if `cond`, then `a`, otherwise `b`."
 
 Read the arithmetic once, because the rest of the chapter assumes you can follow such lines. `nowMs - lastActivityMs` is how many milliseconds have passed since the last activity. Dividing by 1000 converts to seconds, and subtracting that from the timeout gives the seconds left. `Math.ceil` rounds up, so 0.2 seconds left still counts as one second (the countdown never shows zero while there is time). If nothing is left, the session has expired. Otherwise the reader is warned when the seconds left are within the warning window: the smaller of five minutes and half the timeout.
 
@@ -206,7 +206,7 @@ import { buildTileViewModels, TileViewModel } from './tile-view-model';
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-The path after `from` is where the code lives: `./` is "this folder" and `../` is "one folder up". Modules replace Java's `package` and `import` pair with a single mechanism where the file path is the address.
+The path after `from` is where the code lives: `./` is "this folder" and `../` is "one folder up." Modules replace Java's `package` and `import` pair with a single mechanism where the file path is the address.
 
 ### 19.5 Worked example: reading a whole function
 
@@ -245,8 +245,8 @@ Go through it in order.
 2. **`const tiles: TileViewModel[] = [];`** starts an empty array. `const` doesn't stop you from adding items; it only stops you from pointing `tiles` at a different array.
 3. **Two nested loops.** `for (let row = 0; row < grid.rows; row++)` counts rows from 0, and the inner loop counts columns. `row++` adds one each time. Together they visit every cell of the grid, row by row.
 4. **Position.** A tile's `left` edge is its column times the tile size, and its `top` is its row times the tile size.
-5. **Size.** Most tiles are exactly `tileSize` wide and high, but the last column and row are usually smaller, because a page is rarely an exact multiple of the tile size. `Math.min(grid.tileSize, pageInfo.pageWidthPx - left)` picks the smaller of "a full tile" and "what remains of the page". The comment in the file says why: edge tiles are cropped, so each tile's size has to be derived from the page's dimensions rather than assumed to equal `tileSize`.
-6. **`tiles.push({...})`** adds one description. `key` is a stable label made from the row and column with a template literal. `url` joins the base and the tile's address, found by two-step lookup `grid.tileUrls[row][col]` (an array of arrays). The shorthand `top,` and `left,` means `top: top` and `left: left`.
+5. **Size.** Most tiles are exactly `tileSize` wide and high, but the last column and row are usually smaller, because a page is rarely an exact multiple of the tile size. `Math.min(grid.tileSize, pageInfo.pageWidthPx - left)` picks the smaller of "a full tile" and "what remains of the page." The comment in the file says why: edge tiles are cropped, so each tile's size has to be derived from the page's dimensions rather than assumed to equal `tileSize`.
+6. **`tiles.push({...})`** adds one description. `key` is a stable label made from the row and column with a template literal. `url` joins the base and the tile's address, found by a two-step lookup `grid.tileUrls[row][col]` (an array of arrays). The shorthand `top,` and `left,` means `top: top` and `left: left`.
 
 A concrete case makes the edge logic visible. Suppose a page is 1,000 pixels wide and 1,300 pixels tall, and tiles are 512 pixels. Table 19.2 shows each tile:
 
@@ -255,11 +255,11 @@ A concrete case makes the edge logic visible. Suppose a page is 1,000 pixels wid
 | Tile (row, col) | left | top | width | height |
 |---|---|---|---|---|
 | (0, 0) | 0 | 0 | 512 | 512 |
-| (0, 1) | 512 | 0 | 488 (1000 − 512) | 512 |
+| (0, 1) | 512 | 0 | 488 (1,000 − 512) | 512 |
 | (1, 0) | 0 | 512 | 512 | 512 |
-| (2, 1) | 512 | 1024 | 488 | 276 (1300 − 1024) |
+| (2, 1) | 512 | 1,024 | 488 | 276 (1,300 − 1,024) |
 
-The grid has 2 columns and 3 rows (1,000 ÷ 512 rounds up to 2, and 1,300 ÷ 512 rounds up to 3), so six tiles. Only the interior ones are full-size. This is the kind of small, self-contained, testable logic that TypeScript is good at, and it lives in its own file precisely so it can be understood in isolation.
+The grid has 2 columns and 3 rows (1,000 ÷ 512 rounds up to 2, and 1,300 ÷ 512 rounds up to 3), so six tiles. Only the tiles outside the last row and the last column are full-size: here, the two tiles in the first column, in rows 0 and 1. This is the kind of small, self-contained, testable logic that TypeScript is good at, and it lives in its own file precisely so it can be understood in isolation.
 
 ### 19.6 Missing values and safe access
 
@@ -267,9 +267,9 @@ Real data has gaps: nobody is signed in yet, a document has no share count, a pr
 
 Three small tools make the handling readable, all visible in `session.service.ts`:
 
-- **Optional chaining, `?.`,** stops and yields `undefined` if the thing before it is `null` or `undefined`. `this.current()?.username` means "the username, if there is a current user; otherwise nothing, and no crash".
-- **Nullish coalescing, `??`,** supplies a default for `null` or `undefined`. `x ?? null` means "`x`, or `null` if `x` is missing".
-- **The spread operator, `...`,** copies the properties of an object into a new one. `{ ...user, mustChangePassword: false }` means "a new object with everything `user` has, but with `mustChangePassword` set to false". The original isn't modified.
+- **Optional chaining, `?.`,** stops and yields `undefined` if the thing before it is `null` or `undefined`. `this.current()?.username` means "the username, if there is a current user; otherwise nothing, and no crash."
+- **Nullish coalescing, `??`,** supplies a default for `null` or `undefined`. `x ?? null` means "`x`, or `null` if `x` is missing."
+- **The spread operator, `...`,** copies the properties of an object into a new one. `{ ...user, mustChangePassword: false }` means "a new object with everything `user` has, but with `mustChangePassword` set to false." The original isn't modified.
 
 **Listing 19.6 — `session.service.ts` (book-m6-final, excerpts from two places in the class)**
 
@@ -284,9 +284,9 @@ Three small tools make the handling readable, all visible in `session.service.ts
 
 *Path: `frontend/src/app/core/session.service.ts`*
 
-The first line combines the first two tools: "the current user's name, or `null` if nobody is signed in". The second block is the end of the change-password method: it reads the current user, and only `if (user)`, meaning only when a user exists, does it store a *new* object with the flag turned off. Storing a new object rather than editing the old one matters in Chapter 21: signals notice a *replaced* value, not an edited one.
+The first line combines the first two tools: "the current user's name, or `null` if nobody is signed in." The second block is the end of the change-password method: it reads the current user, and only `if (user)`, meaning only when a user exists, does it store a *new* object with the flag turned off. Storing a new object rather than editing the old one matters in Chapter 21: signals notice a *replaced* value, not an edited one.
 
-Arrays have handy methods you will see everywhere. `filter` keeps the elements that pass a test, `map` transforms each element, `some` asks "does any element pass?", and `includes` asks "is this in the list?". For example, the viewer counts loaded tiles with `this.tiles().filter((t) => t.status === 'loaded').length`, and the admin screen checks whether an event is a warning with `[...].includes(event.type)`.
+Arrays have handy methods you will see everywhere. `filter` keeps the elements that pass a test, `map` transforms each element, `some` asks "does any element pass?," and `includes` asks "is this in the list?." For example, the viewer counts loaded tiles with `this.tiles().filter((t) => t.status === 'loaded').length`, and the admin screen checks whether an event is a warning with `[...].includes(event.type)`.
 
 ## Intermediate tier: Asynchronous code, errors, and generics
 
@@ -300,7 +300,7 @@ A **Promise** stands for one result that will arrive later, or fail. An `async` 
 
 **Where the analogy breaks down:** a buzzer goes off once, and so does a promise. But a promise can also end in failure, and a real buzzer has no such state. In code, a failed `await` throws an exception, which you catch with the `try`/`catch` you know from Java (Chapter 5).
 
-An **Observable** stands for a *stream* of results over time: zero, one, or many values. It comes from a library called RxJS, which Angular's `HttpClient` uses (Chapter 22). You start it by calling `.subscribe(...)` with functions for "a value arrived" and "it failed". The project's rule of thumb: Angular's `HttpClient` gives Observables; the browser's `fetch()` gives Promises. You see the Promise side in `viewer.component.ts`:
+An **Observable** stands for a *stream* of results over time: zero, one, or many values. It comes from a library called RxJS, which Angular's `HttpClient` uses (Chapter 22). You start it by calling `.subscribe(...)` with functions for "a value arrived" and "it failed." The project's rule of thumb: Angular's `HttpClient` gives Observables; the browser's `fetch()` gives Promises. You see the Promise side in `viewer.component.ts`:
 
 **Listing 19.7 — `viewer.component.ts` (book-m6-final, excerpt: fetching one tile inside `fetchPendingTiles`)**
 
@@ -319,7 +319,7 @@ An **Observable** stands for a *stream* of results over time: zero, one, or many
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-`fetch(...)` returns a promise of a `Response`. `await` waits for it. If the network fails, the promise is rejected and the `catch` block runs. `signal` is an `AbortSignal`, which lets the viewer cancel every in-flight request at once when the reader turns the page, so a cancelled fetch is not treated as an error. `cache: 'no-store'` tells the browser not to keep a copy of the tile. The annotation `let response: Response` is needed because the value is assigned inside `try`. `catch` without a name is allowed when you don't need the error object, and `continue` skips to the next loop round.
+`fetch(...)` returns a promise of a `Response`. `await` waits for it. If the network fails, the promise is rejected and the `catch` block runs. `signal` is an `AbortSignal`, which lets the viewer cancel every in-flight request at once when the reader turns the page, so a canceled fetch is not treated as an error. `cache: 'no-store'` tells the browser not to keep a copy of the tile. The annotation `let response: Response` is needed because the value is assigned inside `try`. `catch` without a name is allowed when you don't need the error object, and `continue` skips to the next loop round.
 
 Several `await` loops can also run side by side. The viewer starts a fixed number of "workers" and waits for all of them:
 
@@ -327,9 +327,9 @@ Several `await` loops can also run side by side. The viewer starts a fixed numbe
 await Promise.all(Array.from({ length: MAX_CONCURRENT_TILE_FETCHES }, () => worker()));
 ```
 
-`Array.from({ length: 6 }, () => worker())` creates six calls to `worker()`, each returning a promise (the constant is 6). `Promise.all` gives back one promise that settles when all six are done. Chapter 22 explains why a small pool.
+`Array.from({ length: 6 }, () => worker())` creates six calls to `worker()`, each returning a promise (the constant is 6). `Promise.all` gives back one promise that settles when all six are done. Chapter 22 explains why the pool is small.
 
-Where a function can only pass a value on later, callers can convert. `session.service.ts` uses `firstValueFrom(...)` to turn an HTTP Observable into a Promise, because Angular's startup hook (`provideAppInitializer`, Chapter 22) waits for a promise.
+A function that hands out its result through an Observable can be converted for callers that need a Promise. `session.service.ts` uses `firstValueFrom(...)` to turn an HTTP Observable into a Promise, because Angular's startup hook (`provideAppInitializer`, Chapter 22) waits for a promise.
 
 ### 19.8 Reading TypeScript errors
 
@@ -350,7 +350,7 @@ t.ts(1,5): error TS2322: Type 'null' is not assignable to type 'string'.
 t.ts(2,12): error TS7006: Parameter 'x' implicitly has an 'any' type.
 ```
 
-The prefix `t.ts(1,5)` gives the file, line and column, so you can jump straight to the spot. The first says a variable declared as `string` was given `null`: the fix is either to allow it (`string | null`) or to not assign it. The second says a function parameter has no type and the compiler can't work one out; `any` would switch checking off, so the compiler asks you to write a type. Two habits help when a message is long: fix the *first* error first, since later ones are often consequences, and read the last line of a multi-line message, which usually names the actual mismatch.
+The prefix `t.ts(1,5)` gives the file, line, and column, so you can jump straight to the spot. The first says a variable declared as `string` was given `null`: the fix is either to allow it (`string | null`) or to not assign it. The second says a function parameter has no type and the compiler can't work one out; `any` would switch checking off, so the compiler asks you to write a type. Two habits help when a message is long: fix the *first* error first, since later ones are often consequences, and read the last line of a multi-line message, which usually names the actual mismatch.
 
 The project turns on a few extra checks in `tsconfig.json` (Chapter 20, Section 20.7). Two are worth knowing now: `noImplicitReturns` (a function whose branches sometimes return a value and sometimes don't is an error) and `noFallthroughCasesInSwitch` (a `switch` case that runs into the next one is an error).
 
@@ -420,10 +420,12 @@ You met generics in Java (`List<String>`, Chapter 5). TypeScript's are the same 
 
 ### 19.11 Small type tools the app uses
 
-- `Partial<TileState>` means "an object with any subset of `TileState`'s properties". `updateTile(key, patch)` in the viewer uses it so callers can change only `{ status: 'failed' }`.
-- `Record<string, () => void>` means "an object whose keys are strings and whose values are functions taking nothing". The viewer's keyboard handler (Chapter 23) uses it to map key names to actions.
-- **Type assertions,** written `value as Type`, tell the compiler "trust me, this is a `Type`". They bypass a check, so they are used sparingly; the upload component uses one for `event.target as HTMLInputElement`, because the browser's generic event type doesn't know the target is a file input.
-- **Extending an interface** adds properties to an existing shape, as Java's `extends` does. The viewer's tile state builds on the tile description this way:
+Four small tools appear in the project, and a fifth, `as const`, follows them:
+
+- `Partial<TileState>` means "an object with any subset of `TileState`'s properties." `updateTile(key, patch)` in the viewer uses it so callers can change only `{ status: 'failed' }`.
+- `Record<string, () => void>` means "an object whose keys are strings and whose values are functions taking nothing." The viewer's keyboard handler (Chapter 23) uses it to map key names to actions.
+- **Type assertions,** written `value as Type`, tell the compiler "trust me, this is a `Type`." They bypass a check, so they are used sparingly; the upload component uses one for `event.target as HTMLInputElement`, because the browser's generic event type doesn't know the target is a file input.
+- **Extending an interface** adds properties to an existing shape, as Java's `extends` does. Listing 19.10 shows the viewer's tile state, which builds on the tile description this way.
 
 **Listing 19.10 — `viewer.component.ts` (book-m6-final, excerpt: the tile state types)**
 
@@ -441,7 +443,7 @@ interface TileState extends TileViewModel {
 
 A `TileState` has everything from Listing 19.5's `TileViewModel` (key, url, position, size) plus a `src` and a `status` that can only be one of three words. Because `status` is a union, a typo such as `'laoded'` fails to compile, and the `if (tile.status === 'loaded')` checks throughout the viewer can never silently compare against a word that doesn't exist.
 
-- `as const` freezes an array of literals into exact types, and `typeof` reads the type of a value, so a list and its type stay in step. The admin screen's list of audit event types does this:
+The fifth tool is `as const`. It freezes an array of literals into exact types, and `typeof` reads the type of a value, so a list and its type stay in step. The admin screen's list of audit event types does this (Listing 19.11):
 
 **Listing 19.11 — `admin.models.ts` (book-m6-final, simplified: the event names after `'SIGN_IN'`, 18 in all, are omitted at the `// ...` line)**
 
@@ -458,7 +460,7 @@ export type AuditEventType = (typeof AUDIT_EVENT_TYPES)[number];
 
 *Path: `frontend/src/app/features/admin/admin.models.ts`*
 
-`as const` says the array is fixed and its elements are these exact words, not merely "some strings". `(typeof AUDIT_EVENT_TYPES)[number]` reads: the type of the array, indexed by any number, that is, "any one element": a union of all 21 names. The same list can drive a drop-down menu in the admin screen (it does), while the type prevents a filter from being set to a name that isn't in the list. One source of truth, no drift.
+`as const` says the array is fixed and its elements are these exact words, not merely "some strings." `(typeof AUDIT_EVENT_TYPES)[number]` reads: the type of the array, indexed by any number, that is, "any one element": a union of all 21 names. The same list can drive a drop-down menu in the admin screen (it does), while the type prevents a filter from being set to a name that isn't in the list. One source of truth, no drift.
 
 ## Advanced tier: What types can't prevent
 
@@ -491,7 +493,7 @@ The viewer prevents this with a plain counter, `loadGeneration`, incremented on 
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-Step by step: bumping `loadGeneration` invalidates every answer still in flight. `abort()` cancels the network requests, and a fresh `AbortController` is made for the next page (a controller can be used only once). The two subscriptions are cancelled with `?.unsubscribe()` (the `?.` from Section 19.6: "if there is one"). The throttle timers are cleared. Each tile's temporary `blob:` address is released with `URL.revokeObjectURL`, so the browser can free the image memory. The code comments in `viewer.component.ts` give the reason for bounding the requests: outstanding requests would otherwise keep spending the reader's rate-limit budget (Chapter 22). Nothing here is enforced by the compiler; it takes discipline, and `viewer.component.spec.ts` (Chapter 24) checks the visible consequences.
+Step by step: bumping `loadGeneration` invalidates every answer still in flight. `abort()` cancels the network requests, and a fresh `AbortController` is made for the next page (a controller can be used only once). The two subscriptions are canceled with `?.unsubscribe()` (the `?.` from Section 19.6: "if there is one"). The throttle timers are cleared. Each tile's temporary `blob:` address is released with `URL.revokeObjectURL`, so the browser can free the image memory. The code comments in `viewer.component.ts` give the reason for bounding the requests: outstanding requests would otherwise keep spending the reader's rate-limit budget (Chapter 22). Nothing here is enforced by the compiler; it takes discipline, and `viewer.component.spec.ts` (Chapter 24) checks the visible consequences.
 
 ### 19.13 Why `fetch()` for tiles and not `HttpClient` or plain image URLs
 
@@ -519,7 +521,7 @@ The viewer's zoom buttons add or subtract 0.2, so the project rounds after each 
 
 Read from the inside out: `z + 0.2` is the new zoom; `.toFixed(2)` rounds it to two decimals but returns *text*; the leading `+` converts the text back to a number; `Math.min(MAX_ZOOM, ...)` caps it at the maximum. With the rounding, the sequence is a clean 1.2, 1.4, 1.6, 1.8. The reader-visible percentage would look right either way, but other code compares the zoom with plain numbers (the swipe handler ignores swipes when `zoom() > 1`), and clean values keep those comparisons predictable.
 
-The second trap is turning text from a form into a number. `Number('')` is `0`, `Number(' 3 ')` is `3`, `Number(null)` is `0`, and `Number('abc')` is `NaN` ("not a number"), which is not even equal to itself. So `Number(x)` alone can't tell "the user typed nothing" from "the user typed 0". The viewer's page-jump code guards against exactly that:
+The second trap is turning text from a form into a number. `Number('')` is `0`, `Number(' 3 ')` is `3`, `Number(null)` is `0`, and `Number('abc')` is `NaN` ("not a number"), which is not even equal to itself. So `Number(x)` alone can't tell "the user typed nothing" from "the user typed 0." The viewer's page-jump code guards against exactly that:
 
 **Listing 19.14 — `viewer.component.ts` (book-m6-final, excerpt: method `goToPage`)**
 
@@ -558,15 +560,15 @@ The condition rejects, in order: blank text (`!raw.trim()`), anything that is no
 
 | File | First appears | What it shows |
 |---|---|---|
-| `frontend/src/app/features/documents/document.models.ts` | book-m1-accounts | Interfaces and unions mirroring the API |
-| `frontend/src/app/core/idle.ts` | book-m4-reading | Discriminated union and a pure function |
-| `frontend/src/app/features/viewer/tile-view-model.ts` | book-m1-accounts | A pure function with loops and `Math.min` |
-| `frontend/src/app/core/session.service.ts` | book-m1-accounts | `Role` union, `Observable`, `?.`, `??`, spread, `firstValueFrom` |
-| `frontend/src/app/features/viewer/viewer.component.ts` | book-m1-accounts | `async`/`await`, `fetch`, `Promise.all`, `AbortController`, number handling |
-| `frontend/src/app/features/documents/manage.component.ts` | book-m2-documents | The generic helper `run<T>` |
-| `frontend/src/app/features/admin/admin.models.ts` | book-m1-accounts | `as const` and derived union types |
+| `frontend/src/app/features/documents/document.models.ts` | `book-m1-accounts` | Interfaces and unions mirroring the API |
+| `frontend/src/app/core/idle.ts` | `book-m4-reading` | Discriminated union and a pure function |
+| `frontend/src/app/features/viewer/tile-view-model.ts` | `book-m1-accounts` | A pure function with loops and `Math.min` |
+| `frontend/src/app/core/session.service.ts` | `book-m1-accounts` | `Role` union, `Observable`, `?.`, `??`, spread, `firstValueFrom` |
+| `frontend/src/app/features/viewer/viewer.component.ts` | `book-m1-accounts` | `async`/`await`, `fetch`, `Promise.all`, `AbortController`, number handling |
+| `frontend/src/app/features/documents/manage.component.ts` | `book-m2-documents` | The generic helper `run<T>` |
+| `frontend/src/app/features/admin/admin.models.ts` | `book-m1-accounts` | `as const` and derived union types |
 
-See any of them at a tag with `git show book-m6-final:frontend/src/app/core/idle.ts`. The viewer grew over the milestones: its fetch loop and `AbortController` exist at book-m1-accounts, while page memory, swipe, and replaced-document handling arrive in later tags.
+See any of them at a tag with `git show book-m6-final:frontend/src/app/core/idle.ts`. The viewer grew over the milestones: its fetch loop and `AbortController` exist at `book-m1-accounts`, while page memory, swipe, and replaced-document handling arrive in later tags.
 
 ## Try it
 
@@ -610,13 +612,13 @@ Using Listing 19.5, work out the position and size of every tile for a page 600 
 ## Summary
 
 - TypeScript is JavaScript plus labels that a compiler checks and then erases; the browser runs plain JavaScript.
-- Interfaces describe shapes, and unions restrict a value to a list of alternatives, which the app uses for roles, visibility, tile status and idle states.
+- Interfaces describe shapes, and unions restrict a value to a list of alternatives, which the app uses for roles, visibility, tile status, and idle states.
 - Discriminated unions let the compiler track which fields exist in which state.
 - Missing values are handled explicitly with `null`, `?.`, `??` and spreading into new objects; in TypeScript 6.0 the strict checks are on by default, even though this project's `tsconfig.json` never says `strict`.
 - Promises and `await` handle a single delayed result, Observables handle streams; the app uses Observables for `HttpClient` and Promises for `fetch`.
 - Generics such as `run<T>` share behavior across types while the compiler checks each use.
 - Types mirror the API by agreement only; nothing checks JSON at run time.
-- Async code and user input need discipline that types can't provide: the generation counter, number validation and rounding.
+- Async code and user input need discipline that types can't provide: the generation counter, number validation, and rounding.
 
 Next, Chapter 20 introduces Node and npm, the tools that compile and run all of this.
 

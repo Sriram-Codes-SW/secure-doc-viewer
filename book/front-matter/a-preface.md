@@ -17,10 +17,10 @@ without ever handing out the PDF. The server turns each page into small image pi
 draws the viewer's identity on every piece, and delivers the pieces through short-lived signed
 links. It has accounts and roles, private and shared documents, an audit trail, a reader that works
 on a phone, and a set of protections against the ways people try to abuse it. It runs in Docker,
-sits behind an HTTPS front end, and can be backed up and watched.
+sits behind an HTTPS frontend, and can be backed up and watched.
 
 This is the pattern commercial e-magazine and flipbook readers use. The book explains it from the
-ground up, so that "signed URL", "session binding" and "rate limit" are ideas you can use on your
+ground up, so that "signed URL," "session binding" and "rate limit" are ideas you can use on your
 next project and not only words in this one.
 
 ## Why a real project
@@ -32,34 +32,34 @@ server answer "not found" when the honest answer is "not allowed"? In a tutorial
 never come up. In a real application they come up in the first week of use, and the answers are
 where most of the learning is.
 
-The project was built in stages, and the repository keeps a bookmark (a git tag) at the end of
+The project was built in stages, and the repository keeps a bookmark (a Git tag) at the end of
 each stage. Part IV walks through those stages in order, so you watch the design grow: from a
 one-page demo that signs anyone in with only a name, to an application that has survived several
 rounds of independent review. Along the way you meet the bugs and the review findings that shaped
-it. They are told as stories: the problem, how it was found, the fix and the lesson.
+it. They are told as stories: the problem, how it was found, the fix, and the lesson.
 
 ## How the book is organized
 
 - **Front matter** gets your machine ready.
 - **Part I, Foundations,** teaches programming with Java, the command line, Maven, Git, how the
-  web works, SQL and Docker. No framework yet.
+  web works, SQL, and Docker. No framework yet.
 - **Part II, The backend,** builds the server side with Spring Boot: web endpoints, storing data,
-  signing people in, defending against abuse, working with PDFs and images, and testing.
+  signing people in, defending against abuse, working with PDFs, and images, and testing.
 - **Part III, The frontend,** builds the browser side with TypeScript and Angular, and shows how it
   talks to the backend and how it is tested.
 - **Part IV, Building the Secure Document Viewer,** assembles the whole application in seven
   milestones, each ending with an updated architecture diagram and the decisions and challenges of
   that stage.
 - **Part V, Production,** takes the finished app to a real host: security review, deployment and
-  HTTPS, backups, metrics and supply-chain hygiene.
-- **The Engineering Trade-offs** weighs every major decision against the alternatives, including
-  what an enterprise would do differently.
+  HTTPS, backups, metrics, and supply-chain hygiene.
+- **Engineering trade-offs (Chapter 37)** weighs every major decision against the alternatives,
+  including what an enterprise would do differently.
 - **Part VI, Patterns,** names the design and architectural patterns the app
   already uses, so you leave with a vocabulary for your next project.
 - **Part VII, Taking it to the cloud,** closes the main text with a design for running the app on Amazon
   Web Services. It is a design, not a deployment, and it says so.
 - The **appendices** hold the glossary, the architecture blueprints side by side, solutions to the
-  exercises, command cheat sheets and troubleshooting, followed by an index of the terms defined in
+  exercises, command cheat sheets, and troubleshooting, followed by an index of the terms defined in
   the chapters.
 
 ## What the app does not do
@@ -71,17 +71,17 @@ Chapter 37 puts every major decision next to its costs.
 
 ## The stack
 
-Java 25, Spring Boot 4, MySQL 8.4, TypeScript, Angular 22, Node 24, Docker and Git. You learn
+Java 25, Spring Boot 4, MySQL 8.4, TypeScript, Angular 22, Node 24, Docker, and Git. You learn
 only what this app uses. Topics the app doesn't need are left out or mentioned in a sentence.
 Where an earlier milestone used older versions (the first five milestones were built with Spring
 Boot 3.3.4 and Java 21), the chapter says so.
 
 ## A note on how this project was made
 
-The application was built with an AI coding assistant working alongside its owner, and it was
-examined between milestones by independent AI review agents, one acting as a product owner and one
-as a senior technical manager. The book says so wherever it matters and never presents those
-reviewers as people. What matters for you is that the findings were real: each was demonstrated
+The application was built with an AI coding assistant working alongside the project owner, and it was
+examined between milestones by two independent AI review agents: the AI product-owner reviewer and the
+AI technical-manager reviewer. The book later calls them the PO reviewer and the TM reviewer. It says
+so wherever it matters and never presents those reviewers as people. What matters for you is that the findings were real: each was demonstrated
 against the running application, and each led to a change you can read in the repository.
 
 ## A promise about honesty
@@ -96,14 +96,14 @@ where it doesn't, that is a defect in the book, not a gap in your understanding.
 This book stands on the work of the people who build and maintain open-source software and the
 documentation that comes with it. The Secure Document Viewer is made of their projects, and every
 chapter sends you back to their official documentation: OpenJDK and Java, Spring Boot, Spring
-Security and Spring Session, Hibernate and Flyway, Apache Maven, Apache PDFBox and Apache Tomcat,
-MySQL, Docker, Git, Node.js, npm, TypeScript and Angular, Vitest, Playwright and axe-core,
-Testcontainers, nginx and Caddy, and, for the diagrams, Mermaid. Thank you to their maintainers and
+Security and Spring Session, Hibernate, and Flyway, Apache Maven, Apache PDFBox, and Apache Tomcat,
+MySQL, Docker, Git, Node.js, npm, TypeScript, and Angular, Vitest, Playwright, and axe-core,
+Testcontainers, nginx, and Caddy, and, for the diagrams, Mermaid. Thank you to their maintainers and
 to everyone who writes and corrects their documentation.
 
 The author of this book is Claude, an AI model made by Anthropic. The application was built, and the
 book was written, together with the project owner, who set the goals, made the product decisions and
-reviewed the work. AI review agents, acting as a product owner and as a senior technical manager,
+reviewed the work. The PO reviewer and the TM reviewer, both AI agents,
 examined the application between milestones, and further AI agents helped research, write, review
 and check the chapters. The author checked the claims in the book against the code and the official
 documentation, and the book says so wherever the difference between checked and unchecked matters.

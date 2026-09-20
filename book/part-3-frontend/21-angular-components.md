@@ -18,7 +18,7 @@ By the end of this chapter, you will be able to:
 ## Prerequisites
 
 - Chapter 19: TypeScript (classes, types, arrow functions).
-- Chapter 20: Node, npm and the Angular toolchain (`ng serve`, project layout).
+- Chapter 20: Node, npm, and the Angular toolchain (`ng serve`, project layout).
 
 ## Beginner tier: A screen is a small machine with three parts
 
@@ -28,7 +28,7 @@ An **Angular** component is one reusable piece of screen. Think of a name badge 
 
 **Where the analogy breaks down:** a badge holder is passive, and you swap the card by hand. A component watches its data and redraws itself when the data changes.
 
-A component has three parts. The class holds the data and actions, in TypeScript. The **template** is the HTML that shows them; HTML is the markup language that describes the structure of a web page, such as headings, buttons and links. The **stylesheet** is CSS, the language that sets colors, spacing and layout. The top-level component of the app is short enough to read whole:
+A component has three parts. The class holds the data and actions, in TypeScript. The **template** is the HTML that shows them; HTML is the markup language that describes the structure of a web page, such as headings, buttons, and links. The **stylesheet** is CSS, the language that sets colors, spacing, and layout. The top-level component of the app is short enough to read whole:
 
 **Listing 21.1 — `app.ts` (book-m6-final, excerpt: imports and decorator)**
 
@@ -54,7 +54,7 @@ export class App implements OnInit, OnDestroy {
 
 Line by line:
 
-- `@Component({ ... })` is a **decorator**: a label attached to the class it decorates that tells Angular "this class is a component, configured like so".
+- `@Component({ ... })` is a **decorator**: a label attached to the class it decorates that tells Angular "this class is a component, configured like so."
 - `selector: 'app-root'` is the custom HTML tag that shows this component. `src/index.html` contains `<app-root></app-root>` (Chapter 20, Listing 20.3), and that is where the whole application appears.
 - `standalone: true` means the component lists its own dependencies rather than relying on a shared module. (Angular 22 treats components as standalone by default; the project states it explicitly.)
 - `imports: [...]` lists the other building blocks that this component's template uses: other components, pipes (formatters, Section 21.3), and directives (extra behavior attached to an element, such as `routerLink`, which turns an ordinary link into an in-app one). If the template uses `routerLink` but `RouterLink` isn't listed here, the compiler complains.
@@ -64,7 +64,7 @@ Line by line:
 
 The app starts in `main.ts` with `bootstrapApplication(App, appConfig)`, which creates the root component and hands it the app-wide settings (Chapter 22).
 
-Figure 21.1 shows how the pieces you have met so far nest. The page contains one tag, `<app-root>`; the root component draws the top bar, the idle banner and a `<router-outlet />`; and the outlet holds whichever screen component the current address selects (Chapter 23).
+Figure 21.1 shows how the pieces you have met so far nest. The page contains one tag, `<app-root>`; the root component draws the top bar, the idle banner, and a `<router-outlet />`; and the outlet holds whichever screen component the current address selects (Chapter 23).
 
 ```mermaid
 flowchart TB
@@ -80,13 +80,13 @@ flowchart TB
 
 *Figure 21.1 — The component tree: from `index.html` to the current screen*
 
-*Text description:* A tree diagram drawn top to bottom. `index.html` contains the `app-root` tag, which shows the App component. App has three children: the top bar, the idle banner (shown only in the warning state) and the router outlet. The router outlet holds one screen at a time: the sign-in screen, the document list, the viewer or another screen. Notice that the top bar and banner belong to App, so they stay while the screens change.
+*Text description:* A tree diagram drawn top to bottom. `index.html` contains the `app-root` tag, which shows the App component. App has three children: the top bar, the idle banner (shown only in the warning state) and the router outlet. The router outlet holds one screen at a time: the sign-in screen, the document list, the viewer, or another screen. Notice that the top bar and banner belong to App, so they stay while the screens change.
 
 <!-- source: index.html, app.ts, app.html and app.routes.ts at book-m6-final -->
 
 Only one of the screen components exists at a time: when the reader navigates, Angular destroys the old one and creates the new one inside the same outlet. The top bar and the idle banner belong to `App`, so they survive every navigation.
 
-### 21.2 A component's life: creation, hooks and cleanup
+### 21.2 A component's life: creation, hooks, and cleanup
 
 A component isn't a permanent object. Angular **creates** it when it's needed (when the router visits its route, or when a parent's template contains its tag), **runs** it while it's on screen, and **destroys** it when it's removed. Lifecycle hooks let the class react at those moments. `App` uses two of them for a single job: a one-second timer that checks whether the reader has been idle.
 
@@ -118,7 +118,7 @@ export class App implements OnInit, OnDestroy {
 (Excerpt: the rest of the class, which holds `staySignedIn`, `formatCountdown`, `checkIdle` and `logout`, is omitted.)
 
 - The constructor runs first, when the object is created. Its parameters are how Angular hands over the services the class needs (dependency injection, Chapter 22). Here it asks for the `SessionService` and the `Router`. `private readonly` and `readonly` in front of a parameter declare it as a field in one step; `readonly` means the field can't be reassigned, and leaving out `private` (as with `sessionService`) lets the template read it, which it does.
-- `ngOnInit` runs once, after the constructor, when the component is ready. It starts a timer with `setInterval(() => this.checkIdle(), 1000)`: "every 1,000 milliseconds, call `checkIdle`". `setInterval` returns a number-like handle, which the class stores in `idleTimer` so it can be stopped later. Its type, `ReturnType<typeof setInterval> | null`, means "whatever `setInterval` returns, or `null` before it starts".
+- `ngOnInit` runs once, after the constructor, when the component is ready. It starts a timer with `setInterval(() => this.checkIdle(), 1000)`: "every 1,000 milliseconds, call `checkIdle`." `setInterval` returns a number-like handle, which the class stores in `idleTimer` so it can be stopped later. Its type, `ReturnType<typeof setInterval> | null`, means "whatever `setInterval` returns, or `null` before it starts."
 - `ngOnDestroy` runs when the component is removed. It stops the timer with `clearInterval`. Forgetting this is a classic leak: the timer would keep calling `checkIdle` on a component that no longer exists.
 
 The same start-then-clean-up habit appears wherever a component starts something that outlives a single call: timers, subscriptions to Observables, and in the viewer, in-flight requests and temporary image addresses (Chapter 22).
@@ -297,9 +297,9 @@ A single component can have many signals; the viewer has more than a dozen, and 
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-Read it as a small pipeline. `pageInfo()` (itself a `computed`) gives the current page's pixel size, or nothing before the document has loaded, in which case the style is empty. `fitScale` shrinks a page that is wider than the available space (`fitWidth()` is derived from the window width, capped at 900 pixels) but never enlarges it (`Math.min(1, ...)`). `scale` multiplies that by the reader's zoom. The result is the CSS to apply: the page at its natural pixel size, then scaled down or up by a transform. When the window is resized, the zoom changes or the page turns, the signals it read change, and the style recomputes automatically; no line of code says "on resize, recompute".
+Read it as a small pipeline. `pageInfo()` (itself a `computed`) gives the current page's pixel size, or nothing before the document has loaded, in which case the style is empty. `fitScale` shrinks a page that is wider than the available space (`fitWidth()` is derived from the window width, capped at 900 pixels) but never enlarges it (`Math.min(1, ...)`). `scale` multiplies that by the reader's zoom. The result is the CSS to apply: the page at its natural pixel size, then scaled down or up by a transform. When the window is resized, the zoom changes, or the page turns, the signals it read change, and the style recomputes automatically; no line of code says "on resize, recompute."
 
-Figure 21.2 draws these dependencies for the viewer. Boxes on the left are signals that something changes; the middle boxes are `computed` values; the right-hand boxes are the parts of the template that read them. An arrow means "is read by".
+Figure 21.2 draws these dependencies for the viewer. Boxes on the left are signals that something changes; the middle boxes are `computed` values; the right-hand boxes are the parts of the template that read them. An arrow means "is read by."
 
 ```mermaid
 flowchart LR
@@ -318,7 +318,7 @@ flowchart LR
 
 *Figure 21.2 — How signals flow through the viewer: from changed values to the parts of the screen that redraw*
 
-*Text description:* A dependency diagram drawn left to right. Changed values on the left (manifest, current page, viewport width, zoom, tiles and throttled seconds) feed computed values (page info, fit width and loaded tile count). Those and the raw signals feed the parts of the template on the right: the stage size and scale, the throttle notice and one div per tile. Notice that zoom reaches only the stage style, and tiles reach only the tile divs and the throttle notice.
+*Text description:* A dependency diagram drawn left to right. Changed values on the left (manifest, current page, viewport width, zoom, tiles, and throttled seconds) feed computed values (page info, fit width, and loaded tile count). Those and the raw signals feed the parts of the template on the right: the stage size and scale, the throttle notice, and one div per tile. Notice that zoom reaches only the stage style, and tiles reach only the tile divs and the throttle notice.
 
 <!-- source: viewer.component.ts and viewer.component.html at book-m6-final (signals manifest, currentPage, tiles, zoom, throttledSeconds; computed pageInfo, fitWidth, stageStyle, loadedTileCount) -->
 
@@ -354,9 +354,9 @@ export class PageBadgeComponent {
 }
 ```
 
-A parent would write `<app-page-badge [page]="currentPage()" />`, using the same square-bracket property binding as before. Inputs are also signals, read as `page()`. The project's shape, "screens as pages, shared state in services", is a legitimate design for a small app. The price is that a screen can grow large (the viewer is about 500 lines). A larger team might split it into smaller child components with inputs.
+A parent would write `<app-page-badge [page]="currentPage()" />`, using the same square-bracket property binding as before. Inputs are also signals, read as `page()`. The project's shape, "screens as pages, shared state in services," is a legitimate design for a small app. The price is that a screen can grow large (the viewer is about 500 lines). A larger team might split it into smaller child components with inputs.
 
-### 21.7 Styling, light and dark themes, and accessibility basics
+### 21.7 Styling, light, and dark themes, and accessibility basics
 
 Component stylesheets are scoped: rules in `app.css` affect only the `App` component. To read them you need a few CSS ideas. A **selector** picks elements (`.topbar` picks elements with `class="topbar"`; `nav a` picks links inside a `nav`). A **declaration** sets a property (`padding: 0.85rem 1.5rem;`). Sizes in `rem` are multiples of the page's base font size, so layouts scale with a reader's font setting. **Flexbox** (`display: flex`) lays children out in a row and lets you align and space them. Here is the top bar:
 
@@ -379,7 +379,7 @@ Component stylesheets are scoped: rules in `app.css` affect only the `App` compo
 
 *Path: `frontend/src/app/app.css`*
 
-`display: flex` puts the brand, the navigation and the account area side by side; `align-items: center` centers them vertically; `gap` spaces them; `padding` and `border-bottom` frame the bar; `background: var(--surface)` uses a theme color (Listing 21.9).
+`display: flex` puts the brand, the navigation, and the account area side by side; `align-items: center` centers them vertically; `gap` spaces them; `padding` and `border-bottom` frame the bar; `background: var(--surface)` uses a theme color (Listing 21.9).
 
 Look-and-feel that every screen shares lives in one global file, `styles.css`, built on **CSS custom properties** (also called variables): named values, written `--name`, that any rule can read with `var(--name)`.
 
@@ -417,7 +417,7 @@ Look-and-feel that every screen shares lives in one global file, `styles.css`, b
 
 `:root` selects the whole page, so these values are available everywhere. Components never write a color; they write `var(--surface)` or `var(--border)` (see `app.css`). The `@media (prefers-color-scheme: dark)` block applies only when the reader's operating system is set to dark mode, and redefines the same names, so one block swaps the whole theme. There is no switch in the app: it follows the system.
 
-The naming is by *role*, not by color: `--surface` is "what cards and bars are painted on", not "white". That's why the dark block can give `--surface` a near-black value without any component changing. It is also why there is a separate `--on-accent`: "the color of text sitting on the accent color", which is white in light mode and near-black in dark mode, because the accent itself is a lighter blue in dark mode.
+The naming is by *role*, not by color: `--surface` is "what cards and bars are painted on," not "white." That's why the dark block can give `--surface` a near-black value without any component changing. It is also why there is a separate `--on-accent`: "the color of text sitting on the accent color," which is white in light mode and near-black in dark mode, because the accent itself is a lighter blue in dark mode.
 
 **Contrast** is the difference in brightness between text and its background, measured as a ratio. The Web Content Accessibility Guidelines (WCAG) level AA asks for a ratio of at least 4.5:1 for normal text, so people with low vision or a dim screen can read it. Table 21.2 lists the ratios of the project's main text pairings, computed with the WCAG formula.
 
@@ -441,7 +441,7 @@ Accessibility basics are visible in the templates. Form fields are paired with `
 
 ### 21.8 Tiles, briefly
 
-A PDF page is cut into rectangular tiles on the server (Part II), each a small image, so no single request carries the whole page and each can carry its own watermark. The frontend's job is to put the tiles back together on screen. It asks for a *grid* of signed tile addresses (Chapter 22), downloads each tile, and places it at the right position. Chapter 25 tells the story of the first prototype; here we look at how the Angular viewer does the placing.
+A PDF page is cut into rectangular tiles on the server (Part II), each a small image, so no single request carries the whole page and each can carry its own watermark. The frontend's job is to put the tiles back together on screen. It asks for a *grid* of signed tile addresses (Chapter 22), downloads each tile, and places it at the right position. Chapter 25 tells the story of the first prototype; here the focus is how the Angular viewer does the placing.
 
 ### 21.9 CSS backgrounds instead of images or a canvas
 
@@ -465,7 +465,7 @@ The Angular viewer places each tile as an absolutely positioned `<div>` whose CS
 
 *Path: `frontend/src/app/features/viewer/viewer.component.html`*
 
-`tile.src` is a temporary `blob:` address the viewer creates for the bytes it fetched (Chapter 22). Each `div` is one tile, positioned by `top` and `left` in page pixels. Note the bindings. `[style.top.px]="tile.top"` sets the CSS `top` property and adds the unit `px` for you. `[class.pending]="..."` turns the `pending` class on or off. `track tile.key` identifies each tile by its row and column (`"row-col"`), so when a tile's status changes from pending to loaded, Angular updates that one `div` and leaves the others alone. The milestone-zero prototype drew the page on a `<canvas>` element (`book-m0-mvp`'s static page; Chapter 25); the Angular viewer, from its first appearance at `book-m1-accounts`, uses divs. A canvas is a rectangle you draw pixels onto with code; a `div` with a background is an ordinary page element the browser lays out. The second is simpler to position, scale and make responsive, and lets each tile appear the moment it arrives.
+`tile.src` is a temporary `blob:` address the viewer creates for the bytes it fetched (Chapter 22). Each `div` is one tile, positioned by `top` and `left` in page pixels. Note the bindings. `[style.top.px]="tile.top"` sets the CSS `top` property and adds the unit `px` for you. `[class.pending]="..."` turns the `pending` class on or off. `track tile.key` identifies each tile by its row and column (`"row-col"`), so when a tile's status changes from pending to loaded, Angular updates that one `div` and leaves the others alone. The milestone-zero prototype drew the page on a `<canvas>` element (`book-m0-mvp`'s static page; Chapter 25); the Angular viewer, from its first appearance at `book-m1-accounts`, uses divs. A canvas is a rectangle you draw pixels onto with code; a `div` with a background is an ordinary page element the browser lays out. The second is simpler to position, scale, and make responsive, and lets each tile appear the moment it arrives.
 
 > **Note:** At `book-m6-final` the repository's README still says the browser reassembles the tiles on a canvas. A later documentation-only pull request (#13) corrected that sentence. At the tag, trust the code (`viewer.component.html` and `viewer.component.css`), which uses positioned `div` elements.
 
@@ -528,10 +528,10 @@ One more line from `app.css` shows a modern CSS tool the theme makes possible. T
 
 | File | First appears | What it does |
 |---|---|---|
-| `frontend/src/app/app.ts`, `app.html`, `app.css` | book-m1-accounts (idle banner from book-m4-reading) | Root component: top bar, idle banner, router outlet |
-| `frontend/src/styles.css` | book-m1-accounts (contrast tokens at book-m5-platform) | Global theme tokens, dark mode, buttons |
-| `frontend/src/app/features/documents/document-list.component.*` | book-m2-documents | Signals, `computed` filter, `@for` |
-| `frontend/src/app/features/viewer/viewer.component.*` | book-m1-accounts | Tiles as divs with CSS backgrounds |
+| `frontend/src/app/app.ts`, `app.html`, `app.css` | `book-m1-accounts` (idle banner from `book-m4-reading`) | Root component: top bar, idle banner, router outlet |
+| `frontend/src/styles.css` | `book-m1-accounts` (contrast tokens at `book-m5-platform`) | Global theme tokens, dark mode, buttons |
+| `frontend/src/app/features/documents/document-list.component.*` | `book-m2-documents` | Signals, `computed` filter, `@for` |
+| `frontend/src/app/features/viewer/viewer.component.*` | `book-m1-accounts` | Tiles as divs with CSS backgrounds |
 
 View one with `git show book-m6-final:frontend/src/styles.css`.
 
@@ -576,7 +576,7 @@ Extend Example 21.1 so that the button label shows "Clicked once" for a count of
 
 ## Summary
 
-- A component is a class, a template and a stylesheet, shown through its selector, and it has a life: the constructor, `ngOnInit`, and `ngOnDestroy` for cleanup.
+- A component is a class, a template, and a stylesheet, shown through its selector, and it has a life: the constructor, `ngOnInit`, and `ngOnDestroy` for cleanup.
 - Templates show values with `{{ }}`, decide with `@if`, repeat with `@for`, and respond with `(event)` bindings; `[property]` bindings set values from the class.
 - Signals hold values, `computed` derives new ones, and Angular redraws only what read a changed signal; `asReadonly` lets a service share state without sharing the power to change it.
 - The app has no component inputs or outputs; screens get data from services and the URL.

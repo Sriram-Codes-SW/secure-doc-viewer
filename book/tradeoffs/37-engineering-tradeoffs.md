@@ -5,7 +5,7 @@ Tag: `book-m6-final`. Prerequisites: Chapters 15, 16, 25 to 31, and 32 to 36. Te
 
 ## Learning objectives
 
-By the end of this chapter you can:
+By the end of this chapter, you can:
 
 - explain, for each major decision in this app, what was chosen, what it bought, and what it cost;
 - say which limits you will hit first as the app grows, and in what order;
@@ -14,9 +14,9 @@ By the end of this chapter you can:
 
 ## Prerequisites
 
-- Chapters 15 and 16: authentication, sessions and the defenses around them.
+- Chapters 15 and 16: authentication, sessions, and the defenses around them.
 - Chapters 25 to 31: the milestones the decisions were made in.
-- Chapters 32 to 36: security review, deployment, backups, monitoring and the supply chain.
+- Chapters 32 to 36: security review, deployment, backups, monitoring, and the supply chain.
 
 ## How to read this chapter
 
@@ -36,7 +36,7 @@ outcome but not the reasoning, the text says so and marks the reasoning as the b
 **The decision.** How do you show a document to someone without handing them the file?
 
 **What the project chose.** The server rasterizes each page, slices it into 512-pixel PNG tiles,
-and, in the README's words, the PDF "stops existing as a servable file after ingest". Only disconnected tiles remain, and no endpoint returns a
+and, in the README's words, the PDF "stops existing as a servable file after ingest." Only the tiles remain, and no endpoint returns a
 page or document (README, "Why this design"; the ingest code deletes the staged source PDF, `TileGenerationService`).
 The browser paints the tiles as absolutely positioned elements with CSS background images built from `blob:` URLs (Chapter 21). The reasoning at MVP time survives only in the
 commit message of `b6aef4e`.
@@ -47,11 +47,11 @@ commit message of `b6aef4e`.
 - Each tile passes through checks (signature, session, access, rate limit), so every piece of the document is individually controlled.
 
 **Cons.**
-- Rendering costs CPU at upload and per tile request; the project needed a render pool, a timeout, and limits on pages and pixels (Chapter 32).
+- Rendering costs CPU at upload and per tile request; the project needed a render pool, a timeout, and limits on pages, and pixels (Chapter 32).
 - Pages are images, so there is no text layer: screen readers get nothing, and users cannot search or copy text (README, Limitations).
 - It cannot stop screenshots or photographs, and a patient user with a valid session can fetch every tile.
 
-**The enterprise alternative.** The README says this is "the architecture commercial e-magazine and flipbook readers use". Beyond that the project recorded no alternative. As general industry practice, not something the project recorded: a stricter requirement is often met with a digital rights management (DRM) product, and accessibility with a text layer served under policy.
+**The enterprise alternative.** The README says this is "the architecture commercial e-magazine and flipbook readers use." Beyond that the project recorded no alternative. As general industry practice, not something the project recorded: a stricter requirement is often met with a digital rights management (DRM) product, and accessibility with a text layer served under policy.
 
 **When you'd switch.** When accessibility is a hard requirement (add a controlled text layer), or when the content's value justifies a DRM vendor's cost.
 
@@ -77,7 +77,7 @@ commit message of `b6aef4e`.
 
 **The decision.** How visible should the mark be?
 
-**What the project chose.** Red at 20% opacity in a brick pattern with gaps of 1.5 times the text height. The default opacity was lowered from 0.28 in PR #4, because dense pages (code, tables) were hard to read through a heavier mark. The README calls it "a product decision, not a default nobody chose", and both values are configurable (`watermark-opacity` up to 0.6, `watermark-spacing` down to 0.5).
+**What the project chose.** Red at 20% opacity in a brick pattern with gaps of 1.5 times the text height. The default opacity was lowered from 0.28 in PR #4, because dense pages (code, tables) were hard to read through a heavier mark. The README calls it "a product decision, not a default nobody chose," and both values are configurable (`watermark-opacity` up to 0.6, `watermark-spacing` down to 0.5).
 
 **Pros.**
 - Readers can read the page. The goal is attribution, and a legible trace code achieves that.
@@ -90,7 +90,7 @@ commit message of `b6aef4e`.
 
 **The enterprise alternative.** The README's own lever is turning the mark up (`watermark-opacity`, `watermark-spacing`). General industry practice, not recorded by the project: adding an invisible forensic mark alongside the visible one.
 
-**When you'd switch.** When leaks happen and the visible trace code is not enough evidence, or when different documents need different strength (see 37.8).
+**When you'd switch.** When leaks happen and the visible trace code is not enough evidence, or when different documents need different strength (see Section 37.8).
 
 ## 37.4 App-issued HMAC tokens vs. cloud-signed URLs
 
@@ -109,11 +109,11 @@ commit message of `b6aef4e`.
 
 **Cons.**
 - Every tile passes through the application server, so the app's CPU and network carry all the traffic. A cloud signed URL would let a CDN serve the bytes.
-- One shared secret (`SIGNING_SECRET`) protects everything; outstanding URLs are signed with it, so changing it invalidates them. The README also warns that restoring a backup under a different secret still works, but every account's recognised devices are forgotten, because their hashes are keyed by it; so keep `.env` with the backup.
+- One shared secret (`SIGNING_SECRET`) protects everything; outstanding URLs are signed with it, so changing it invalidates them. The README also warns that restoring a backup under a different secret still works, but every account's recognized devices are forgotten, because their hashes are keyed by it; so keep `.env` with the backup.
 
-**The enterprise alternative.** Object storage plus a CDN, with CloudFront signed URLs or S3 presigned URLs, so the edge serves the bytes and the app only signs. The README lists this as the production shape.
+**The enterprise alternative.** Object storage plus a CDN, with CloudFront signed URLs, or S3 presigned URLs, so the edge serves the bytes and the app only signs. The README lists this as the production shape.
 
-**When you'd switch.** When bandwidth, not logic, is the cost. Note the catch: at the edge, per-request watermarking and per-request session checks become harder, so the switch changes 37.2 as well.
+**When you'd switch.** When bandwidth, not logic, is the cost. Note the catch: at the edge, per-request watermarking and per-request session checks become harder, so the switch changes Section 37.2 as well.
 
 ## 37.5 In-memory sessions and counters vs. a shared store
 
@@ -132,27 +132,27 @@ commit message of `b6aef4e`.
 - A restart signs everyone out and resets throttle counters.
 - With two instances, each would have its own sessions and its own counters, so limits would multiply and a user could land on an instance that does not know them.
 
-**The enterprise alternative.** A shared session store such as Redis through Spring Session, and rate limiting counters held in the same store, so limits hold across instances.
+**The enterprise alternative.** A shared session store such as Redis through Spring Session, and rate-limiting counters held in the same store, so limits hold across instances.
 
-**When you'd switch.** The moment you need a second instance, for capacity or for zero-downtime deploys. See 37.11.
+**When you'd switch.** The moment you need a second instance, for capacity or for zero-downtime deploys. See Section 37.11.
 
 ## 37.6 Built-in authentication vs. an identity provider
 
 <!-- source: PR #1 body; README Limitations; build transcript (the user's choice of built-in accounts) -->
 **The decision.** Who owns accounts and passwords?
 
-**What the project chose.** Built-in accounts: BCrypt passwords in MySQL, roles READER, PUBLISHER, and ADMIN, created by an administrator with no self-signup. Both reviewers had suggested an identity provider (OIDC or SSO); the product owner chose built-in accounts when asked (PR #1). The recorded outcome is sourced; the reasoning is the book's reading: a self-contained app with no external service to depend on.
+**What the project chose.** Built-in accounts: BCrypt passwords in MySQL, roles READER, PUBLISHER, and ADMIN, created by an administrator with no self-signup. Both AI reviewers (the AI product-owner reviewer and the AI technical-manager reviewer; see Chapter 32) had suggested an identity provider, a separate service that signs users in, using OpenID Connect (OIDC, a standard for that) or single sign-on (SSO, one company login that works across many apps); the project owner chose built-in accounts when asked (PR #1). The recorded outcome is sourced; the reasoning is the book's reading: a self-contained app with no external service to depend on.
 
 **Pros.**
-- Nothing outside the stack to set up, and full control of the rules: three lockout counters, recognised devices, forced first-password change, and an unlock action.
+- Nothing outside the stack to set up, and full control of the rules: three lockout counters, recognized devices, forced first-password change, and an unlock action.
 - Sessions live in an httpOnly cookie on the server, so the session id is never visible to JavaScript. The project's record shows this choice was made in PR #1 with no recorded comparison against browser-held tokens, so this book states the outcome only.
 
 **Cons.**
 - The app now owns password storage, lockout, and reset. Reviews found real defects here (the lockout that let anyone lock out any user; the 72-byte BCrypt limit).
-- No MFA (multi-factor authentication: a second proof of identity beyond a password), including for admins (README, Limitations). Accounts also exist only inside this app, so there is no single sign-on (SSO: one company login that works across many apps).
+- No MFA (multi-factor authentication: a second proof of identity beyond a password), including for admins (README, Limitations). Accounts also exist only inside this app, so there is no SSO.
 - Every new user needs an administrator.
 
-**The enterprise alternative.** An identity provider through OIDC (OpenID Connect, a standard for signing in through a separate identity service), which is how the reviewers suggested fixing sign-in and which typically supplies single sign-on (SSO) and multi-factor authentication (MFA). Naming specific vendors is beyond what the project recorded. The app would then take identity from the verified principal and keep only roles and ownership.
+**The enterprise alternative.** An identity provider through OIDC, which is how the reviewers suggested fixing sign-in and which typically supplies SSO and MFA. Naming specific vendors is beyond what the project recorded. The app would then take identity from the verified principal and keep only roles and ownership.
 
 **When you'd switch.** When people already have company accounts, when MFA becomes a requirement, or when administrators cannot keep up with accounts.
 
@@ -177,7 +177,7 @@ commit message of `b6aef4e`.
 
 **The enterprise alternative.** Object storage (S3 or equivalent) with versioned object keys, served through a CDN with signed URLs, and storage-level versioning for backups.
 
-**When you'd switch.** When you need more than one instance (37.11), when the volume outgrows one disk, or when backups need to run without stopping the app.
+**When you'd switch.** When you need more than one instance (Section 37.11), when the volume outgrows one disk, or when backups need to run without stopping the app.
 
 ## 37.8 Per-user rate limits vs. per-document sensitivity
 
@@ -185,7 +185,7 @@ commit message of `b6aef4e`.
 
 **The decision.** How fast may a viewer pull tiles, and is the same limit right for every document?
 
-**What the project chose.** One per-user limit: 180 tile requests per 60-second window with 512-pixel tiles, about 15 pages a minute. The history: the limit and tile size moved from 256 pixels and 120 a minute to 512 and 180 after readers saw blank pages (raised by the AI product-owner review agent; see Chapter 32). The reviewer noted that a 500-page harvest then takes about 33 minutes instead of about 2.4 hours. The product owner accepted this on September 19, 2026 (commit `51ea941`) and asked how sensitive documents could differ; per-document sensitivity levels are listed as a possible follow-up.
+**What the project chose.** One per-user limit: 180 tile requests per 60-second window with 512-pixel tiles, about 15 pages a minute. The history: the limit and tile size moved from 256 pixels and 120 a minute to 512 and 180 after readers saw blank pages (raised by the PO reviewer; see Chapter 32). The reviewer noted that a 500-page harvest then takes about 33 minutes instead of about 2.4 hours. The project owner accepted this on September 19, 2026 (commit `51ea941`) and asked how sensitive documents could differ; per-document sensitivity levels are listed as a possible follow-up.
 
 **Pros.**
 - Reading feels normal, and bulk harvesting is slow and boundable instead of instant.
@@ -194,7 +194,7 @@ commit message of `b6aef4e`.
 **Cons.**
 - The limit bounds speed, not possibility. A scripted harvest still succeeds, only slower.
 - It treats a public brochure and a confidential contract the same.
-- Counters are in memory (37.5).
+- Counters are in memory (Section 37.5).
 
 **The enterprise alternative.** The README names two follow-ups: "per-document sensitivity levels with tighter limits" (Limitations) and logging or alerting on "every tile-urls page fetched back-to-back" rather than only a flat per-minute cap (Possible next steps).
 
@@ -206,7 +206,7 @@ commit message of `b6aef4e`.
 
 *See also: RDS for MySQL 8.4 is covered in Chapter 40, Section 40.7.*
 
-**What the project chose.** MySQL 8.4 in Docker, with schema changes as Flyway migrations. The product owner chose MySQL over H2 and Postgres. Unit tests use H2 in MySQL mode; `MySqlIntegrationTest` runs on real MySQL 8.4 through Testcontainers because the technical-manager review agent asked for it (Chapter 32). Dependabot is set to stay on the 8.4 LTS line (PR #10).
+**What the project chose.** MySQL 8.4 in Docker, with schema changes as Flyway migrations. The project owner chose MySQL over H2 and Postgres. Unit tests use H2 in MySQL mode; `MySqlIntegrationTest` runs on real MySQL 8.4 through Testcontainers because the TM reviewer asked for it (Chapter 32). Dependabot is set to stay on the 8.4 LTS line (PR #10).
 
 **Pros.**
 - A real server database from the start, with row locks that the PDF-replace design depends on.
@@ -257,16 +257,16 @@ commit message of `b6aef4e`.
 - The backup runbook stops the app for its duration.
 - Capacity means a bigger machine, not more machines.
 
-**The enterprise alternative.** Several stateless instances behind a load balancer, with shared sessions (Redis), shared tile storage (S3 and a CDN), a managed database, The README names shared sessions (Spring Session and Redis) and shared tile storage as the requirements. Container orchestration and a cloud load balancer in place of nginx and Caddy are general industry practice, not something the project recorded.
+**The enterprise alternative.** Several stateless instances behind a load balancer, with shared sessions (Redis), shared tile storage (S3 and a CDN), and a managed database. The README names shared sessions (Spring Session and Redis) and shared tile storage as the requirements. Container orchestration and a cloud load balancer in place of nginx and Caddy are general industry practice, not something the project recorded.
 
-**When you'd switch.** When you need availability that one machine can't give, or capacity beyond a bigger machine. Do 37.5 and 37.7 first; scaling out before them does not work.
+**When you'd switch.** When you need availability that one machine can't give, or capacity beyond a bigger machine. Do Sections 37.5 and 37.7 first; scaling out before them does not work.
 
 ## 37.12 Session cookies vs. tokens kept in the browser
 
 <!-- source: dossier/decisions.md D3; PR #1 body; commit 68b4945; bugs-and-findings.md B (TM-1, TM-15) -->
 **The decision.** How does the browser prove, on every request after sign-in, who it is?
 
-**What the project chose.** A server-side HTTP session, carried in an httpOnly cookie named `SDV_SESSION` with `SameSite=Strict`, plus CSRF protection for anything that changes state, and a 30-minute idle timeout (PR #1). Before that, the session id lived in the browser's `sessionStorage` and travelled in an `X-Session-Id` header, which a reviewer flagged: any script injected into the page could read it, and the admin API was returning session ids too. The project's records show the outcome and the reason for leaving `sessionStorage`; they do not show a comparison with signed tokens such as JWTs, so this section describes the outcome and its consequences, not a debate.
+**What the project chose.** A server-side HTTP session, carried in an httpOnly cookie named `SDV_SESSION` with `SameSite=Strict`, plus cross-site request forgery (CSRF) protection for anything that changes state, and a 30-minute idle timeout (PR #1). Before that, the session id lived in the browser's `sessionStorage` and travelled in an `X-Session-Id` header, which a reviewer flagged: any script injected into the page could read it, and the admin API was returning session ids too. The project's records show the outcome and the reason for leaving `sessionStorage`; they do not show a comparison with signed tokens such as JWTs, so this section describes the outcome and its consequences, not a debate.
 
 **Pros.**
 - JavaScript can't read an httpOnly cookie, so a script injected into the page can't steal the session id.
@@ -274,13 +274,13 @@ commit message of `b6aef4e`.
 - The browser sends the cookie by itself, so the Angular code has no token-handling logic to get wrong.
 
 **Cons.**
-- A cookie is sent automatically, which is exactly what makes cross-site request forgery possible, so the app needs the CSRF machinery (Chapter 16) and the front end has to echo a token.
-- The session state lives in memory on one instance (37.5), so scaling out needs a shared store.
+- A cookie is sent automatically, which is exactly what makes cross-site request forgery possible, so the app needs the CSRF machinery (Chapter 16) and the frontend has to echo a token.
+- The session state lives in memory on one instance (Section 37.5), so scaling out needs a shared store.
 - Cookies fit a browser talking to one site. The design assumes a single origin, which is why nginx serves the app and proxies `/api` (Chapter 33).
 
 **The enterprise alternative.** Signed tokens (for example JWTs) that the client presents on each request are common where many services or non-browser clients share one sign-in, because any service can verify a token without asking a session store. That is general industry practice, not something the project evaluated. Tokens trade the immediate server-side revocation you get from sessions for statelessness, and typically need short lifetimes and a refresh mechanism to compensate.
 
-**When you'd switch.** When a mobile app or another service needs the API from a different origin, or when an identity provider (37.6) issues the tokens for you. Even then, browser-facing apps often keep a session cookie at the edge.
+**When you'd switch.** When a mobile app or another service needs the API from a different origin, or when an identity provider (Section 37.6) issues the tokens for you. Even then, browser-facing apps often keep a session cookie at the edge.
 
 ## 37.13 nginx and Caddy vs. a cloud load balancer
 
@@ -296,22 +296,22 @@ commit message of `b6aef4e`.
 
 **Cons.**
 - Two proxies mean two things to configure and to keep patched; the CI image scan covers both, but a person still has to act on it (Chapter 36).
-- Trust rests on fixed addresses and on getting five settings to agree (the compose addresses, `TRUSTED_PROXY_REGEX`, `set_real_ip_from`, the header overwrite, and the profile). The failure mode is silent: if they drift apart, the app sees the wrong address (exercise 33.3), and this was the shape of the High finding that blocked the platform pull request (Chapter 32).
+- Trust rests on fixed addresses and on getting five settings to agree (the compose addresses, `TRUSTED_PROXY_REGEX`, `set_real_ip_from`, the header overwrite, and the profile). The failure mode is silent: if they drift apart, the app sees the wrong address (Exercise 33.3), and this was the shape of the High finding that blocked the platform pull request (Chapter 32).
 - It's a single host. Nothing here spreads traffic across machines or survives losing the machine.
-- Going public isn't a switch: you edit the `ports` of the `tls` service, and HSTS decisions such as `includeSubDomains` are hard to undo.
+- Going public isn't a switch: you edit the `ports` of the `tls` service, and HTTP Strict Transport Security (HSTS) decisions such as `includeSubDomains` are hard to undo.
 
-**The enterprise alternative.** A managed load balancer from a cloud provider or a platform, terminating TLS with certificates it manages, forwarding to several instances, and running health checks against `/actuator/health` (Chapter 40, section 40.5, refines this: a readiness path avoids restarting healthy tasks during a database failover). That is general industry practice; the project's records don't describe a comparison. It moves the trust boundary: the app would trust forwarded headers from the load balancer's address range instead of nginx's fixed address, and the nginx overwrite rule would have to be replaced by whatever the load balancer guarantees about the header.
+**The enterprise alternative.** A managed load balancer from a cloud provider or a platform, terminating TLS with certificates it manages, forwarding to several instances, and running health checks against `/actuator/health` (Chapter 40, Section 40.5, refines this: a readiness path avoids restarting healthy tasks during a database failover). That is general industry practice; the project's records don't describe a comparison. It moves the trust boundary: the app would trust forwarded headers from the load balancer's address range instead of nginx's fixed address, and the nginx overwrite rule would have to be replaced by whatever the load balancer guarantees about the header.
 
-**When you'd switch.** When you run more than one instance (37.11), or when your platform already provides certificates and load balancing and running your own is extra work.
+**When you'd switch.** When you run more than one instance (Section 37.11), or when your platform already provides certificates and load balancing and running your own is extra work.
 
-## 37.14 Recognised-device lockout vs. simpler rules
+## 37.14 Recognized-device lockout vs. simpler rules
 
 <!-- source: dossier/decisions.md D7; PR #5 body "TM3-1"; commit 82c24b6; README "Sign-in lockout" -->
 **The decision.** How do you slow down password guessing without letting an attacker lock real users out?
 
-**What the project chose.** Three counters over 15 minutes: 5 failures for one account from one address, 20 for one address across accounts, and 20 for one account from *unrecognised* devices only. A device is recognised for an account after a successful sign-in from its address (IPv6 grouped by /64) within 30 days; only a keyed hash of the address is stored, and the list is cleared when the password changes, is reset, or the account is disabled. An administrator can press Unlock.
+**What the project chose.** Three counters over 15 minutes: 5 failures for one account from one address, 20 for one address across accounts, and 20 for one account from *unrecognized* devices only. A device is recognized for an account after a successful sign-in from its address (IPv6 grouped by /64) within 30 days; only a keyed hash of the address is stored, and the list is cleared when the password changes, is reset, or the account is disabled. An administrator can press Unlock.
 
-The path there matters. Phase 1 had only the first two counters. The first fix for the forged-address bug added an account-wide counter that counted failures from everywhere, and the next review showed that anyone could lock any user out by failing 20 times. The recognised-device rule is the replacement.
+The path there matters. Phase 1 had only the first two counters. The first fix for the forged-address bug added an account-wide counter that counted failures from everywhere, and the next review showed that anyone could lock any user out by failing 20 times. The recognized-device rule is the replacement.
 
 **Pros.**
 - A botnet spreading guesses over many addresses is stopped by the account-wide counter, while the account's owner can still sign in from a usual device.
@@ -320,10 +320,10 @@ The path there matters. Phase 1 had only the first two counters. The first fix f
 
 **Cons.**
 - The trade-off is stated in the README: during an attack on an account, its owner can't sign in from a *new* device, such as a new laptop or a hotel network, until the window passes or an administrator unlocks it. An attacker who knows this can time an attack for when the owner travels.
-- The counters are in memory (37.5) while the recognised devices are in the database, so the two halves behave differently after a restart.
-- Recognised-device hashes are keyed by `SIGNING_SECRET`, which ties this feature to a secret you must keep with your backups (Chapter 34).
+- The counters are in memory (Section 37.5) while the recognized devices are in the database, so the two halves behave differently after a restart.
+- Recognized-device hashes are keyed by `SIGNING_SECRET`, which ties this feature to a secret you must keep with your backups (Chapter 34).
 
-**The enterprise alternative.** A second proof for new devices: multi-factor authentication or an emailed one-time code, ideally supplied by an identity provider (37.6). Those can let a legitimate owner on a new device without a human unlocking anything. That is general industry practice, and the README lists MFA's absence as a limitation.
+**The enterprise alternative.** A second proof for new devices: multi-factor authentication or an emailed one-time code, ideally supplied by an identity provider (Section 37.6). Those can let a legitimate owner on a new device without a human unlocking anything. That is general industry practice, and the README lists MFA's absence as a limitation.
 
 **When you'd switch.** When the app adds MFA or an identity provider. At that point the account-wide counter can be simplified, because a stolen password alone no longer suffices.
 
@@ -336,18 +336,18 @@ The path there matters. Phase 1 had only the first two counters. The first fix f
 
 **Pros.** It works with plain tools, needs no special storage, and its correctness takes one sentence to explain. A restore drill (Chapter 34) proved it.
 
-**Cons.** Readers get errors during the window, and the approach only works because there is one instance and one machine (37.11). A longer database means a longer window.
+**Cons.** Readers get errors during the window, and the approach only works because there is one instance and one machine (Section 37.11). A longer database means a longer window.
 
 **The enterprise alternative.** Backups that don't need the app to stop: storage snapshots for the tiles, and a database with point-in-time recovery. The catch: the "current tile version" pointer in the database still has to match the tiles, so the consistency problem doesn't vanish, it moves. General industry practice; not evaluated by the project.
 
-**When you'd switch.** When the backup window is no longer acceptable, or when 37.7 and 37.9 move storage and the database to services that snapshot on their own.
+**When you'd switch.** When the backup window is no longer acceptable, or when Sections 37.7 and 37.9 move storage and the database to services that snapshot on their own.
 
 ## 37.16 Newest platform vs. staying on the older supported line
 
 <!-- source: dossier/decisions.md D10, D13; PR #5 body "Platform upgrade"; PR #10 body; bugs-and-findings.md G9 -->
 **The decision.** When you start a production hardening, do you upgrade the platform first, and how new?
 
-**What the project chose.** The product owner asked to keep the technology as current as possible, as long as each choice was a standard release rather than a preview. The platform upgrade in PR #5 went from Spring Boot 3.3.4 to 4.1.1 and Java 21 to 25, bringing Spring Security 7, Jackson 3, Hibernate 7, and Flyway (11 in the pull request text, 12 as resolved by Spring Boot 4.1.1), all "the latest GA versions checked on Maven Central". One motivation was that Spring Boot 3.3 had passed its open-source support window, and the migration also removed a Flyway warning that MySQL 8.4 was untested. Yet the project applies a different rule to runtimes and databases: PR #10 tells Dependabot to skip Node's odd-numbered releases, Java releases between LTS versions, and MySQL's non-LTS "Innovation" releases. So the policy is: newest release of the *framework*, long-term-support lines for the *runtime and data*.
+**What the project chose.** The project owner asked to keep the technology as current as possible, as long as each choice was a standard release rather than a preview. The platform upgrade in PR #5 went from Spring Boot 3.3.4 to 4.1.1 and Java 21 to 25, bringing Spring Security 7, Jackson 3, Hibernate 7, and Flyway (11 in the pull request text, 12 as resolved by Spring Boot 4.1.1), all "the latest GA versions checked on Maven Central" (GA means generally available, a stable release rather than a preview). One motivation was that Spring Boot 3.3 had passed its open-source support window, and the migration also removed a Flyway warning that MySQL 8.4 was untested. Yet the project applies a different rule to runtimes and databases: PR #10 tells Dependabot to skip Node's odd-numbered releases, Java releases between LTS versions, and MySQL's non-LTS "Innovation" releases. So the policy is: newest release of the *framework*, long-term-support lines for the *runtime and data*.
 
 **Pros.**
 - Supported software receives security fixes, and no deprecation warnings remain after the migration.
@@ -364,7 +364,7 @@ The path there matters. Phase 1 had only the first two counters. The first fix f
 
 ## 37.17 A worked plan: from one instance to three
 
-The decisions in sections 37.1 to 37.16 are linked, and the clearest way to see it is to plan a change that touches several of them. This section is the book's design exercise, not project history: a step-by-step plan for running three instances, using only facts about the app's current code and README.
+The decisions in Sections 37.1 to 37.16 are linked, and the clearest way to see it is to plan a change that touches several of them. This section is the book's design exercise, not project history: a step-by-step plan for running three instances, using only facts about the app's current code and README.
 
 *See also: Chapters 40 and 41 map each step of this plan onto AWS services (a design, not a deployment).*
 
@@ -397,25 +397,25 @@ flowchart TB
 
 *Figure 37.1 — One instance today, and what three instances would have to share*
 
-*Text description:* Two groups, the current one first. Today: nginx and Caddy in front of one app that keeps sessions, counters, and the audit throttle in memory, with one MySQL database and one local tile volume. Design exercise: a load balancer in front of three app copies, all sharing one store for sessions and counters, one shared tile storage, and one MySQL database.
+*Text description:* Two groups, the current one first. Today: nginx and Caddy in front of one app that keeps sessions, counters, and the audit throttle in memory, with one MySQL database, and one local tile volume. Design exercise: a load balancer in front of three app copies, all sharing one store for sessions and counters, one shared tile storage, and one MySQL database.
 
-**Step 0: list the in-memory state.** Search the code for anything that lives in a map or a field rather than the database. The README names two, sessions and rate-limit counters. Reading the code at `book-m6-final` finds more: the sign-in throttle counters (`LoginThrottle`), the tile rate limiter (`TileRateLimiter`), the audit throttle that limits how often `PAGE_VIEWED` and `ACCESS_DENIED` events are written (`AuditLogService`), and `SessionMetadata`, the per-session map behind the admin sessions list (it sits beside the in-memory session registry). Two more per-instance limits exist by design: `TileWorkLimiter` and the render permits. With three instances a "server-wide" cap becomes a per-instance cap, which is correct, because each one protects its own CPU. Each is correct on one instance and wrong on three: a user could exceed a limit by up to three times merely by being spread across instances.
+**Step 0: list the in-memory state.** Search the code for anything that lives in a map or a field rather than the database. The README names two, sessions and rate-limit counters. Reading the code at `book-m6-final` finds more: the sign-in throttle counters (`LoginThrottle`), the tile rate limiter (`TileRateLimiter`), the audit throttle that limits how often `PAGE_VIEWED` and `ACCESS_DENIED` events are written (`AuditLogService`), and `SessionMetadata`, the per-session map behind the admin sessions list (it sits beside the in-memory session registry). Each of these is correct on one instance and wrong on three: a user could exceed a limit by up to three times merely by being spread across instances. Two more per-instance limits exist by design: `TileWorkLimiter` and the render permits. With three instances a "server-wide" cap becomes a per-instance cap, which is correct, because each one protects its own CPU.
 
 **Step 1: share sessions.** Put sessions in a shared store (Spring Session with Redis, as the README suggests). Until this is done, a load balancer would send a signed-in user to an instance that has never heard of them.
 
 **Step 2: share the counters.** Move the sign-in and tile counters to the same store, so a limit holds no matter which instance answers. The audit throttle needs the same treatment, or the log will show up to three times as many events.
 
-**Step 3: share the tiles.** Local disk can't be seen by the other instances. Move tiles to object storage. This is the biggest change, because it touches several decisions at once: tile serving (37.4, signed URLs), watermarking (37.2), the janitor and backups (Chapter 34), and the row-lock-based atomic replace (Chapter 32), which relies on the database and the file layout agreeing.
+**Step 3: share the tiles.** Local disk can't be seen by the other instances. Move tiles to object storage. This is the biggest change, because it touches several decisions at once: tile serving (Section 37.4, signed URLs), watermarking (Section 37.2), the janitor and backups (Chapter 34), and the row-lock-based atomic replace (Chapter 32), which relies on the database and the file layout agreeing.
 
-**Step 4: one place for scheduled jobs.** Six methods use `@Scheduled` (five with the plain annotation and one, in `TileRateLimiter`, with its fully qualified name, which a plain search for the annotation misses): the storage janitor, the audit throttle sweep, the audit purge, the recognised-device purge, and the in-memory sweeps of `LoginThrottle` and `TileRateLimiter`. On every instance they all run. The purges are idempotent deletes and the in-memory sweeps belong to each instance, so running them three times is harmless. Three janitors deleting directories at the same time is the kind of thing you'd rather decide on purpose. A design has to choose one runner for the janitor (for example, a leader lock or a separate job).
+**Step 4: one place for scheduled jobs.** Six methods use `@Scheduled` (five with the plain annotation and one, in `TileRateLimiter`, with its fully qualified name, which a plain search for the annotation misses): the storage janitor, the audit throttle sweep, the audit purge, the recognized-device purge, and the in-memory sweeps of `LoginThrottle` and `TileRateLimiter`. They all run on every instance. The purges are idempotent deletes and the in-memory sweeps belong to each instance, so running them three times is harmless. Three janitors deleting directories at the same time is the kind of thing you'd rather decide on purpose. A design has to choose one runner for the janitor (for example, a leader lock or a separate job).
 
-**Step 5: the same secret everywhere.** `SIGNING_SECRET` verifies tile tokens and keys the recognised-device hashes and session handles. All instances must have the same value, or a URL issued by one instance would be rejected by another.
+**Step 5: the same secret everywhere.** `SIGNING_SECRET` verifies tile tokens and keys the recognized-device hashes and session handles. All instances must have the same value, or a URL issued by one instance would be rejected by another.
 
-**Step 6: the front door.** Put a load balancer in front (37.13), point its health check at a health path (Chapter 40, section 40.5, explains why the readiness path, not the plain `/actuator/health` that includes the database, is the better target), and re-derive the trust boundary: the app must trust forwarded headers only from the balancer.
+**Step 6: the front door.** Put a load balancer in front (Section 37.13), point its health check at a health path (Chapter 40, Section 40.5, explains why the readiness path, not the plain `/actuator/health` that includes the database, is the better target), and re-derive the trust boundary: the app must trust forwarded headers only from the balancer.
 
 **Step 7: deploy without downtime.** Roll one instance at a time; with shared sessions, users no longer notice.
 
-Notice the order. Steps 1 to 3 have to come before Step 6, or the load balancer would expose the problems the earlier steps fix. That is Exercise 37.3 in another form, and it's the reason this chapter says "do 37.5 and 37.7 first".
+Notice the order. Steps 1 to 3 have to come before Step 6, or the load balancer would expose the problems the earlier steps fix. That is Exercise 37.3 in another form, and it's the reason this chapter says "do Sections 37.5 and 37.7 first".
 
 Figure 37.2 shows the order of the seven steps as a chain.
 
@@ -444,7 +444,7 @@ flowchart TB
 - **Ignoring coupling.** Moving one piece (tiles to S3) drags others along (watermarking, sessions, backups). List what a decision touches before you make it.
 - **Deferring without a note.** "We'll add it later" is fine when the README says what "it" is and what will have to change, as this project's Limitations section does.
 - **Mixing evidence and opinion.** When you write a design document, label which statements come from your records and which are general industry practice, as this chapter does.
-- **Treating a mitigation as a control.** Client-side blocking (37.10) and a light watermark (37.3) are friction and attribution, not prevention. Say so where readers will see it.
+- **Treating a mitigation as a control.** Client-side blocking (Section 37.10) and a light watermark (Section 37.3) are friction and attribution, not prevention. Say so where readers will see it.
 - **Forgetting the human cost.** Every extra system (a Redis, an identity provider) needs someone to patch it, back it up, and be woken when it fails.
 
 ## 37.19 Decision table
@@ -453,41 +453,44 @@ flowchart TB
 
 | Decision | Project chose | First limit you'll hit | Enterprise alternative |
 |---|---|---|---|
-| 37.1 Delivery | Tiles, no PDF | No text layer; CPU for rendering | Controlled text layer, DRM |
-| 37.2 Watermark timing | At request time | CPU per tile; no shared cache | Coarser or cached per (tile, viewer) |
-| 37.3 Watermark strength | 20% opacity, configurable | Weak deterrence | Visible plus forensic marks |
-| 37.4 URL signing | App-issued HMAC | App carries all traffic | CDN signed URLs |
-| 37.5 Sessions | In memory | Restarts, one instance | Redis session store |
-| 37.6 Authentication | Built-in accounts | No MFA or SSO | OIDC identity provider |
-| 37.7 Tile storage | Local disk volume | One machine; coupled backups | S3 and CDN |
-| 37.8 Rate limit | One per-user limit | Same rule for all documents | Sensitivity levels; back-to-back alerting (README) |
-| 37.9 Database | MySQL 8.4 and Flyway | Single server | Managed database with replicas |
-| 37.10 Client blocking | Right-click blocked | Bypassed with DevTools | Friction only, on top of controls |
-| 37.11 Instances | One | Availability and capacity | Load-balanced stateless instances |
-| 37.12 Sessions vs tokens | Server session in httpOnly cookie | CSRF machinery; shared store to scale | Signed tokens for cross-origin or service clients |
-| 37.13 Front door | nginx plus Caddy | Two proxies; silent trust drift | Managed load balancer |
-| 37.14 Lockout | Recognised-device rule | New device locked out during an attack | MFA or one-time codes |
-| 37.15 Backups | Stop the app briefly | Outage window; single instance only | Snapshots and point-in-time recovery |
-| 37.16 Platform | Newest framework, LTS runtime and data | Migration work; lagging dependency fixes | Stay on an LTS line, upgrade on schedule |
+| Section 37.1 Delivery | Tiles, no PDF | No text layer; CPU for rendering | Controlled text layer, DRM |
+| Section 37.2 Watermark timing | At request time | CPU per tile; no shared cache | Coarser or cached per (tile, viewer) |
+| Section 37.3 Watermark strength | 20% opacity, configurable | Weak deterrence | Visible plus forensic marks |
+| Section 37.4 URL signing | App-issued HMAC | App carries all traffic | CDN signed URLs |
+| Section 37.5 Sessions | In memory | Restarts, one instance | Redis session store |
+| Section 37.6 Authentication | Built-in accounts | No MFA or SSO | OIDC identity provider |
+| Section 37.7 Tile storage | Local disk volume | One machine; coupled backups | S3 and CDN |
+| Section 37.8 Rate limit | One per-user limit | Same rule for all documents | Sensitivity levels; back-to-back alerting (README) |
+| Section 37.9 Database | MySQL 8.4 and Flyway | Single server | Managed database with replicas |
+| Section 37.10 Client blocking | Right-click blocked | Bypassed with DevTools | Friction only, on top of controls |
+| Section 37.11 Instances | One | Availability and capacity | Load-balanced stateless instances |
+| Section 37.12 Sessions vs. tokens | Server session in httpOnly cookie | CSRF machinery; shared store to scale | Signed tokens for cross-origin or service clients |
+| Section 37.13 Front door | nginx plus Caddy | Two proxies; silent trust drift | Managed load balancer |
+| Section 37.14 Lockout | Recognized-device rule | New device locked out during an attack | MFA or one-time codes |
+| Section 37.15 Backups | Stop the app briefly | Outage window; single instance only | Snapshots and point-in-time recovery |
+| Section 37.16 Platform | Newest framework, LTS runtime, and data | Migration work; lagging dependency fixes | Stay on an LTS line, upgrade on schedule |
 
 ## Try it
 
 ### Exercise 37.1 ★ Where is the choice?
 
 Pick three rows of Table 37.1. For each, name the file or README section that shows the project's choice.
+
 ### Exercise 37.2 ★★ Why S3 forces a rethink
 
-Explain why moving tiles to S3 (37.7) forces you to revisit per-request watermarking (37.2) and session checks (37.4).
+Explain why moving tiles to S3 (Section 37.7) forces you to revisit per-request watermarking (Section 37.2) and session checks (Section 37.4).
+
 ### Exercise 37.3 ★★ Order of change
 
 Order the decisions in the sequence you would change them for a first scale-out, and defend the order.
+
 ### Exercise 37.4 ★★★ A switch trigger as an alert
 
 Choose one decision and write the "When you'd switch" trigger as a measurable alert, using metrics from Chapter 35 (for example `sdv_tiles_rate_limited_total`).
 
 ### Exercise 37.5 ★★ Cookie or token?
 
-A mobile app must call the same API from outside the browser. Using 37.12, list what changes about sessions, CSRF, and revocation if it uses tokens, and what the project would have to build or give up.
+A mobile app must call the same API from outside the browser. Using Section 37.12, list what changes about sessions, CSRF, and revocation if it uses tokens, and what the project would have to build or give up.
 
 ### Exercise 37.6 ★★★ Critique the plan
 
@@ -499,7 +502,7 @@ Section 37.17 lists seven steps to three instances. Find one step that hides mor
 - Several limits are linked: sessions, counters, and tiles must all become shared before a second instance is safe.
 - The project recorded some reasoning and only outcomes for others; this chapter says which.
 - Friction that is not a control is acceptable only when it is labeled honestly.
-- Sixteen decisions form a web, not a list: a plan for three instances (37.17) touches sessions, counters, tiles, jobs, secrets, and the front door in a fixed order.
+- Sixteen decisions form a web, not a list: a plan for three instances (Section 37.17) touches sessions, counters, tiles, jobs, secrets, and the front door in a fixed order.
 - Enterprise alternatives are answers to problems you may not have yet; measure first (Chapter 35), then switch.
 
 ## Further reading

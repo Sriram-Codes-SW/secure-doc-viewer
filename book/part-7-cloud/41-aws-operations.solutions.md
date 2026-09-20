@@ -3,7 +3,7 @@
 
 ### Exercise 41.1 ★ Idle or usage cost?
 
-Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and the two always-on tasks (a load balancer and a cache cluster belong here too). Follows use: S3 requests, data transfer out, and logs. For an app with 80 readers, worry first about the fixed group: with few readers, the always-on pieces are most of the bill, whether or not anyone reads a document, and that is exactly why staying on one machine can be the right answer (Table 41.2).
+Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and the two always-on tasks (a load balancer and a cache cluster belong here too). Follows use: S3 requests, data transfer out, and logs. For an app with 80 readers, worry first about the fixed group: with few readers, the always-on pieces are most of the bill, whether, or not anyone reads a document, and that is exactly why staying on one machine can be the right answer (Table 41.2).
 
 ### Exercise 41.2 ★★ Order the moves
 
@@ -15,4 +15,4 @@ Service task role: `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on `arn:aws
 
 ### Exercise 41.4 ★★★ Argue for staying
 
-A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take move A (Secrets Manager, RDS and S3 in one cutover) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.
+A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take move A (Secrets Manager, RDS, and S3 in one cutover) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.

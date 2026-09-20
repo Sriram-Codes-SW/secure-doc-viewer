@@ -1,5 +1,5 @@
 <!-- chapter: 13 | part: II | owner: writer-backend | tag: book-m3-hardening | status: expanded -->
-# Chapter 13: Validation, configuration properties and errors
+# Chapter 13: Validation, configuration properties, and errors
 
 A server that accepts anything a client sends will eventually be hurt by it. This chapter teaches three habits the Secure Document Viewer applies from milestone 3 onward: check every input, refuse to start with a broken configuration, and answer every failure in one predictable JSON shape that never leaks internals. It ends with the layered limits that keep a hostile upload from taking the server down.
 
@@ -24,11 +24,12 @@ By the end of this chapter, you will be able to:
 
 Five terms are used here and explained where they appear:
 
-- **`Accept` header:** the request header naming the content types the caller can receive (Chapter 8).
+- **Accept header:** the request header naming the content types the caller can receive (Chapter 8).
 - **Stack trace:** the list of method calls at the moment of an exception (Chapter 3).
 - **Log:** the server's running record of events (Chapter 11).
-- **`Retry-After`:** a response header telling the client how many seconds to wait (Chapter 12).
+- **Retry-After:** a response header telling the client how many seconds to wait (Chapter 12).
 - **UUID:** a randomly generated identifier, used here only to make a short reference code.
+
 ## Beginner tier: Never trust input
 
 ### 13.1 Never trust input
@@ -37,7 +38,7 @@ Picture a bank teller who checks that a deposit slip is filled in, but never loo
 
 **Where the analogy breaks down:** a teller sees the customer and can judge them. A server never does. It sees only bytes, and it must decide from the bytes alone.
 
-Input arrives in every place Chapter 12 listed: the path, the query string, the body, the headers and uploaded files. Each is a place a client can put something you didn't expect. Some examples the project's checks exist for:
+Input arrives in every place Chapter 12 listed: the path, the query string, the body, the headers, and uploaded files. Each is a place a client can put something you didn't expect. Some examples the project's checks exist for:
 
 - A username 10 MB long, which would be read into memory and then stored.
 - A page size of `-1` or `1000000`, meant to make the admin screen load the whole audit table.
@@ -162,7 +163,7 @@ public class ViewerProperties {
 
 `@Validated` switches on the same Bean Validation rules from Section 13.2. So a missing or short `signingSecret` stops the program during startup, with the message you wrote in the annotation. The signing secret matters more than any other value here: it is the key that signs every tile URL (Chapter 17), so a blank or guessable one would let anyone forge links. The project's `application.yml` reads it from an environment variable, `signing-secret: ${SIGNING_SECRET:}`, with an *empty* default on purpose, so forgetting it is an error rather than a hidden weak default. The source comment states the intent: "startup fails if it is missing or too short to be a real key, rather than failing on the first tile."
 
-Compare with reading each value by hand using `@Value("${...}")`, which the project still does for a few single settings (`BootstrapAdmin` reads two). A typed class gives you a name, a type, a default and a rule in one place, and IDEs can autocomplete and check the names. It also fails early. A server that started without a signing secret would discover the problem only when it tried to sign its first tile URL, in front of a real user. The habit is worth copying: **make the program refuse to start rather than misbehave later.**
+Compare with reading each value by hand using `@Value("${...}")`, which the project still does for a few single settings (`BootstrapAdmin` reads two). A typed class gives you a name, a type, a default, and a rule in one place, and IDEs can autocomplete and check the names. It also fails early. A server that started without a signing secret would discover the problem only when it tried to sign its first tile URL, in front of a real user. The habit is worth copying: **make the program refuse to start rather than misbehave later.**
 
 One subtlety. The rules apply when *Spring* fills the object from configuration. A unit test that writes `new ViewerProperties()` and calls setters skips validation entirely (Chapter 18 points out the trap). That's why the integration tests, which start the whole application, matter for configuration.
 
@@ -188,7 +189,7 @@ flowchart TB
 
 *Figure 13.1 — The path of an error from a thrown exception to the JSON body*
 
-*Text description:* A top-down flow that starts with a request passing the security filters. From there two roads lead to a status and JSON error body. A filter failure (not signed in, bad CSRF token) is written directly by `SecurityErrorResponses`. A failure in a controller or service throws an exception, Spring picks the most specific handler, and the catch-all handler is used only when nothing more specific matches.
+*Text description:* A top-down flow that starts with a request passing the security filters. From there two roads lead to a status and JSON error body. A filter failure (not signed in, a bad cross-site request forgery (CSRF) token) is written directly by `SecurityErrorResponses`. A failure in a controller or service throws an exception, Spring picks the most specific handler, and the catch-all handler is used only when nothing more specific matches.
 
 <!-- source: GlobalExceptionHandler.java and SecurityErrorResponses.java at book-m3-hardening and book-m6-final -->
 
@@ -224,7 +225,7 @@ public class GlobalExceptionHandler {
 
 Each `@ExceptionHandler` names the exception types it catches. The second handler shows that one method can serve several types, and that it can use the exception's own message (`e.getMessage()`) when that message is safe to show. The helper at the bottom is where the shape is defined, once. It builds a response with the given status, an explicitly set JSON content type (the reason is the incident in Section 13.7), and a body that is a one-entry map, which Jackson writes as `{"error": "..."}`.
 
-The project defines its own small exception classes, and their comments say what they mean. `BadRequestException` is "a request that is well-formed HTTP but breaks a business rule; mapped to 400". `LoginLockedException` is "Too many failed sign-ins; mapped to 429 with Retry-After". A service throws the one that fits. Here is a real one, from the document service:
+The project defines its own small exception classes, and their comments say what they mean. `BadRequestException` is "a request that is well-formed HTTP but breaks a business rule; mapped to 400." `LoginLockedException` is "Too many failed sign-ins; mapped to 429 with Retry-After." A service throws the one that fits. Here is a real one, from the document service:
 
 ```java
 private static String validTitle(String title) {
@@ -236,7 +237,7 @@ private static String validTitle(String title) {
 }
 ```
 
-(`book-m6-final`, `DocumentService.java`.) This is validation the annotations can't do, because it depends on a rule that includes trimming. It throws `BadRequestException` with a message meant for the user, and the handler decides the rest. The service knows *what went wrong*; the handler decides *how HTTP says so*. Keeping HTTP details out of business code means a service can be called from a test, a scheduled job or another service without a web server in sight.
+(`book-m6-final`, `DocumentService.java`.) This is validation the annotations can't do, because it depends on a rule that includes trimming. It throws `BadRequestException` with a message meant for the user, and the handler decides the rest. The service knows *what went wrong*; the handler decides *how HTTP says so*. Keeping HTTP details out of business code means a service can be called from a test, a scheduled job, or another service without a web server in sight.
 
 **Table 13.2 — A sample of the mapping (`GlobalExceptionHandler`)**
 
@@ -270,7 +271,7 @@ public ResponseEntity<Map<String, String>> handleInvalidBody(MethodArgumentNotVa
 
 (`book-m6-final`, `GlobalExceptionHandler.java`, excerpt.) It builds the message `username: must not be blank` from the field name and the annotation's message, and returns only the first, so the client gets one clear sentence to fix at a time. `Optional`'s `orElse` supplies a fallback for the odd case with no field error.
 
-**Adding a mapping is a three-step habit.** To add "409 when a document title already exists", you write a small exception class, throw it from the service where the rule is decided, and add one `@ExceptionHandler` method that calls `error(HttpStatus.CONFLICT, e.getMessage())`. No controller changes. Exercise 13.3 asks you to do it.
+**Adding a mapping is a three-step habit.** To add "409 when a document title already exists," you write a small exception class, throw it from the service where the rule is decided, and add one `@ExceptionHandler` method that calls `error(HttpStatus.CONFLICT, e.getMessage())`. No controller changes. Exercise 13.3 asks you to do it.
 
 ### 13.6 Errors raised before a controller runs
 
@@ -282,7 +283,7 @@ The advice class only sees exceptions thrown while a controller is handling a re
 
 ### 13.7 Not leaking internals (generic 500 with a reference)
 
-A helpful error message can be dangerous. An unhandled exception might say `SELECT * FROM ... WHERE path='C:/internal'`, which tells an attacker the database, table and file layout. Listing 13.5 is the last-resort handler.
+A helpful error message can be dangerous. An unhandled exception might say `SELECT * FROM ... WHERE path='C:/internal'`, which tells an attacker the database, table, and file layout. Listing 13.5 is the last-resort handler.
 
 **Listing 13.5 — The catch-all handler (`book-m3-hardening`)**
 
@@ -299,13 +300,13 @@ public ResponseEntity<Map<String, String>> handleUnexpected(Exception e) {
 
 *Path: `src/main/java/com/example/securedocviewer/controller/GlobalExceptionHandler.java`*
 
-`Exception` is the parent of every exception, so this handler catches whatever the more specific handlers didn't; Spring picks the most specific match. The client gets a generic sentence and an eight-character reference made from a random UUID. The full exception, with its stack trace, goes to the server log next to the same reference (`log.error(..., reference, e)`). When a user reports "reference 3f9a1c22", an operator searches the log for it and finds exactly what happened. Nothing sensitive crosses the network, and the failure is still traceable.
+`Exception` is the parent of every exception, so this handler catches whatever the more specific handlers didn't; Spring picks the most specific match. The client gets a generic sentence and an eight-character reference made from a random UUID. The full exception, with its stack trace, goes to the server log next to the same reference (`log.error(..., reference, e)`). When a user reports "reference 3f9a1c22," an operator searches the log for it and finds exactly what happened. Nothing sensitive crosses the network, and the failure is still traceable.
 
 `ErrorContractTest` proves this. It adds a controller that throws an exception whose message contains a fake SQL statement and a file path, calls it, and asserts that the response is `500`, starts with `Something went wrong on our side. Reference: `, and contains neither the SQL nor the path (Chapter 18, Listing 18.5). The test's fake secrets are on purpose: it checks by content, not only by status.
 
 #### A real incident: the handler that failed on images
 
-The class comment of `GlobalExceptionHandler` records a subtle bug. *The problem:* on the tile endpoint, which answers with PNG images, a clean `401` or `429` turned into a `500`. *How it was found:* during the first manual test pass of the running app in a browser, before the hardening milestone, and fixed then (it was already fixed at `book-m1-accounts`). *The cause:* Spring negotiates the content type of a response body against the request's `Accept` header, which lists what the caller is willing to receive. The tile endpoint's callers may accept *only images*, so a JSON error body was "not acceptable", the error handler itself failed, and the failure of the failure was a `500`. *The fix:* the `error(...)` helper always sets `MediaType.APPLICATION_JSON` explicitly, as in Listing 13.4. *The lesson:* error paths are code too, and they need tests as much as success paths do. <!-- source: dossier bugs-and-findings A3 and DOSSIER 'Ch 13 incident reference' (fixed in commit 32d040f, PR #1; the m3 handler carries the class comment); phase 3b commit 335e0b0 only made the JSON error contract consistent -->
+The class comment of `GlobalExceptionHandler` records a subtle bug. *The problem:* on the tile endpoint, which answers with PNG images, a clean `401` or `429` turned into a `500`. *How it was found:* during the first manual test pass of the running app in a browser, before the hardening milestone, and fixed then (it was already fixed at `book-m1-accounts`). *The cause:* Spring negotiates the content type of a response body against the request's `Accept` header, which lists what the caller is willing to receive. The tile endpoint's callers may accept *only images*, so a JSON error body was "not acceptable," the error handler itself failed, and the failure of the failure was a `500`. *The fix:* the `error(...)` helper always sets `MediaType.APPLICATION_JSON` explicitly, as in Listing 13.4. *The lesson:* error paths are code too, and they need tests as much as success paths do. <!-- source: dossier bugs-and-findings A3 and DOSSIER 'Ch 13 incident reference' (fixed in commit 32d040f, PR #1; the m3 handler carries the class comment); phase 3b commit 335e0b0 only made the JSON error contract consistent -->
 
 ### 13.8 Do not trust a message you will show
 
@@ -319,7 +320,7 @@ Validation isn't only about shape; it's about *size and cost*. A PDF can be smal
 
 | Order | Limit | Where set | Result |
 |---|---|---|---|
-| 1 | Role: only publishers and admins may upload | `SecurityConfig` | `403`, before the body is read |
+| 1 | Role: only publishers and administrators may upload | `SecurityConfig` | `403`, before the body is read |
 | 2 | File size at most 50 MB | `spring.servlet.multipart.max-file-size` | `413` |
 | 3 | Upload is streamed to a temporary file, never held in memory | `TileGenerationService.render` | (protects memory) |
 | 4 | The file must start with `%PDF-` | `requirePdfSignature` | `400` |
@@ -348,7 +349,7 @@ private static void requirePdfSignature(Path file) throws IOException {
 
 *Path: `src/main/java/com/example/securedocviewer/service/TileGenerationService.java`*
 
-It reads only the first kilobyte of the file and looks for the marker `%PDF-`. Nothing is trusted about the file *name* or the declared content type, which the client chooses; the file's own first bytes are what count. The check is cheap, so it goes first, and it doesn't prove the file is a good PDF; the next layers do more.
+It reads only the first kilobyte of the file and looks for the marker `%PDF-`. Nothing is trusted about the *filename* or the declared content type, which the client chooses; the file's own first bytes are what count. The check is cheap, so it goes first, and it doesn't prove the file is a good PDF; the next layers do more.
 
 And the size-and-cost check:
 
@@ -381,16 +382,16 @@ private void requireWithinLimits(PDDocument document) {
 
 *Path: `src/main/java/com/example/securedocviewer/service/TileGenerationService.java`*
 
-This is the decompression-bomb defense. A PDF page has a size in points (72 to an inch), so the code can compute the *pixel size it would render to* (`scale = dpi / 72`) *without rendering it*, and compare the area with the limit. It even accounts for a page rotated by 90 degrees, which swaps width and height. A poster-sized page at 150 DPI is refused up front with a message naming the page. The comments on the settings in `ViewerProperties` say the same: the limit is on the "Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs."
+This is the decompression-bomb defense. A PDF page has a size in points (72 to an inch), so the code can compute the *pixel size it would render to* (`scale = dpi / 72`) *without rendering it*, and compare the area with the limit. It even accounts for a page rotated by 90 degrees, which swaps width and height. A poster-sized page at 150 DPI (dots per inch) is refused up front with a message naming the page. The comments on the settings in `ViewerProperties` say the same: the limit is on the "Largest rendered page allowed (width x height at render DPI); stops decompression-bomb PDFs."
 
-**The incident behind the layers.** The first version of the upload read the whole file into memory, had no limits and rendered synchronously, so one large or hostile file could take the server down. A threat-modeling review (an AI agent playing a security reviewer) found it. The fix arrived in stages, each tied to a review round. Streaming to a temporary file, the `%PDF-` check, the page and pixel limits and the `413` for oversized files came first. A cap of two concurrent renders (with `503` and `Retry-After`) followed. A *time* limit came last, after a review round asked what happens if a pathological PDF holds one of two render slots forever. <!-- source: dossier bugs-and-findings B (TM-5), G3; commits 3de764d, cd0f5c2, 1ce2c8b --> The lesson is that limits come in several dimensions (size, count, area, concurrency and time), and each protects a different resource.
+**The incident behind the layers.** The first version of the upload read the whole file into memory, had no limits and rendered synchronously, so one large or hostile file could take the server down. The AI technical-manager reviewer (Chapter 32 explains how the reviews worked) found it. The fix arrived in stages, each tied to a review round. Streaming to a temporary file, the `%PDF-` check, the page and pixel limits, and the `413` for oversized files came first. A cap of two concurrent renders (with `503` and `Retry-After`) followed. A *time* limit came last, after a review round asked what happens if a pathological PDF holds one of two render slots forever. <!-- source: dossier bugs-and-findings B (TM-5), G3; commits 3de764d, cd0f5c2, 1ce2c8b --> The lesson is that limits come in several dimensions (size, count, area, concurrency, and time), and each protects a different resource.
 
-Every limit here is a setting, not a constant. `application.yml` documents them, and the frontend has its own size check, so the user sees a refusal before waiting for a long upload. The comments in the file say to keep the three in step: the multipart limit, `GlobalExceptionHandler.MAX_UPLOAD_MB` and the frontend.
+Every limit here is a setting, not a constant. `application.yml` documents them, and the frontend has its own size check, so the user sees a refusal before waiting for a long upload. The comments in the file say to keep the three in step: the multipart limit, `GlobalExceptionHandler.MAX_UPLOAD_MB`, and the frontend.
 
 ### 13.10 Common mistakes
 
 - **Trusting the interface's checks.** The browser's validation is a courtesy. The server's is the rule.
-- **Validating only the shape.** A field can be the right type and still be a hundred megabytes. Bound sizes, counts and ranges.
+- **Validating only the shape.** A field can be the right type and still be a hundred megabytes. Bound sizes, counts, and ranges.
 - **Returning the exception's message from an unexpected error.** It can contain SQL, file paths or secrets. Use a generic message and a log reference.
 - **Different error shapes in different places.** The client must handle each one. One helper builds them all, including the ones written by the security filters.
 - **Forgetting the content type of an error.** An error body without an explicit content type can fail in negotiation (Section 13.7).
@@ -445,14 +446,14 @@ You are adding an image upload for user avatars, at most 2 MB. List the layers o
 
 ### Exercise 13.6 ★★★ Why three places?
 
-The upload limit appears in `application.yml`, in `GlobalExceptionHandler.MAX_UPLOAD_MB` and in the frontend. Explain what a user experiences if the frontend allows 100 MB while the server allows 50 MB, and propose a way to keep the three values from drifting apart.
+The upload limit appears in `application.yml`, in `GlobalExceptionHandler.MAX_UPLOAD_MB`, and in the frontend. Explain what a user experiences if the frontend allows 100 MB while the server allows 50 MB, and propose a way to keep the three values from drifting apart.
 
 *Solution:* Appendix C, Exercise 13.6 (a worked outline).
 
 ## Summary
 
 - The server validates every input, whatever the UI already checked; validation protects the system and helps the caller.
-- Bean Validation annotations (`@NotBlank`, `@Size`, `@Min`, `@Max`) plus `@Valid` state the rules next to the data; three related exception types cover bodies, parameters and other checks, and all answer `400`.
+- Bean Validation annotations (`@NotBlank`, `@Size`, `@Min`, `@Max`) plus `@Valid` state the rules next to the data; three related exception types cover bodies, parameters, and other checks, and all answer `400`.
 - `@ConfigurationProperties` with `@Validated` turns configuration into a typed class and stops startup when a required value is wrong.
 - `@RestControllerAdvice` maps exceptions to status codes and one `{"error": ...}` body, always with an explicit JSON content type; services throw meaning, and the handler decides the status.
 - Unexpected errors return a generic message and a reference; details stay in the log.

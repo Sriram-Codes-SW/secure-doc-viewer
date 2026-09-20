@@ -16,7 +16,7 @@
 Chapter 30 (the platform), Chapter 18 (backend testing) and Chapter 24 (frontend and end-to-end
 testing). The code is at `book-m6-final`, the tip of `main` after pull
 requests #9 to #12. The difference from `book-m5-platform` touches only four paths:
-`.github/dependabot.yml`, `frontend/package.json`, its lock file and `TileGenerationServiceTest`.
+`.github/dependabot.yml`, `frontend/package.json`, its lock file, and `TileGenerationServiceTest`.
 At `book-m6-final` (commit `a27e069`) the repository has 38 commits and pull requests 1 to 12. A later documentation-only pull request, #13, corrected the README's mention of a canvas and a code comment; at the tag itself, trust the code (Chapter 21) over that README sentence. Versions at this tag: Spring Boot 4.1.1, Java 25, and, only from this tag, Vitest 5.0.1 and jsdom
 30.0.1 in the frontend (earlier tags use Vitest 4).
 <!-- source: git diff --stat book-m5-platform book-m6-final; PR #9-#12; coordinator correction in requests.md -->
@@ -36,7 +36,7 @@ a small set of automatic mechanisms that keep looking for it, and a set of writt
 to do when they speak.
 
 This chapter tells the story of the moment those mechanisms started talking. Within minutes of the
-big platform pull request (PR #5) merging, CI on `main` failed once, and Dependabot opened three
+big platform pull request (PR #5) merging, continuous integration (CI) on `main` failed once, and Dependabot opened three
 pull requests. Each needed a decision. The decisions, and the rules that came out of them, are the
 final state of the project.
 <!-- source: PR #9 body; PR #6, #7, #8 bodies and closing comments; timeline (merge 06:12Z, Dependabot PRs 06:13-06:14Z) -->
@@ -44,7 +44,7 @@ final state of the project.
 ### 31.2 The vocabulary of a healthy project
 
 A dependency is a library your project uses but did not write. The backend depends on Spring,
-PDFBox and a MySQL driver; the frontend depends on Angular, Vitest and dozens more. Your project
+PDFBox, and a MySQL driver; the frontend depends on Angular, Vitest, and dozens more. Your project
 inherits every feature of a dependency, and every flaw.
 
 **Dependabot** is a GitHub service that reads your dependency files and opens a pull request when a
@@ -66,7 +66,7 @@ even-numbered major versions to LTS.
 A flaky test passes and fails on the same code, depending on timing or luck. Section 31.5
 takes one apart.
 
-**Analogy.** Think of a car. Selling it doesn't end the work: it needs oil changes, recalls and
+**Analogy.** Think of a car. Selling it doesn't end the work: it needs oil changes, recalls, and
 inspections. Dependabot is the recall notice in your mailbox, CI is the inspection, and the LTS rule
 is choosing a model whose manufacturer promises parts for years. **Where the analogy breaks
 down:** a car's parts wear out on their own, while software wears out only because the world around
@@ -84,11 +84,11 @@ description of PR #5:
 - **End-to-end run:** Playwright drives a browser against a freshly built Docker stack with
   throwaway secrets, including accessibility checks. The report is uploaded when the run fails.
 - **Dependency scan:** an OSV scan of the dependencies.
-- **Image scan:** Trivy scans both built container images, and a fixable HIGH or CRITICAL finding
+- **Image scan:** Trivy scans both built container images, and a fixable HIGH, or CRITICAL finding
   fails the build.
 
 On top of that, Dependabot was configured to open grouped update pull requests weekly for Maven,
-npm, Docker, Compose and GitHub Actions.
+npm, Docker, Compose, and GitHub Actions.
 <!-- source: PR #5 body (CI and dependencies; Supply chain in CI) -->
 
 This is the "healthy" machinery. What follows are the first things it caught.
@@ -111,7 +111,7 @@ Before the story of the Dependabot pull requests, you need to read the version n
 
 *Path: `frontend/package.json`*
 
-A version such as `5.0.1` has three parts: major, minor and patch. This convention is called
+A version such as `5.0.1` has three parts: major, minor, and patch. This convention is called
 semantic versioning: a patch release fixes bugs, a minor release adds features without
 breaking existing use, and a major release is allowed to break things.
 
@@ -145,7 +145,7 @@ too long is abandoned, and its slot must come back. The test asserted that every
 free again at the same instant the second render returned.
 
 The trap is the order of events on two threads. The thread that runs a render gives its slot back
-in a `finally` block, which runs immediately after the caller has received its result. **Table 31.1**
+in a `finally` block, which runs immediately after the caller has received its result. Table 31.1
 shows the two orders.
 
 **Table 31.1 — Two possible orders of events in the flaky test**
@@ -208,7 +208,7 @@ returns.
 <!-- source: PR #9 body; TileGenerationServiceTest.java diff book-m5-platform..book-m6-final -->
 
 **What not to do.** Two tempting fixes are worse. Adding a fixed `Thread.sleep(1000)` before the
-assertion makes every run slower and only shrinks the gap, not closes it. Removing the assertion
+assertion makes every run slower and only shrinks the gap and does not close it. Removing the assertion
 makes the failure go away by removing the test. A bounded wait is the honest middle: it says what
 you expect to become true, and how long you are willing to wait for it.
 
@@ -229,7 +229,7 @@ merging, each with a written reason. That is a decision process, not neglect.
 
 A peer dependency is a package saying "I need my neighbor to be within this range, but I won't
 install it for you." When you bump TypeScript to 7, the range `>=6.0 <6.1` no longer contains it. The install then stops with an error. The lesson is that a toolchain moves as a set: TypeScript,
-Angular, the test runner and the build tool are released against each other. An automatic bump of
+Angular, the test runner, and the build tool are released against each other. An automatic bump of
 one member can conflict with a neighbor.
 
 Notice what the third pull request combined. Vitest 5 and jsdom 30 were fine on their own (they
@@ -239,7 +239,7 @@ upgrade held two good ones hostage. That observation shaped the policy in the ne
 ### 31.8 Writing the policy down
 
 Closing three pull requests by hand each week would be its own kind of neglect. So pull request #10
-turned the decisions into rules in `.github/dependabot.yml`. The product owner approved the
+turned the decisions into rules in `.github/dependabot.yml`. The project owner approved the
 implementer's proposal.
 <!-- source: PR #10 body; decisions D13 -->
 
@@ -268,7 +268,7 @@ is a mystery to the next person, who will delete it the first time it annoys the
 
 Table 31.2 summarizes the policy in one place.
 
-**Table 31.2 — The Dependabot policy at book-m6-final**
+**Table 31.2 — The Dependabot policy at `book-m6-final`**
 
 | Ecosystem | Rule | Reason |
 |---|---|---|
@@ -297,8 +297,8 @@ chapter. The stories are real; each ends in a lesson that applies beyond this ap
 ### 31.9 The method: probe, fix, prove
 
 Chapter 30 told the early review rounds. The last ones, which led up to the merge, had a different
-flavor. The technical manager and product owner reviewers, which were AI review agents, were asked
-how likely an ultrareview (a deep cloud multi-agent review, described in Section 31.15) was to
+flavor. The AI technical-manager reviewer and the AI product-owner reviewer were asked
+how likely an **ultrareview** (a deep cloud multi-agent review, described in Section 31.15) was to
 pass. Each round's answer was a list of things found by running probes: small scripts that
 exercised the running system in ways the tests didn't.
 
@@ -307,13 +307,13 @@ real stack. **Fix:** change the code. **Prove:** add a test that fails without t
 with it. The stories in Sections 31.10 to 31.14 each show the steps that the record preserves.
 <!-- source: PR #5 body ("Ultrareview preparation" section); bugs-and-findings G -->
 
-### 31.10 The sign-in race: nine guesses through a limit of five
+### 31.10 The sign-in race: nine guesses through a limit of 5
 
 **The problem.** The sign-in throttle from Chapter 26 allows 5 failed attempts per account and
 address. A probe sent nine wrong passwords for one account, in parallel, from one address. All nine
 got the ordinary "wrong password" answer. Only the next single attempt was refused.
 
-**How it was found.** The reviewer asked whether the project would pass an ultrareview and ran a
+**How it was found.** The TM reviewer asked whether the project would pass an ultrareview and ran a
 live probe. The cause is a classic **check-then-act race**. The code first asked "is this address
 locked?" and then, only after checking the password, recorded the failure. A password check takes
 about 100 milliseconds (BCrypt is slow on purpose), so nine parallel requests all asked the question
@@ -349,7 +349,7 @@ Because `reserve` performs the check and the count inside one synchronized metho
 can slip between them. The design is: reserve first, check the password, and call `succeeded` only
 when the password is right. The measured result after the fix is exactly 5 accepted attempts.
 
-**The lesson.** Whenever you write "check, then do", ask what happens if two requests arrive
+**The lesson.** Whenever you write "check, then do," ask what happens if two requests arrive
 between the check and the do. Put the check and the reservation in one atomic step, and test with
 real parallelism, not only sequential calls.
 <!-- source: bugs-and-findings G1; commit 1ce2c8b; LoginThrottle.java at book-m5-platform -->
@@ -362,7 +362,7 @@ error, where a clean 400 "invalid input" was expected.
 **How it was found.** By the same round of probes. The password rules allowed 12 to 128 characters.
 BCrypt, the hashing algorithm from Chapter 26, reads at most **72 bytes** of a password and refuses
 longer input. In plain ASCII a character is one byte, so 72 characters is the limit. But in UTF-8 a
-character outside plain English letters can take two, three or four bytes, so 30 emoji can already
+character outside plain English letters can take two, three, or four bytes, so 30 emoji can already
 exceed 72 bytes while counting as only 30 characters.
 
 **The fix.** Validate the length in bytes, not characters, and explain it to the user.
@@ -420,7 +420,7 @@ request lists among its supply-chain measures, check for this kind of problem.
 
 The identifiers beginning with `GHSA` are GitHub Security Advisory numbers, one per flaw. The
 comment names them so the next person can look each one up, and it states the exit condition:
-"drop this once Boot manages 11.0.25+".
+"drop this once Boot manages 11.0.25+."
 
 **The lesson.** Using the newest framework release doesn't guarantee that its dependencies are
 patched, because a framework can lag the security fixes of the libraries inside it. Scan your
@@ -434,7 +434,7 @@ to the server counted as activity, so the admin's own session never went idle an
 on the account with the most power in the app.
 
 **The fix.** Poll only while somebody is actually there. The final round (commit `6cf17fa`) made the
-decision a small pure function that the tests can call directly, and the technical reviewer verified
+decision a small pure function that the tests can call directly, and the TM reviewer verified
 the result.
 
 **Listing 31.7 — `shouldPoll` (book-m5-platform)**
@@ -483,18 +483,17 @@ again" when trying again cannot help, and the client must not believe it forever
 
 ### 31.15 The ultrareview that never ran
 
-By the last round the product owner wanted a deep review of the whole codebase. An **ultrareview** is
-a cloud multi-agent code review offered by the coding tool used to build the project. The product
+By the last round the project owner wanted a deep review of the whole codebase. An ultrareview is
+a cloud multi-agent code review offered by the coding tool used to build the project. The project
 owner first asked whether it could catch anything new, given that every earlier review had also been
 routed through the same tool. They then reasoned that a review this deep should cover the whole codebase and not only the latest change, and later decided to merge pull request #5 first and run the review on the merged code.
 
-A temporary base branch was created for the tool to compare against, at the product owner's
+A temporary base branch was created for the tool to compare against, at the project owner's
 request. The tool refused. It reported a diff of 165 files and 22,096 lines, against limits of 500
-files and 8,000 lines; the largest file was the frontend lock file at about 8,100 lines. The product
+files and 8,000 lines; the largest file was the frontend lock file at about 8,100 lines. The project
 owner concluded that it was not worth waiting for.
 
-The review value had already been delivered by other means: four rounds of independent review by
-the two reviewer agents, plus the local dry run described in Section 31.14. The lesson is not that
+The review value had already been delivered by other means: four rounds of independent review by the PO and TM reviewers, plus the local dry run described in Section 31.14. The lesson is not that
 deep review is worthless. It is that a review tool has a shape of input it is built for, which here
 is a focused change and not the whole history of a project. When your work doesn't fit the shape,
 reviews of smaller pieces at the time they are written are cheaper and find more.
@@ -518,7 +517,7 @@ healthy mean?" for this app.
   scratch volume, the app booted on it, Flyway validated the migrations, and a reader signed in and
   received a watermarked tile.
 - An honest list of what is open: executing the go-live checklist, retiring the stale copy of the
-  project left in the old OneDrive folder, and the product owner's question about per-document
+  project left in the old OneDrive folder, and the project owner's question about per-document
   sensitivity levels (different rate limits for different documents).
 <!-- source: PR #5 body (Final-review fixes, restore drill); decisions D6, research record of open items -->
 
@@ -547,7 +546,7 @@ load. Fix: reserve first, then work, and undo on success (Listing 31.4).
 
 ## Architecture blueprint v6
 
-Figure 31.1 is Blueprint v6. Milestone 6 changed only policy, tooling
+Figure 31.1 is Blueprint v6. Milestone 6 changed only policy, tooling,
 and one test, so the diagram is the same architecture as Blueprint v5 (Figure 30.1), drawn here as the
 final system with the pieces that Chapters 26 to 30 added.
 
@@ -585,16 +584,16 @@ flowchart TB
 
 *Figure 31.1 — Blueprint v6 (`book-m6-final`)*
 
-*Text description:* The same flowchart as Figure 30.1. The browser reaches nginx, optionally through Caddy. Requests pass the two session filters and SecurityConfig with the sign-in throttle and known devices. They then reach the controllers, DocumentService, the work limiters and TileGenerationService. MySQL and the tile volume are internal, and Prometheus reads metrics from allowed addresses only. Nothing structural changed in milestone 6, so, as in Figure 30.1, the drawing is a deployment-oriented view that omits components introduced earlier.
+*Text description:* The same flowchart as Figure 30.1. The browser reaches nginx, optionally through Caddy. Requests pass the two session filters and SecurityConfig with the sign-in throttle and known devices. They then reach the controllers, DocumentService, the work limiters, and TileGenerationService. MySQL and the tile volume are internal, and Prometheus reads metrics from allowed addresses only. Nothing structural changed in milestone 6, so, as in Figure 30.1, the drawing is a deployment-oriented view that omits components introduced earlier.
 <!-- source: book/blueprints/v6-final.md; classes named in the diagram, present at book-m6-final under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; same files as book-m5-platform -->
 
-**What changed since v5:** no structural change. The non-test changes are the Dependabot policy and the Vitest 5 and jsdom 30 bumps; the flaky-test fix is test code only.
+What changed since v5: no structural change. The non-test changes are the Dependabot policy and the Vitest 5 and jsdom 30 bumps; the flaky-test fix is test code only.
 
 ## Decisions and challenges
 
 ### Decision: LTS only
 
-**The decision.** Propose only stable, long-term-support lines, approved by the product owner on the
+**The decision.** Propose only stable, long-term-support lines, approved by the project owner on the
 implementer's proposal. **The options considered.** Take every update automatically, close each
 unwanted pull request by hand, or write ignore rules. **Why this one.** Non-LTS runtime and database
 releases have a shorter support life, and a database major deserves a migration test. Rules make the
@@ -619,7 +618,7 @@ Toolchains move together.
 
 ### Decision: not to run the ultrareview
 
-**The decision.** After the tool refused a diff of 165 files and 22,096 lines, the product owner
+**The decision.** After the tool refused a diff of 165 files and 22,096 lines, the project owner
 stopped waiting for it. **The options considered.** Splitting the history into reviewable slices,
 or relying on the rounds already done. **Why this one.** The four independent review rounds and a
 local dry run had already produced the findings in Sections 31.10 to 31.14. **What it costs.** No
@@ -628,7 +627,7 @@ independent review of the final state as a whole.
 
 ## In this project
 
-**Table 31.3 — Where the concepts live (at book-m6-final)**
+**Table 31.3 — Where the concepts live (at `book-m6-final`)**
 
 | Concept | Where |
 |---|---|
@@ -651,7 +650,7 @@ Solutions are in Appendix C.
 
 ### Exercise 31.1 ★ Read the range
 
-For each of `^5.0.1`, `~6.0.2` and `5.0.1` in a `package.json`, say whether version 5.4.0 and version
+For each of `^5.0.1`, `~6.0.2`, and `5.0.1` in a `package.json`, say whether version 5.4.0 and version
 6.0.5 could be installed.
 
 ### Exercise 31.2 ★ Why the polling loop does not slow a passing test

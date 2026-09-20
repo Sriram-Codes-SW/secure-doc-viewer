@@ -3,7 +3,7 @@
 
 Before you write a line of code, you need a picture of what you're going to build and why it is built the way it is. This chapter describes the Secure Document Viewer in plain words, explains the one idea that shapes the whole design, and gives you a map of the tools the rest of the book teaches.
 
-A word on how to use this book, since this is where you start. Follow along in a terminal: most chapters give commands to run against your own copy of the project, and Chapter 2 makes you comfortable with the command line. Do the exercises at the end of each chapter. They are graded ★ (a few minutes, checking your understanding), ★★ (about an hour, applying the idea) and ★★★ (open-ended), and worked solutions are in Appendix C at the back of the book. When a chapter quotes code, it names the milestone tag, so you can read the same file with `git show <tag>:<path>` (Chapter 7 teaches this) and be sure you see exactly what the book saw. The front matter's "Setting up your machine" gets your tools ready. Finally, do not worry about remembering every new word in this chapter: the ideas return in later chapters, each time with more detail, and the book's glossary lists every term.
+A word on how to use this book, since this is where you start. Follow along in a terminal: most chapters give commands to run against your own copy of the project, and Chapter 2 makes you comfortable with the command line. Do the exercises at the end of each chapter. They are graded ★ (5 to 15 minutes, checking your understanding), ★★ (30 to 60 minutes, applying the idea), and ★★★ (an hour or more, open-ended), and worked solutions are in Appendix C at the back of the book. When a chapter quotes code, it names the milestone tag, so you can read the same file with `git show <tag>:<path>` (Chapter 7 teaches this) and be sure you see exactly what the book saw. The front matter's "Setting up your machine" gets your tools ready. Finally, do not worry about remembering every new word in this chapter: the ideas return in later chapters, each time with more detail, and the book's glossary lists every term.
 
 ## Learning objectives
 
@@ -40,21 +40,21 @@ The Secure Document Viewer is a small web application built to reach those three
 
 ### 1.2 Who uses the app: three roles
 
-Before looking at how the app protects a document, meet the people it serves. The app calls them **roles**, and there are three. Example usernames throughout this book follow the project's own tests: `reader.one`, `pub.one` and `outsider.one`.
+Before looking at how the app protects a document, meet the people it serves. The app calls them **roles**, and there are three. Example usernames throughout this book follow the project's own tests: `reader.one`, `pub.one`, and `outsider.one`.
 
 - A **reader** can open the documents they have access to, and nothing else. `reader.one` is a reader.
 - A **publisher** can do everything a reader can and can also upload documents, which makes them the owner of what they upload. `pub.one` is a publisher.
 - An **administrator** can additionally manage accounts and sessions and read the audit trail. The role is called `ADMIN` in the code.
 
-The code says the same thing in a comment on the `Role` type. Roles are cumulative in practice. Every signed-in user can read documents they have access to, publishers can also upload, and admins can additionally manage accounts, sessions and the audit log. There is no public sign-up. An administrator creates every account, and the very first administrator is created automatically the first time the app starts on an empty database. <!-- source: Role.java, application.yml (bootstrap-admin) and README.md at book-m6-final -->
+The code says the same thing in a comment on the `Role` type. Roles are cumulative in practice. Every signed-in user can read documents they have access to, publishers can also upload, and admins can additionally manage accounts, sessions, and the audit log. There is no public sign-up. An administrator creates every account, and the very first administrator is created automatically the first time the app starts on an empty database. <!-- source: Role.java, application.yml (bootstrap-admin) and README.md at book-m6-final -->
 
-Two more ideas belong here, because every later chapter uses them. **Authentication** means proving who you are, which is what signing in does. **Authorization** means deciding what you are allowed to do, which the app checks separately for every action. A person can be authenticated and still not authorized: `outsider.one` can sign in, and still cannot open a document that was never shared with them. Each document has an owner and a **visibility**: either `PRIVATE` (only the owner, administrators and the users the owner shared it with) or `EVERYONE` (any signed-in user). For a document you may not see, the app answers "not found", as if it did not exist at all, so an outsider cannot even learn that it exists. Chapters 8 and 16 explain why.
+Two more ideas belong here, because every later chapter uses them. **Authentication** means proving who you are, which is what signing in does. **Authorization** means deciding what you are allowed to do, which the app checks separately for every action. A person can be authenticated and still not authorized: `outsider.one` can sign in, and still cannot open a document that was never shared with them. Each document has an owner and a **visibility**: either `PRIVATE` (only the owner, administrators, and the users the owner shared it with) or `EVERYONE` (any signed-in user). For a document you may not see, the app answers "not found," as if it did not exist at all, so an outsider cannot even learn that it exists. Chapters 8 and 16 explain why.
 
 ### 1.3 Why hiding a button doesn't protect anything
 
 The obvious way to build a "protected" viewer is to send the PDF to the browser, then use the browser to hide the download button and block the right-click menu. Call this the **naive viewer**.
 
-Here is why it fails. Your browser is a program running on *your* computer, under *your* control. Every instruction the site sends it, including "hide this button", is a request that the browser happens to honor. A person who opens the browser's **developer tools** (DevTools, a panel built into every browser that lets you inspect and change the page you're viewing) can undo the hiding in seconds. Even without that, the PDF already arrived on their machine, so it sits in the browser's **cache** (the folder where a browser keeps copies of files it has downloaded) waiting to be copied.
+Here is why it fails. Your browser is a program running on *your* computer, under *your* control. Every instruction the site sends it, including "hide this button," is a request that the browser happens to honor. A person who opens the browser's **developer tools** (DevTools, a panel built into every browser that lets you inspect and change the page you're viewing) can undo the hiding in seconds. Even without that, the PDF already arrived on their machine, so it sits in the browser's **cache** (the folder where a browser keeps copies of files it has downloaded) waiting to be copied.
 
 The project's README puts it bluntly: both tricks "live entirely in the browser, so both are undone in about ten seconds with DevTools." <!-- source: README.md, opening of "Why this design" -->
 
@@ -92,7 +92,7 @@ flowchart LR
 <!-- source: README.md "Why this design"; application.yml (tile-size, render-dpi); TileGenerationService.java, WatermarkService.java and TileController.java at book-m6-final -->
 
 
-Three more ingredients, explained in Section 1.8, make the tiles safe to serve: signed addresses, a watermark and checks on every request.
+Three more ingredients, explained in Section 1.8, make the tiles safe to serve: signed addresses, a watermark, and checks on every request.
 
 ### 1.5 Clients and servers, in one picture
 
@@ -117,15 +117,15 @@ sequenceDiagram
 
 *Figure 1.2 — A browser asks for a tile*
 
-*Text description:* A sequence of five messages between three parties, read top to bottom: Browser, Server and Database. The browser asks for one tile, the server checks the request is valid, the server asks the database whether this user may see the document, the database answers yes, and the server returns a watermarked tile. Notice that the permission check goes to the database on every tile, not once per session.
+*Text description:* A sequence of five messages between three parties, read top to bottom: Browser, Server, and Database. The browser asks for one tile, the server checks the request is valid, the server asks the database whether this user may see the document, the database answers yes, and the server returns a watermarked tile. Notice that the permission check goes to the database on every tile, not once per session.
 
 <!-- source: TileController.java (method getTile) and DocumentService.tileAccessIfViewable at book-m6-final -->
 
 
-The *Database* in the figure is a separate program that stores the app's accounts, documents and permissions on disk so they survive a restart; [Chapter 9](09-sql-and-mysql.md) teaches it. Two rules follow, and the rest of the book depends on them:
+The *Database* in the figure is a separate program that stores the app's accounts, documents, and permissions on disk so they survive a restart; [Chapter 9](09-sql-and-mysql.md) teaches it. Two rules follow, and the rest of the book depends on them:
 
 - The client is under the user's control, so the server treats everything it sends as untrusted until checked.
-- The server holds the secrets: the signing key, the tiles and the database.
+- The server holds the secrets: the signing key, the tiles, and the database.
 
 [Chapter 8](08-how-the-web-works.md) teaches how the conversation works in detail (requests, status codes, cookies). For now, you only need the two roles.
 
@@ -138,13 +138,13 @@ The app has four moving parts, and this book has a part for each layer of toolin
 | Part of the app | What it does | Main tools | Where you learn it |
 |---|---|---|---|
 | Backend | Renders tiles, checks permissions, signs URLs, stores data | Java 25, Spring Boot 4, Maven | Chapters 3–6 and Part II |
-| Database | Stores accounts, documents, shares and the audit trail | MySQL 8.4, Flyway | Chapter 9 and Chapter 14 |
+| Database | Stores accounts, documents, shares, and the audit trail | MySQL 8.4, Flyway | Chapter 9 and Chapter 14 |
 | Frontend | The pages you see in the browser | TypeScript, Angular 22, Node | Part III |
 | Packaging and delivery | Runs everything the same way on any machine | Docker, Git, GitHub Actions | Chapters 7 and 10, Part V |
 
 The source code is in this repository. You will follow it through seven checkpoints, one per milestone, marked with Git tags from `book-m0-mvp` to `book-m6-final`. [Chapter 7](07-git-and-github.md) shows you how to look at any of them.
 
-The path through the book is deliberate. Part I gives you the vocabulary: a language, a build tool, version control, the web, SQL and containers. Parts II and III build the backend and the frontend. Part IV then rebuilds the app one milestone at a time, and Part V takes it to production.
+The path through the book is deliberate. Part I gives you the vocabulary: a language, a build tool, version control, the web, SQL, and containers. Parts II and III build the backend and the frontend. Part IV then rebuilds the app one milestone at a time, and Part V takes it to production.
 
 ### 1.7 What this app can and can't do
 
@@ -154,7 +154,7 @@ Being honest about limits is a design feature here, so learn them now.
 
 - The PDF stops being servable after upload; only disconnected tiles remain.
 - Each tile address expires after 120 seconds by default and works only for the sign-in it was issued to (Section 1.8 explains how).
-- Every tile carries the viewer's identity and a UTC timestamp.
+- Every tile carries the viewer's identity and a UTC timestamp (UTC is the world's reference time, with no daylight-saving changes).
 - Each user is subject to a **rate limit**, a cap on how many requests one user may make in a period of time (here 180 tiles per 60 seconds by default), so a scripted harvest is slow.
 - Every important action (sign-ins, uploads, views, denied requests) is written to the **audit trail**, an append-only record in the **database** (the program that stores the app's data permanently; Chapter 9 teaches it).
 
@@ -177,11 +177,13 @@ The watermark is what makes a leak attributable. That is the honest promise: rai
 
 A book that only showed the strengths of its project would teach you to overrate it. Security work depends on stating exactly what a defense does and does not achieve, so each later chapter repeats this habit: name the threat, name the defense, name what remains.
 
-**Terms so far.** You have met the PDF, the three roles, authentication and authorization, rasterizing and tiles, clients and servers, the rate limit, the audit trail and the database. The Intermediate tier adds URLs, signatures, sessions and watermarks. If a term slips away, the glossary at the back of the book has it.
+**Terms so far.** You have met the PDF, the three roles, authentication, and authorization, rasterizing and tiles, clients, and servers, the rate limit, the audit trail, and the database. The Intermediate tier adds URLs, signatures, sessions, and watermarks. If a term slips away, the glossary at the back of the book has it.
 
 ## Intermediate tier: Why it is built this way
 
-### 1.8 Three more ingredients: signed addresses, watermarks and checks
+*On a first read you can skim this tier; Parts II and IV return to every idea in it.*
+
+### 1.8 Three more ingredients: signed addresses, watermarks, and checks
 
 Rasterizing and slicing hide the PDF. Three more ingredients make the tiles safe to serve. Each gets its own chapter later; here is what each one is and why it exists.
 
@@ -197,7 +199,7 @@ The address is also tied to one **session**. A session is the server's record th
 
 Think of a museum that will never lend you the painting. Instead it lets you look at the canvas through a window, one small square at a time, and the guard stamps your name on each square as you look.
 
-The analogy breaks down in one respect: a museum guard can see you. The server can't; it only sees requests. Everything it knows about you comes from what your browser sends, which is why the server must check that information itself.
+**Where the analogy breaks down:** a museum guard can see you. The server can't; it only sees requests. Everything it knows about you comes from what your browser sends, which is why the server must check that information itself.
 
 ### 1.9 One page view, step by step
 
@@ -228,13 +230,15 @@ Every one of these trade-offs is revisited in [Chapter 37](../tradeoffs/37-engin
 
 The app you will build was not designed in one sitting, and its history is part of the teaching. Here is the outline, which Part IV tells in full.
 
-The first version, milestone 0, was a backend only: rasterizing PDFs, slicing tiles, signed URLs and the watermark, in a single first commit. Its own commit message states the rationale as serving PDFs without exposing the source file. An Angular frontend, an admin page and an audit log followed. At that point the project's owner had two independent reviews done. Both reviewers were AI review agents. A "product owner" reviewer looked at the reading experience, and a "senior technical manager" reviewer looked for engineering and security defects. Between them they listed 33 findings, 20 from the technical review and 13 from the product review. The most serious were startling for a security product. Any signed-in user could list every live session identifier (a session is the server's record of a sign-in; Section 1.8), and the identifier was the only credential, so any user could take over any other user's session. And sign-in accepted any username with no password at all. Both were fixed first, by giving the app real accounts (with passwords stored only as scrambled one-way hashes, Chapter 15) and by limiting who can see session information. <!-- source: dossier reviews.md TM-1, TM-2; bugs-and-findings.md -->
+The first version, milestone 0, was a backend only: rasterizing PDFs, slicing tiles, signed URLs, and the watermark, in a single first commit. Its own commit message states the rationale as serving PDFs without exposing the source file. An Angular frontend, an admin page, and an audit log followed. At that point the project's owner had two independent reviews done. Both reviewers were AI (artificial intelligence) review agents. A "product owner" reviewer looked at the reading experience, and a "senior technical manager" reviewer looked for engineering and security defects. Between them they listed 33 findings, 20 from the technical review and 13 from the product review. The most serious were startling for a security product. Any signed-in user could list every live session identifier (a session is the server's record of a sign-in; Section 1.8), and the identifier was the only credential, so any user could take over any other user's session. And sign-in accepted any username with no password at all. Both were fixed first, by giving the app real accounts (with passwords stored only as scrambled one-way hashes, Chapter 15) and by limiting who can see session information. <!-- source: dossier reviews.md TM-1, TM-2; bugs-and-findings.md -->
 
-The owner then approved a plan in five phases, with one pull request per phase. A pull request is a proposal to merge a set of changes into the main code, reviewed before it lands (Chapter 7). The five phases were real accounts and roles; ownership, sharing, a real database and the audit trail; upload and error hardening; the reading experience; and finally the platform (Spring Boot 4, Java 25, Docker, automated checks). Those phases became milestones 1 to 5, and a few small maintenance changes became milestone 6. Each phase was checked with tests and by hand in a browser, and the fifth was reviewed in several more rounds before it was merged. By the last recorded count the project had 114 backend tests and 31 frontend tests. <!-- source: dossier DOSSIER.md and timeline.md; memory hardening plan -->
+The owner then approved a plan in five phases, with one pull request per phase. A pull request is a proposal to merge a set of changes into the main code, reviewed before it lands (Chapter 7). The five phases were real accounts and roles; ownership, sharing, a real database, and the audit trail; upload and error hardening; the reading experience; and finally the platform (Spring Boot 4, Java 25, Docker, automated checks). Those phases became milestones 1 to 5, and a few small maintenance changes became milestone 6. Each phase was checked with tests and by hand in a browser, and the fifth was reviewed in several more rounds before it was merged. By the last recorded count the project had 114 backend tests and 31 frontend tests. <!-- source: dossier DOSSIER.md and timeline.md; memory hardening plan -->
 
 Two things follow for you as a reader. First, the code you will read has been through review, and many of its odd-looking details are scars from real findings; the book points them out. Second, you will see the app as it grew, so each concept arrives when the project first needed it, not all at once.
 
 ## Advanced tier: The mindset
+
+*On a first read you can skip to "In this project"; Part V returns to threat thinking.*
 
 ### 1.12 Threat thinking
 

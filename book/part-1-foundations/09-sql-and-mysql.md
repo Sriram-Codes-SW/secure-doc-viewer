@@ -1,15 +1,15 @@
 <!-- chapter: 9 | part: I | owner: writer-foundations | tag: book-m2-documents | status: expanded -->
 # Chapter 9: SQL and MySQL
 
-From milestone 2 on, the Secure Document Viewer keeps its accounts, documents, shares and audit trail in a database, so they survive restarts and can be queried safely by many users at once. This chapter teaches the SQL language and the ideas behind relational databases, using the project's real migration files as examples. By the end you will be able to read every table definition in the project and write the queries the app needs.
+From milestone 2 on, the Secure Document Viewer keeps its accounts, documents, shares, and audit trail in a database, so they survive restarts and can be queried safely by many users at once. This chapter teaches the SQL language and the ideas behind relational databases, using the project's real migration files as examples. By the end you will be able to read every table definition in the project and write the queries the app needs.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
-- Explain tables, rows, columns and keys.
-- Read a `CREATE TABLE` statement, including types and constraints.
-- Write `INSERT`, `SELECT`, `UPDATE` and `DELETE` statements, with `WHERE`, `ORDER BY` and `LIMIT`.
+- Explain tables, rows, columns, and keys.
+- Read a `CREATE TABLE` statement, including types, and constraints.
+- Write `INSERT`, `SELECT`, `UPDATE`, and `DELETE` statements, with `WHERE`, `ORDER BY`, and `LIMIT`.
 - Explain foreign keys and write a join.
 - Summarize rows with `COUNT` and `GROUP BY`.
 - Explain what an index is and why the project adds them.
@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 ### 9.1 Why a database
 
-Files on disk are fine for a PDF, but a poor place to answer "which documents can `reader.one` open?". To answer that from files, you would read every file, parse it, and hope nobody changed one while you were reading. A database is a program that stores data in an organized form and answers questions about it quickly, safely and for many users at once. This project uses **MySQL** 8.4, a **relational database**: one that stores data in tables and links them by keys. The language you use to talk to it is **SQL** (Structured Query Language, usually pronounced "sequel" or letter by letter).
+Files on disk are fine for a PDF, but a poor place to answer "which documents can `reader.one` open?". To answer that from files, you would read every file, parse it, and hope nobody changed one while you were reading. A database is a program that stores data in an organized form and answers questions about it quickly, safely, and for many users at once. This project uses **MySQL** 8.4, a **relational database**: one that stores data in tables and links them by keys. The language you use to talk to it is **SQL** (Structured Query Language, usually pronounced "sequel" or letter by letter).
 
 What does the app keep in it? At `book-m6-final` there are six tables, listed in Table 9.1. Notice that the tiles themselves are not among them: images stay on disk, and the database holds the facts about them.
 
@@ -43,7 +43,7 @@ What does the app keep in it? At `book-m6-final` there are six tables, listed in
 
 <!-- source: db/migration V1 to V3 at book-m6-final -->
 
-The names `V1`, `V2` and `V3` are the migration files that create them; Section 9.11 explains those.
+The names `V1`, `V2`, and `V3` are the migration files that create them; Section 9.11 explains those.
 
 ### 9.2 Tables, rows, columns, keys
 
@@ -66,9 +66,11 @@ erDiagram
 <!-- source: V1__create_app_user.sql and V2__documents_shares_audit.sql at book-m2-documents (unchanged at book-m6-final): foreign keys fk_document_owner, fk_document_page_document, fk_document_share_document, fk_document_share_user -->
 
 
-Read `app_user ||--o{ document` as "one user owns zero or more documents". The document-to-share and user-to-share links together make the many-to-many relationship that Section 9.6 explains.
+Read `app_user ||--o{ document` as "one user owns zero or more documents." The document-to-share and user-to-share links together make the many-to-many relationship that Section 9.6 explains.
 
-**Analogy.** A table is a spreadsheet tab and a foreign key is a cell that says "see row 7 of the Users tab". The analogy breaks down because a database enforces the link: it refuses to store an `owner_id` that points to nobody. A spreadsheet would let the bad reference sit there until something broke.
+**Analogy.** A table is a spreadsheet tab and a foreign key is a cell that says "see row 7 of the Users tab."
+
+**Where the analogy breaks down:** a database enforces the link: it refuses to store an `owner_id` that points to nobody. A spreadsheet would let the bad reference sit there until something broke.
 
 ### 9.3 Trying SQL against the project's database
 
@@ -77,21 +79,21 @@ You can run every statement in this chapter yourself, but you need a running MyS
 1. Copy `.env.example` to `.env` and fill in the password lines (Chapter 2), then start MySQL with `docker compose up -d` (Chapter 10).
 2. Create the tables. Normally the app creates them itself through its migrations when it starts (Section 9.11), but the app is not running yet, so apply the three migration files yourself, in order. Each command reads one file and feeds it to the MySQL client inside the container, using the database name, user and password the container already holds, so you never type a password. (The command hands the password to the client through the `MYSQL_PWD` environment variable, which the MySQL 8.4 manual calls insecure and deprecated; that is acceptable for a throwaway practice database on your own machine, and Chapter 10 explains the stricter alternative.)
 
-```bash
-for f in src/main/resources/db/migration/V*.sql; do
-  docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u "$MYSQL_USER" "$MYSQL_DATABASE"' < "$f"
-done
-```
+   ```bash
+   for f in src/main/resources/db/migration/V*.sql; do
+     docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u "$MYSQL_USER" "$MYSQL_DATABASE"' < "$f"
+   done
+   ```
 
-The `V*.sql` pattern matches the files in order (`V1`, `V2`, `V3`). Run this at `book-m6-final`, where all three exist. Treat this as a practice database. If you later start the real app against it, the app's migration tool will refuse to run on tables it did not create. Reset first with `docker compose down -v`, which deletes the database's data (Chapter 10 explains).
+   The `V*.sql` pattern matches the files in order (`V1`, `V2`, `V3`). Run this at `book-m6-final`, where all three exist. Treat this as a practice database. If you later start the real app against it, the app's migration tool will refuse to run on tables it did not create. Reset first with `docker compose down -v`, which deletes the database's data (Chapter 10 explains).
 
 3. Open a SQL prompt inside the container. The command asks for the password interactively (`-p` with no value) so it never appears on the command line or in your shell history:
 
-```bash
-docker compose exec mysql mysql -u securedocs -p securedocs
-```
+   ```bash
+   docker compose exec mysql mysql -u securedocs -p securedocs
+   ```
 
-Here `securedocs` is the default username and, as the last word, the database name from `.env.example`; use your own values if you changed them. Type the password you chose in `.env` when asked. At the `mysql>` prompt, statements end with a semicolon. Try `SHOW TABLES;` and you should see the six tables of Table 9.1. Type `exit` to leave.
+   Here `securedocs` is the default username and, as the last word, the database name from `.env.example`; use your own values if you changed them. Type the password you chose in `.env` when asked. At the `mysql>` prompt, statements end with a semicolon. Try `SHOW TABLES;` and you should see the six tables of Table 9.1. Type `exit` to leave.
 
 ### 9.4 `CREATE TABLE`, types and constraints
 
@@ -121,7 +123,7 @@ Line by line:
 - `--` starts a comment.
 - `CREATE TABLE app_user ( ... );` defines the table. Each line inside is a column: a name, a type, and optional rules.
 - `BIGINT` is a large whole number; `VARCHAR(64)` is text up to 64 characters; `BOOLEAN` is true or false; `DATETIME(6)` is a date and time with microsecond precision.
-- `NOT NULL` means the column cannot be empty. SQL's `NULL` means "unknown or missing", like Chapter 5's `null`.
+- `NOT NULL` means the column cannot be empty. SQL's `NULL` means "unknown or missing," like Chapter 5's `null`.
 - `AUTO_INCREMENT` makes the database assign the next number to `id`, so each new account gets a fresh key.
 - `DEFAULT TRUE` supplies a value when the row does not give one.
 - `PRIMARY KEY (id)` declares the key.
@@ -164,7 +166,7 @@ DELETE FROM app_user WHERE username = 'pub.one';
 - `UPDATE` changes existing rows, and `WHERE` decides which. Forget `WHERE` and every row changes.
 - `DELETE` removes rows, with the same warning.
 
-`SELECT` has more clauses worth knowing. `LIMIT` caps how many rows come back. `LIKE` matches text with wildcards, where `%` means "anything". `COUNT` counts rows. Combine them:
+`SELECT` has more clauses worth knowing. `LIMIT` caps how many rows come back. `LIKE` matches text with wildcards, where `%` means "anything." `COUNT` counts rows. Combine them:
 
 **Example 9.2 — More of SELECT**
 
@@ -174,7 +176,7 @@ SELECT COUNT(*) FROM app_user WHERE role = 'READER';
 SELECT username FROM app_user WHERE username LIKE 'pub%' ORDER BY username LIMIT 20;
 ```
 
-The first counts readers. The second lists up to 20 usernames that start with `pub`, in alphabetical order. That second query is exactly the shape of the app's share picker. Chapter 14 shows it being generated from a method name: `findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc` reads as "top 20, enabled true, username starting with, order by username ascending". <!-- source: AppUserRepository.java at book-m6-final -->
+The first counts readers. The second lists up to 20 usernames that start with `pub`, in alphabetical order. That second query is exactly the shape of the app's share picker. Chapter 14 shows it being generated from a method name: `findTop20ByEnabledTrueAndUsernameStartingWithOrderByUsernameAsc` reads as "top 20, enabled true, username starting with, order by username ascending." <!-- source: AppUserRepository.java at book-m6-final -->
 
 #### The danger of UPDATE and DELETE
 
@@ -193,6 +195,8 @@ WHERE occurred_at > NOW(6);
 Run the `SELECT` first, with the same `WHERE`, and check that the count is what you expect. Only then run the `UPDATE`. Never run a statement like this on data you care about without a backup, and note that `NOW(6)` uses the database server's own time zone setting, which is the very thing that caused the original problem. The real project did exactly one such one-off correction to a small number of rows after the owner approved it; the exact statement is not reproduced here. <!-- source: dossier decisions.md (line 4409: one-off UPDATE fixing 25 wrong-timezone audit rows, approved by the project's owner); bugs-and-findings.md C6 -->
 
 ## Intermediate tier: Relationships and speed
+
+*On a first read you can skim this tier; Chapter 14 returns to relationships and queries.*
 
 ### 9.6 Relationships: foreign keys and joins
 
@@ -231,7 +235,7 @@ Reading it:
 
 - `document.id` is a `VARCHAR(36)`, not a number. Thirty-six characters is the length of a UUID (a randomly generated identifier such as `123e4567-e89b-12d3-a456-426614174000`), so document identifiers cannot be guessed by counting up, unlike an `AUTO_INCREMENT` number. That matters for a security product: a guessable id is an invitation to probe.
 - `document.owner_id` is a foreign key to `app_user.id`. The database refuses a document whose owner does not exist.
-- `document_share` is a **join table**: each row says "this user may open this document". Its primary key is the *pair* `(document_id, user_id)`, so the same share cannot be recorded twice. That is exactly Chapter 5's set behavior, enforced by the database.
+- `document_share` is a **join table**: each row says "this user may open this document." Its primary key is the *pair* `(document_id, user_id)`, so the same share cannot be recorded twice. That is exactly Chapter 5's set behavior, enforced by the database.
 - `ON DELETE CASCADE` means: when the referenced row is deleted, delete these rows too. Deleting a document removes its shares automatically, so no orphaned shares remain.
 
 Note what is missing from `document`: a foreign key does not say what happens on `DELETE` for `owner_id`. By default the database refuses to delete a user who still owns documents. That is deliberate. The project never deletes users at all (it disables them), so their audit history and ownership stay meaningful.
@@ -249,7 +253,7 @@ WHERE d.visibility = 'EVERYONE';
 
 `d` and `u` are short aliases for the tables, and `ON` says how rows match: the document's `owner_id` equals the user's `id`. `AS owner` renames the output column. A plain `JOIN` keeps only rows that match on both sides. Its sibling `LEFT JOIN` keeps every row from the left table even with no match, which the app needs to list a document that has no shares.
 
-The app writes such queries in a Java-flavored language called JPQL, and the framework translates it to SQL (Chapter 14). Here is the query behind the library page, so you can see joins in the project.
+The app writes such queries in a Java-flavored query language called JPQL (Java Persistence Query Language), and the framework translates it to SQL (Chapter 14). Here is the query behind the library page, so you can see joins in the project.
 
 **Listing 9.3 — `DocumentRepository.java` (book-m6-final, excerpt: query `findVisibleTo`)**
 
@@ -312,11 +316,11 @@ CREATE INDEX ix_audit_event_user_time ON audit_event (username, occurred_at);
 
 *Path: `src/main/resources/db/migration/V2__documents_shares_audit.sql`*
 
-`ix_document_owner` speeds up "documents owned by this user", and `ix_document_share_user` speeds up "documents shared with this user", which the library page needs on every load. The audit table is append-only and grows without limit, so its indexes let an administrator filter by time or by user without scanning millions of rows. An index on `(username, occurred_at)` serves both "this user's events" and "this user's events in this time range". The reason is that the database can use the leftmost columns of a multi-column index on their own. A lookup by `username` alone can use the index `ix_audit_event_user_time`, while a lookup by `occurred_at` alone cannot. The migration also indexes `(document_id, occurred_at)` and `(event_type, occurred_at)`, for the audit page's other filters.
+`ix_document_owner` speeds up "documents owned by this user," and `ix_document_share_user` speeds up "documents shared with this user," which the library page needs on every load. The audit table is append-only and grows without limit, so its indexes let an administrator filter by time or by user without scanning millions of rows. An index on `(username, occurred_at)` serves both "this user's events" and "this user's events in this time range." The reason is that the database can use the leftmost columns of a multi-column index on their own. A lookup by `username` alone can use the index `ix_audit_event_user_time`, while a lookup by `occurred_at` alone cannot. The migration also indexes `(document_id, occurred_at)` and `(event_type, occurred_at)`, for the audit page's other filters.
 
 Primary keys and `UNIQUE` constraints create indexes automatically, which is why `username` is fast to look up without an explicit `CREATE INDEX`.
 
-The per-tile access check runs for every single tile and is written to be, in the source's own words, "one indexed query, no entity loading". <!-- source: DocumentRepository.findTileAccessIfVisible comment at book-m6-final --> That comment is a performance promise: a page of 12 tiles triggers 12 of these checks, so each must be cheap.
+The per-tile access check runs for every single tile and is written to be, in the source's own words, "one indexed query, no entity loading." <!-- source: DocumentRepository.findTileAccessIfVisible comment at book-m6-final --> That comment is a performance promise: a page of 12 tiles triggers 12 of these checks, so each must be cheap.
 
 If you want to see whether a query uses an index, put `EXPLAIN` in front of it. The output names the index it chose, or says it scans the whole table.
 
@@ -357,6 +361,8 @@ Everywhere else in the schema, tables point to each other with foreign keys. Her
 
 ## Advanced tier: Safety over time
 
+*On a first read you can skip to "In this project"; Chapter 14 comes back to transactions and migrations.*
+
 ### 9.10 Transactions and locks
 
 A **transaction** groups several statements so they all succeed or none do. Replacing a PDF means writing new tile files, then switching the document to the new version; if it fails halfway, the reader must still see a consistent document. A transaction guarantees that: either the whole change is committed, or all of it is rolled back and the database is as if it never started.
@@ -374,7 +380,7 @@ Two people changing the same document at once is a second problem. A **lock** ma
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentRepository.java`*
 
-`PESSIMISTIC_WRITE` means "assume there will be a conflict and lock the row now". While one request holds the lock, a second request for the same document waits its turn. The chapter on JPA (Chapter 14) covers the details and the alternatives. In SQL terms, this is `SELECT ... FOR UPDATE`.
+`PESSIMISTIC_WRITE` means "assume there will be a conflict and lock the row now." While one request holds the lock, a second request for the same document waits its turn. The chapter on JPA, the Java Persistence API (Chapter 14), covers the details and the alternatives. In SQL terms, this is `SELECT ... FOR UPDATE`.
 
 The lock is part of a bigger design. When a PDF is replaced, the app renders the new tiles into a new version folder, and then, under this row lock, switches the document's row to the new version in one transaction. Readers holding old tile URLs then get a `410` instead of a mix of old and new tiles. That design (Chapter 30) exists because an early version of replace could show a page assembled from old and new tiles. <!-- source: dossier decisions.md (commit cd0f5c2, versioned tiles under a row lock); bugs-and-findings.md -->
 
@@ -384,7 +390,7 @@ Transactions also caused a bug in the audit trail. The symptom: `ACCESS_DENIED` 
 
 ### 9.11 Migrations: changing a schema safely over time
 
-A **schema** is the set of tables and columns. It has to change as the app grows, and the changes must apply identically on your machine, in tests and in production. A **migration** is a numbered SQL file that makes one change. **Flyway**, the migration tool the project uses, runs the files in order when the app starts, skips the ones it has already applied, and records what ran in its own table.
+A **schema** is the set of tables and columns. It has to change as the app grows, and the changes must apply identically on your machine, in tests, and in production. A **migration** is a numbered SQL file that makes one change. **Flyway**, the migration tool the project uses, runs the files in order when the app starts, skips the ones it has already applied, and records what ran in its own table.
 
 The project has three migrations, and the name pattern matters: `V1__create_app_user.sql`, `V2__documents_shares_audit.sql`, `V3__tile_versions_and_account_security.sql`. `V` plus a version, two underscores, and a description. The third one changes existing tables:
 
@@ -404,7 +410,7 @@ ALTER TABLE app_user ADD COLUMN last_sign_in_at DATETIME(6) NULL;
 
 The rule is: **never edit a migration that has already run somewhere.** Flyway checks that applied files have not changed and refuses to start if they have. To change the schema, add a new migration. The configuration sets `hibernate.ddl-auto: none` with the comment "Flyway owns the schema; Hibernate never alters it", so there is exactly one authority. <!-- source: application.yml at book-m6-final -->
 
-Why this discipline? Consider the alternative: someone changes a column by hand on the production database and forgets to record it. Now no other environment matches, and a later deploy fails in a way nobody can reproduce. Migrations turn the schema into code that is reviewed, versioned in Git (Chapter 7) and tested like anything else.
+Why this discipline? Consider the alternative: someone changes a column by hand on the production database and forgets to record it. Now no other environment matches, and a later deploy fails in a way nobody can reproduce. Migrations turn the schema into code that is reviewed, versioned in Git (Chapter 7), and tested like anything else.
 
 The project tests its schema against two databases. Most tests use H2, a small in-memory database run in a mode that imitates MySQL, so they need nothing installed. A reviewer then asked for a test against the real engine, and the project added `MySqlIntegrationTest`, which starts an actual MySQL 8.4 in a container (Chapters 6 and 10) and runs the migrations there. That test also checks that timestamps survive a database server set to a different time zone. A migration that works on H2 is not proven to work on MySQL; the second test closes that gap. <!-- source: dossier decisions.md (H2 in MySQL mode; MySqlIntegrationTest, commit a51674c) -->
 
@@ -466,7 +472,7 @@ Write a query that shows, for each `role` in `app_user`, how many accounts have 
 
 ### Exercise 9.5 ★★ Join three tables
 
-Using `document`, `document_share` and `app_user`, write a query that lists each document title together with the usernames it is shared with. Which kind of join do you need if you also want documents that are shared with nobody?
+Using `document`, `document_share`, and `app_user`, write a query that lists each document title together with the usernames it is shared with. Which kind of join do you need if you also want documents that are shared with nobody?
 
 *Solution:* Appendix C, Exercise 9.5.
 
@@ -480,7 +486,7 @@ The project might one day store comments on documents. Design a `document_commen
 
 - A relational database stores data in tables linked by keys, and SQL is the language for it.
 - `CREATE TABLE` defines types and constraints; the database enforces them.
-- `INSERT`, `SELECT`, `UPDATE` and `DELETE` cover everyday work; `WHERE` matters, and `COUNT` with `GROUP BY` summarizes.
+- `INSERT`, `SELECT`, `UPDATE`, and `DELETE` cover everyday work; `WHERE` matters, and `COUNT` with `GROUP BY` summarizes.
 - Foreign keys link tables, joins combine them, and indexes make chosen queries fast at a cost.
 - Transactions and locks keep concurrent changes safe, and audit records need their own transaction.
 - Migrations change the schema in numbered, never-edited steps, tested against the real database engine.

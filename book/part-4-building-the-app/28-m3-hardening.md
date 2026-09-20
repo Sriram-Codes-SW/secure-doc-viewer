@@ -13,7 +13,7 @@
 
 ## Prerequisites
 
-Chapters 27 (documents), 13 (validation and error handling) and 16 (Spring Security). The code is at `book-m3-hardening` (pull request #3, three commits named 3a, 3b and
+Chapters 27 (documents), 13 (validation and error handling) and 16 (Spring Security). The code is at `book-m3-hardening` (pull request #3, three commits named 3a, 3b, and
 3c; stacked on pull request #2), still Spring Boot 3.3.4 and Java 21. To run this tag yourself, see Table IV.3 ("What you need to run
 each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m3; timeline -->
@@ -22,22 +22,20 @@ each tag") in the [Part IV introduction](00-part-introduction.md).
 
 ### 28.1 The requirements
 
-By the end of Chapter 27 the app had accounts, roles, ownership and an audit trail. Its doors were
+By the end of Chapter 27 the app had accounts, roles, ownership, and an audit trail. Its doors were
 locked. Milestone 3 asks a different question: what happens when someone sends the app something it
 does not expect, or something built to hurt it?
 
-The technical review (an AI review agent playing a senior technical manager) had found, among its
-findings, several that belong to this milestone:
+The AI technical-manager reviewer had found, among its findings, several that belong to this milestone:
 
-- An upload was read whole into memory, had no limits on type, page count or size, and was rendered
+- An upload was read whole into memory, had no limits on type, page count, or size, and was rendered
   on the request thread. A single large or crafted file could exhaust the server (`TM-5`, rated
   high).
 - Error responses were inconsistent (`TM-11`), and some messages echoed the input back to the caller
   (`TM-18`).
 - There were no protective response headers (`TM-15`) and no health check for monitoring (`TM-12`).
 
-The AI product-owner reviewer added a user-facing complaint: uploading a corrupt or non-PDF file returned
-a raw internal error, gave no progress feedback, and the title was not prefilled (`PO-8`).
+The AI product-owner reviewer added a user-facing complaint: uploading a corrupt or non-PDF file returned a raw internal error, gave no progress feedback, and did not prefill the title (`PO-8`).
 
 Pull request #3 answers all of these in three commits: 3a for uploads, 3b for errors, 3c for headers
 and health. It also states what it did not do: "Deferred: processing uploads in the background with
@@ -265,7 +263,7 @@ The sequence is the point.
 4. Delete the source PDF, so that the staging directory contains only tiles. "The PDF itself must
    never be committed alongside its tiles." This is the founding promise of Chapter 25: the source
    file is never available for download.
-5. On any failure, delete the staging directory. If the deletion itself fails, the code attaches that failure to the original error with `addSuppressed` instead of replacing it. The caller then sees the real problem, such as "not a readable PDF", and the janitor from Chapter 27 removes the leftover later.
+5. On any failure, delete the staging directory. If the deletion itself fails, the code attaches that failure to the original error with `addSuppressed` instead of replacing it. The caller then sees the real problem, such as "not a readable PDF," and the janitor from Chapter 27 removes the leftover later.
 
 A separate method, `commit`, later moves the finished staging directory into place under the
 document's id. Until then nothing is visible to anyone, so a failed upload can't leave a half-built
@@ -284,11 +282,11 @@ no body, depending on which layer noticed the problem. A client can't be written
 After it, **every error is JSON of the same shape**: `{"error": "..."}`. Table 28.1 lists the cases
 the pull request names.
 
-**Table 28.1 — Errors and their statuses at book-m3-hardening**
+**Table 28.1 — Errors and their statuses at `book-m3-hardening`**
 
 | Situation | Status | Example message |
 |---|---|---|
-| Missing parameter, part or header | 400 | `Missing required 'token'.` |
+| Missing parameter, part, or header | 400 | `Missing required 'token'.` |
 | Value of the wrong type | 400 | `Invalid value for 'page'.` |
 | Not a readable PDF, no pages, too many pages, page too large | 400 | `The PDF has 600 pages; the limit is 500.` |
 | Unknown route | 404 | `Not found.` |
@@ -344,7 +342,7 @@ Points worth understanding.
   the base `Exception`, runs only when nothing else matched. It generates an eight-character
   reference, logs the full exception (with its stack trace) *under that reference*, and tells the
   client only the reference. A user who reports "Reference: 3fa9c1de" lets an operator find the
-  exact failure without the client ever seeing a stack trace, an SQL statement or a file path.
+  exact failure without the client ever seeing a stack trace, an SQL statement, or a file path.
 
 The class's own Javadoc states the rule: "Messages never include stack traces, SQL, file paths or
 other internals."
@@ -401,11 +399,13 @@ The file's name must end in `.pdf` (case-insensitive) or the browser must report
 `application/pdf`; and the size must fit. Otherwise the user sees a message at once, and the chosen file is cleared, so
 they can't press Upload on something that will fail.
 
-The comment on the constant is the important line: "the server still enforces it". Browser checks
+The comment on the constant is the important line: "the server still enforces it." Browser checks
 are for kindness, not security, because anyone can send a request without the browser: a script can
 skip your form entirely.
 
-**Progress in two stages.** The component also reports progress.
+**Progress in two stages.** The component also reports progress, as Listing 28.9 shows.
+
+**Listing 28.9 — `UploadComponent` progress handling (book-m3-hardening, excerpt: lines added in the diff)**
 
 ```ts
 next: (event) => {
@@ -420,10 +420,11 @@ next: (event) => {
 },
 ```
 
+*Path: `frontend/src/app/features/documents/upload.component.ts`*
+
 `HttpEventType.UploadProgress` events say how many bytes have been sent. When the percentage reaches
 100 the component sets the percent to `null`, which the template reads as "now rendering pages": the
-second stage, which can take longer than the upload itself. This two-step feedback answered the AI product-owner
-reviewer's complaint that uploads gave no progress (`PO-8`).
+second stage, which can take longer than the upload itself. This two-step feedback answered the PO reviewer's complaint that uploads gave no progress (`PO-8`).
 <!-- source: upload.component.ts diff at book-m3-hardening; PR #3 body -->
 
 ### 28.9 Security headers
@@ -431,7 +432,7 @@ reviewer's complaint that uploads gave no progress (`PO-8`).
 Every response from the API now carries protective **headers**. A header is a line of metadata sent
 with a response, and browsers obey certain ones as instructions.
 
-**Listing 28.9 — `SecurityConfig` headers and health rule (book-m3-hardening, simplified: only the added lines)**
+**Listing 28.10 — `SecurityConfig` headers and health rule (book-m3-hardening, simplified: only the added lines)**
 
 ```java
 .headers(headers -> headers
@@ -462,12 +463,12 @@ with a response, and browsers obey certain ones as instructions.
 
 The last two aren't in the listing. They are Spring Security's default headers, and
 `SecurityHeadersTest` asserts both: `nosniff` and `DENY` appear on an API response. The test also
-asserts the CSP contains `frame-ancestors 'none'` and `default-src 'none'`, and the referrer policy
+asserts the Content Security Policy (CSP) contains `frame-ancestors 'none'` and `default-src 'none'`, and the referrer policy
 is exactly `no-referrer`.
 
 **Worked example: what does the CSP mean?** `default-src 'none'` says "for any kind of resource,
-the allowed sources are: none". A page that received this policy can't load a script, a style, an
-image or a font, and can't open a connection. It sounds like it would break everything, but this is
+the allowed sources are: none." A page that received this policy can't load a script, a style, an
+image, or a font, and can't open a connection. It sounds like it would break everything, but this is
 an *API*, which returns JSON and PNG tiles that the application's own page fetches; nothing from the
 API is ever rendered as a page. So the policy costs nothing legitimate. And if a bug ever caused
 the API to send back attacker-supplied HTML, the browser would refuse to run any script in it.
@@ -478,11 +479,11 @@ Angular app needs (Chapter 30).
 
 ### 28.10 The health check
 
-Monitoring tools, and Docker in Chapter 30, need a cheap way to ask "is the app alive?". Spring Boot's
+Monitoring tools, and Docker in Chapter 30, need a cheap way to ask "is the app alive?" Spring Boot's
 **Actuator** library provides endpoints for that. The milestone adds the dependency
 (`spring-boot-starter-actuator`) and then locks it down.
 
-**Listing 28.10 — `application.yml` Actuator settings (book-m3-hardening)**
+**Listing 28.11 — `application.yml` Actuator settings (book-m3-hardening)**
 
 ```yaml
 management:
@@ -501,13 +502,13 @@ management:
 *Path: `src/main/resources/application.yml`*
 
 Three decisions. `include: health` exposes only the health endpoint over HTTP. `show-details: never`
-means it reports only a status such as `UP`, not the database's name, disk space or any component
-detail. And the security rule in Listing 28.9 makes `/actuator/health` the only public Actuator path:
+means it reports only a status such as `UP`, not the database's name, disk space, or any component
+detail. And the security rule in Listing 28.10 makes `/actuator/health` the only public Actuator path:
 everything else is denied by the "deny anything else" rule you saw in Chapter 26.
 
 When the database is down, health answers HTTP 503 with status `DOWN`. `SecurityHeadersTest` covers the
 contract: health is public and returns `UP`, its body contains neither `components` nor `details`, and
-`/actuator/env`, `/actuator/beans`, `/actuator/configprops` and `/actuator` are refused (401, 403 or
+`/actuator/env`, `/actuator/beans`, `/actuator/configprops` and `/actuator` are refused (401, 403, or
 404). The pull request also records the live version: health UP, then 503 DOWN with MySQL stopped,
 then UP again, and `/actuator/env` returned 401.
 <!-- source: application.yml, SecurityHeadersTest.java at book-m3-hardening; PR #3 body -->
@@ -564,7 +565,7 @@ The pull request lists checks made against a running stack.
 - `/actuator/env` returned 401.
 
 The pattern is worth copying. Each check exercises a failure that the design claims to handle, on
-the real system, not only the success path. The automated tests then pin the same behavior so it can't regress. There are 66 backend tests at the end of the milestone, ten of them new: page and pixel limits, the source PDF not being kept, the error contract, and headers and health.
+the real system, not only the success path. The automated tests then pin the same behavior so it can't regress. There are 66 backend tests at the end of the milestone, ten of them new: page and pixel limits, the source PDF not being kept, the error contract, and headers, and health.
 <!-- source: PR #3 body (Test plan) -->
 
 ## Common mistakes
@@ -575,7 +576,7 @@ that is really something else gets through. Fix: check the content (the signatur
 **Checking size after reading everything.** Symptom: memory spikes with each upload. Fix: cap size in
 the web server settings, and stream to disk.
 
-**Leaking the exception message.** Symptom: an error page or JSON body that contains SQL, a path or a
+**Leaking the exception message.** Symptom: an error page or JSON body that contains SQL, a path, or a
 class name. Fix: a catch-all handler that logs the detail and returns a reference.
 
 **Different error shapes from different layers.** Symptom: the frontend needs three code paths to
@@ -617,7 +618,7 @@ flowchart TB
 
 *Figure 28.1 — Blueprint v3 (`book-m3-hardening`)*
 
-*Text description:* A left-to-right flowchart with no new components. The Angular app, whose upload page checks the file size first, sends requests to SecurityConfig. SecurityConfig now adds security headers and permits the health check. Requests continue to DocumentController (50 MB cap, streamed ingest) and on to TileGenerationService, which applies the page-count and page-pixel limits taken from ViewerProperties (500 pages, 40 million pixels). DocumentController reports failures to GlobalExceptionHandler, which produces the uniform JSON errors; SecurityConfig also exposes only the Actuator health endpoint. Notice that milestone 3 adds guards to the existing request path.
+*Text description:* A top-to-bottom flowchart with no new components. The Angular app, whose upload page checks the file size first, sends requests to SecurityConfig. SecurityConfig now adds security headers and permits the health check. Requests continue to DocumentController (50 MB cap, streamed ingest) and on to TileGenerationService, which applies the page-count and page-pixel limits taken from ViewerProperties (500 pages, 40 million pixels). DocumentController reports failures to GlobalExceptionHandler, which produces the uniform JSON errors; SecurityConfig also exposes only the Actuator health endpoint. Notice that milestone 3 adds guards to the existing request path.
 <!-- source: book/blueprints/v3-hardening.md; classes named in the diagram, present at book-m3-hardening under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, controller/GlobalExceptionHandler.java, security/SecurityConfig.java, service/TileGenerationService.java, config/ViewerProperties.java -->
 
 ## Decisions and challenges
@@ -627,7 +628,7 @@ flowchart TB
 **The decision.** Stream uploads, reject bad ones early, and defer background processing. **The
 options considered.** Do the rendering in a background job with a status endpoint, or bound the work
 and keep it synchronous. **Why this one.** The pull request says that limits and streaming cover the
-main risk, and it offers to pick the background job up later if the product owner wants it. **What it
+main risk, and it offers to pick the background job up later if the project owner wants it. **What it
 costs.** A large upload still renders while the request waits, which later milestones bound with a
 time limit and a concurrency cap.
 <!-- source: PR #3 body ("Deferred"); milestone brief m3 -->
@@ -635,7 +636,7 @@ time limit and a concurrency cap.
 ### Decision: errors are one shape, and secrets stay in the log
 
 **The decision.** All errors use `{"error": "..."}`, and unexpected failures carry only a short
-reference. **Why.** The reviewer found inconsistent statuses and echoed input (`TM-11`, `TM-18`), and
+reference. **Why.** The TM reviewer found inconsistent statuses and echoed input (`TM-11`, `TM-18`), and
 the project wanted no stack traces, SQL or paths reaching a client. **What it costs.** Someone has to
 read the server log to see the cause.
 <!-- source: PR #3 body; reviews record -->
@@ -656,7 +657,7 @@ on the real system, and then pin it with an automated test.
 
 ## In this project
 
-**Table 28.3 — Where the concepts live (at book-m3-hardening)**
+**Table 28.3 — Where the concepts live (at `book-m3-hardening`)**
 
 | Concept | Where |
 |---|---|
@@ -685,7 +686,7 @@ Why does the catch-all error include a reference but no exception message?
 ### Exercise 28.3 ★★ Is this page allowed?
 
 A PDF page is 1,000 by 1,500 points. At 150 DPI, how many pixels is it (round to the nearest million),
-and does it pass the 40 million pixel limit?
+and does it pass the 40-million-pixel limit?
 
 ### Exercise 28.4 ★★ Order of checks
 
@@ -704,7 +705,7 @@ On your own copy, fetch `/actuator/health`, then stop MySQL and fetch it again. 
 
 ## Summary
 
-- An upload is untrusted: check the signature, the page count and the page pixels, cap the size, and
+- An upload is untrusted: check the signature, the page count, and the page pixels, cap the size, and
   stream it to a staging directory that is deleted on any failure.
 - A decompression bomb is defeated by arithmetic before allocation.
 - One error shape everywhere; unexpected errors carry a reference, never internals.

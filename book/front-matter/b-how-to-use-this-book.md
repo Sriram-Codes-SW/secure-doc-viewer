@@ -22,7 +22,7 @@ Each feature chapter has three tiers.
 - The **Intermediate tier** shows how the pieces talk to each other, for example how the browser
   and the server exchange messages, and explains why this tool was chosen over the obvious
   alternatives.
-- The **Advanced tier** covers security, performance and architecture decisions, told through real
+- The **Advanced tier** covers security, performance, and architecture decisions, told through real
   incidents from this project.
 
 On a first read you can stop after the beginner tier of each chapter and come back for the rest
@@ -37,13 +37,13 @@ earlier chapters; a beginner tier assumes only beginner material.
 - Callouts come in four kinds: **Note** (useful, not essential), **Tip** (a habit that saves
   time), **Warning** (something that can lose data or break security) and **In this project**
   (where the idea lives in the repository).
-- Listings are numbered by chapter, for example Listing 4.2. The caption names the file and the git
+- Listings are numbered by chapter, for example Listing 4.2. The caption names the file and the Git
   tag it was copied from. A shortened listing says "simplified" or "excerpt" and says what was
   left out. Code written only to teach is called an Example and carries no tag.
 - Figures are diagrams written in text (Mermaid). Each has a caption and a one-sentence text
   description.
 - Commands are shown without a prompt so you can copy them. They use `bash` syntax, which works in
-  Git Bash on Windows, in Terminal on macOS and in a Linux terminal. Where Windows PowerShell
+  Git Bash on Windows, in Terminal on macOS, and in a Linux terminal. Where Windows PowerShell
   differs, both forms are given.
 - Example names and addresses are fake, and passwords and secrets are always shown as
   placeholders in angle brackets. Never type a real password into a command you save.
@@ -56,7 +56,7 @@ Every feature chapter ends with a *Try it* section of three to six exercises gra
   minutes.
 - **Two stars** applies the idea to a new case in the project, with some independence. Expect 30
   to 60 minutes.
-- **Three stars** asks you to extend, investigate or design something, and may have more than one
+- **Three stars** asks you to extend, investigate, or design something, and may have more than one
   good answer. Expect an hour or more.
 
 Work each exercise before you read its solution. When you get stuck, reread the section the
@@ -66,7 +66,7 @@ exercises have a worked outline and the key decisions ("one good answer is..."),
 answer may be different and still right.
 
 Exercises that change code ask you to work on a branch of your own, never on a tag directly. None
-of them needs anyone else's account, credentials or deployment.
+of them needs anyone else's account, credentials, or deployment.
 
 ## Following along with the code
 

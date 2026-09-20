@@ -1,6 +1,6 @@
 <!-- chapter: 20 | part: III | owner: writer-frontend | tag: book-m6-final | status: expanded -->
 <!-- source: Dependabot PRs 10, 11, 12; Dockerfile, dependabot.yml, ci.yml, tsconfig.json, index.html, main.ts listings verified with git show book-m6-final -->
-# Chapter 20: Node, npm and the Angular toolchain
+# Chapter 20: Node, npm, and the Angular toolchain
 
 Browsers understand JavaScript, but you write TypeScript, split across dozens of files, using libraries other people wrote. Something has to fetch those libraries, compile your code, bundle it into a few files, and serve it while you work. That something is a set of tools built on Node.js and npm, and this chapter shows how the Secure Document Viewer's `frontend/` folder uses them, from the first command you type to the container image that goes to production.
 
@@ -32,7 +32,7 @@ If you have not installed Node yet, follow the setup chapter in the front matter
 
 **Node.js** (Node for short) is a program that runs JavaScript outside a browser, on your own computer. Nobody uses Node to show pages to readers. It's used as a workshop: the compiler that turns TypeScript into JavaScript is itself a JavaScript program, so it runs on Node. So do the **bundler**, which gathers your many source files and the libraries they use into a few files a browser can download efficiently, and the test runner.
 
-Think of a print shop. Readers only ever see the finished pamphlet, but to produce it the shop needs presses, cutters and staplers, and someone who knows the order in which to run them. Node is the building's power supply and the operator's hands: it runs the machines and follows the instructions. Once the pamphlets are printed, you can switch the machines off.
+Think of a print shop. Readers only ever see the finished pamphlet, but to produce it the shop needs presses, cutters, and staplers, and someone who knows the order in which to run them. Node is the building's power supply and the operator's hands: it runs the machines and follows the instructions. Once the pamphlets are printed, you can switch the machines off.
 
 **Where the analogy breaks down:** a print shop's pamphlets contain no trace of the machines. A web bundle does contain some code from the libraries you used (Angular itself is shipped to every reader). What stays behind is the tooling: the compiler and test runner never reach the reader.
 
@@ -111,7 +111,7 @@ node -e "console.log(2 + 3)"
 Read it top to bottom.
 
 - `"name"` and `"version"` identify the project. The version `0.0.0` is a placeholder because the app is never published as a package.
-- `"scripts"` names shortcuts you run with `npm run <name>` (or `npm start` and `npm test`, which npm treats specially). `npm test` runs `ng test`. The first script, `"ng": "ng"`, lets you run the Angular CLI through npm as `npm run ng -- <arguments>`.
+- `"scripts"` names shortcuts you run with `npm run <name>` (or `npm start` and `npm test`, which npm treats specially). `npm test` runs `ng test`. The first script, `"ng": "ng"`, lets you run the Angular CLI (command line interface, Section 20.4) through npm as `npm run ng -- <arguments>`.
 - `"private": true` stops the project from being published to the public registry by accident.
 - `"packageManager"` records which npm version the project expects.
 - `"dependencies"` are libraries the shipped app uses: Angular's pieces, RxJS (Chapter 19), and `tslib`, a small helper library the compiled code shares.
@@ -208,7 +208,7 @@ bootstrapApplication(App, appConfig)
 
 ### 20.6 The dev proxy (`proxy.conf.json`) and same origin
 
-An origin is the combination of scheme, host and port: `http://localhost:4200` and `http://localhost:8080` are different origins. Browsers keep origins apart; a page from one may not freely call another. Cookies and the CSRF protection from Part II (Chapter 16) assume the page and the API share an origin.
+An origin is the combination of scheme, host, and port: `http://localhost:4200` and `http://localhost:8080` are different origins. Browsers keep origins apart; a page from one may not freely call another. Cookies and the Cross-Site Request Forgery (CSRF) protection from Part II (Chapter 16) assume the page and the API share an origin.
 
 In development the pieces run on two ports: `ng serve` on 4200 and Spring Boot on 8080. The dev server bridges them with a proxy: it forwards any request whose path starts with `/api` to the backend, so the browser thinks it is talking to one server.
 
@@ -252,7 +252,7 @@ sequenceDiagram
 
 The frontend code itself stays free of this: `core/config.ts` sets `API_BASE_URL = ''`, so every call is a relative URL such as `/api/documents`. In production the same job is done by nginx, whose `location ^~ /api/` block forwards to the backend (Chapters 30 and 33). The same code therefore works unchanged in both places.
 
-**Why not let the browser call port 8080 directly?** It is the obvious alternative: fewer moving parts, and you would see the backend's errors straight away. But a page on port 4200 calling port 8080 is a cross-origin request, which the browser allows only if the backend explicitly permits it (a mechanism called CORS, cross-origin resource sharing). It would also work against the project's cookie-based sign-in design. The project relies on the browser sending its session cookie and Angular copying the CSRF cookie into a header (Chapter 22). Both are simplest and safest when the page and the API share one origin. Keeping one origin in development means the code you test is the code you ship. The price is a small config file and one more process in the picture.
+**Why not let the browser call port 8080 directly?** It is the obvious alternative: fewer moving parts, and you would see the backend's errors straight away. But a page on port 4200 calling port 8080 is a cross-origin request, which the browser allows only if the backend explicitly permits it (a mechanism called cross-origin resource sharing, or CORS). It would also work against the project's cookie-based sign-in design. The project relies on the browser sending its session cookie and Angular copying the CSRF cookie into a header (Chapter 22). Both are simplest and safest when the page and the API share one origin. Keeping one origin in development means the code you test is the code you ship. The price is a small config file and one more process in the picture.
 
 ### 20.7 Project layout and tsconfig
 
@@ -305,7 +305,7 @@ Three `tsconfig` files exist: `tsconfig.json` (shared settings), `tsconfig.app.j
 - `importHelpers` reuses the small helpers in `tslib` rather than copying them into every file.
 - `"target": "ES2022"` is the JavaScript version to produce, and `"module": "preserve"` leaves `import` statements alone for the bundler.
 
-As Chapter 19 noted, the file never mentions `strict`. That does not mean the strict checks are off: in TypeScript 6.0 they are on by default (compiling a test file with these options rejects assigning `null` to a `string` and untyped parameters). If you need to know what a setting is at your compiler version, test it, as the chapter did, rather than reading the absence of a line as "off".
+As Chapter 19 noted, the file never mentions `strict`. That does not mean the strict checks are off: in TypeScript 6.0 they are on by default (compiling a test file with these options rejects assigning `null` to a `string` and untyped parameters). If you need to know what a setting is at your compiler version, test it, as the chapter did, rather than reading the absence of a line as "off."
 
 ### 20.8 Semantic versions, `^` and `~`
 
@@ -334,7 +334,7 @@ Remember that "accepted" describes what an update *may* pick. With a lock file, 
 Every choice in this chapter has an obvious alternative, and it's worth naming them so you can judge the project's choices.
 
 - **npm versus other package managers.** Yarn and pnpm do the same job and are popular. They are faster in some situations and store shared libraries more economically. The project's files show that it uses plain npm (the Dockerfile and CI both call it, and the `packageManager` field pins its version); the project records no reasoning for preferring it to Yarn or pnpm. Reasons a team might have: npm comes with Node, so there is nothing extra to install, and for a small team "fewer tools" can be worth more than a speed gain.
-- **The Angular CLI versus assembling your own build.** You could wire together a compiler, a bundler, a dev server and a test runner yourself. The CLI packages those with defaults chosen and updated together by the Angular team (`@angular/build`, `@angular/cli`), so an upgrade is one coordinated step. The cost is that you accept its conventions and its configuration file, `angular.json`.
+- **The Angular CLI versus assembling your own build.** You could wire together a compiler, a bundler, a dev server, and a test runner yourself. The CLI packages those with defaults chosen and updated together by the Angular team (`@angular/build`, `@angular/cli`), so an upgrade is one coordinated step. The cost is that you accept its conventions and its configuration file, `angular.json`.
 - **Vitest through the CLI versus a separate runner.** The `test` target in `angular.json` uses the CLI's own unit-test builder, so `ng test` and `npm test` behave the same locally and in CI (Chapter 24).
 
 None of these is "the right answer" in general; they are reasonable defaults for a project whose priority is a small, reviewable toolchain.
@@ -389,7 +389,7 @@ Dependencies age, and old ones carry known security problems. The project uses G
 
 *Path: `.github/dependabot.yml`*
 
-Angular packages are grouped so they upgrade together (mixing versions of Angular's parts risks a broken build). All other packages are grouped as minor and patch updates, and major upgrades arrive as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular. The same file has a rule for container images: it ignores Node's non-LTS lines. **LTS** means "long-term support" and marks the releases that receive fixes for years. The file's comment says odd-numbered Node releases never become LTS, and it skips Node 25, 27 and 29. The history shows this working. The Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes after `book-m5-platform`, which is why Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
+Angular packages are grouped so they upgrade together (mixing versions of Angular's parts risks a broken build). All other packages are grouped as minor and patch updates, and major upgrades arrive as separate pull requests so one breaking change can't hold back the rest. It never proposes TypeScript major or minor upgrades, because TypeScript moves with Angular. The same file has a rule for container images: it ignores Node's non-LTS lines. **LTS** means "long-term support" and marks the releases that receive fixes for years. The file's comment says odd-numbered Node releases never become LTS, and it skips Node 25, 27, and 29. The history shows this working. The Vitest 4 to 5 upgrade (pull request 11) and the jsdom 28 to 30 upgrade (pull request 12) arrived as separate, reviewable changes after `book-m5-platform`, which is why Vitest 5 appears only at `book-m6-final`. Chapter 36 covers the supply chain in full.
 
 ### 20.12 What the CI does with the frontend
 
@@ -410,12 +410,12 @@ Two jobs in `.github/workflows/ci.yml` tie the toolchain together. The "Frontend
 
 | File | First appears | What it does |
 |---|---|---|
-| `frontend/package.json`, `package-lock.json` | book-m1-accounts | Scripts, dependencies, exact versions |
-| `frontend/angular.json` | book-m1-accounts | Build, serve and test targets; size budgets; proxy setting |
-| `frontend/proxy.conf.json` | book-m1-accounts | Dev-time forwarding of `/api` |
-| `frontend/tsconfig.json`, `tsconfig.app.json`, `tsconfig.spec.json` | book-m1-accounts | Compiler settings |
-| `frontend/Dockerfile`, `.dockerignore` | book-m5-platform | Node build stage, nginx serving stage, `npm ci` |
-| `.github/dependabot.yml` | book-m5-platform (see Chapter 36) | Weekly grouped update pull requests |
+| `frontend/package.json`, `package-lock.json` | `book-m1-accounts` | Scripts, dependencies, exact versions |
+| `frontend/angular.json` | `book-m1-accounts` | Build, serve and test targets; size budgets; proxy setting |
+| `frontend/proxy.conf.json` | `book-m1-accounts` | Dev-time forwarding of `/api` |
+| `frontend/tsconfig.json`, `tsconfig.app.json`, `tsconfig.spec.json` | `book-m1-accounts` | Compiler settings |
+| `frontend/Dockerfile`, `.dockerignore` | `book-m5-platform` | Node build stage, nginx serving stage, `npm ci` |
+| `.github/dependabot.yml` | `book-m5-platform` (see Chapter 36) | Weekly grouped update pull requests |
 
 Try `git show book-m6-final:frontend/package.json`, and compare it with `git show book-m1-accounts:frontend/package.json` to see what testing added.
 

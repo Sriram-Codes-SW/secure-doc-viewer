@@ -1,5 +1,5 @@
 <!-- chapter: 5 | part: I | owner: writer-foundations | tag: book-m6-final | status: expanded -->
-# Chapter 5: Collections, generics, lambdas and exceptions
+# Chapter 5: Collections, generics, lambdas, and exceptions
 
 Programs rarely handle one value at a time. The app lists many documents, tracks many failed sign-ins, and stores many tiles. This chapter teaches how Java holds groups of values, how to process them concisely, and how to signal and handle failure. It finishes with time, which the app treats with unusual care, and with the few things that go wrong when many requests touch the same data at once.
 
@@ -7,18 +7,18 @@ Programs rarely handle one value at a time. The app lists many documents, tracks
 
 By the end of this chapter, you will be able to:
 
-- Choose between a list, a set and a map, and loop over each.
+- Choose between a list, a set, and a map, and loop over each.
 - Read a generic type such as `Map<String, Deque<Instant>>`.
 - Read a lambda and a short stream pipeline, and write a simple one.
 - Explain why `Optional` exists and use `orElseThrow`.
-- Throw, catch and define an exception, and explain what `finally` is for.
+- Throw, catch, and define an exception, and explain what `finally` is for.
 - Explain what try-with-resources does.
 - Explain why the app stores times in UTC, and why a shared map needs care.
 - Diagnose the common collection and exception errors.
 
 ## Prerequisites
 
-- Chapter 4: Classes, objects, records and interfaces
+- Chapter 4: Classes, objects, records, and interfaces
 
 ## Beginner tier: Groups of values
 
@@ -129,6 +129,8 @@ public class Walk {
 
 ## Intermediate tier: Processing and failing
 
+*On a first read you can skim this tier; Chapters 13 and 14 use these ideas again.*
+
 ### 5.4 Lambdas and streams
 
 A **lambda** is a small unnamed method you can pass around. `u -> u.getUsername()` means "given `u`, produce `u.getUsername()`". A **stream** is a pipeline that processes a collection step by step: filter some items, transform others, collect a result. Build it up one step at a time.
@@ -150,7 +152,7 @@ public class StreamDemo {
 }
 ```
 
-`names.stream()` starts the pipeline. `filter` keeps items for which the lambda is true: only `pub.one` is shorter than 10 characters. `map` transforms each remaining item, here to upper case. `toList()` ends the pipeline and returns a new list. The original list is untouched, which is a useful property: a pipeline describes a new result and never edits its input.
+`names.stream()` starts the pipeline. `filter` keeps items for which the lambda is true: only `pub.one` is shorter than 10 characters. `map` transforms each remaining item, here to uppercase. `toList()` ends the pipeline and returns a new list. The original list is untouched, which is a useful property: a pipeline describes a new result and never edits its input.
 
 Two more pieces of vocabulary appear in the app. A **method reference** is a short form of a lambda that only calls one method: `AppUser::getUsername` means the same as `u -> u.getUsername()`. And `anyMatch` asks "is at least one item true for this?", stopping at the first yes. The app's permission check uses it.
 
@@ -184,7 +186,7 @@ Read it as a sentence. A viewer may view a document if they are an admin, or the
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentService.java`*
 
-Three things to notice. The `? :` is a compact `if`: administrators get every document, everyone else only those visible to them. `visible.stream().map(d -> summary(d, viewer)).toList()` converts each `Document` to a `DocumentSummary`. And `status -> { ... }` is a lambda handed to `tx.execute`, which runs it inside a database transaction (Chapter 9 and Chapter 14). We simplify here: streams have many more operations, but the app needs mostly `map`, `filter`, `anyMatch` and `toList`.
+Three things to notice. The `? :` is a compact `if`: administrators get every document, everyone else only those visible to them. `visible.stream().map(d -> summary(d, viewer)).toList()` converts each `Document` to a `DocumentSummary`. And `status -> { ... }` is a lambda handed to `tx.execute`, which runs it inside a database transaction (Chapter 9 and Chapter 14). We simplify here: streams have many more operations, but the app needs mostly `map`, `filter`, `anyMatch`, and `toList`.
 
 Figure 5.2 shows the pipeline inside `list` as a picture: data flows left to right, and each step produces a new value without changing the one before it.
 
@@ -210,7 +212,7 @@ Everything a stream does you could write with a for-each loop and a temporary li
 
 ### 5.5 Optional and the trouble with null
 
-Java has a special value, `null`, meaning "no object here". Calling a method on `null` crashes with a `NullPointerException`, so forgetting to check is a common bug. **Optional** is a box that is either empty or holds one value. A method that returns `Optional<AppUser>` tells the caller "there may be no user; decide what to do", and the compiler makes sure the caller sees that.
+Java has a special value, `null`, meaning "no object here." Calling a method on `null` crashes with a `NullPointerException`, so forgetting to check is a common bug. **Optional** is a box that is either empty or holds one value. A method that returns `Optional<AppUser>` tells the caller "there may be no user; decide what to do", and the compiler makes sure the caller sees that.
 
 The user repository declares exactly that, and callers decide.
 
@@ -293,7 +295,7 @@ The method is a copy of the app's `TileGrid.tileCount` from Chapter 3, so the ex
 
 Add a third part when something must happen whether or not an error occurred. The **finally** block always runs, on success and on failure alike.
 
-**Example 5.6 — try, catch and finally**
+**Example 5.6 — try, catch, and finally**
 
 ```java
 public class Finally {
@@ -314,7 +316,7 @@ public class Finally {
 }
 ```
 
-Java sorts exceptions into a family tree. Those that extend `RuntimeException` are **unchecked**: the compiler does not force you to catch them. `IllegalArgumentException` and `NumberFormatException` are unchecked. Others, such as `IOException` (which file operations throw), are checked: a method that can throw one must either catch it or declare `throws IOException`, which you will see in `DocumentController.upload` in Listing 5.6. The app defines its own exceptions as unchecked, so business code can throw them without cluttering every method signature.
+Java sorts exceptions into a family tree. Those that extend `RuntimeException` are **unchecked exceptions**: the compiler does not force you to catch them. `IllegalArgumentException` and `NumberFormatException` are unchecked. Others, such as `IOException` (which file operations throw), are **checked exceptions**: a method that can throw one must either catch it or declare `throws IOException`, which you will see in `DocumentController.upload` in Listing 5.6. The app defines its own exceptions as unchecked, so business code can throw them without cluttering every method signature.
 
 The app defines its own exception types so that each failure has a meaning. The smallest is one line of substance.
 
@@ -353,11 +355,11 @@ flowchart TB
 
 The business code never mentions HTTP. It throws a meaningful exception, and one central class turns it into a status code (Chapter 13 shows the class in full).
 
-A related security rule shows in `ForbiddenException`'s comment: resources a user may not see at all are reported as 404, not 403, "so their existence isn't revealed". <!-- source: ForbiddenException.java at book-m6-final -->
+A related security rule shows in `ForbiddenException`'s comment: resources a user may not see at all are reported as 404, not 403, "so their existence isn't revealed." <!-- source: ForbiddenException.java at book-m6-final -->
 
 ### 5.7 try-with-resources and files
 
-Files, network connections and database connections must be **closed** after use, or the program leaks them until it runs out. **Try-with-resources** closes them automatically, even if an error happens.
+Files, network connections, and database connections must be **closed** after use, or the program leaks them until it runs out. **Try-with-resources** closes them automatically, even if an error happens.
 
 **Listing 5.6 — `DocumentController.java` (book-m6-final, excerpt: method `upload`)**
 
@@ -372,7 +374,7 @@ Files, network connections and database connections must be **closed** after use
 
 The resource in parentheses, the uploaded file's stream of bytes, is closed when the block ends, whether it ends normally or by an exception. Without this, one failed upload could leave a file open until the server restarted. For files on disk Java offers `Path` (a file address) and `Files` (operations on it). `FileOperations.java` uses `Files.move` to rename a folder of tiles in one step, and retries when Windows briefly locks a file. Chapter 17 covers files in the app.
 
-### 5.8 Time: Instant, UTC and why the app uses it
+### 5.8 Time: Instant, UTC, and why the app uses it
 
 An **Instant** is a single point on the timeline, independent of time zones. **UTC** (Coordinated Universal Time) is the world's reference time, with no daylight-saving changes. Ask for the current one with `Instant.now()`. A local time such as "10:30 in Kolkata" names different instants depending on the zone, but an instant is the same everywhere.
 
@@ -426,7 +428,7 @@ Java offers collections designed for this. `ConcurrentHashMap` is a map that man
 
 *Path: `src/main/java/com/example/securedocviewer/security/LoginThrottle.java`*
 
-`computeIfAbsent(key, ...)` means "return the queue for this key, creating an empty one first if there is none", as one safe step. `synchronized (attempts)` makes other threads wait if they want the same queue. (In the real class, `prune` is only ever called from inside another `synchronized (attempts)` block, in the method `lockedFor`, so it is protected there too.) In `prune`, the queue holds failure times in order, oldest first. So `peekFirst` looks at the oldest, and `pollFirst` removes it while it is older than the cutoff. What is left is exactly the failures inside the time window. You can try the same idea in a few lines.
+`computeIfAbsent(key, ...)` means "return the queue for this key, creating an empty one first if there is none," as one safe step. `synchronized (attempts)` makes other threads wait if they want the same queue. (In the real class, `prune` is only ever called from inside another `synchronized (attempts)` block, in the method `lockedFor`, so it is protected there too.) In `prune`, the queue holds failure times in order, oldest first. So `peekFirst` looks at the oldest, and `pollFirst` removes it while it is older than the cutoff. What is left is exactly the failures inside the time window. You can try the same idea in a few lines.
 
 **Example 5.8 — A sliding window of failures**
 
@@ -461,7 +463,7 @@ Care with shared data was not theoretical. In the last review rounds, the techni
 
 ### 5.10 A real incident with time: the audit rows from the future
 
-Time bugs are the same kind of problem seen through a clock. Late in development, the audit log showed events with future times. The cause was a mismatch between two backends that shared one database. The developer's backend ran in the Asia/Kolkata time zone and wrote local time. The Docker backend wrote UTC. So the two sets of rows disagreed by five and a half hours. The product-owner reviewer (also an AI review agent) found it. The fix pinned the database connection and Hibernate to UTC and made the admin audit view show UTC, to match the watermark and the CSV export. A test now stores timestamps and checks them against a MySQL server set to a different time zone. The lesson: store instants in one zone and convert only when showing them to a person. <!-- source: dossier bugs-and-findings.md C6; commit 2d82253 -->
+Time bugs are the same kind of problem seen through a clock. Late in development, the audit log showed events with future times. The cause was a mismatch between two backends that shared one database. The developer's backend ran in the Asia/Kolkata time zone and wrote local time. The Docker backend wrote UTC. So the two sets of rows disagreed by five and a half hours. The product-owner reviewer (also an AI review agent) found it. The fix pinned the database connection and Hibernate to UTC and made the admin audit view show UTC, to match the watermark and the CSV export (CSV, comma-separated values, is a plain-text table format that spreadsheets open). A test now stores timestamps and checks them against a MySQL server set to a different time zone. The lesson: store instants in one zone and convert only when showing them to a person. <!-- source: dossier bugs-and-findings.md C6; commit 2d82253 -->
 
 ### 5.11 Exceptions at the edge: one more incident
 
@@ -482,7 +484,7 @@ Where exceptions end up matters as much as where they start. Here is the handler
 
 *Path: `src/main/java/com/example/securedocviewer/controller/GlobalExceptionHandler.java`*
 
-`@ExceptionHandler(Exception.class)` says "catch any exception nobody else handled". (`ResponseEntity` is the framework's object for a whole web response, a status plus a body, which Chapter 8 teaches; for now read the method as "build a 500 answer".) The method makes a short random reference. It writes the full exception to the log, with that reference. The log is the server's running record of what happened, a file or stream that developers read. Finally, the method returns a message to the user that contains only the reference. The user never sees a stack trace, file paths or SQL, which would help an attacker. Yet if the user reports the reference, a developer can find the exact log entry.
+`@ExceptionHandler(Exception.class)` says "catch any exception nobody else handled." (`ResponseEntity` is the framework's object for a whole web response, a status plus a body, which Chapter 8 teaches; for now read the method as "build a 500 answer.") The method makes a short random reference. It writes the full exception to the log, with that reference. The log is the server's running record of what happened, a file or stream that developers read. Finally, the method returns a message to the user that contains only the reference. The user never sees a stack trace, file paths or SQL, which would help an attacker. Yet if the user reports the reference, a developer can find the exact log entry.
 
 This handler earned its place. Before a fix, creating a user with a 100-character password returned a plain 500 with a reference. The validation allowed passwords of 12 to 128 characters, but the password hashing (BCrypt, Chapter 15) rejects more than 72 **bytes**, and a character can be more than one byte: 30 emoji can exceed 72 bytes. The fix checked the UTF-8 byte length and added a test. The lesson from the reviewer's note: characters are not bytes. And the handler did its job even then, by turning a crash into a traceable reference. <!-- source: dossier bugs-and-findings.md G2; commit 1ce2c8b -->
 

@@ -1,5 +1,5 @@
 <!-- chapter: 34 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
-# Chapter 34: Backups, restores and operations
+# Chapter 34: Backups, restores, and operations
 
 This chapter answers a question every real deployment must answer before the first user arrives: if the server's disk dies tonight, what do you get back tomorrow? You'll learn what state the app holds, how to capture it consistently, how to prove a backup works by restoring it, and what the app quietly deletes on its own schedule. Backups are the least exciting part of an app and the part you'll be most grateful for on the one day you need them.
 
@@ -11,7 +11,7 @@ By the end of this chapter, you will be able to:
 - Explain why the database and the tile files must be backed up at the same moment.
 - Run the project's backup and restore commands and say what each flag and line does.
 - Plan and judge a restore drill, using the checks the project's own drill used.
-- Describe what the storage janitor, the audit purge, and the recognised-device purge remove, and what the janitor refuses to remove.
+- Describe what the storage janitor, the audit purge, and the recognized-device purge remove, and what the janitor refuses to remove.
 - Recognize the common ways backups fail, and the symptoms each one leaves.
 
 ## Prerequisites
@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 A backup is a photograph of a whiteboard before someone erases it. If two people are writing on the board while you take the photo, one half of the picture shows the board before an edit and the other half after, and the photo tells a story that never happened. Keeping the board still while you photograph it gives a picture you can trust.
 
-The analogy breaks down in two places. First, a real backup is a set of files, and *restoring* it, putting the whiteboard back exactly as photographed, is a separate skill that you have to practice. Second, an app has two whiteboards here (the database and the tile files), and you have to photograph both at the same instant, which is harder than it sounds.
+**Where the analogy breaks down:** in two places. First, a real backup is a set of files, and *restoring* it, putting the whiteboard back exactly as photographed, is a separate skill that you have to practice. Second, an app has two whiteboards here (the database and the tile files), and you have to photograph both at the same instant, which is harder than it sounds.
 
 ### 34.2 Terms you need
 
@@ -49,10 +49,10 @@ Before you can back anything up, you have to know what you have. The app holds s
 
 | State | Where | If lost |
 |---|---|---|
-| Accounts, documents, shares, audit trail, recognised-device hashes | MySQL, volume `mysql-data` | Everything except the tile images: nobody can sign in and nothing is listed |
+| Accounts, documents, shares, audit trail, recognized-device hashes | MySQL, volume `mysql-data` | Everything except the tile images: nobody can sign in and nothing is listed |
 | Rendered tiles | Volume `app-storage`, mounted at `/data/storage` in the app | Documents exist in the database but show no pages |
 | Sessions and rate-limit counters | The memory of the app process | Nothing durable: users sign in again, counters reset |
-| Secrets (`SIGNING_SECRET`, passwords) | The `.env` file | Tile tokens can't be verified the same way; recognised devices are forgotten |
+| Secrets (`SIGNING_SECRET`, passwords) | The `.env` file | Tile tokens can't be verified the same way; recognized devices are forgotten |
 
 One thing is deliberately *not* in the table. The source PDF is deleted after ingest, as Chapter 32 explains. The tiles are the only copy of the document's content that the app keeps. That has a sobering consequence: if you lose the tile volume and have no backup, the content is gone unless the publisher still has the original PDF and uploads it again.
 
@@ -73,7 +73,7 @@ Replacing a PDF renders new tiles into a new version folder, switches the docume
 
 After a restore, the database says D uses version 1, but version 1 isn't in the archive. Every page of D is blank. Neither file is corrupt; they describe different moments. That is what "inconsistent" means, and no tool will warn you.
 
-The Senior Technical Manager review agent (an AI reviewer; see Chapter 32) found this in the final review before go-live, and the runbook changed to stop the app for the few seconds a backup takes, so nothing can change between the two captures (commit `66f7152`). The trade-off is stated openly in the README: a short outage in return for backups that are correct without cleverness. Chapter 37 (section 37.7) puts it next to the alternatives.
+The AI technical-manager reviewer (the TM reviewer; see Chapter 32) found this in the final review before go-live, and the runbook changed to stop the app for the few seconds a backup takes, so nothing can change between the two captures (commit `66f7152`). The trade-off is stated openly in the README: a short outage in return for backups that are correct without cleverness. Chapter 37 (Section 37.7) puts it next to the alternatives.
 
 ### 34.5 The backup commands, line by line
 
@@ -142,9 +142,9 @@ docker compose --profile full start app
 
 The restore mirrors the backup. It stops the app so nothing writes while you restore, then feeds `securedocs.sql` to the `mysql` client (`<` reads the file into the command's input, and `-T` again keeps the stream clean), then empties the tile volume (`rm -rf /data/*`) and unpacks the archive into it (`x` extract), and starts the app.
 
-Two details deserve attention. First, `rm -rf /data/*` deletes the current tiles before unpacking; that is what you want on a real restore, and it is exactly why you rehearse in a scratch environment first (section 34.7). Second, the `mysql` command replays SQL into the *existing* database. A `mysqldump` file contains `DROP TABLE IF EXISTS` and `CREATE TABLE` statements for each table by default, so the tables are rebuilt with the dump's contents, and the `flyway_schema_history` table comes along with them, so Flyway sees the schema as already migrated.
+Two details deserve attention. First, `rm -rf /data/*` deletes the current tiles before unpacking; that is what you want on a real restore, and it is exactly why you rehearse in a scratch environment first (Section 34.7). Second, the `mysql` command replays SQL into the *existing* database. A `mysqldump` file contains `DROP TABLE IF EXISTS` and `CREATE TABLE` statements for each table by default, so the tables are rebuilt with the dump's contents, and the `flyway_schema_history` table comes along with them, so Flyway sees the schema as already migrated.
 
-Also keep `.env` with the backup, as the README says. A restore under a different `SIGNING_SECRET` still works, but every account's recognised devices are forgotten, because their hashes are keyed by that secret (Chapter 32). Nothing breaks visibly; users find that a new-device rule applies to everyone until they sign in again from each device.
+Also keep `.env` with the backup, as the README says. A restore under a different `SIGNING_SECRET` still works, but every account's recognized devices are forgotten, because their hashes are keyed by that secret (Chapter 32). Nothing breaks visibly; users find that a new-device rule applies to everyone until they sign in again from each device.
 
 ### 34.7 The restore drill
 
@@ -176,7 +176,7 @@ flowchart TB
 
 *Figure 34.2 — The restore order, followed by the drill's checks (run in a scratch environment)*
 
-*Text description:* Two rows of four boxes, read left to right, the top row before the bottom row. The top row is the restore: stop the app, replay the SQL dump, empty the tile volume and unpack the archive, start the app. The bottom row is the drill's checks: every current tile version is in the archive, the app boots and Flyway validates the migrations, a reader signs in and receives a watermarked tile, and finally the timing and cleanup of the scratch environment.
+*Text description:* Two rows of four boxes, read left to right, the top row before the bottom row. The top row is the restore: stop the app, replay the SQL dump, empty the tile volume, and unpack the archive, start the app. The bottom row is the drill's checks: every current tile version is in the archive, the app boots and Flyway validates the migrations, a reader signs in and receives a watermarked tile, and finally the timing and cleanup of the scratch environment.
 
 Notice that the checks climb from cheap to end-to-end: files present, then schema valid, then a real sign-in and tile. A failure at the first check points at a mismatched backup; a failure at the last points at something in the application.
 
@@ -184,9 +184,9 @@ Use the same six steps for your own drills. Add a seventh that the project didn'
 
 A drill in a scratch environment means a separate compose project so that names and ports don't collide. One way to get one is to clone the repository into a different folder (the folder name becomes the project name, so all volumes get different names), use different `WEB_PORT`, `TLS_PORT`, and `DB_PORT` values in that folder's `.env`, and restore into it. This is the book's suggestion, not a script in the repository.
 
-## Advanced tier: Retention, cleanup and living with one instance
+## Advanced tier: Retention, cleanup, and living with one instance
 
-*On a first read you can skip to "In this project".*
+*On a first read you can skip to "In this project."*
 
 ### 34.8 What gets deleted automatically, and why it is careful
 
@@ -200,10 +200,10 @@ The app deletes data on schedules. Knowing what and when tells you what a backup
 |---|---|---|---|
 | Storage janitor (`StorageJanitor.sweep`) | Two minutes after start, then every 6 hours | Tile directories no document points to; superseded tile versions; abandoned staging renders | Only touches directories older than one hour |
 | Audit purge (`AuditLogService.purgeExpired`) | Daily at 03:30 (server time) | Audit events older than `audit-retention-days` (default 180) | The cron expression is configurable |
-| Recognised-device purge (`KnownDevices.purgeExpired`) | Daily at 03:45 | Recognised-device hashes with no successful sign-in inside the retention period (30 days) | Explained in Chapter 32 |
+| Recognized-device purge (`KnownDevices.purgeExpired`) | Daily at 03:45 | Recognized-device hashes with no successful sign-in inside the retention period (30 days) | Explained in Chapter 32 |
 | Audit throttle sweep | Hourly | In-memory throttle keys idle for an hour | Writes a summary row for any suppressed tail first |
 
-The janitor is the one to understand well, because it deletes files, which is the operation you can't take back. Its Javadoc says why it exists: to remove "tiles nothing points to: directories left by a crash between rendering and saving, by a failed tile delete, or from before documents were persisted", and that it is "deliberately conservative". Here are the decisions that make it so.
+The janitor is the one to understand well, because it deletes files, which is the operation you can't take back. Its Javadoc says why it exists: to remove "tiles nothing points to: directories left by a crash between rendering and saving, by a failed tile delete, or from before documents were persisted," and that it is "deliberately conservative." Here are the decisions that make it so.
 
 **Listing 34.3 — `StorageJanitor.java`, `book-m6-final` (excerpt in two parts joined at the `// ...` line: the two constants from the top of the class, then the guards from inside the `for` loop of `removeOrphans`, with the source comments removed; the rest of the class is omitted)**
 
@@ -234,7 +234,7 @@ Read the guards in order:
 1. **Only directories shaped like a document id.** The `DOCUMENT_ID` pattern is a UUID. Anything else under the storage root, such as a folder you created by hand for a note, is skipped. The janitor never deletes what it doesn't recognize.
 2. **Only old directories.** `MIN_AGE` is one hour. A render that is in progress right now has a recent modification time and is left alone, so the janitor can't delete a document while it's being created.
 3. **Orphans go; live documents stay.** If no document in the database points at the directory (`version == null`), it's an orphan and may be removed once it's old enough. That covers crashes between rendering and saving.
-4. **The safety net.** If a document points at version 3 but `v3` is missing on disk, the janitor logs a warning and leaves the document's *other* versions alone. This is the guard added after the final review. It exists precisely for the inconsistent-backup case of section 34.4: if a restore leaves the database pointing at a version that isn't there, the other versions may be the only tiles left, and an operator can recover from them. A cleanup job that "tidied up" in that state would turn a repairable problem into permanent loss.
+4. **The safety net.** If a document points at version 3 but `v3` is missing on disk, the janitor logs a warning and leaves the document's *other* versions alone. This is the guard added after the final review. It exists precisely for the inconsistent-backup case of Section 34.4: if a restore leaves the database pointing at a version that isn't there, the other versions may be the only tiles left, and an operator can recover from them. A cleanup job that "tidied up" in that state would turn a repairable problem into permanent loss.
 
 The last line of the janitor's design is `tryDelete`: one locked directory must not stop the sweep. It logs a warning and retries on the next sweep. On Windows, antivirus and sync tools can hold files open; PR #2 records that file moves and deletes retry through those locks, and that `STORAGE_ROOT` should sit outside OneDrive-like folders.
 
@@ -251,22 +251,22 @@ The fix: replacing a PDF now clears a leftover directory at the target version, 
 - **Wrong volume name.** Symptom: `storage.tgz` is tiny or empty, no error. Fix: run `docker volume ls`, and check the archive with `tar tzf storage.tgz | head`.
 - **Forgetting `-T`.** Symptom: the SQL file contains odd characters, or the restore fails partway. Fix: use `docker compose exec -T` whenever you redirect input or output.
 - **Never testing a restore.** Symptom: you find out the backup is bad on the day you need it. Fix: schedule a drill, and put the date in a calendar.
-- **`docker compose down -v`.** The `-v` flag deletes named volumes, including `mysql-data` and `app-storage`. Symptom: an empty app after what looked like a routine restart. Fix: use plain `docker compose down` (or `stop`), and remember that `-v` means "and delete my data".
+- **`docker compose down -v`.** The `-v` flag deletes named volumes, including `mysql-data` and `app-storage`. Symptom: an empty app after what looked like a routine restart. Fix: use plain `docker compose down` (or `stop`), and remember that `-v` means "and delete my data."
 - **Keeping backups on the same disk.** A disk failure then takes the data and its backup together. Copy the files off the machine.
 - **Leaving backup files lying around.** They hold password hashes and document content. Restrict who can read them, and delete scratch copies after a drill.
-- **Losing `.env`.** Symptom: a restore works, but everyone's recognised devices are forgotten; if the database password is lost, you can't start MySQL against the old data. Keep `.env` with the backup, stored as securely as the backup itself.
+- **Losing `.env`.** Symptom: a restore works, but everyone's recognized devices are forgotten; if the database password is lost, you can't start MySQL against the old data. Keep `.env` with the backup, stored as securely as the backup itself.
 
 ### 34.11 Scheduling backups
 
-The README's go-live checklist says "scheduled backups as above, plus one restore drill". The repository doesn't include a scheduler; you choose one. On a Linux host the usual tool is `cron`, which runs a command at fixed times. Here is a sketch, an illustration of the idea rather than a file from the project, that runs the Listing 34.1 commands from a script at 02:00 nightly and keeps a dated copy:
+The README's go-live checklist says "scheduled backups as above, plus one restore drill." The repository doesn't include a scheduler; you choose one. On a Linux host the usual tool is `cron`, which runs a command at fixed times. Here is a sketch, an illustration of the idea rather than a file from the project, that runs the Listing 34.1 commands from a script at 02:00 nightly and keeps a dated copy:
 
 ```text
 0 2 * * * cd /opt/secure-doc-viewer && ./backup.sh >> backup.log 2>&1
 ```
 
-Where `backup.sh` contains the four backup commands, names its output files with the date, and then copies them off the machine. Choose the time when nobody reads: the app is stopped for the seconds the dump and archive take, and readers get an error during that window. If that outage is unacceptable, you have reached one of the limits Chapter 37 describes, because a backup that doesn't stop the app needs a storage layer that supports snapshots.
+The `backup.sh` script contains the four backup commands, names its output files with the date, and then copies them off the machine. Choose a time when nobody is reading: the app is stopped for the seconds the dump and archive take, and readers get an error during that window. If that outage is unacceptable, you have reached one of the limits Chapter 37 describes, because a backup that doesn't stop the app needs a storage layer that supports snapshots.
 
-**Protect the copies.** The backup files are the documents themselves: `storage.tgz` holds every page of every document without a watermark, and `securedocs.sql` holds password hashes, accounts, and the audit log. Restrict who can read them, encrypt them before they leave the machine, and delete old ones on a schedule (section 32.11).
+**Protect the copies.** The backup files are the documents themselves: `storage.tgz` holds every page of every document without a watermark, and `securedocs.sql` holds password hashes, accounts, and the audit log. Restrict who can read them, encrypt them before they leave the machine, and delete old ones on a schedule (Section 32.11).
 
 A rule of thumb from general practice, not from this project: keep more than one copy, on more than one kind of storage, with at least one off the machine. And measure your retention: keeping thirty daily backups costs thirty times the storage of one, so decide how far back you might need to go before you need to.
 
@@ -277,9 +277,9 @@ The app runs as a single instance. Sessions and rate-limit counters live in the 
 
 *See also: Chapters 40 and 41 sketch how the limits of one instance would be lifted on AWS.*
 
-- **A restart signs everyone out and resets the throttle counters.** Plan restarts and deploys for quiet hours. The idle-session warning (section 22.8) doesn't help, because a restart isn't an idle timeout.
+- **A restart signs everyone out and resets the throttle counters.** Plan restarts and deploys for quiet hours. The idle-session warning (Section 22.8) doesn't help, because a restart isn't an idle timeout.
 - **A deploy is a short outage.** `docker compose up -d --build` builds the new image and recreates the container. While it starts, the health check (Chapter 35) reports the app as not ready, and nginx returns errors.
-- **A second instance won't work by adding a second container.** Each would have its own sessions and its own tile folder, so a user could land on an instance that doesn't know them, and the throttle limits would double. Chapter 37 (sections 37.5, 37.7, and 37.11) sets out what shared sessions in Redis and tiles in S3 would change.
+- **A second instance won't work by adding a second container.** Each would have its own sessions and its own tile folder, so a user could land on an instance that doesn't know them, and the throttle limits would double. Chapter 37 (Sections 37.5, 37.7, and 37.11) sets out what shared sessions in Redis and tiles in S3 would change.
 
 ## In this project
 
@@ -288,7 +288,7 @@ The app runs as a single instance. Sessions and rate-limit counters live in the 
 | `README.md` ("Backup and restore") | `book-m5-platform` | The runbook in Listings 34.1 and 34.2 |
 | `src/main/java/com/example/securedocviewer/service/StorageJanitor.java` | `book-m2-documents` | Removes unreferenced tile folders (Listing 34.3); the missing-current-version guard arrived with `66f7152` |
 | `src/main/java/com/example/securedocviewer/audit/AuditLogService.java` | `book-m2-documents` | The audit purge and the throttle sweep |
-| `src/main/java/com/example/securedocviewer/security/KnownDevices.java` | `book-m5-platform` | The recognised-device purge |
+| `src/main/java/com/example/securedocviewer/security/KnownDevices.java` | `book-m5-platform` | The recognized-device purge |
 | `docker-compose.yml` (`mysql-data`, `app-storage`) | `book-m5-platform` | The two volumes to back up |
 
 See any of them with `git show book-m6-final:<path>`.
@@ -297,7 +297,7 @@ See any of them with `git show book-m6-final:<path>`.
 
 ### Exercise 34.1 ★ Name the state
 
-For each of these, say whether a backup must capture it and why: the login sessions, the tiles, the audit log, the `.env` file, the source PDFs.
+For each of these, say whether a backup must capture it and why: the sign-in sessions, the tiles, the audit log, the `.env` file, the source PDFs.
 
 ### Exercise 34.2 ★ Read a command
 

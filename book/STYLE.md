@@ -15,7 +15,7 @@ Owner: `editor`. Last updated: 2026-09-19.
 ## 1. Who we are writing for
 
 The reader has **never programmed**. They are intelligent, motivated and patient, but they
-don't know what a variable, a terminal, a port or a database is. Every chapter is written for
+don't know what a variable, a terminal, a port, or a database is. Every chapter is written for
 that person, and every chapter is also accurate enough that a professional engineer reading it
 would find nothing to correct.
 
@@ -36,8 +36,9 @@ Three consequences:
 - **Second person.** Address the reader as "you". Use "we" only for things you and the reader
   do together in the text ("Let's run the tests again"). Never use "we" for the project's
   history: the reader didn't make those decisions. Write "the project chose MySQL", "the
-  reviewer found", "the team fixed", or name the role (product owner, reviewer).
-- **Why before how.** Every new tool, pattern or line of configuration is motivated before it
+  reviewer found", "the team fixed", or name the role (the project owner, the PO reviewer, the TM
+  reviewer).
+- **Why before how.** Every new tool, pattern, or line of configuration is motivated before it
   is shown: what problem does it solve, and what would go wrong without it?
 - **No hype.** Don't write "powerful", "blazing fast", "magic", "seamless", "robust", "simply",
   "just", "easy", "obviously", "of course" or "trivial". What is obvious to you is the reader's
@@ -60,19 +61,20 @@ Three consequences:
   and don't comment on it; your own prose stays American.
 - **Serial (Oxford) comma:** "Java, Maven, and Git".
 - **Numbers:** spell out zero through nine in prose; use numerals for 10 and above, and always
-  for measurements, versions, ports, limits and anything with a unit: 5 failures, 512 px,
+  for measurements, versions, ports, limits, and anything with a unit: 5 failures, 512 px,
   120 seconds, port 8080, Java 25. Use a thin non-breaking space in prose only if your editor
   makes it easy; a normal space is fine.
 - **Dates:** "September 19, 2026" in prose; ISO `2026-09-19` in tables, logs and code.
 - **Quotation marks:** straight quotes in Markdown source (`"` and `'`); punctuation goes inside
   quotation marks except when the quoted text is code or literal input.
-- **Dashes:** in prose, prefer a comma, colon or parentheses. The em dash (—, no spaces) is
+- **Dashes:** in prose, prefer a comma, colon, or parentheses. The em dash (—, no spaces) is
   reserved for captions ("Listing 4.2 — ...") and the occasional strong break. Use an en dash
   for ranges: 3–6 bullets, Chapters 12–14.
 - **Headings** use sentence case: "Signing a tile URL", not "Signing A Tile URL".
-- **Lists:** introduce a list with a full sentence ending in a colon. Items are either all
-  sentences (with periods) or all fragments (no final periods; semicolons optional in short
-  inline lists). Use numbered lists only for sequences.
+- **Lists:** introduce a list with a full sentence ending in a colon. Items that are full
+  sentences end with a period; items that are fragments do not. Keep one kind within a list. The
+  fragment-only lists that already end their items with periods are left as they are (author's
+  decision); do not add or remove periods there. Use numbered lists only for sequences.
 
 ### 3.1 Word list
 
@@ -111,7 +113,7 @@ vocabulary index-ready.
 - **Part openers:** `00-part-introduction.md` in each part folder (one to two pages: what the
   part covers, why it's in this order, what you'll have built by the end).
 - **Exercise solutions:** `NN-slug.solutions.md`, next to the chapter, in the writer's own folder.
-  The editor compiles these into Appendix C (see section 12).
+  The editor compiles these into Appendix C (see Section 12).
 - **Front matter:** `book/front-matter/a-preface.md`, `b-how-to-use-this-book.md`,
   `c-setting-up-your-machine.md`.
 - **Appendices:** `book/appendices/appendix-a-glossary.md`, `appendix-b-blueprint-history.md`,
@@ -135,7 +137,7 @@ says otherwise).
 | Level | Use | Numbered? | Example |
 |---|---|---|---|
 | `#` | Chapter title, once per file | Yes, "Chapter N:" | `# Chapter 14: Storing data with JPA and Flyway` |
-| `##` | The template's fixed parts (section 6) | No | `## Beginner tier: Tables as spreadsheets` |
+| `##` | The template's fixed parts (Section 6) | No | `## Beginner tier: Tables as spreadsheets` |
 | `###` | Numbered sections inside a tier | Yes, N.M | `### 14.3 Your first entity` |
 | `####` | Subsections | No | `#### Why not plain JDBC?` |
 
@@ -185,6 +187,8 @@ By the end of this chapter, you will be able to:
 ### 14.6 ...
 ### 14.7 <A real incident from this project>
 
+## Common mistakes
+
 ## In this project
 
 ## Try it
@@ -203,24 +207,24 @@ What goes in each part:
 3. **Prerequisites:** earlier chapters only, each with a few words on what it provides. If the
    reader needs something installed, point to the setup chapter section.
 4. **Beginner tier:**
-   - the core concept through one analogy (section 8), with where it breaks down;
-   - the foundational terms, each defined in bold at first use (section 9);
-   - the fundamental setup code explained line by line (section 11.3).
+   - the core concept through one analogy (Section 8), with where it breaks down;
+   - the foundational terms, each defined in bold at first use (Section 9);
+   - the fundamental setup code explained line by line (Section 11.3).
    A reader who stops at the end of the beginner tier should be able to follow Part IV at a
    basic level.
 5. **Intermediate tier:** how the pieces talk to each other (frontend and backend, service and
-   repository, browser and server), with a sequence diagram where there is a conversation
+   repository, browser, and server), with a sequence diagram where there is a conversation
    between parts. At least one "Why this and not X?" section that names the obvious
    alternative, states its real advantages, and explains why this project chose otherwise.
-6. **Advanced tier:** security, performance and architecture decisions, told with the real
-   incidents from this project (section 14). Every incident cites its source.
+6. **Advanced tier:** security, performance, and architecture decisions, told with the real
+   incidents from this project (Section 14). Every incident cites its source.
 7. **In this project:** a short table or list naming the exact files (full paths from the
    repository root, in code font), the milestone tag where each first appears, and one line
    on what each does. End with the command to see it: `git show book-m2-documents:<path>`.
-8. **Try it:** exercises (section 12).
+8. **Try it:** exercises (Section 12).
 9. **Summary:** 4–8 bullets restating the key ideas in new words, not copies of the
    objectives. Then one sentence pointing to the next chapter.
-10. **Further reading:** official documentation only (section 15).
+10. **Further reading:** official documentation only (Section 15).
 
 **Part IV milestone chapters** use the same template and add two sections between
 "Advanced tier" and "In this project":
@@ -235,7 +239,7 @@ What goes in each part:
   Mermaid block exactly; don't redraw it) as a numbered figure, then "What changed since
   vN-1" as a short list. Blueprint v0 in Chapter for `book-m0-mvp` has "What's here" instead.
 - **Decisions and challenges:** the product decisions made at the milestone, then the bugs and
-  reviewer findings told as stories (section 14).
+  reviewer findings told as stories (Section 14).
 
 **Chapters that are not feature chapters** (the preface, part openers, the trade-offs chapter,
 setup) don't use the tier structure. The trade-offs chapter has its own template in
@@ -269,10 +273,10 @@ signposted, never hidden:
   (Chapters 25–31) and production chapters (Chapters 32–36). The tier headings are unnumbered;
   the numbered N.M sections sit beneath them, numbered continuously through the chapter. In a
   milestone chapter the order is: Learning objectives, Prerequisites, Beginner tier,
-  Intermediate tier, Advanced tier, Architecture blueprint vN, Decisions and challenges, In this
-  project, Try it, Summary, Further reading. Put the milestone's requirements and core new code
+  Intermediate tier, Advanced tier, Common mistakes, Architecture blueprint vN, Decisions and
+  challenges, In this project, Try it, Summary, Further reading. Put the milestone's requirements and core new code
   in the beginner tier, how the parts talk and why this design in the intermediate tier, and
-  security, performance and incidents in the advanced tier. Only the trade-offs chapter (37),
+  security, performance, and incidents in the advanced tier. Only the trade-offs chapter (37),
   part openers and front matter are exempt.
 - **Prerequisite chapter numbers** must match `book/OUTLINE.md` exactly. For orientation: the
   web and HTTP are Chapter 8, SQL is 9, Docker is 10, Spring Boot is 11, REST is 12, JPA and
@@ -293,7 +297,7 @@ Analogies are how a complete beginner gets a foothold. Rules:
    teaches something false.
 4. **Reuse deliberately.** If an earlier chapter's analogy fits, extend it and name the
    chapter, rather than inventing a new one. The editor keeps a list of established analogies
-   in section 8.1.
+   in Section 8.1.
 5. Never use an analogy in place of the precise definition; use it before the definition.
 
 Example:
@@ -332,9 +336,11 @@ Writers: propose additions through `requests.md`. Chapter numbers follow `book/O
   - [writer-backend → editor] glossary: **entity** — a Java class whose objects are stored as rows in a database table. (Ch 14, Section 14.3)
   ```
 
-- Bold is used for **defined terms** and for the fixed lead-ins in this guide (**Note:**,
-  **Where the analogy breaks down:** and the like). Don't use bold for emphasis; use italics,
-  sparingly.
+- Bold is allowed for three things only: **defined terms** at first use; the fixed lead-ins
+  (**Note:**, **Where the analogy breaks down:**, **A real incident:**, **The problem:**,
+  **The lesson.**, **Worked example.** and the like); and the one-sentence lesson that closes an
+  incident story. Don't use bold for emphasis (use italics, sparingly), for identifiers (use code
+  font), or for interface labels (use italics).
 - Code identifiers (class names, methods, config keys) are never bold; they go in code font.
 - Acronyms: spell out at first use with the acronym in parentheses, then use the acronym:
   "Cross-Site Request Forgery (CSRF)". Exceptions that never need expanding after Chapter 8:
@@ -435,7 +441,7 @@ Explain every token a beginner hasn't seen before; after Part I, you may group r
   Windows PowerShell command differs, add it in a second block labeled
   "On Windows (PowerShell):". The setup chapter tells Windows readers to install Git Bash, so
   one `bash` block often serves all three.
-- **Inline code** (backticks) for: filenames and paths, class, method, variable and field
+- **Inline code** (backticks) for: filenames and paths, class, method, variable, and field
   names, commands, config keys, environment variables, HTTP header names, URLs and endpoint
   paths, literal values, and status codes when discussed as values (`404`). Write the status
   meaning in prose the first time: "`404 Not Found`".
@@ -543,7 +549,7 @@ sequenceDiagram
 
 The advanced tiers and Part IV's "Decisions and challenges" use real events. Rules:
 
-- **Source everything.** Every incident, decision, number, date or version comes from the
+- **Source everything.** Every incident, decision, number, date, or version comes from the
   dossier (`book/_team/dossier/`) or a primary source (git history, a PR description, the
   code). Put the source in an HTML comment at the end of the paragraph:
   `<!-- source: PR #5; commit 782ab6b; dossier/incidents.md#render-pool -->`. If you can't
@@ -552,23 +558,24 @@ The advanced tiers and Part IV's "Decisions and challenges" use real events. Rul
   **The problem**, **How it was found**, **The fix**, **The lesson**. The lesson generalizes
   beyond this app.
 - **Decision structure:** **The decision**, **The options considered**, **Why this one**,
-  **What it costs**. Name who decided when the sources say so (for example, "the product
+  **What it costs**. Name who decided when the sources say so (for example, "the project
   owner").
-- Refer to people by role (the product owner, the reviewer, the threat-modeling review), never
+- Refer to people by role (the project owner, the PO reviewer, the TM reviewer), never
   by personal name or email address. Review-finding IDs from the sources (such as `TM2-5` or
   `PO2-7`) may be quoted in code font, with a plain-words explanation.
 - No blame, no drama. Bugs are normal; the story is how they were found and what was learned.
 - **The reviewers were AI agents.** The Product Owner (PO) and Technical Manager (TM) reviews
   were carried out by Claude agents, briefed as independent third parties. Never present them
   as human reviewers, and never invent credentials, job histories or personalities for them.
-  Say once, early in the chapter, that these reviewers were AI review agents; after that "the
-  TM review" and "the PO review" are fine. Implementation and code review also involved an AI
-  coding agent working with the project owner; say so plainly where it matters. Decisions
-  attributed to "the product owner" are the project owner's decisions.
+  Name them in full once at the first mention in each chapter ("the AI product-owner reviewer",
+  "the AI technical-manager reviewer"); after that, "the PO reviewer" and "the TM reviewer" are
+  fine. The person who owns the project and made the decisions is "the project owner", never "the
+  product owner". Implementation and code review also involved an AI coding agent working with the
+  project owner; say so plainly where it matters.
 - **Cite the dossier, not the scratchpad.** History claims cite files in `book/_team/dossier/`
   (`timeline.md`, `decisions.md`, `bugs-and-findings.md`, `reviews.md`, `versions.md`), a commit
   hash or a PR number. Never cite the coordinator's scratchpad or temporary folders, agent
-  identifiers, or the raw conversation file, in the book text or in source comments. If the
+  identifiers, or the raw conversation file, in the book text, or in source comments. If the
   dossier lacks a fact, ask `research` through `requests.md`.
   Source comments (HTML comments) may name dossier files; the visible text never mentions "the
   dossier", agent identifiers, review-finding IDs without a plain-words explanation, or any
@@ -603,7 +610,7 @@ The advanced tiers and Part IV's "Decisions and challenges" use real events. Rul
   `admin@example.com`.
 - Passwords and secrets are always placeholders in angle brackets. Never quote or paraphrase
   the contents of any file the charter puts off limits, and never write a real password,
-  secret, token, session id or personal email address, even an expired one.
+  secret, token, session id, or personal email address, even an expired one.
 - Tokens in examples are visibly fake and truncated: `token=eyJ...` style is fine, but prefer
   `token=<signed-token>`.
 - When you show an attack (for example tampering with a token to see a `401`), show it against
@@ -620,7 +627,7 @@ Checklist:
 - [ ] Every analogy has "Where the analogy breaks down".
 - [ ] Every bolded term is new and has a glossary request.
 - [ ] Every listing is copied from a named tag; simplified ones say so; Examples carry no tag.
-- [ ] Every figure, table and listing is numbered, captioned and referred to in the text.
+- [ ] Every figure, table, and listing is numbered, captioned and referred to in the text.
 - [ ] Every historical claim has a `<!-- source: ... -->` comment.
 - [ ] Exercises graded ★/★★/★★★; solutions file written.
 - [ ] American spelling; word list followed; no emojis; no secrets.

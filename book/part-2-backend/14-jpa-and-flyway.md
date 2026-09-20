@@ -1,19 +1,19 @@
 <!-- chapter: 14 | part: II | owner: writer-backend | tag: book-m2-documents | status: expanded -->
 # Chapter 14: Storing data with JPA and Flyway
 
-The Secure Document Viewer keeps accounts, documents, shares and an audit trail in MySQL. This chapter shows how Java objects map to database tables and how the schema is created and changed safely. It then covers how transactions keep changes all-or-nothing, how a row lock stops two people from replacing the same PDF at once, and how timed cleanup jobs run. It also tells the real bugs that taught the project these lessons: audit rows that vanished, and timestamps that came out in the wrong time zone.
+The Secure Document Viewer keeps accounts, documents, shares, and an audit trail in MySQL. This chapter shows how Java objects map to database tables and how the schema is created and changed safely. It then covers how transactions keep changes all-or-nothing, how a row lock stops two people from replacing the same PDF at once, and how timed cleanup jobs run. It also tells the real bugs that taught the project these lessons: audit rows that vanished, and timestamps that came out in the wrong time zone.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
-- Explain the mismatch between objects and tables and how an ORM bridges it.
+- Explain the mismatch between objects and tables and how an object-relational mapper (ORM) bridges it.
 - Read an entity class and a Spring Data repository interface, including a query method whose name is a small sentence.
 - Explain what a transaction is, and compare `@Transactional` with `TransactionTemplate`.
 - Read a Flyway migration and explain why the schema is versioned SQL files, never edited after they run.
 - Explain a row lock, and when `REQUIRES_NEW` is needed.
 - Describe how `@Scheduled` runs the project's cleanup sweeps.
-- Explain why tests use both H2 and a real MySQL, and why the project stores time in UTC.
+- Explain why tests use both H2 and a real MySQL, and why the project stores time in UTC (Coordinated Universal Time).
 
 ## Prerequisites
 
@@ -84,7 +84,7 @@ public class AppUser {
 
 Line by line:
 
-- `@Entity` says "this class is stored in the database", and `@Table(name = "app_user")` names the table. Without `@Table`, Hibernate would guess a name from the class.
+- `@Entity` says "this class is stored in the database," and `@Table(name = "app_user")` names the table. Without `@Table`, Hibernate would guess a name from the class.
 - `@Id` marks the primary key, the column that identifies a row. `@GeneratedValue(strategy = GenerationType.IDENTITY)` lets MySQL generate the value (`AUTO_INCREMENT`) when the row is inserted.
 - `@Column` maps a field to a column and repeats constraints: `nullable = false` becomes `NOT NULL`, `unique = true` becomes a unique constraint, and `length = 64` is the `VARCHAR` size. The migration in Section 14.5 is where the schema is really defined; these declarations describe it to Hibernate, and mismatches show up as errors when the application runs.
 - `@Enumerated(EnumType.STRING)` stores the role as the text `READER`, `PUBLISHER` or `ADMIN`. The alternative, the default, stores the *position* of the name in the enum: `READER` is 0, `PUBLISHER` is 1. Then reordering the enum, or inserting a new role in the middle, silently changes what every stored row means. Storing the name is safer and readable in the database.
@@ -110,7 +110,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
 *Path: `src/main/java/com/example/securedocviewer/account/AppUserRepository.java`*
 
-Extending `JpaRepository<AppUser, Long>` means "a repository of `AppUser` entities whose ids are `Long`", and it gives you `save`, `findById`, `count`, `delete` and more without writing them. Each extra method is a **query method**: Spring reads the method's *name* and writes the SQL. Spring creates the implementation as a bean when the application starts, so you inject the interface like any other dependency (Chapter 11), and a name it can't understand stops startup with a clear error.
+Extending `JpaRepository<AppUser, Long>` means "a repository of `AppUser` entities whose ids are `Long`," and it gives you `save`, `findById`, `count`, `delete`, and more without writing them. Each extra method is a **query method**: Spring reads the method's *name* and writes the SQL. Spring creates the implementation as a bean when the application starts, so you inject the interface like any other dependency (Chapter 11), and a name it can't understand stops startup with a clear error.
 
 The last method has the longest name, and it's a good one to take apart. Read it as a sentence, word by word.
 
@@ -132,7 +132,7 @@ The `UserDirectoryController` (Chapter 12) calls it for the "share with" picker.
 
 Accounts are one table. Documents are three linked tables, and the entity for them shows how JPA describes relationships.
 
-**Listing 14.3 — `Document.java` (`book-m6-final`, excerpt: the relationship fields; other columns, constructors and accessors omitted)**
+**Listing 14.3 — `Document.java` (`book-m6-final`, excerpt: the relationship fields; other columns, constructors, and accessors omitted)**
 
 ```java
 @Entity
@@ -195,7 +195,7 @@ List<Document> findVisibleTo(@Param("username") String username, @Param("everyon
 
 *Path: `src/main/java/com/example/securedocviewer/document/DocumentRepository.java`*
 
-`join fetch d.owner` tells Hibernate to load each document *together with* its owner in the same query. `left join d.sharedWith s` joins the share table so the `where` clause can ask "is this user one of the people it's shared with?". `distinct` removes duplicates that the join creates (a document shared with three people appears in three joined rows). The `:username` and `:everyone` markers are named parameters, filled from the `@Param` arguments; they're passed to the database separately from the query text, which is what keeps them from being read as SQL (Chapter 13 discusses why that matters). The rule "which documents may this user see" is written once, here, in one query, and the list screen calls it (Chapter 12).
+`join fetch d.owner` tells Hibernate to load each document *together with* its owner in the same query. `left join d.sharedWith s` joins the share table so the `where` clause can ask "is this user one of the people it's shared with?." `distinct` removes duplicates that the join creates (a document shared with three people appears in three joined rows). The `:username` and `:everyone` markers are named parameters, filled from the `@Param` arguments; they're passed to the database separately from the query text, which is what keeps them from being read as SQL (Chapter 13 discusses why that matters). The rule "which documents may this user see" is written once, here, in one query, and the list screen calls it (Chapter 12).
 
 ## Intermediate tier: Changing data safely
 
@@ -203,7 +203,7 @@ List<Document> findVisibleTo(@Param("username") String username, @Param("everyon
 
 ### 14.5 Flyway migrations (`V1`, `V2`, `V3`)
 
-Someone has to create the tables. If Hibernate did it automatically, the schema would depend on whichever code last ran, and production changes would be guesses. Instead the project sets `spring.jpa.hibernate.ddl-auto: none` ("Flyway owns the schema; Hibernate never alters it", says the comment in `application.yml`) and uses Flyway. Flyway applies numbered SQL files in order and records what it applied in a table, so each file runs exactly once on each database.
+Someone has to create the tables. If Hibernate did it automatically, the schema would depend on whichever code last ran, and production changes would be guesses. Instead the project sets `spring.jpa.hibernate.ddl-auto: none` ("Flyway owns the schema; Hibernate never alters it," says the comment in `application.yml`) and uses Flyway. Flyway applies numbered SQL files in order and records what it applied in a table, so each file runs exactly once on each database.
 
 **Listing 14.5 — `V1__create_app_user.sql` (`book-m2-documents`, identical at `book-m6-final`)**
 
@@ -224,7 +224,7 @@ CREATE TABLE app_user (
 
 *Path: `src/main/resources/db/migration/V1__create_app_user.sql`*
 
-Compare it with Listing 14.1: each column matches a field. The file name follows a rule that Flyway reads: `V` for a versioned migration, the version number `1`, two underscores, and a description. The `DATETIME(6)` type stores a date and time to the microsecond, with no time zone (Section 14.9).
+Compare it with Listing 14.1: each column matches a field. The filename follows a rule that Flyway reads: `V` for a versioned migration, the version number `1`, two underscores, and a description. The `DATETIME(6)` type stores a date and time to the microsecond, with no time zone (Section 14.9).
 
 Now the relationship tables from Section 14.3.
 
@@ -245,7 +245,7 @@ CREATE INDEX ix_document_share_user ON document_share (user_id);
 
 *Path: `src/main/resources/db/migration/V2__documents_shares_audit.sql`*
 
-The **composite primary key** `(document_id, user_id)` means the same user can't be shared the same document twice. `ON DELETE CASCADE` means that deleting a document (or a user) automatically deletes their share rows, so no orphan rows are left pointing at nothing. The index on `user_id` exists because the list query in Listing 14.4 asks "which documents are shared with this user?", and without an index MySQL would scan the whole table for each user. The same migration creates `document`, `document_page` and the `audit_event` table with four indexes on the columns the admin screen filters by.
+The **composite primary key** `(document_id, user_id)` means the same user can't be shared the same document twice. `ON DELETE CASCADE` means that deleting a document (or a user) automatically deletes their share rows, so no orphan rows are left pointing at nothing. The index on `user_id` exists because the list query in Listing 14.4 asks "which documents are shared with this user?," and without an index MySQL would scan the whole table for each user. The same migration creates `document`, `document_page`, and the `audit_event` table with four indexes on the columns the admin screen filters by.
 
 The third migration shows how a real schema changes over time.
 
@@ -276,7 +276,7 @@ CREATE TABLE account_known_ip (
 
 *Path: `src/main/resources/db/migration/V3__tile_versions_and_account_security.sql`*
 
-Two habits show here. New columns on tables that already hold rows get a `DEFAULT`, so existing rows are valid the moment the column appears: `tile_version` defaults to `0`, "the original unversioned layout". And a change is a *new file*: nobody edited `V1`.
+Two habits show here. New columns on tables that already hold rows get a `DEFAULT`, so existing rows are valid the moment the column appears: `tile_version` defaults to `0`, "the original unversioned layout." And a change is a *new file*: nobody edited `V1`.
 
 **Never edit a migration that has run.** Flyway stores a checksum of each applied file in its history table (`flyway_schema_history`, which `MySqlIntegrationTest` queries). If a file that already ran is changed, the checksums differ and Flyway refuses to start, which protects you from databases that silently disagree about their own schema. To change the schema, add `V4__...sql`. If a mistake in an earlier migration must be corrected, the correction is also a new migration.
 
@@ -317,7 +317,7 @@ A **worked example**: the upload in `DocumentService.upload`. In order:
 
 Files and rows can't be one transaction, so the code orders the steps so that a failure at any point leaves either nothing or something that a later cleanup removes (Section 14.10).
 
-### 14.7 Locking rows, optimistic and pessimistic
+### 14.7 Locking rows, optimistic, and pessimistic
 
 Two people replacing the same PDF at the same moment could overwrite each other or leave a mixture of old and new tiles. A row lock makes the second wait until the first finishes. `DocumentRepository` has:
 
@@ -330,7 +330,7 @@ Optional<Document> findByIdForUpdate(@Param("id") String id);
 
 (`book-m6-final`, `DocumentRepository.java`, excerpt.) A **pessimistic** lock assumes conflicts are likely and blocks up front: Hibernate adds `for update` to the `select`, so MySQL holds the row until the transaction ends and any other transaction wanting the same row waits. An **optimistic** approach lets both proceed and detects the conflict at save time, usually with a version number column, and one of the two fails and must retry. Optimistic is cheaper when conflicts are rare and retrying is cheap. The project chose pessimistic for replace and delete because a conflict would corrupt *files on disk*, which a retry can't cleanly undo, and because the rows involved are few.
 
-The lock also gives a place for a re-check. `DocumentService.replaceFile` renders the PDF first (slow, no lock) and only then, inside the transaction, calls `findByIdForUpdate` and asks again whether the caller may still manage the document (`canManage(document, currentRoles(viewer))`). The reason is that a render can take a while, and the uploader may have been demoted, or the document handed to someone else, in the meantime. A final review found that this second check was missing; the fix re-reads the caller's current role, enabled state and ownership under the lock. <!-- source: dossier bugs-and-findings F3 (final threat-modeling review round; the fix's commit is not identified in the dossier) --> The lesson: **an authorization decision has a time of check, and the action has a time of use; if a slow step lies between them, check again at the moment of use.**
+The lock also gives a place for a re-check. `DocumentService.replaceFile` renders the PDF first (slow, no lock) and only then, inside the transaction, calls `findByIdForUpdate` and asks again whether the caller may still manage the document (`canManage(document, currentRoles(viewer))`). The reason is that a render can take a while, and the uploader may have been demoted, or the document handed to someone else, in the meantime. A final review found that this second check was missing; the fix re-reads the caller's current role, enabled state, and ownership under the lock. <!-- source: dossier bugs-and-findings F3 (final threat-modeling review round; the fix's commit is not identified in the dossier) --> The lesson: **an authorization decision has a time of check, and the action has a time of use; if a slow step lies between them, check again at the moment of use.**
 
 Figure 14.1 puts the whole replacement in order, so you can see where the slow work happens, where the lock is held, and what is deleted last.
 
@@ -354,13 +354,13 @@ sequenceDiagram
 
 *Figure 14.1 — Replacing a PDF: render outside the lock, switch versions under it, delete the old version last*
 
-*Text description:* A sequence with four participants: the publisher, `DocumentService`, the disk and MySQL. Time runs downward. Rendering to a staging folder happens before the row lock is taken. The lock, the rights check, the move to the next version and the switch of `tile_version` happen inside one transaction. The previous version is deleted and the audit event written only after the commit.
+*Text description:* A sequence with four participants: the publisher, `DocumentService`, the disk, and MySQL. Time runs downward. Rendering to a staging folder happens before the row lock is taken. The lock, the rights check, the move to the next version and the switch of `tile_version` happen inside one transaction. The previous version is deleted and the audit event written only after the commit.
 
 <!-- source: DocumentService.replaceFile at book-m6-final -->
 
 Read the figure from top to bottom. The slow step, rendering, happens *before* the lock, so a second publisher isn't kept waiting while pages are drawn. The lock is held only for the short stretch from the `select ... for update` to the commit, which is where the version number changes. The old version is deleted *after* the commit, so a reader who still holds a link to it is never left with nothing on disk: at worst the link answers `410` (Chapter 17). The audit row is written last, in its own transaction (Section 14.8).
 
-## Advanced tier: Separate transactions, cleanup and real databases
+## Advanced tier: Separate transactions, cleanup, and real databases
 
 *You can skip to "In this project" on a first read. Part IV tells when each of these was added.*
 
@@ -375,7 +375,7 @@ public void record(AuditEventType type, Actor actor, Subject subject) {
 }
 ```
 
-(`book-m6-final`, `AuditLogService.java`.) **Propagation** says how a method joins a transaction that already exists. The default, `REQUIRED`, joins the caller's. `REQUIRES_NEW` suspends the caller's transaction, opens another and commits it independently. The class comment gives the reason: the most important events (access denied, a failed operation) "are recorded just before the caller throws and rolls its own transaction back, and must not be rolled back with it."
+(`book-m6-final`, `AuditLogService.java`.) **Propagation** says how a method joins a transaction that already exists. The default, `REQUIRED`, joins the caller's. `REQUIRES_NEW` suspends the caller's transaction, opens another, and commits it independently. The class comment gives the reason: the most important events (access denied, a failed operation) "are recorded just before the caller throws and rolls its own transaction back, and must not be rolled back with it."
 
 **A real incident: the audit rows that vanished.** *The problem:* `ACCESS_DENIED` events were never saved. *How it was found:* an automated test written for the documents milestone caught it. *The cause:* the audit write shared the caller's transaction, and the request that was *denied* threw an exception, which rolled the whole transaction back, including the audit row that recorded the denial. *The fix:* audit writes run in their own transaction. The lesson: **the events you most need to keep are the ones that occur when something is failing.** <!-- source: dossier bugs-and-findings C3; commit ba00693; PR #2 -->
 
@@ -383,15 +383,15 @@ Two cautions about this annotation. First, the wrapper sits *between beans*: it 
 
 ### 14.9 Time zones and UTC storage
 
-A `DATETIME` column has no time zone. If a laptop in one zone and a container in another read the same stored value, they disagree about *which moment* it means. The project stores UTC everywhere: the JDBC URL in `application.yml` ends with `connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`, and `hibernate.jdbc.time_zone: UTC` is set under `spring.jpa.properties`. The comment in the file explains: "DATETIME columns hold UTC regardless of the JVM's time zone, so a backend in UTC (Docker) and one in local time (a dev machine) read the same instant back."
+A `DATETIME` column has no time zone. If a laptop in one zone and a container in another read the same stored value, they disagree about *which moment* it means. The project stores UTC everywhere: the JDBC (Java Database Connectivity) URL in `application.yml` ends with `connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`, and `hibernate.jdbc.time_zone: UTC` is set under `spring.jpa.properties`. The comment in the file explains: "DATETIME columns hold UTC regardless of the JVM's time zone, so a backend in UTC (Docker) and one in local time (a dev machine) read the same instant back."
 
-**A real incident: audit events from the future.** *The problem:* audit events appeared with times five and a half hours in the future. *How it was found:* a product-owner review (an AI agent, as Chapter 32 explains) noticed it while two copies of the backend shared one database. *The cause:* the development copy ran on a laptop in the Asia/Kolkata zone and wrote local time, while the Docker copy wrote UTC, so the same table held both. *The fix:* pin the JDBC connection to UTC and show UTC in the admin screen so it matches the watermark and the CSV export. Also add a test that runs the JVM in Asia/Kolkata against a MySQL server set to `-03:00` and checks that stored values are UTC. The test was verified to fail without the pinning. <!-- source: dossier bugs-and-findings C6; commits 2d82253, a51674c --> The lesson: **store instants in UTC, and test with a deliberately odd time zone**, because a test that runs in the developer's own zone can't fail.
+**A real incident: audit events from the future.** *The problem:* audit events appeared with times five and a half hours in the future. *How it was found:* the AI product-owner reviewer (Chapter 32 explains how the reviews worked) noticed it while two copies of the backend shared one database. *The cause:* the development copy ran on a laptop in the Asia/Kolkata zone and wrote local time, while the Docker copy wrote UTC, so the same table held both. *The fix:* the team pinned the JDBC connection to UTC and showed UTC in the admin screen so it matches the watermark and the CSV export. It also added a test that runs the JVM in Asia/Kolkata against a MySQL server set to `-03:00` and checks that stored values are UTC. The test was verified to fail without the pinning. <!-- source: dossier bugs-and-findings C6; commits 2d82253, a51674c --> The lesson: **store instants in UTC, and test with a deliberately odd time zone**, because a test that runs in the developer's own zone can't fail.
 
 ### 14.10 Timed sweeps with `@Scheduled`
 
 Some data must be cleaned up on a timer. Chapter 11 mentioned `@EnableScheduling`; with it on, a method marked `@Scheduled` runs by itself, on a background thread that Spring manages. The project has six.
 
-Table 14.2 shows the sweeps as they are at `book-m6-final`. This chapter's own tag, `book-m2-documents`, has only three of the six: the audit purge, the sign-in throttle sweep and the storage janitor. The others arrived in later milestones.
+Table 14.2 shows the sweeps as they are at `book-m6-final`. This chapter's own tag, `book-m2-documents`, has only three of the six: the audit purge, the sign-in throttle sweep, and the storage janitor. The others arrived in later milestones.
 
 **Table 14.2 — Scheduled sweeps (`book-m6-final`)**
 
@@ -404,7 +404,7 @@ Table 14.2 shows the sweeps as they are at `book-m6-final`. This chapter's own t
 | `TileRateLimiter.sweep` | fixed delay 5 minutes | Drop per-user tile windows with no recent requests |
 | `StorageJanitor.sweep` | 2 minute initial delay, then every 6 hours | Remove tile directories nothing points to |
 
-A **cron expression** lists second, minute, hour, day of month, month and weekday: `0 30 3 * * *` means "second 0 of minute 30 of hour 3, every day". A **fixed delay** waits that long *after the previous run finishes*, so runs never overlap. The cron values are themselves configurable, as in `@Scheduled(cron = "${secure-doc-viewer.audit-retention-cron:0 30 3 * * *}")`, using the placeholder syntax from Chapter 11. Spring evaluates a cron in the server's time zone unless told otherwise, which is one more reason the app runs in UTC in its container.
+A **cron expression** lists second, minute, hour, day of month, month, and weekday: `0 30 3 * * *` means "second 0 of minute 30 of hour 3, every day." A **fixed delay** waits that long *after the previous run finishes*, so runs never overlap. The cron values are themselves configurable, as in `@Scheduled(cron = "${secure-doc-viewer.audit-retention-cron:0 30 3 * * *}")`, using the placeholder syntax from Chapter 11. Spring evaluates a cron in the server's time zone unless told otherwise, which is one more reason the app runs in UTC in its container.
 
 The `StorageJanitor` is the most careful of the six, because it deletes files. It touches only directories whose names look like document ids and only ones older than an hour, "once they are old enough that no upload can still be in flight" (its class comment). It keeps every version of a document whose *current* version is missing from disk, because then the other versions may be the only surviving copy; a review of the backup design asked for that rule. <!-- source: dossier bugs-and-findings F1; commit 66f7152 --> Its test builds nine directories of different ages and checks exactly which are removed (Chapter 18). A good sweep is safe to run at any moment, safe to run twice, and logs and moves on when one item fails, so that one locked folder doesn't stop the rest.
 
@@ -419,7 +419,7 @@ Most tests run against H2, an in-memory database started in MySQL compatibility 
 - **Ordering enums by position.** Use `EnumType.STRING`.
 - **Returning entities from the service.** With `open-in-view: false`, lazy fields fail outside the transaction, and entities expose columns you didn't mean to show. Return records.
 - **The N+1 query.** A loop that touches a lazy relationship runs one query per row. Load what you need with `join fetch`.
-- **Holding a transaction during slow work.** Rendering a PDF, calling a remote server or waiting on a file all belong outside it.
+- **Holding a transaction during slow work.** Rendering a PDF, calling a remote server, or waiting on a file all belong outside it.
 - **Calling a `@Transactional` method on `this`.** The proxy is bypassed and no transaction starts.
 - **Writing audit rows inside the transaction that may fail.** Use `REQUIRES_NEW`.
 - **Testing only in your own time zone.** Deliberately use an odd one.

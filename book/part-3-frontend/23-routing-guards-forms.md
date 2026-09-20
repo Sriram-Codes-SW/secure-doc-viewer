@@ -1,8 +1,8 @@
 <!-- chapter: 23 | part: III | owner: writer-frontend | tag: book-m6-final | status: expanded -->
 <!-- source: forced password change and swipe added in commit 47a9e19 (book-m5-platform); deep links and keyboard in commit 0a6a7c1 (book-m4-reading); safeReturnUrl present since book-m1-accounts; listings verified with git show book-m6-final and book-m1-accounts -->
-# Chapter 23: Routing, guards and forms
+# Chapter 23: Routing, guards, and forms
 
-A single-page application has one HTML page, but readers expect many: a sign-in page, a document list, a viewer you can bookmark. This chapter shows how Angular's router creates that illusion, how guards keep readers out of screens they can't use, how the forms collect input, and how the viewer supports deep links, keyboard navigation and swiping. Along the way it keeps returning to one theme that runs through the whole project: the browser is friendly territory for convenience and hostile territory for security, so every check made here is also made again on the server.
+A single-page application has one HTML page, but readers expect many: a sign-in page, a document list, a viewer you can bookmark. This chapter shows how Angular's router creates that illusion, how guards keep readers out of screens they can't use, how the forms collect input, and how the viewer supports deep links, keyboard navigation, and swiping. Along the way it keeps returning to one theme that runs through the whole project: the browser is friendly territory for convenience and hostile territory for security, so every check made here is also made again on the server.
 
 ## Learning objectives
 
@@ -20,7 +20,7 @@ By the end of this chapter, you will be able to:
 
 - Chapter 8: URLs, including query strings (the `?page=3` part of an address, which carries extra named values).
 - Chapter 16: what the server enforces (authorization on every request).
-- Chapters 21–22: components, signals, services and the interceptor.
+- Chapters 21–22: components, signals, services, and the interceptor.
 
 ## Beginner tier: Pages without page loads
 
@@ -71,7 +71,7 @@ export const routes: Routes = [
 
 (Simplified: the `admin` and `account` entries, which follow the same pattern, and the catch-all `{ path: '**', redirectTo: 'documents' }` are omitted.)
 
-- `path: ''` with `redirectTo: 'documents'` sends the bare address to the document list. `pathMatch: 'full'` means "only when the path is exactly empty". Without it, every address would match the empty prefix.
+- `path: ''` with `redirectTo: 'documents'` sends the bare address to the document list. `pathMatch: 'full'` means "only when the path is exactly empty." Without it, every address would match the empty prefix.
 - `:documentId` is a **route parameter**: `viewer/abc123` matches, with `documentId` set to `abc123`. The viewer reads it with `this.route.snapshot.paramMap.get('documentId')`.
 - `loadComponent: () => import(...)` is lazy loading. The `() =>` is an arrow function (Chapter 19) that Angular calls only when the route is first needed; inside, `import('./features/...')` asks the browser to download that file then, and `.then((m) => m.LoginComponent)` picks the component class out of it. The effect: the component's code is downloaded only when someone first visits that route, which keeps the initial download small. The build budget in `angular.json` (Chapter 20) enforces a size limit on the first download.
 - `canActivate: [...]` lists **guards**, covered in Section 23.5.
@@ -102,11 +102,11 @@ A component receives route information by injecting `ActivatedRoute` (Chapter 22
 - `route.snapshot.paramMap.get('documentId')` reads a **route parameter**, the `:documentId` part of the path.
 - `route.snapshot.queryParamMap.get('page')` reads a **query parameter**, the `?page=3` part.
 
-Both return a string, or `null` when the value is absent. Both are text, even when they look like numbers, so code that wants a number must convert and check it (Section 23.10). A "snapshot" is the value at the moment the component was created. The viewer uses snapshots because it is created fresh for each document; a component that stays on screen while its parameters change would subscribe to changes instead.
+Both return a string, or `null` when the value is absent. Both are text, even when they look like numbers, so code that wants a number must convert and check it (Section 23.11). A "snapshot" is the value at the moment the component was created. The viewer uses snapshots because it is created fresh for each document; a component that stays on screen while its parameters change would subscribe to changes instead.
 
 Navigation in code uses the `Router` service. Two methods appear in the project, and the difference is worth knowing: `router.navigate(['/account'], { queryParams: { required: 1 } })` builds an address from parts (which Angular encodes safely), while `router.navigateByUrl(returnUrl)` takes an address that is already a complete string. The login component uses the second for the saved `returnUrl`, and the first when it builds an address with query parameters.
 
-## Intermediate tier: Guards, forms and the trust boundary
+## Intermediate tier: Guards, forms, and the trust boundary
 
 *On a first read you can skip to "In this project"; Part IV comes back to this.*
 
@@ -159,13 +159,13 @@ Line by line:
 - `CanActivateFn` is the type of a guard function. It receives the route and a `state`; `state.url` is the address being visited.
 - `inject(SessionService)` and `inject(Router)` fetch services inside a plain function (Chapter 22).
 - `sessionService.isLoggedIn()` reads a computed signal (Chapter 21): true when a user is stored.
-- A guard may return `true`, `false`, or a **URL tree**, an object describing a redirect. `router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } })` builds "go to `/login?returnUrl=<where you wanted to go>`". Returning a URL tree is better than calling `navigate` from inside the guard, because the router can cancel the original navigation cleanly.
+- A guard may return `true`, `false`, or a **URL tree**, an object describing a redirect. `router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } })` builds "go to `/login?returnUrl=<where you wanted to go>`." Returning a URL tree is better than calling `navigate` from inside the guard, because the router can cancel the original navigation cleanly.
 - `roleGuard('ADMIN')` is a function that *builds* a guard: `(...roles: Role[])` collects any number of roles into an array, and the inner function first runs `authGuard`, then checks the role. A signed-out visitor to `/admin` is therefore sent to sign in, while a signed-in reader is sent to the documents list.
 - The middle `if` handles a special case: a person whose password was set by an administrator must choose their own before going anywhere else. The guard sends them to `/account` with `required=1`. The `!state.url.startsWith('/account')` part prevents an endless loop of redirects to the very page that fixes the problem.
 
 Because `restore()` runs at startup (Chapter 22, `provideAppInitializer`), the guard knows who is signed in before it first runs. Without that, a page reload would look "signed out" for a moment and bounce the reader to sign-in.
 
-The doc comment on `roleGuard` says it plainly: **UX only**. A guard runs in the reader's own browser, which the reader controls. The real check is the server's, on every call (Chapter 16). Guards exist so that honest users don't land on screens that would only show errors.
+The doc comment on `roleGuard` says it plainly: **UX only**, meaning a user-experience convenience. A guard runs in the reader's own browser, which the reader controls. The real check is the server's, on every call (Chapter 16). Guards exist so that honest users don't land on screens that would only show errors.
 
 ### 23.6 Worked example: four visits
 
@@ -225,11 +225,11 @@ sequenceDiagram
 
 *Figure 23.2 — A signed-out visit to a deep link, and the return trip after sign-in*
 
-*Text description:* A sequence diagram with five participants: the reader, the auth guard, the login component, the session service and the API. A signed-out reader visits a deep link and the guard redirects to the sign-in page with the address saved. The reader submits the form, the session service posts to the API and stores the returned user, and the login component cleans the saved address and navigates to it. Notice that the address travels in the sign-in address and back, with nothing stored in the browser.
+*Text description:* A sequence diagram with five participants: the reader, the auth guard, the login component, the session service, and the API. A signed-out reader visits a deep link and the guard redirects to the sign-in page with the address saved. The reader submits the form, the session service posts to the API and stores the returned user, and the login component cleans the saved address and navigates to it. Notice that the address travels in the sign-in address and back, with nothing stored in the browser.
 
 <!-- source: auth.guard.ts, login.component.ts (submit, safeReturnUrl), session.service.ts (login) at book-m6-final -->
 
-Notice that the reader ends on the page they originally asked for, with `?page=3` intact, without the frontend having stored anything: the address travelled inside the sign-in address and came back. If `mustChangePassword` were true, the login component would send the reader to the account page first, carrying the same `returnUrl` (Section 23.15).
+Notice that the reader ends on the page they originally asked for, with `?page=3` intact, without the frontend having stored anything: the address traveled inside the sign-in address and came back. If `mustChangePassword` were true, the login component would send the reader to the account page first, carrying the same `returnUrl` (Section 23.15).
 
 ### 23.7 Forms and client-side validation (and why it's not security)
 
@@ -322,7 +322,7 @@ function loginErrorMessage(err: HttpErrorResponse): string {
 
 *Path: `frontend/src/app/features/auth/login.component.ts`*
 
-A 429 here is the sign-in throttle from Chapter 16: too many wrong passwords. The response's `Retry-After` header gives seconds; the function turns them into whole minutes, at least one (`Math.max(1, Math.ceil(x / 60))`), and handles the singular ("1 minute") and plural. `?? 60` means "if the header is missing, assume 60 seconds". A 401 means wrong credentials; anything else gets a generic sentence. The message never says *which* of username or password was wrong, so the screen doesn't help someone guess which usernames exist.
+A 429 here is the sign-in throttle from Chapter 16: too many wrong passwords. The response's `Retry-After` header gives seconds; the function turns them into whole minutes, at least one (`Math.max(1, Math.ceil(x / 60))`), and handles the singular ("1 minute") and plural. `?? 60` means "if the header is missing, assume 60 seconds." A 401 means wrong credentials; anything else gets a generic sentence. The message never says *which* of username or password was wrong, so the screen doesn't help someone guess which usernames exist.
 
 ### 23.8 Cleaning `returnUrl`: what it protects, and what it doesn't
 
@@ -330,9 +330,9 @@ The saved address travels in a query parameter, and that parameter is controlled
 
 The classic attack is an **open redirect**: a site that, after sign-in, sends the browser to whatever address the link names, so a genuine sign-in page can be used to send a victim on to a lookalike site. That attack needs code that hands the raw string to the browser itself, for example by assigning it to `window.location` or using it as a link's address.
 
-This project's code doesn't do that. After signing in, the login component calls Angular's `router.navigateByUrl(returnUrl)` (Listing 23.4), and that method treats the string as an address *inside the application*, not as a web address. We checked this against Angular 22.1.7's own URL parser in a scratch project: `//evil.example/fake` is read as two path segments, `evil.example` and `fake`; `https://evil.example` becomes the single segment `https:`; and `javascript:alert(1)` becomes one segment `javascript:alert`. None of them leaves the site. With no matching route, the router falls through to the catch-all route, which shows the document list. So a crafted `returnUrl` cannot, through `navigateByUrl`, send the reader to another site, and the code as written has no path by which it could.
+This project's code doesn't do that. After signing in, the login component calls Angular's `router.navigateByUrl(returnUrl)` (Listing 23.4), and that method treats the string as an address *inside the application*, not as a web address. This was checked against Angular 22.1.7's own URL parser in a scratch project: `//evil.example/fake` is read as two path segments, `evil.example` and `fake`; `https://evil.example` becomes the single segment `https:`; and `javascript:alert(1)` becomes one segment `javascript:alert`. None of them leaves the site. With no matching route, the router falls through to the catch-all route, which shows the document list. So a crafted `returnUrl` cannot, through `navigateByUrl`, send the reader to another site, and the code as written has no path by which it could.
 
-Why then is there a check? The function's own comment states the intent: "Only ever navigate within the app". It is **defense in depth**, a second barrier in case the first one changes. It keeps `returnUrl` a plain in-app path (starting with a single `/`) so that:
+Why then is there a check? The function's own comment states the intent: "Only ever navigate within the app." It is **defense in depth**, a second barrier in case the first one changes. It keeps `returnUrl` a plain in-app path (starting with a single `/`) so that:
 
 - a strange value lands on the intended default, `/documents`, instead of being interpreted as an odd route;
 - the value is safe to reuse if a later change ever hands it to something that *would* trust it, such as a full-page redirect or a link; and
@@ -353,7 +353,7 @@ function safeReturnUrl(returnUrl: string | null): string {
 
 *Path: `frontend/src/app/features/auth/login.component.ts`*
 
-Read the condition as three questions, all of which must be yes: is there a value (`returnUrl &&`)? Does it start with a single `/` (an address inside this site)? And does it *not* start with `//`? A browser treats a leading `//` as "same scheme, different host", so a value like `//evil.example` is exactly what you would refuse to hand to a browser-level redirect. Angular's router, as tested earlier in this section, would not follow it off-site anyway. If any answer is no, the function returns the safe default, `/documents`. Table 23.2 runs it on some inputs:
+Read the condition as three questions, all of which must be yes: is there a value (`returnUrl &&`)? Does it start with a single `/` (an address inside this site)? And does it *not* start with `//`? A browser treats a leading `//` as "same scheme, different host," so a value like `//evil.example` is exactly what you would refuse to hand to a browser-level redirect. Angular's router, as tested earlier in this section, would not follow it off-site anyway. If any answer is no, the function returns the safe default, `/documents`. Table 23.2 runs it on some inputs:
 
 **Table 23.2 — `safeReturnUrl` on sample inputs**
 
@@ -363,13 +363,13 @@ Read the condition as three questions, all of which must be yes: is there a valu
 | `/viewer/abc?page=3` | `/viewer/abc?page=3` | Inside the app |
 | `//evil.example` | `/documents` | Starts with `//` |
 | `https://evil.example` | `/documents` | Doesn't start with `/` |
-| `viewer/abc` | `/documents` | Not absolute; refused to be safe |
+| `viewer/abc` | `/documents` | Not an absolute path; refused to be safe |
 
 This function has existed since the first frontend milestone (`book-m1-accounts`); it was written with the guard's `returnUrl` design, not added after an incident. The account screen (`account.component.ts`) applies the same rule to its own `returnUrl`. It is duplicated there rather than shared, which is a small piece of technical debt a maintainer might tidy.
 
 ### 23.9 Client-side validation is not security
 
-`required`, the 12-character minimum on the password form (`account.component.ts`), and the PDF-only and 50 MB checks in `upload.component.ts` are for the reader's benefit: fast feedback without a round trip. **None of it is security**, because anyone can bypass the browser and send requests directly. The upload component says so in its comment: the size constant "mirrors the server limit ... the server still enforces it". Chapter 13 covered the server-side validation that does the real work.
+`required`, the 12-character minimum on the password form (`account.component.ts`), and the PDF-only and 50 MB checks in `upload.component.ts` are for the reader's benefit: fast feedback without a round trip. **None of it is security**, because anyone can bypass the browser and send requests directly. The upload component says so in its comment: the size constant "mirrors the server limit ... the server still enforces it." Chapter 13 covered the server-side validation that does the real work.
 
 Why keep the client checks at all? Two reasons. Speed: telling someone their 60 MB file is too large before uploading it saves a long, useless upload. Kindness: an inline sentence next to a field is clearer than a generic error from the server. The rule of thumb is *validate twice, trust once*: check in the browser for the user, check on the server for the system, and only the second counts.
 
@@ -379,7 +379,7 @@ Why keep the client checks at all? Two reasons. Speed: telling someone their 60 
 
 Angular has two form styles. **Template-driven** forms, used here, put the setup in the template (`ngModel`) and suit small forms with a handful of fields. **Reactive** forms describe the form as objects in the class (form groups and controls with validators), which is more code up front and better for large or dynamic forms, complex cross-field rules, or heavy testing of form logic. The project's forms are small (sign in, change password, upload, share, a page number), and their validation is a few lines of plain code, so the lighter style wins. If a form grew to dozens of fields with interdependent rules, switching to reactive forms would be the natural step.
 
-## Advanced tier: Deep links, resuming and keyboard
+## Advanced tier: Deep links, resuming, and keyboard
 
 *On a first read you can skip to "In this project"; Part IV comes back to this.*
 
@@ -453,7 +453,7 @@ The viewer also has a small form for jumping to a page. It is a form without `ng
 
 *Path: `frontend/src/app/features/viewer/viewer.component.html`*
 
-(Excerpt: the closing of the form, the page count and the Go button are omitted.) `#pageInput` gives the input a name inside the template, so `pageInput.value` can be read when the form is submitted. `$event.preventDefault()` stops the browser's default form submission, which would reload the page. `inputmode="numeric"` asks phones for a number keypad. `[attr.aria-invalid]` sets an accessibility attribute only when there's an error (`null` removes it), and `aria-describedby` points to the error paragraph so screen readers read the message with the field. The `goToPage` method (in `viewer.component.ts`) checks the value is a whole number from 1 to the page count, and otherwise sets `pageInputError`, the same rule as for the URL.
+(Excerpt: the closing of the form, the page count, and the Go button are omitted.) `#pageInput` gives the input a name inside the template, so `pageInput.value` can be read when the form is submitted. `$event.preventDefault()` stops the browser's default form submission, which would reload the page. `inputmode="numeric"` asks phones for a number keypad. `[attr.aria-invalid]` sets an accessibility attribute only when there's an error (`null` removes it), and `aria-describedby` points to the error paragraph so screen readers read the message with the field. The `goToPage` method (in `viewer.component.ts`) checks the value is a whole number from 1 to the page count, and otherwise sets `pageInputError`, the same rule as for the URL.
 
 ### 23.13 Keyboard navigation
 
@@ -491,9 +491,9 @@ Readers expect arrows and Page Down to turn pages. The viewer listens for keys o
 
 *Path: `frontend/src/app/features/viewer/viewer.component.ts`*
 
-`@HostListener('document:keydown', ['$event'])` attaches a listener for key presses anywhere on the page and passes it the event. The first `if` lists when to do nothing. It stops when Ctrl, Meta or Alt is held (so browser shortcuts such as Ctrl+Plus still work). It stops while the page-number field or another text box has focus (so typing "12" doesn't turn pages). It stops when there is no document yet, or when access was lost. Otherwise the pressed key is looked up in a `Record` of actions (Chapter 19, Section 19.11). Unknown keys find nothing (`action` is `undefined`), so they fall through untouched; known ones call `preventDefault()` so the browser doesn't also scroll.
+`@HostListener('document:keydown', ['$event'])` attaches a listener for key presses anywhere on the page and passes it the event. The first `if` lists when to do nothing. It stops when Ctrl, Meta, or Alt is held (so browser shortcuts such as Ctrl+Plus still work). It stops while the page-number field or another text box has focus (so typing "12" doesn't turn pages). It stops when there is no document yet, or when access was lost. Otherwise the pressed key is looked up in a `Record` of actions (Chapter 19, Section 19.11). Unknown keys find nothing (`action` is `undefined`), so they fall through untouched; known ones call `preventDefault()` so the browser doesn't also scroll.
 
-Every page turn goes through the same `loadPage` method as the Prev/Next buttons, which is a security point stated in the code: "there is no shortcut route to a page", so signed URLs, watermarking and the rate limit apply identically. A keyboard user cannot get to a page any faster or less watched than a mouse user.
+Every page turn goes through the same `loadPage` method as the Prev/Next buttons, which is a security point stated in the code: "there is no shortcut route to a page," so signed URLs, watermarking, and the rate limit apply identically. A keyboard user cannot get to a page any faster or less watched than a mouse user.
 
 ### 23.14 Swiping on a phone
 
@@ -553,17 +553,17 @@ Afterward, `changePassword` in `SessionService` sets `mustChangePassword` to fal
 - **Handing `returnUrl` to a browser-level redirect unchecked.** Angular's `navigateByUrl` keeps you inside the app, but `window.location` or a link would not. See Section 23.8.
 - **Handling keys everywhere.** A document-wide key handler that doesn't check the event target steals keystrokes from text fields, and one that doesn't check modifier keys breaks Ctrl+F and Ctrl+Plus.
 - **Trusting query parameters.** `?page=abc` yields `NaN`, which is not an integer; always check before using a value from the address.
-- **Showing different errors for "no such user" and "wrong password".** It helps an attacker enumerate accounts. The login screen shows one message for both.
+- **Showing different errors for "no such user" and "wrong password."** It helps an attacker enumerate accounts. The login screen shows one message for both.
 
 ## In this project
 
 | File | First appears | What it does |
 |---|---|---|
-| `frontend/src/app/app.routes.ts` | book-m1-accounts (manage route at book-m2-documents) | URL to component map, lazy loading, guards |
-| `frontend/src/app/core/auth.guard.ts` | book-m1-accounts (password-change redirect at book-m5-platform) | `authGuard`, `roleGuard` |
-| `frontend/src/app/features/auth/login.component.*` | book-m1-accounts (idle notice at book-m4-reading, forced change at book-m5-platform) | Sign-in form, `safeReturnUrl`, error messages |
-| `frontend/src/app/features/auth/account.component.ts` | book-m1-accounts | Change-password form |
-| `frontend/src/app/features/viewer/viewer.component.ts` | book-m1-accounts (deep links and keys at book-m4-reading, swipe at book-m5-platform) | Page jump, deep links, keyboard, swipe |
+| `frontend/src/app/app.routes.ts` | `book-m1-accounts` (manage route at `book-m2-documents`) | URL to component map, lazy loading, guards |
+| `frontend/src/app/core/auth.guard.ts` | `book-m1-accounts` (password-change redirect at `book-m5-platform`) | `authGuard`, `roleGuard` |
+| `frontend/src/app/features/auth/login.component.*` | `book-m1-accounts` (idle notice at `book-m4-reading`, forced change at `book-m5-platform`) | Sign-in form, `safeReturnUrl`, error messages |
+| `frontend/src/app/features/auth/account.component.ts` | `book-m1-accounts` | Change-password form |
+| `frontend/src/app/features/viewer/viewer.component.ts` | `book-m1-accounts` (deep links and keys at `book-m4-reading`, swipe at `book-m5-platform`) | Page jump, deep links, keyboard, swipe |
 
 See one with `git show book-m4-reading:frontend/src/app/features/viewer/viewer.component.ts`.
 

@@ -1,19 +1,19 @@
 <!-- chapter: 4 | part: I | owner: writer-foundations | tag: book-m6-final | status: expanded -->
-# Chapter 4: Classes, objects, records and interfaces
+# Chapter 4: Classes, objects, records, and interfaces
 
-Chapter 3 gave you values, decisions, loops and methods. Real programs group these into larger pieces that model things: an account, a document, a tile. This chapter teaches classes and objects, records, enums, interfaces, packages and annotations, using the app's own account and document types as the examples. It also shows how objects are wired together, and tells the story of a bug that came from an object that was too trusting.
+Chapter 3 gave you values, decisions, loops, and methods. Real programs group these into larger pieces that model things: an account, a document, a tile. This chapter teaches classes and objects, records, enums, interfaces, packages, and annotations, using the app's own account and document types as the examples. It also shows how objects are wired together, and tells the story of a bug that came from an object that was too trusting.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
 - Explain the difference between a class and an object.
-- Write a class with private fields, a constructor, getters and a method that keeps a rule true.
+- Write a class with private fields, a constructor, getters, and a method that keeps a rule true.
 - Write a record and say when a record is a better choice than a class.
 - Write an enum for a fixed set of choices.
 - Explain what an interface is and why the app depends on interfaces.
 - Explain how objects receive the other objects they need.
-- Read a `package` line, an `import` line and a source-folder layout, and the four access levels.
+- Read a `package` line, an `import` line, and a source-folder layout, and name the four access levels.
 - Recognize an annotation and say what it is for.
 
 ## Prerequisites
@@ -26,7 +26,9 @@ By the end of this chapter, you will be able to:
 
 Suppose the app must keep track of accounts. Each account has a username, a role and a creation time. You could use three separate variables, but you would need a new set for every account. A class is a blueprint that groups such values together with the code that works on them. An **object** is one thing built from that blueprint. A class is "account"; the account for `pub.one` is an object of that class, and the account for `reader.one` is another object of the same class.
 
-**Analogy.** A class is a form with blank fields, and each object is a filled-in copy. The analogy breaks down in two ways. The same form can produce as many copies as you like while the program runs, and each copy is independent: changing one does not touch the others. And an object lives in the computer's memory only while the program runs; it disappears when the program ends unless the app saves it, which is what the database is for (Chapter 9). Unlike a paper form, a class can also carry behavior: it holds methods, not only blanks.
+**Analogy.** A class is a form with blank fields, and each object is a filled-in copy.
+
+**Where the analogy breaks down:** in two ways. The same form can produce as many copies as you like while the program runs, and each copy is independent: changing one does not touch the others. And an object lives in the computer's memory only while the program runs; it disappears when the program ends unless the app saves it, which is what the database is for (Chapter 9). Unlike a paper form, a class can also carry behavior: it holds methods, not only blanks.
 
 The values an object holds are its **fields**. A **constructor** is special code that runs when you create an object with `new`, and sets up its fields. Example 4.1 is a tiny teaching class, not the project's.
 
@@ -48,7 +50,7 @@ public class Account {
 }
 ```
 
-The constructor has the class's name and no return type. `this` means "this object", so `this.username = username` copies the parameter into the field. The method `recordFailure` belongs to each account and changes that account's own field. Creating and using objects:
+The constructor has the class's name and no return type. `this` means "this object," so `this.username = username` copies the parameter into the field. The method `recordFailure` belongs to each account and changes that account's own field. Creating and using objects:
 
 ```java
 Account a = new Account("pub.one");
@@ -163,7 +165,7 @@ The `Role` type of the `role` field is an enum, which we meet in Section 4.4. Th
 
 ### 4.3 Records for plain data
 
-Many types are plain bundles of values that never change: a page's dimensions, a row of a table. Writing a private field, constructor and getter for each is repetitive. A **record** gives you all of that in one line. When you declare `record Point(int x, int y) { }`, Java generates the constructor, the read methods `x()` and `y()`, and sensible `equals`, `hashCode` and `toString`. `equals` decides whether two objects count as the same value; `hashCode` is a fingerprint that collections use (Chapter 5); `toString` produces readable text. Record fields are always immutable.
+Many types are plain bundles of values that never change: a page's dimensions, a row of a table. Writing a private field, constructor, and getter for each is repetitive. A **record** gives you all of that in one line. When you declare `record Point(int x, int y) { }`, Java generates the constructor, the read methods `x()` and `y()`, and sensible `equals`, `hashCode` and `toString`. `equals` decides whether two objects count as the same value; `hashCode` is a fingerprint that collections use (Chapter 5); `toString` produces readable text. Record fields are always immutable.
 
 The app uses records everywhere data moves around. Here is one describing a rendered page.
 
@@ -189,7 +191,7 @@ public record PageInfo(
 
 *Path: `src/main/java/com/example/securedocviewer/model/PageInfo.java`*
 
-A note on the comment: it mentions a `<canvas>`, a drawing surface in the browser. That comment dates from the first milestone, whose static page drew tiles on a canvas. The Angular viewer in the finished app instead positions plain `div` elements and paints each tile as a CSS background image (Chapter 21), so the comment is stale at `book-m6-final`. A later documentation-only pull request (number 13, merged into `main` after the tag) corrected this comment in `PageInfo.java` and the matching sentence in the README, so a reader who clones `main` will not find it; the tags still say canvas. The record itself is unaffected. <!-- source: editor's note on OUTLINE 21.6; requests.md -->
+A note on the comment: it mentions a `<canvas>`, a drawing surface in the browser. That comment dates from the first milestone, whose static page drew tiles on a canvas. The Angular viewer in the finished app instead positions plain `div` elements and paints each tile as a CSS background image (CSS, Cascading Style Sheets, is the language that styles web pages; Chapter 21), so the comment is stale at `book-m6-final`. A later documentation-only pull request (number 13, merged into `main` after the tag) corrected this comment in `PageInfo.java` and the matching sentence in the README, so a reader who clones `main` will not find it; the tags still say canvas. The record itself is unaffected. <!-- source: editor's note on OUTLINE 21.6; requests.md -->
 
 You create one with `new PageInfo(1, 4, 3, 512, 1275, 1650)` and read it with `info.rows()`. Note that the read method is `rows()`, not `getRows()`. Listing 3.2 in Chapter 3 used exactly this: `pageInfo.rows()` and `pageInfo.cols()`. Records also compare by value, which a plain class does not:
 
@@ -233,7 +235,7 @@ public record SignedTilePayload(
 
 Why a record here? A signed payload must not change between the moment it is signed and the moment it is checked, and a record cannot be altered after creation. Chapter 17 explains what the signature covers.
 
-Records can also have **static methods**, which belong to the type and not to an object. Two real examples show a common pattern: a method that builds the record from something else. First, `Viewer`, the record the app uses to mean "the signed-in user an operation is for".
+Records can also have **static methods**, which belong to the type and not to an object. Two real examples show a common pattern: a method that builds the record from something else. First, `Viewer`, the record the app uses to mean "the signed-in user an operation is for."
 
 **Listing 4.5 — `Viewer.java` (book-m6-final, simplified: imports omitted)**
 
@@ -313,7 +315,7 @@ The project has a second enum, `Visibility`, with the values `PRIVATE` and `EVER
 
 A note on pacing. This tier and the next show a few real listings that use things you have not met yet. One is the framework Spring (Part II). Another is tests (Chapter 18). The last is two Java features taught in Chapter 5: `Optional`, and lambdas, which are small unnamed methods written with `->`. Each such spot is flagged right where it appears. Read these listings for the idea they illustrate and let the unfamiliar syntax pass; you will be able to read every line after Chapter 5, and you are welcome to come back then.
 
-### 4.5 Interfaces and why we depend on them
+### 4.5 Interfaces and why the app depends on them
 
 An **interface** lists methods that a type promises to offer, without saying how. Code that needs those methods depends on the interface and does not care which class supplies them. Example 4.3 is a teaching sketch.
 
@@ -337,7 +339,7 @@ Code that takes a `TileStore` works with either. A test can hand it the fake, so
 
 The project uses interfaces heavily, often without writing the implementation itself. Look at how the app declares its access to documents.
 
-**Listing 4.8 — `DocumentRepository.java` (book-m6-final, simplified: imports, Javadoc comments and six of the eight query methods omitted; four are cut at the `// ...` marker, one (`findVisibleTo`) before the first shown method and one (`findAllIds`) after the last)**
+**Listing 4.8 — `DocumentRepository.java` (book-m6-final, simplified: imports, Javadoc comments, and six of the eight query methods omitted; four are cut at the `// ...` marker, one (`findVisibleTo`) before the first shown method and one (`findAllIds`) after the last)**
 
 ```java
 public interface DocumentRepository extends JpaRepository<Document, String> {
@@ -384,9 +386,9 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
 *Path: `src/main/java/com/example/securedocviewer/security/DatabaseUserDetailsService.java`*
 
-`UserDetailsService` is an interface from Spring Security, the library that handles sign-in (Chapter 15). It promises one method: given a username, produce the details Spring Security needs to check a password. The framework does not know where the project keeps its accounts, so it depends on the interface. This class fulfills the promise by looking the account up in the database (using the repository from Section 4.5) and translating an `AppUser` into what the framework expects. `@Override` says "this method fulfills an interface promise", and the compiler checks that it really does: if you misspell `loadUserByUsername`, the build fails instead of the app misbehaving. This is a real swap point: to keep accounts somewhere else, you would write a different class that implements the same interface, and nothing that depends on the interface would change. <!-- source: DatabaseUserDetailsService.java at book-m6-final -->
+`UserDetailsService` is an interface from Spring Security, the library that handles sign-in (Chapter 15). It promises one method: given a username, produce the details Spring Security needs to check a password. The framework does not know where the project keeps its accounts, so it depends on the interface. This class fulfills the promise by looking the account up in the database (using the repository from Section 4.5) and translating an `AppUser` into what the framework expects. `@Override` says "this method fulfills an interface promise," and the compiler checks that it really does: if you misspell `loadUserByUsername`, the build fails instead of the app misbehaving. This is a real swap point: to keep accounts somewhere else, you would write a different class that implements the same interface, and nothing that depends on the interface would change. <!-- source: DatabaseUserDetailsService.java at book-m6-final -->
 
-*Read now, revisit later.* The chain `.orElseThrow(() -> new UsernameNotFoundException(...))` inside the method is Chapter 5's `Optional`: read it as "find the account, or else fail with this error". The `@Service` label is explained in Chapter 11.
+*Read now, revisit later.* The chain `.orElseThrow(() -> new UsernameNotFoundException(...))` inside the method is Chapter 5's `Optional`: read it as "find the account, or else fail with this error." The `@Service` label is explained in Chapter 11.
 
 **We simplify here.** Interfaces have more features, such as default methods. The app does not need them, so this book does not teach them.
 
@@ -452,7 +454,7 @@ flowchart LR
 
 The controller receives the web request and asks the service to do the work; the service applies the rules and asks the repository for data; the repository talks to the database. Each arrow is a constructor parameter. Part II builds exactly this layering.
 
-### 4.7 Packages, imports and access levels
+### 4.7 Packages, imports, and access levels
 
 A large program has hundreds of classes. **Packages** group them, like folders. The first line of each file declares its package, and the folder layout matches it. `PageInfo` is in `com.example.securedocviewer.model`, so its file sits in `src/main/java/com/example/securedocviewer/model/`.
 
@@ -491,11 +493,13 @@ Packages also matter for **access levels**, which decide who may use a class, fi
 
 `FileOperations` has no `public` in front of `class`, so only other classes in the `service` package can use it. That is a design choice: the file-moving helpers are an internal detail of tile handling, and hiding them stops other packages from depending on them. Make things as private as you can, and widen access only when there is a reason.
 
-## Advanced tier: Annotations, design and a real bug
+## Advanced tier: Annotations, design, and a real bug
+
+*On a first read you can skip to "In this project"; Chapters 11 and 14 come back to annotations.*
 
 ### 4.8 Annotations: a first look
 
-Look again at Listing 4.1. Lines that start with `@` are **annotations**: labels attached to code that tools read. `@Entity` tells the database library "this class maps to a table". `@Column(nullable = false, length = 64)` says the field maps to a column that cannot be empty and holds at most 64 characters. `@SpringBootApplication` in Listing 3.1 tells Spring where to start. `@Override` in Listing 4.9 is read by the compiler itself.
+Look again at Listing 4.1. Lines that start with `@` are **annotations**: labels attached to code that tools read. `@Entity` tells the database library "this class maps to a table." `@Column(nullable = false, length = 64)` says the field maps to a column that cannot be empty and holds at most 64 characters. `@SpringBootApplication` in Listing 3.1 tells Spring where to start. `@Override` in Listing 4.9 is read by the compiler itself.
 
 An annotation does not do anything by itself. A framework finds it, reads it, and acts. That is why the app's code can be so short: much behavior is declared with labels and carried out by libraries. Table 4.4 lists the ones you will meet most, and where each is taught.
 
@@ -512,7 +516,7 @@ The cost of annotations is that behavior becomes less visible. If something happ
 
 ### 4.9 A note on inheritance and composition
 
-You have seen `extends` twice: `interface DocumentRepository extends JpaRepository<...>` and, in Chapter 5, `class ResourceNotFoundException extends RuntimeException`. **Inheritance** means a new type takes everything an existing one has and adds to it. It is useful for a small set of cases, such as your own exception types, where you genuinely mean "is a kind of". For most other cases, the project prefers **composition**: a class *has* another object and uses it, as `RequestActors` has a `SessionKeys`. Composition keeps classes independent and easier to test. The app has almost no inheritance between its own classes, and this book teaches only what you have seen here.
+You have seen `extends` twice: `interface DocumentRepository extends JpaRepository<...>` and, in Chapter 5, `class ResourceNotFoundException extends RuntimeException`. **Inheritance** means a new type takes everything an existing one has and adds to it. It is useful for a small set of cases, such as your own exception types, where you genuinely mean "is a kind of." For most other cases, the project prefers **composition**: a class *has* another object and uses it, as `RequestActors` has a `SessionKeys`. Composition keeps classes independent and easier to test. The app has almost no inheritance between its own classes, and this book teaches only what you have seen here.
 
 ### 4.10 A real incident: the demoted publisher who could still manage documents
 
@@ -593,7 +597,7 @@ Write a record `TileRef(int row, int col)`, create one for row 2, column 1, and 
 
 ### Exercise 4.3 ★★ Add an enum
 
-After Chapter 7 shows you how to get the project, open `Visibility.java`. Then write your own enum `TileStatus` with three values of your choice for a tile that is queued, ready or failed. Use it in a `main` and compare a value with `==`. Work in a scratch folder, not in the repository.
+After Chapter 7 shows you how to get the project, open `Visibility.java`. Then write your own enum `TileStatus` with three values of your choice for a tile that is queued, ready, or failed. Use it in a `main` and compare a value with `==`. Work in a scratch folder, not in the repository.
 
 *Solution:* Appendix C, Exercise 4.3.
 

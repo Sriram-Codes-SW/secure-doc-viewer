@@ -1,7 +1,7 @@
 <!-- chapter: 18 | part: II | owner: writer-backend | tag: book-m6-final | status: expanded -->
 # Chapter 18: Testing the backend
 
-The Secure Document Viewer makes promises: a reader can't open someone else's document, a copied tile link stops working, twelve parallel password guesses don't become twelve guesses. Promises like these are only worth something if a machine checks them every time the code changes. This chapter teaches you how the project's more than 100 backend tests are built, from a three-line check of one method up to a test that starts a real MySQL database. It also shows how to write tests that fail for the right reasons and never fail at random.
+The Secure Document Viewer makes promises: a reader can't open someone else's document, a copied tile link stops working, 12 parallel password guesses don't become 12 guesses. Promises like these are only worth something if a machine checks them every time the code changes. This chapter teaches you how the project's more than 100 backend tests are built, from a three-line check of one method up to a test that starts a real MySQL database. It also shows how to write tests that fail for the right reasons and never fail at random.
 
 ## Learning objectives
 
@@ -17,17 +17,17 @@ By the end of this chapter, you will be able to:
 ## Prerequisites
 
 - Chapter 4: classes, objects, records and interfaces
-- Chapter 5: collections, lambdas and exceptions
+- Chapter 5: collections, lambdas, and exceptions
 - Chapter 6: Maven and the shape of a project
 - Chapters 11 to 16: the backend features under test (you don't need every detail; each test is explained where it appears)
 
 ## Beginner tier: Tests are questions the code must keep answering
 
-### 18.1 Why we test, and the test pyramid
+### 18.1 Why tests matter, and the test pyramid
 
 A test is code that runs other code and checks the result. Think of the checklist a pilot runs before every takeoff. The pilot knows how to fly, and still nobody trusts memory for the twelfth flight of the day: a checklist run the same way every time catches the step that was skipped. A test suite is the checklist for the code. It runs in minutes, doesn't get bored, and doesn't assume that the change you made "couldn't possibly affect that."
 
-**Where the analogy breaks down:** a checklist confirms that steps were performed. A test can only show that the cases someone *thought to write* still behave as expected. A green test run means "no known problem", never "no problem". Most of the skill in testing is choosing the cases well, and this chapter spends as much time on choosing as on syntax.
+**Where the analogy breaks down:** a checklist confirms that steps were performed. A test can only show that the cases someone *thought to write* still behave as expected. A green test run means "no known problem," never "no problem." Most of the skill in testing is choosing the cases well, and this chapter spends as much time on choosing as on syntax.
 
 Tests come in sizes, and a healthy project has a shape, usually drawn as a pyramid (Figure 18.1).
 
@@ -48,7 +48,7 @@ Tests come in sizes, and a healthy project has a shape, usually drawn as a pyram
 <!-- source: the test classes named in Table 18.1 at book-m6-final; the top layer is the Playwright end-to-end tests of Chapter 24 -->
 
 
-A **unit test** exercises one small piece, such as a method or a class, in isolation. It's fast (milliseconds) and, when it fails, it points at the broken line. An **integration test** starts several pieces together, for example the real security filters plus the real controllers plus a database, to check that they cooperate. It is slower and, when it fails, tells you *that* something is wrong but makes you search for where. A **system test** drives the finished app the way a user would (Chapter 24). You want many of the first kind, fewer of the second, and few of the third, because speed and precision fall as scope rises.
+A **unit test** exercises one small piece, such as a method, or a class, in isolation. It's fast (milliseconds) and, when it fails, it points at the broken line. An **integration test** starts several pieces together, for example the real security filters plus the real controllers plus a database, to check that they cooperate. It is slower and, when it fails, tells you *that* something is wrong but makes you search for where. A **system test** drives the finished app the way a user would (Chapter 24). You want many of the first kind, fewer of the second, and few of the third, because speed and precision fall as scope rises.
 
 The project's backend tests at `book-m6-final` follow this shape. Table 18.1 shows the levels with real examples.
 
@@ -57,7 +57,7 @@ The project's backend tests at `book-m6-final` follow this shape. Table 18.1 sho
 | Level | Example classes | What they prove |
 |---|---|---|
 | Pure logic | `TileGridTest`, `SignedUrlServiceTest`, `LoginThrottleTest`, `WatermarkServiceTest` | Rules and arithmetic, without Spring |
-| Logic with collaborators | `StorageJanitorTest`, `TileGenerationServiceTest` | Code that uses files or other classes, using fakes and temporary folders |
+| Logic with collaborators | `StorageJanitorTest`, `TileGenerationServiceTest` | Code that uses files or other classes, using fakes, and temporary folders |
 | Application with `MockMvc` | `ErrorContractTest`, `SecurityIntegrationTest`, `CsrfCookieFlowTest`, `SecurityHeadersTest`, `DocumentAccessIntegrationTest` | Endpoints, filters, error shape, access rules |
 | Real database | `MySqlIntegrationTest` | Migrations, row locks, UTC timestamps |
 
@@ -75,7 +75,7 @@ flowchart LR
 
 *Figure 18.2 — The layers of tests and what each one catches*
 
-*Text description:* Four rows, each with an arrow from a kind of test to the mistakes it catches best. Unit tests catch wrong rules and arithmetic, MockMvc tests catch wrong statuses, missing filters and wrong JSON, real-MySQL tests catch migration, row-lock and time-zone problems, and end-to-end browser tests catch broken user journeys and proxy behavior.
+*Text description:* Four rows, each with an arrow from a kind of test to the mistakes it catches best. Unit tests catch wrong rules and arithmetic, MockMvc tests catch wrong statuses, missing filters, and wrong JSON, real-MySQL tests catch migration, row-lock, and time-zone problems, and end-to-end browser tests catch broken user journeys and proxy behavior.
 
 <!-- source: the test classes named in Table 18.1 at book-m6-final; the end-to-end layer is Chapter 24 -->
 
@@ -128,9 +128,9 @@ The exact wording and numbers depend on your Maven version and on how many tests
 
 ### 18.3 Testing pure logic: `TileGridTest`
 
-The easiest code to test has no dependencies: you give it numbers, it returns numbers. `TileGrid` from Chapter 17 is exactly that, so its test needs no Spring, no database and no files.
+The easiest code to test has no dependencies: you give it numbers, it returns numbers. `TileGrid` from Chapter 17 is exactly that, so its test needs no Spring, no database, and no files.
 
-**Listing 18.1 — `TileGridTest.java` (`book-m6-final`, simplified: imports, the image-building helper and the last two tests are omitted)**
+**Listing 18.1 — `TileGridTest.java` (`book-m6-final`, simplified: imports, the image-building helper, and the last two tests are omitted)**
 
 ```java
 class TileGridTest {
@@ -168,7 +168,7 @@ class TileGridTest {
 
 *Path: `src/test/java/com/example/securedocviewer/service/TileGridTest.java`*
 
-Look at how the first test chooses its inputs. The rule under test is "round up", and the interesting values for a rounding rule are the boundaries. A page one pixel wide needs one tile. A page exactly one tile wide needs one tile, not two. A page one pixel *over* a tile (257 with 256-pixel tiles) needs two. The last two lines use the size of a US letter page in points, 612 by 792. They use a small tile of 50 so you can check the arithmetic by hand: 612 / 50 is 12.24, which rounds up to 13. Whenever you test a rule, ask "where does its behavior change?" and put values on both sides of that line.
+Look at how the first test chooses its inputs. The rule under test is "round up," and the interesting values for a rounding rule are the boundaries. A page one pixel wide needs one tile. A page exactly one tile wide needs one tile, not two. A page one pixel *over* a tile (257 with 256-pixel tiles) needs two. The last two lines use the size of a US letter page in points, 612 by 792. They use a small tile of 50 so you can check the arithmetic by hand: 612 / 50 is 12.24, which rounds up to 13. Whenever you test a rule, ask "where does its behavior change?" and put values on both sides of that line.
 
 The second test uses `assertThrows`, which deserves a slow reading:
 
@@ -184,7 +184,7 @@ The third test builds a random image (`noiseImage`, omitted here) and checks the
 
 Some mistakes are so common that it's worth naming them early.
 
-- **Testing several things in one test.** A test called `everythingWorks` that asserts twenty things stops at its first failure and hides the other nineteen. Prefer small tests with one reason to fail. (`tileCountRoundsUpForPartialTiles` makes five assertions, but they all check one rule.)
+- **Testing several things in one test.** A test called `everythingWorks` that asserts 20 things stops at its first failure and hides the other 19. Prefer small tests with one reason to fail. (`tileCountRoundsUpForPartialTiles` makes five assertions, but they all check one rule.)
 - **Asserting the code's own answer.** If you compute the expected value with the same formula the code uses, the test can never fail. Use a value you worked out by hand or know independently, like the 13 in Listing 18.1.
 - **Forgetting the failure cases.** Code that accepts good input is half the job. The project's tests spend as much effort on "the wrong password is refused" and "a tampered token is rejected" as on the happy path, because security is mostly about refusals.
 - **Tests that depend on each other's order.** JUnit doesn't promise an order. Each test must set up what it needs. Section 18.7 shows how tests that share one application avoid stepping on each other.
@@ -194,7 +194,7 @@ Some mistakes are so common that it's worth naming them early.
 
 *If you're reading for the first time, Sections 18.5 and 18.6 are the important ones here; you can skim 18.7 and come back once you have written a test or two.*
 
-### 18.5 Setting up: `@BeforeEach`, fakes and temporary folders
+### 18.5 Setting up: `@BeforeEach`, fakes, and temporary folders
 
 Real code has dependencies. `SignedUrlService` (Chapter 17) needs a `ViewerProperties` object holding the signing secret and the token lifetime. For a unit test you don't start Spring to get one; you create one by hand. `SignedUrlServiceTest` does it in a method annotated `@BeforeEach`, which JUnit runs before every test so each starts from a clean slate.
 
@@ -272,13 +272,13 @@ void keepsEveryVersionWhenTheCurrentOneIsMissing(@TempDir Path root) throws IOEx
 
 *Path: `src/test/java/com/example/securedocviewer/service/StorageJanitorTest.java`*
 
-Two names in the listing come from parts of the file that are not shown: `dir(...)` is a small helper that creates a folder and gives it a chosen age. `KNOWN` is a made-up document id used throughout the class. Read the test as a story. The database (the mock) says "the document's current tile version is 2". The disk contains only `v3`. The janitor must not delete it, because it might be the only surviving copy of someone's tiles. The last argument of `assertTrue` is a message shown if the assertion fails: `"the only tiles left must be kept for recovery"`. It states the *reason*, so a future developer who breaks this rule learns why it existed. Compare it with the first test in the same class. That test builds nine directories of different ages and checks that exactly four are removed. Each `assertTrue` or `assertFalse` carries a message that names the rule ("a very recent directory may be an upload in flight").
+Two names in the listing come from parts of the file that are not shown: `dir(...)` is a small helper that creates a folder and gives it a chosen age. `KNOWN` is a made-up document id used throughout the class. Read the test as a story. The database (the mock) says "the document's current tile version is 2." The disk contains only `v3`. The janitor must not delete it, because it might be the only surviving copy of someone's tiles. The last argument of `assertTrue` is a message shown if the assertion fails: `"the only tiles left must be kept for recovery"`. It states the *reason*, so a future developer who breaks this rule learns why it existed. Compare it with the first test in the same class. That test builds nine directories of different ages and checks that exactly four are removed. Each `assertTrue` or `assertFalse` carries a message that names the rule ("a very recent directory may be an upload in flight").
 
 This test also shows a rule about scope. It is about a *dangerous* action, deleting files, and it is written to prove what the action must **not** do. Tests for destructive code should spend most of their lines on the things that must survive.
 
 ### 18.6 Spring integration tests and `MockMvc`
 
-Most of the app's rules live in how classes work together: a request passes through security filters, reaches a controller, calls a service and returns JSON, or fails and passes through the exception handler. To test that, you start the application inside the test. Three annotations do it.
+Most of the app's rules live in how classes work together: a request passes through security filters, reaches a controller, calls a service, and returns JSON, or fails and passes through the exception handler. To test that, you start the application inside the test. Three annotations do it.
 
 - `@SpringBootTest` builds the full application context (Chapter 11): every bean, wired as in production.
 - `@ActiveProfiles("test")` makes Spring read `application-test.yml` in addition to `application.yml`.
@@ -323,7 +323,7 @@ class ErrorContractTest {
 
 *Path: `src/test/java/com/example/securedocviewer/controller/ErrorContractTest.java`*
 
-The `@Import` adds a small controller that exists only in this test and throws an exception on purpose, containing a fake SQL statement and a file path in its message. The test calls it and asserts that the response is `500`, that the JSON body says only "Something went wrong on our side. Reference: ...", and that neither the SQL nor the path leaks (Chapter 13). This is a nice example of a test that *creates* its own trouble. There is no natural way to make a healthy app throw an unexpected exception on demand, so the test supplies one.
+The `@Import` adds a small controller that exists only in this test and throws an exception on purpose, containing a fake SQL statement and a file path in its message. The test calls it and asserts that the response is `500`, that the JSON body says only "Something went wrong on our side. Reference: ...," and that neither the SQL nor the path leaks (Chapter 13). This is a nice example of a test that *creates* its own trouble. There is no natural way to make a healthy app throw an unexpected exception on demand, so the test supplies one.
 
 Now the workhorse. `SecurityIntegrationTest` has 22 tests, and its class comment says they are "one test per property the security review called out." A typical one:
 
@@ -370,7 +370,7 @@ private MockHttpSession login(String username, String password) throws Exception
 
 `user` creates an account through the real `UserAccountService`, passing `false` for "must change password" so the account is immediately usable. Its `catch` block shows the ordering problem from Section 18.4: Spring reuses one application (and one in-memory database) for all tests in the class, for speed, so a user created by an earlier test may already exist. Each test therefore creates users with *its own distinct name* (`lockout-user`, `cookie-user`, `plain-reader`), and the helper tolerates duplicates. Test data is shared state; naming it uniquely is how tests avoid stepping on each other.
 
-`login` performs a real sign-in through `AuthController`, then captures the resulting session so later requests can present it (`.session(reader)`). The `.with(csrf())` part attaches a valid CSRF token: without it, the request would be refused with `403` before reaching the controller (Chapter 16).
+`login` performs a real sign-in through `AuthController`, then captures the resulting session so later requests can present it (`.session(reader)`). The `.with(csrf())` part attaches a valid cross-site request forgery (CSRF) token: without it, the request would be refused with `403` before reaching the controller (Chapter 16).
 
 Here are three of the promises the class checks, with what each proves:
 
@@ -378,16 +378,16 @@ Here are three of the promises the class checks, with what each proves:
 - `readersCannotReachAdminOrUpload` signs in as a plain reader and asserts `403` on the admin endpoints and on upload, proving the role rules from Chapter 16 hold through the real chain.
 - `tileLinksOnlyWorkForTheSessionTheyWereIssuedTo` checks that a tile link issued to one session is refused for another, proving the session binding described in Chapter 17.
 
-Notice the shape: each test names a promise in plain language, arranges a user or two, acts by making requests, and asserts on status codes and JSON. That's the method to copy when you add a feature. Write the sentence "a reader must not be able to ...", turn it into a test name, and make it pass.
+Notice the shape: each test names a promise in plain language, arranges a user, or two, acts by making requests, and asserts on status codes and JSON. That's the method to copy when you add a feature. Write the sentence "a reader must not be able to ...," turn it into a test name, and make it pass.
 
 **Common mistakes with integration tests.**
 
-- *Mocking too much.* If you replace the security filters or the database with mocks, the test no longer proves the real thing works. Use the real components and fake only what is truly outside your control, such as the clock or the network.
+- *Mocking too much.* If you replace the security filters or the database with mocks, the test no longer proves the real thing works. Use the real components and fake only what is truly outside your control, such as the clock, or the network.
 - *Asserting only the status code.* A `400` is also what you get for a hundred unrelated reasons. Check the error message too, as these tests do with `jsonPath`.
 - *Sharing users between tests.* See Listing 18.7: give each test its own users.
 - *A test that passes because the setup failed.* A test asserting "this request is refused" would pass if the sign-in helper silently failed, and you'd never notice. That is why `login` asserts `isOk()` on the sign-in itself before returning the session.
 
-## Advanced tier: Real databases, time and concurrency
+## Advanced tier: Real databases, time, and concurrency
 
 *You can skip to "In this project" on a first read. Part IV comes back to the incidents described here.*
 
@@ -397,13 +397,13 @@ Test helpers are convenient, and every convenience hides something. The helper `
 
 That gap concealed a real bug. At sign-in, Spring's built-in rotation of the CSRF token deleted the `XSRF-TOKEN` cookie and then re-read the token from the request, which still had the old cookie. The browser was left with no token at all, and its first write after signing in failed with `403`. Tests using `csrf()` could not see it. The fix is in `AuthController.rotateCsrfToken` (Chapter 16), and the guard is `CsrfCookieFlowTest`, which behaves like a browser. It makes a first request and takes the `XSRF-TOKEN` cookie from the response, then signs in presenting that cookie and header. It checks three things: the sign-in response carries a *different, non-empty* token, the old token is refused, and the new one works immediately.
 
-Its class comment explains a constraint worth remembering. The `csrf()` helper permanently swaps the filter's repository in whatever application context it runs in, "after which no real XSRF-TOKEN cookie is ever written". So the test class is annotated `@DirtiesContext(classMode = BEFORE_CLASS)`, which tells Spring to throw away any cached application and start a fresh one. <!-- source: dossier bugs-and-findings C1, C2; AuthController.rotateCsrfToken and CsrfCookieFlowTest comments at book-m6-final --> The lesson is general: **when a test uses a shortcut for a mechanism, that mechanism needs at least one test without the shortcut.**
+Its class comment explains a constraint worth remembering. The `csrf()` helper permanently swaps the filter's repository in whatever application context it runs in, "after which no real XSRF-TOKEN cookie is ever written." So the test class is annotated `@DirtiesContext(classMode = BEFORE_CLASS)`, which tells Spring to throw away any cached application and start a fresh one. <!-- source: dossier bugs-and-findings C1, C2; AuthController.rotateCsrfToken and CsrfCookieFlowTest comments at book-m6-final --> The lesson is general: **when a test uses a shortcut for a mechanism, that mechanism needs at least one test without the shortcut.**
 
 ### 18.9 Testcontainers and a real MySQL
 
-H2 in MySQL mode is fast and needs nothing installed, but it is an imitation. Where H2 and MySQL differ (some SQL, locking behavior, how time zones convert), an H2 test can pass while the real database misbehaves. Chapter 14 listed three things the project wanted to check on the real engine: the Flyway migrations, the row lock that serializes PDF replacement, and UTC timestamps. **Testcontainers** is a library that starts a real service, here MySQL, in a Docker container (Chapter 10) for the duration of a test and throws it away afterward.
+H2 in MySQL mode is fast and needs nothing installed, but it is an imitation. Where H2 and MySQL differ (some SQL, locking behavior, how time zones convert), an H2 test can pass while the real database misbehaves. Chapter 14 listed three things the project wanted to check on the real engine: the Flyway migrations, the row lock that serializes PDF replacement, and timestamps in UTC (Coordinated Universal Time). **Testcontainers** is a library that starts a real service, here MySQL, in a Docker container (Chapter 10) for the duration of a test and throws it away afterward.
 
-**Listing 18.8 — `MySqlIntegrationTest.java` (`book-m6-final`, simplified: imports, the JVM time-zone setup and most tests are omitted)**
+**Listing 18.8 — `MySqlIntegrationTest.java` (`book-m6-final`, simplified: imports, the JVM time-zone setup, and most tests are omitted)**
 
 ```java
 @SpringBootTest
@@ -433,7 +433,7 @@ class MySqlIntegrationTest {
 
 *Path: `src/test/java/com/example/securedocviewer/MySqlIntegrationTest.java`*
 
-`@Container` tells Testcontainers to start the `mysql:8.4` image, the same version production runs, before the tests. `@ServiceConnection` is a Spring Boot feature that reads the container's address and credentials and points the application's datasource at it automatically, overriding the H2 URL from the test profile. `disabledWithoutDocker = true` makes the whole class *skip* (not fail) on a machine where Docker isn't running, which is the deliberate skip promised in Section 18.2. The class comment adds the safety net: "CI always has it", so the tests always run before code reaches `main`.
+`@Container` tells Testcontainers to start the `mysql:8.4` image, the same version production runs, before the tests. `@ServiceConnection` is a Spring Boot feature that reads the container's address and credentials and points the application's datasource at it automatically, overriding the H2 URL from the test profile. `disabledWithoutDocker = true` makes the whole class *skip* (not fail) on a machine where Docker isn't running, which is the deliberate skip promised in Section 18.2. The class comment adds the safety net: "CI always has it" (CI is continuous integration, the automatic build and test run described in Chapter 36), so the tests always run before code reaches `main`.
 
 The container is started with a server time zone of `-03:00`, and the test class also sets the JVM to `Asia/Kolkata` (in the omitted code). Those are two *different, non-UTC* zones on purpose. The test then writes an audit event and reads back the raw stored value to check that it is UTC anyway. The class comment describes the situation: a dev machine in India talking to a database set to local time. A test that only passes when everything is in UTC would prove nothing about that.
 
@@ -465,9 +465,9 @@ Then the assertions. Every response must be either `401` (the password was check
 
 ### 18.11 Flaky tests, and controlling time
 
-A **flaky test** passes and fails without any change to the code. It is corrosive: once people stop trusting a red build, they stop reading it. The project's history has one instance, fixed in commit `ec6c1c5` (pull request 9), "Fix flaky render-slot assertion in TileGenerationServiceTest".
+A **flaky test** passes and fails without any change to the code. It is corrosive: once people stop trusting a red build, they stop reading it. The project's history has one instance, fixed in commit `ec6c1c5` (pull request 9), "Fix flaky render-slot assertion in TileGenerationServiceTest."
 
-**The problem.** The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` makes a render time out, and then asserted that every render slot was free at the same instant the second render returned. **How it was found.** The build on the main branch failed once, after an earlier pull request merged. **The cause.** The render thread frees its slot in a `finally` block that runs *right after* the caller has its result, so on a fast machine the assertion could land in that gap and read 0 where it expected 1. **The fix.** The test now waits, within a limit, for the counters to reach the expected value, and only then asserts. Production behavior was unchanged, because in production the slot frees microseconds after the upload returns. <!-- source: PR #9 description; commit ec6c1c5 --> You can see the pattern in the test. A loop of the form "until a deadline, look; if right, stop; otherwise sleep 100 ms" is followed by the real assertion, with the comment "allow a moment rather than checking at the same instant."
+**The problem.** The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` made a render time out, and then asserted that every render slot was free at the same instant the second render returned. **How it was found.** The build on the main branch failed once, after an earlier pull request merged. **The cause.** The render thread frees its slot in a `finally` block that runs *right after* the caller has its result, so on a fast machine the assertion could land in that gap and read 0 where it expected 1. **The fix.** The test now waits, within a limit, for the counters to reach the expected value, and only then asserts. Production behavior was unchanged, because in production the slot frees microseconds after the upload returns. <!-- source: PR #9 description; commit ec6c1c5 --> You can see the pattern in the test. A loop of the form "until a deadline, look; if right, stop; otherwise sleep 100 ms" is followed by the real assertion, with the comment "allow a moment rather than checking at the same instant."
 
 **The lesson.** A test that checks a state at the exact moment a result returns is racing the code it tests. Wait *for a condition*, with a generous limit, never for a fixed guess of how long something takes.
 
@@ -516,7 +516,7 @@ In `TileGridTest`, add a test that `TileGrid.tileCount(512, 512)` is 1 and `Tile
 
 Write a new test class that starts the application like `ErrorContractTest` does and asserts that `GET /api/admin/audit` without signing in returns `401` with the error `Sign-in required.`. Then change the test to sign in as a reader (copy the `user` and `login` helpers from Listing 18.7) and assert `403`. What is the difference between the two failures, and which layer of the app produces each?
 
-*Hint:* the first is "we don't know who you are", the second is "we know, and you may not".
+*Hint:* the first is "we don't know who you are," the second is "we know, and you may not."
 
 *Solution:* Appendix C, Exercise 18.3.
 
@@ -534,7 +534,7 @@ In a scratch copy, remove the `start.await()` call from the burst test and run i
 
 ### Exercise 18.6 ★★★ Design a test for a promise
 
-Pick one promise from the app that has no test of its own (for example, that a document unshared from a user stops serving new tiles to them). Write the promise as a one-line test name, list the arrange, act and assert steps, and say which level of the pyramid it belongs to and why. Implement it if you can.
+Pick one promise from the app that has no test of its own (for example, that a document unshared from a user stops serving new tiles to them). Write the promise as a one-line test name, list the arrange, act, and assert steps, and say which level of the pyramid it belongs to and why. Implement it if you can.
 
 *Solution:* Appendix C, Exercise 18.6 (a worked outline).
 
@@ -543,8 +543,8 @@ Pick one promise from the app that has no test of its own (for example, that a d
 - Tests form a pyramid: many fast method-level tests, fewer application tests, few whole-system tests. Choose the lowest level that can prove the promise.
 - A JUnit 5 test is a `@Test` method following arrange, act, assert; its name should read as a sentence describing behavior.
 - Choose inputs at the boundaries where behavior changes, and spend as many tests on refusals as on successes.
-- `@BeforeEach`, `@TempDir` and Mockito mocks let you test code with collaborators, and `assertTrue` messages should state the reason for the rule.
-- `@SpringBootTest` with `MockMvc` runs requests through the real filters, controllers and handlers; share the application but not the data.
+- `@BeforeEach`, `@TempDir`, and Mockito mocks let you test code with collaborators, and `assertTrue` messages should state the reason for the rule.
+- `@SpringBootTest` with `MockMvc` runs requests through the real filters, controllers, and handlers; share the application but not the data.
 - H2 in MySQL mode gives speed; Testcontainers gives a real MySQL for what H2 can't vouch for, and a test that uses a shortcut needs a partner test without it.
 - Concurrency tests use latches to force a collision; flaky tests are fixed by waiting for conditions and injecting clocks, never by guessing how long something takes.
 

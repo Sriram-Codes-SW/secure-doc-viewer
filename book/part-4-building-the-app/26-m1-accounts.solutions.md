@@ -16,6 +16,7 @@ Rules match top to bottom, and the last one catches everything nobody thought of
 - `a` stays `a`: rejected, fewer than 3 characters.
 - `Carol!` becomes `carol!`: rejected, because `!` is not in `[a-z0-9._-]`.
 - `dave.smith` stays `dave.smith`: accepted.
+
 (All of them also need an acceptable password of 12 to 128 characters and a role, and must not already exist.)
 
 ### Exercise 26.4 ★★ Sliding window

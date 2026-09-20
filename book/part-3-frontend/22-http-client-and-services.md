@@ -8,10 +8,10 @@ A screen with no data is a mockup. In this chapter you follow a request from a b
 By the end of this chapter, you will be able to:
 
 - Explain what a service is and how Angular's dependency injection provides one to a component.
-- Write a typed `HttpClient` call for a GET, a POST and a file upload, and read the ones in `documents.service.ts`.
-- Explain how the CSRF cookie becomes a request header, and where the session cookie is handled.
+- Write a typed `HttpClient` call for a GET, a POST, and a file upload, and read the ones in `documents.service.ts`.
+- Explain how the Cross-Site Request Forgery (CSRF) cookie becomes a request header, and where the session cookie is handled.
 - Read `session.interceptor.ts` and say what happens on a 401.
-- Explain how the viewer reacts to 429, 401, 404 and 410 responses when fetching tiles.
+- Explain how the viewer reacts to 429, 401, 404, and 410 responses when fetching tiles.
 - Explain the idle warning and why background polling must not keep a session alive.
 - Read an RxJS pipeline that uses `debounceTime`, `switchMap` and `catchError`, and say why each operator is placed where it is.
 - Explain what the Content-Security-Policy header allows and how it constrains the frontend.
@@ -19,9 +19,9 @@ By the end of this chapter, you will be able to:
 ## Prerequisites
 
 - Chapter 8: HTTP requests, status codes, cookies.
-- Chapter 12: the REST endpoints this chapter calls.
+- Chapter 12: the REST (representational state transfer) endpoints this chapter calls.
 - Chapter 16: CSRF protection and rate limiting on the server.
-- Chapters 19–21: TypeScript, Observables, components and signals.
+- Chapters 19–21: TypeScript, Observables, components, and signals.
 
 ## Beginner tier: A service is a shared helper
 
@@ -55,7 +55,7 @@ export class DocumentsService {
 
 - `providedIn: 'root'` means one shared instance for the whole app.
 - `constructor(private readonly http: HttpClient) {}` asks Angular for an `HttpClient`. The words `private readonly` in front of the parameter are TypeScript shorthand that also create a field named `http`. This is constructor injection, as in Chapter 11.
-- `list()` returns `Observable<DocumentSummary[]>` (Chapter 19): a promise of a list of summaries. Nothing is sent until someone calls `.subscribe(...)`.
+- `list()` returns `Observable<DocumentSummary[]>` (Chapter 19): a stand-in for a list of summaries that will arrive later. Nothing is sent until someone calls `.subscribe(...)`.
 - `encodeURIComponent(documentId)` makes the id safe to put in a URL path, so a strange character can't change which endpoint is called.
 
 The `API_BASE_URL` constant (`core/config.ts`) is the empty string, so the resulting address is the relative URL `/api/documents`. Section 22.12 explains why that matters.
@@ -206,7 +206,7 @@ sequenceDiagram
 
 *Figure 22.1 — A write request from the browser to the API*
 
-*Text description:* A sequence diagram with five participants: the component, HttpClient, the session interceptor, nginx and Spring Boot. The component posts a request, HttpClient copies the XSRF cookie into a request header, and the request passes through the interceptor and nginx to Spring Boot. The response comes back the same way. If the status is 401 on any address except the sign-in and who-am-I endpoints, the interceptor signs the reader out locally and redirects to the sign-in page. Otherwise the response, or the error, goes back to the component.
+*Text description:* A sequence diagram with five participants: the component, HttpClient, the session interceptor, nginx, and Spring Boot. The component posts a request, HttpClient copies the anti-forgery cookie into a request header, and the request passes through the interceptor and nginx to Spring Boot. The response comes back the same way. If the status is 401 on any address except the sign-in and who-am-I endpoints, the interceptor signs the reader out locally and redirects to the sign-in page. Otherwise the response, or the error, goes back to the component.
 
 <!-- source: app.config.ts, session.interceptor.ts and nginx.conf at book-m6-final; XSRF handling is Angular's built-in default -->
 
@@ -233,16 +233,16 @@ An **interceptor** is a function that sees every request and response that passe
 
 *Path: `frontend/src/app/core/session.interceptor.ts`*
 
-- A **401** means "not authenticated". Whatever request received it, the session is gone (timed out, ended elsewhere, or revoked by an administrator), so the interceptor clears local state and sends the reader to the sign-in page, remembering where they were in `returnUrl`.
-- The exception is `/api/auth/me` and `/api/auth/login` (the `AUTH_PROBES`): a 401 there means "not signed in" or "wrong password", and redirecting would loop.
+- A **401** means "not authenticated." Whatever request received it, the session is gone (timed out, ended elsewhere, or revoked by an administrator), so the interceptor clears local state and sends the reader to the sign-in page, remembering where they were in `returnUrl`.
+- The exception is `/api/auth/me` and `/api/auth/login` (the `AUTH_PROBES`): a 401 there means "not signed in" or "wrong password," and redirecting would loop.
 - A **403** with `passwordChangeRequired` sends a user whose password was set by an administrator to the account page (Chapter 23).
 - `throwError(() => error)` passes the failure on, so the calling component's own `error:` handler still runs.
 
 The interceptor also has a `tap` step, added at `book-m4-reading`, that calls `sessionService.touch()` on every successful response to record activity for the idle warning (Section 22.8).
 
-### 22.6 Loading, error and empty states
+### 22.6 Loading, error, and empty states
 
-Every screen that loads data has four states, and the project treats each as a design decision, not an afterthought. *Loading* shows "Loading…". *Error* is a sentence saying what failed, in `role="alert"` so screen assistants announce it. *Empty* says "No documents yet", with different advice for people who can upload. *Content* is the list itself. Error messages from the server are shown when they exist (`err.error?.error`), falling back to a generic sentence; the backend's error contract (Chapter 13) guarantees they carry no internals.
+Every screen that loads data has four states, and the project treats each as a design decision, not an afterthought. *Loading* shows "Loading…". *Error* is a sentence saying what failed, in `role="alert"` so screen readers announce it. *Empty* says "No documents yet," with different advice for people who can upload. *Content* is the list itself. Error messages from the server are shown when they exist (`err.error?.error`), falling back to a generic sentence; the backend's error contract (Chapter 13) guarantees they carry no internals.
 
 ### 22.7 Handling 429 with `Retry-After`, and 410 Gone
 
@@ -281,8 +281,8 @@ Each status has its own meaning and its own recovery:
 - **200:** the response body is a PNG. `URL.createObjectURL(blob)` makes a temporary `blob:` address the tile's CSS background can use (Chapter 21).
 - **429 or 503:** too many requests, or the server is briefly busy. The `Retry-After` header says how many seconds to wait. The viewer stops issuing further requests (they would be rejected too), shows "Viewing speed limit reached: N of M tiles loaded. The rest of this page will load in Ns" and counts down each second. When the countdown ends it asks for a *fresh* grid of signed URLs, because waiting can outlast the old URLs' lifetime. If `Retry-After` is missing or unusable, it waits 5 seconds (`FALLBACK_RETRY_AFTER_SECONDS`).
 - **401:** a tile URL expired before the worker reached it, or the session is gone. The viewer re-issues the grid once (`allowUrlReissue`); if the session really is gone, that request fails with 401 and the interceptor signs the user out.
-- **404:** the document was unshared or deleted while open (access is re-checked on every tile), so the viewer shows an "no longer available to you" state.
-- **410 Gone:** the owner replaced the PDF; these URLs point at the old rendering. The viewer reloads the document description and shows a notice, "This document was updated while you were reading". It passes the stale version number so that if the reload finds the same version, it stops with an error instead of looping forever (a case the spec `viewer.component.spec.ts` covers).
+- **404:** the document was unshared or deleted while open (access is re-checked on every tile), so the viewer shows a "no longer available to you" state.
+- **410 Gone:** the owner replaced the PDF; these URLs point at the old rendering. The viewer reloads the document description and shows a notice, "This document was updated while you were reading." It passes the stale version number so that if the reload finds the same version, it stops with an error instead of looping forever (a case the spec `viewer.component.spec.ts` covers).
 
 ### 22.8 Session state and idle warnings
 
@@ -372,14 +372,14 @@ When an owner shares a document, the manage screen suggests usernames as they ty
 
 - `debounceTime(200)` waits until 200 milliseconds pass without a new value, so fast typing produces one search, not one per letter.
 - `distinctUntilChanged()` ignores a value identical to the previous one.
-- `switchMap(...)` starts a request for the latest value and **cancels** the previous one if it's still running, so a slow answer for "al" can never overwrite a fast answer for "alice". Short queries skip the request entirely, mirroring the server's rule, by returning `of([])`, an Observable that immediately emits an empty list.
+- `switchMap(...)` starts a request for the latest value and **cancels** the previous one if it's still running, so a slow answer for "al" can never overwrite a fast answer for "alice." Short queries skip the request entirely, mirroring the server's rule, by returning `of([])`, an Observable that immediately emits an empty list.
 - `catchError(() => of([]))` sits *inside* the `switchMap`, on the request only. That placement matters: an error caught on the outer pipeline would end the whole stream and suggestions would stop working forever after one failure. Caught on the inner request, one failed search yields an empty list and the stream lives on. The same care appears in the admin dashboard's polling, whose comment says "One failed refresh must not end the polling for good."
 
 The final `subscribe` filters the suggestions to hide the owner and anyone the document is already shared with, using a `Set` for fast lookups. The service method underneath builds the query safely: `this.http.get<string[]>(`${API_BASE_URL}/api/users`, { params: new HttpParams().set('q', prefix) })`. `HttpParams` encodes the value, so a prefix containing `&` or `#` can't alter the address.
 
 ### 22.11 Why cookies and not tokens in web storage
 
-The obvious alternative to what this chapter shows is the pattern many tutorials teach: after sign-in the server returns a token, the frontend saves it in `localStorage`, and an interceptor adds an `Authorization` header to every request. It has real advantages: it works across different origins with no cookie rules, and it suits mobile apps and APIs used by other programs. The project chose otherwise, and the comment on `SessionService` states why: "The credential itself is an httpOnly cookie the browser manages — nothing secret is held here or in web storage." An `HttpOnly` cookie can't be read by JavaScript, so a script injected through some bug in the page (a cross-site scripting attack) can't steal it. A token in `localStorage` can be read by any script on the page. The trade-off is that cookies are sent automatically, which is what makes CSRF possible and why the CSRF header (Section 22.5) is needed, and why the app must live on one origin. Neither approach is free; the project accepted the second set of costs in exchange for the first set of protections, and its content-security policy (Section 22.12) adds a further barrier against injected scripts.
+The obvious alternative to what this chapter shows is the pattern many tutorials teach: after sign-in the server returns a token, the frontend saves it in `localStorage`, and an interceptor adds an `Authorization` header to every request. It has real advantages: it works across different origins with no cookie rules, and it suits mobile apps and APIs used by other programs. The project chose otherwise, and the comment on `SessionService` states why: "The credential itself is an httpOnly cookie the browser manages — nothing secret is held here or in web storage." An `HttpOnly` cookie can't be read by JavaScript, so a script injected through some bug in the page (a cross-site scripting attack) can't steal it. A token in `localStorage` can be read by any script on the page. The trade-off is that cookies are sent automatically, which is what makes CSRF possible and why the CSRF header (Section 22.5) is needed, and why the app must live on one origin. Neither approach is free; the project accepted the second set of costs in exchange for the first set of protections, and its content security policy (Section 22.12) adds a further barrier against injected scripts.
 
 ## Advanced tier: One origin, and quiet polling
 
@@ -407,7 +407,7 @@ Chapter 20 showed the development proxy. In production, `frontend/nginx.conf` do
 
 *Path: `frontend/nginx.conf`*
 
-The comment records a real security fix (fix commit `2d82253`, pull request 1). During a live test through nginx, one of the project's AI review agents found that the proxy appended to a client-supplied `X-Forwarded-For` header and the backend trusted it, so changing the header on each attempt reset the sign-in throttle. The fix made nginx overwrite the header with the real peer address. An end-to-end test in `e2e/secure-viewing.spec.ts` now sends six wrong passwords with different spoofed addresses and expects the sixth to be refused with 429 (Chapter 24). The same file sets a Content-Security-Policy for the app's pages that allows images only from `'self'`, `blob:` and `data:`; the `blob:` allowance is exactly what the viewer's tiles need.
+The comment records a real security fix (fix commit `2d82253`, pull request 1). During a live test through nginx, one of the project's AI review agents found that the proxy appended to a client-supplied `X-Forwarded-For` header and the backend trusted it, so changing the header on each attempt reset the sign-in throttle. The fix made nginx overwrite the header with the real peer address. An end-to-end test in `e2e/secure-viewing.spec.ts` now sends six wrong passwords with different spoofed addresses and expects the sixth to be refused with 429 (Chapter 24). The same file sets a Content Security Policy for the app's pages that allows images only from `'self'`, `blob:` and `data:`; the `blob:` allowance is exactly what the viewer's tiles need.
 
 ### 22.13 Polling that must not keep a session alive
 
@@ -429,7 +429,7 @@ The doc comment on `shouldPoll` says why: "An unattended admin page must not kee
 
 ### 22.14 The throttle countdown, mechanically
 
-Section 22.7 described what the viewer shows when it is throttled. Here is how the countdown is built, because it combines two timers, a signal and a guard against stale work:
+Section 22.7 described what the viewer shows when it is throttled. Here is how the countdown is built, because it combines two timers, a signal, and a guard against stale work:
 
 **Listing 22.13 — `viewer.component.ts` (book-m6-final, excerpt: `startThrottleCountdown` and `parseRetryAfter`)**
 
@@ -461,7 +461,7 @@ function parseRetryAfter(header: string | null): number {
 
 (Excerpt: the two pieces are not adjacent in the file; `parseRetryAfter` is a plain function after the class.) Step by step:
 
-1. `parseRetryAfter` turns the `Retry-After` header into whole seconds. `Number(null)` is 0 and `Number('abc')` is `NaN`, so the check `Number.isFinite(seconds) && seconds > 0` rejects a missing, garbled or zero header and falls back to 5 seconds. `Math.ceil` rounds a fractional wait up, never down, so the retry isn't sent a moment too early.
+1. `parseRetryAfter` turns the `Retry-After` header into whole seconds. `Number(null)` is 0 and `Number('abc')` is `NaN`, so the check `Number.isFinite(seconds) && seconds > 0` rejects a missing, garbled, or zero header, and falls back to 5 seconds. `Math.ceil` rounds a fractional wait up, never down, so the retry isn't sent a moment too early.
 2. `startThrottleCountdown` first clears any earlier countdown (`clearThrottle`), so two can't overlap, then puts the number of seconds in the `throttledSeconds` signal, which the template shows ("will load in 12s").
 3. `setInterval` ticks once a second and lowers the signal, never lower than zero. This timer is purely cosmetic; it doesn't decide when to retry.
 4. `setTimeout` fires once, after the whole wait, and *is* the retry. It asks for a fresh grid of signed URLs (`requestGrid`), not for the old URLs to be tried again, because the tokens in them may have expired while the reader waited (Chapter 25).
@@ -469,7 +469,7 @@ function parseRetryAfter(header: string | null): number {
 
 Splitting the display timer from the action timer is a small robustness choice: if the display drifted or a tab's timers were slowed by the browser, the retry would still happen at the right moment.
 
-### 22.15 The Content-Security Policy
+### 22.15 The Content Security Policy
 
 nginx sends one more protection for the app's own pages, in the `location /` block:
 
@@ -481,7 +481,7 @@ nginx sends one more protection for the app's own pages, in the `location /` blo
 
 *Path: `frontend/nginx.conf`*
 
-A Content-Security-Policy (CSP) is a header that tells the browser which sources of content the page may use. Anything else is blocked, which limits what an injected script could do. Read the directives as a list of rules:
+A Content Security Policy (CSP) is a header that tells the browser which sources of content the page may use. Anything else is blocked, which limits what an injected script could do. Read the directives as a list of rules:
 
 - `default-src 'self'` allows resources only from the app's own origin unless a later directive says otherwise.
 - `script-src 'self'` allows scripts only from this origin (no inline scripts, and no scripts from other sites).
@@ -496,7 +496,7 @@ The CSP explains a constraint on the frontend code: tiles must come from `blob:`
 
 ## Common mistakes
 
-- **Forgetting to subscribe.** A service method that returns an Observable does nothing on its own. If a save button "does nothing", check that something subscribes.
+- **Forgetting to subscribe.** A service method that returns an Observable does nothing on its own. If a save button "does nothing," check that something subscribes.
 - **Subscribing twice by accident.** Two subscriptions send two requests. If one Observable feeds two places, share the result in a signal instead.
 - **Putting `catchError` in the wrong place.** Caught on an outer, long-lived pipeline, an error ends the stream (Section 22.10). Catch it on the inner request.
 - **Building URLs by string concatenation.** Use `encodeURIComponent` for path parts and `HttpParams` for query values, as the project does, so user input can't change the address.
@@ -505,19 +505,19 @@ The CSP explains a constraint on the frontend code: tiles must come from `blob:`
 - **Forgetting the CSRF header in a raw client.** Angular adds it for you; `curl` and Playwright's raw API client don't (Chapter 24).
 - **Retrying with old signed URLs.** After a wait, ask for fresh ones, as the viewer does.
 - **Polling without a stop rule.** Background requests count as activity and keep sessions alive; see Section 22.13.
-- **Assuming the `<Type>` on `get<Type>` checks anything.** It is a promise to the compiler only (Chapter 19, Section 19.12).
+- **Assuming the `<Type>` on `get<Type>` checks anything.** It is a promise to the compiler only (Chapter 19, Section 19.9).
 
 ## In this project
 
 | File | First appears | What it does |
 |---|---|---|
-| `frontend/src/app/core/session.service.ts` | book-m1-accounts | Who is signed in, as signals; login, logout, restore |
-| `frontend/src/app/core/session.interceptor.ts` | book-m1-accounts (activity and 403 handling later) | 401 handling |
-| `frontend/src/app/app.config.ts` | book-m1-accounts | Providers: router, HttpClient, startup restore |
-| `frontend/src/app/features/documents/documents.service.ts` | book-m1-accounts (grew in m2) | Document API calls |
-| `frontend/src/app/features/viewer/viewer.component.ts` | book-m1-accounts | Tile fetch pool, throttle countdown (429) and 401 handling from m1; tile 404 handling by m4; 410 Gone and replaced-document reload from m5 |
-| `frontend/src/app/core/idle.ts` | book-m4-reading | Idle-timeout arithmetic |
-| `frontend/nginx.conf` | book-m5-platform | Production same-origin proxy and headers |
+| `frontend/src/app/core/session.service.ts` | `book-m1-accounts` | Who is signed in, as signals; login, logout, restore |
+| `frontend/src/app/core/session.interceptor.ts` | `book-m1-accounts` (activity and 403 handling later) | 401 handling |
+| `frontend/src/app/app.config.ts` | `book-m1-accounts` | Providers: router, HttpClient, startup restore |
+| `frontend/src/app/features/documents/documents.service.ts` | `book-m1-accounts` (grew in m2) | Document API calls |
+| `frontend/src/app/features/viewer/viewer.component.ts` | `book-m1-accounts` | Tile fetch pool, throttle countdown (429) and 401 handling from m1; tile 404 handling by m4; 410 Gone and replaced-document reload from m5 |
+| `frontend/src/app/core/idle.ts` | `book-m4-reading` | Idle-timeout arithmetic |
+| `frontend/nginx.conf` | `book-m5-platform` | Production same-origin proxy and headers |
 
 See one with `git show book-m6-final:frontend/src/app/core/session.interceptor.ts`.
 
@@ -565,12 +565,12 @@ In Listing 22.10, suppose `switchMap` were replaced by `mergeMap`, which does no
 - Services are shared classes injected through the constructor; `providedIn: 'root'` gives one instance.
 - `HttpClient` methods return Observables and do nothing until subscribed; typing the response is a promise, not a check.
 - No token is stored in JavaScript: the session cookie is `HttpOnly`, and Angular copies the CSRF cookie into a header by default.
-- The interceptor turns a 401 into a clean return to sign-in; the sign-in and me endpoints are exempt.
-- The viewer uses `fetch()` so it can see 429, 401, 404 and 410, and responds differently to each.
+- The interceptor turns a 401 into a clean return to sign-in; the sign-in and who-am-I (`/api/auth/me`) endpoints are exempt.
+- The viewer uses `fetch()` so it can see 429, 401, 404, and 410, and responds differently to each.
 - The idle warning is arithmetic on the last request time; polling must never count as activity.
-- One origin, via the dev proxy and nginx, is what makes the cookies work without CORS.
+- One origin, via the dev proxy, and nginx, is what makes the cookies work without CORS.
 
-Next, Chapter 23 covers the pages themselves: routing, guards and forms.
+Next, Chapter 23 covers the pages themselves: routing, guards, and forms.
 
 ## Further reading
 

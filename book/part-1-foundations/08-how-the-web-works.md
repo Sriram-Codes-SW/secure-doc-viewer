@@ -1,7 +1,7 @@
 <!-- chapter: 8 | part: I | owner: writer-foundations | tag: book-m6-final | status: expanded -->
 # Chapter 8: How the web works
 
-The browser and the backend of the Secure Document Viewer talk in a language called HTTP. Every protection in the app, from sign-in to signed tile URLs, is expressed in that language, so you need to read it fluently. This chapter teaches requests and responses, methods and status codes, headers, JSON, cookies, security headers, the same-origin rule, and HTTPS, and shows you how to watch real traffic. Real bugs from this project appear along the way, because most of them were bugs about exactly these ideas.
+The browser and the backend of the Secure Document Viewer talk in a language called HTTP. Every protection in the app, from sign-in to signed tile URLs, is expressed in that language, so you need to read it fluently. This chapter teaches requests and responses, methods, and status codes, headers, JSON, cookies, security headers, the same-origin rule, and HTTPS, and shows you how to watch real traffic. Real bugs from this project appear along the way, because most of them were bugs about exactly these ideas.
 
 ## Learning objectives
 
@@ -23,9 +23,9 @@ By the end of this chapter, you will be able to:
 
 ## Beginner tier: Requests and responses
 
-### 8.1 Browsers, servers, requests and responses
+### 8.1 Browsers, servers, requests, and responses
 
-Chapter 1 introduced clients and servers. **HTTP** (HyperText Transfer Protocol) is the set of rules they follow to talk. A **protocol** is an agreed format for a conversation, like the rules of a phone call: who speaks first, how you say goodbye. The conversation is always the same shape: the client sends a **request**, and the server sends back one **response**. The server never speaks first.
+Chapter 1 introduced clients and servers. **HTTP** (Hypertext Transfer Protocol) is the set of rules they follow to talk. A **protocol** is an agreed format for a conversation, like the rules of a phone call: who speaks first, how you say goodbye. The conversation is always the same shape: the client sends a **request**, and the server sends back one **response**. The server never speaks first.
 
 *Pattern note: This request and response exchange is the client-server pattern (Chapter 39, Section 39.4).*
 
@@ -55,7 +55,7 @@ Content-Type: application/json
 
 *Figure 8.1 — One request and its response (teaching example, abbreviated)*
 
-*Text description:* Two blocks of plain text. The upper block is a request: a request line saying `GET /api/documents HTTP/1.1`, then header lines for host, cookie and accepted type. The lower block is the response: a status line `HTTP/1.1 200 OK`, a `Content-Type` header, an empty line and a JSON body.
+*Text description:* Two blocks of plain text. The upper block is a request: a request line saying `GET /api/documents HTTP/1.1`, then header lines for host, cookie and accepted type. The lower block is the response: a status line `HTTP/1.1 200 OK`, a `Content-Type` header, an empty line, and a JSON body.
 
 <!-- source: modeled on GET /api/documents in DocumentController.java and the SDV_SESSION cookie name in application.yml at book-m6-final; the values are placeholders -->
 
@@ -78,13 +78,13 @@ sequenceDiagram
 
 *Figure 8.2 — What happens between typing an address and getting a response*
 
-*Text description:* A sequence read top to bottom among three parties: Browser, DNS and Server. The browser asks DNS for the address of a name and receives it, then opens a connection to the server, sends a request, and receives a response. Notice that only the last two messages are HTTP.
+*Text description:* A sequence read top to bottom among three parties: Browser, DNS, and Server. The browser asks DNS for the address of a name and receives it, then opens a connection to the server, sends a request, and receives a response. Notice that only the last two messages are HTTP.
 
 <!-- source: HTTP and DNS behavior (RFC 9110); the server side is the app's endpoints at book-m6-final -->
 
 Only the last two arrows are HTTP. The first two are the lookup that makes the name usable.
 
-### 8.2 URLs, methods and status codes
+### 8.2 URLs, methods, and status codes
 
 A URL has parts. Take `https://docs.example.com:8080/api/tiles?token=<signed-token>`:
 
@@ -94,7 +94,7 @@ A URL has parts. Take `https://docs.example.com:8080/api/tiles?token=<signed-tok
 - `/api/tiles` is the path, chosen by the app;
 - `?token=<signed-token>` is the **query string**: extra named values after a question mark, in `name=value` pairs joined by `&`.
 
-The path can also carry a value. The app's document endpoints use `/api/documents/{documentId}`, where `{documentId}` stands for a real identifier, so `/api/documents/123e4567-e89b-12d3-a456-426614174000` names one document. The app's real identifiers are random UUIDs, so they cannot be guessed by counting upward. A path that names a thing is called a **resource**, and the design style of naming resources by path and acting on them with methods is called **REST** (Chapter 12).
+The path can also carry a value. The app's document endpoints use `/api/documents/{documentId}`, where `{documentId}` stands for a real identifier, so `/api/documents/123e4567-e89b-12d3-a456-426614174000` names one document. The app's real identifiers are random UUIDs, so they cannot be guessed by counting upward. A path that names a thing is called a **resource**, and the design style of naming resources by path and acting on them with methods is called **REST**, for Representational State Transfer (Chapter 12).
 
 The method says what the client wants to do. Table 8.1 lists the ones the app uses, with real examples from `DocumentController`.
 
@@ -110,7 +110,7 @@ The method says what the client wants to do. Table 8.1 lists the ones the app us
 
 <!-- source: DocumentController.java at book-m6-final -->
 
-Two properties explain why the methods differ. A method is **safe** if it does not change anything on the server: `GET` is safe, so a browser may repeat it, cache it or prefetch it freely. A method is **idempotent** if doing it twice has the same effect as once: `PUT` and `DELETE` are, since replacing a file twice with the same file, or deleting an already deleted document, leaves the same end state. `POST` is neither, which is why browsers warn before resubmitting one.
+Two properties explain why the methods differ. A method is a **safe method** if it does not change anything on the server: `GET` is safe, so a browser may repeat it, cache it or prefetch it freely. A method is **idempotent** if doing it twice has the same effect as once: `PUT` and `DELETE` are, since replacing a file twice with the same file, or deleting an already deleted document, leaves the same end state. `POST` is neither, which is why browsers warn before resubmitting one.
 
 The response's **status code** is a three-digit number telling the client what happened. They come in families: 2xx success, 3xx redirect, 4xx the client's request was wrong, 5xx the server failed. Table 8.2 lists the codes this app produces, each taken from its error handler, plus `412`, which the app does not send but which Part VII needs.
 
@@ -147,11 +147,13 @@ Two rows deserve comment. Despite its name, `401 Unauthorized` really means "not
 - `Retry-After` tells a client how many seconds to wait before trying again;
 - `Cookie` and `Set-Cookie` carry cookies (Section 8.6).
 
-A header in a request is a request header, and one in a response is a **response header**. The **body** carries the data. In a request, the data a client sends is the **request body**, such as the bytes of an uploaded PDF or a JSON document. In a response, the body is what the server returns: JSON for the app's API (Section 8.4) or the bytes of an image for a tile. A `GET` request usually has no body.
+A header in a request is a request header, and one in a response is a **response header**. The **body** carries the data. In a request, the data a client sends is the **request body**, such as the bytes of an uploaded PDF or a JSON document. In a response, the body is what the server returns: JSON for the app's API (application programming interface, the set of endpoints it offers; Section 8.4) or the bytes of an image for a tile. A `GET` request usually has no body.
 
 The header names are case-insensitive, and there are dozens more, but these are enough to read almost everything the app sends. Section 8.7 covers a second group, the security headers.
 
-## Intermediate tier: Data, cookies and headers in the app
+## Intermediate tier: Data, cookies, and headers in the app
+
+*On a first read you can skim this tier; Chapters 12, 15, and 16 return to cookies and headers.*
 
 ### 8.4 JSON
 
@@ -208,7 +210,7 @@ A `ResponseEntity` is Spring's object for a whole response: a status, headers, a
 
 ### 8.5 Sending files: multipart uploads
 
-JSON is for structured data. A PDF is a large block of bytes, and HTTP has a separate way to send one along with a few text fields: a **multipart** body, the format that HTML file-upload forms use. The body has several **parts**, each with its own headers, separated by a boundary marker. You do not write this format by hand. The app's upload endpoint declares what it expects, and the framework parses the parts.
+JSON is for structured data. A PDF is a large block of bytes, and HTTP has a separate way to send one along with a few text fields: a **multipart** body, the format that HTML (the markup language of web pages) file-upload forms use. The body has several **parts**, each with its own headers, separated by a boundary marker. You do not write this format by hand. The app's upload endpoint declares what it expects, and the framework parses the parts.
 
 **Listing 8.2 — `DocumentController.java` (book-m6-final, excerpt: method `upload` signature)**
 
@@ -225,7 +227,7 @@ JSON is for structured data. A PDF is a large block of bytes, and HTTP has a sep
 
 `@PostMapping` binds this method to `POST /api/documents`. Each `@RequestParam` names one part: an optional `title` and `visibility`, and a required `file`, which arrives as a `MultipartFile`. If the file part is missing the app answers `400` with "Missing required 'file'." If it is too big, the size limits apply: the settings cap a file at 50 MB, and the answer is `413 Content Too Large`. The limit exists at several layers, on purpose: the settings, the error handler's message, the frontend's own check, and the web server in front, so an oversized body is refused early, before the backend has spent effort on it. <!-- source: application.yml, GlobalExceptionHandler.java, nginx.conf comment at book-m6-final -->
 
-### 8.6 Cookies, sessions and the CSRF token
+### 8.6 Cookies, sessions, and the CSRF token
 
 HTTP has no memory: each request stands alone. Yet after you sign in, the server must recognize you on the next request. The mechanism is a **cookie**: a small piece of text that the server asks the browser to store (with a `Set-Cookie` header) and that the browser then attaches to every later request to that server (with a `Cookie` header).
 
@@ -255,7 +257,11 @@ The cookie is named `SDV_SESSION`, and three settings protect it:
 - `same-site: strict` sets the cookie's **SameSite** rule. It tells the browser to send the cookie only for requests that start on the app's own site, which blocks a class of forged-request attacks;
 - `secure` makes the browser send it only over HTTPS. It is `false` by default so that local development over plain HTTP works, and the file's comment says it must be true wherever the app is served over HTTPS.
 
-The `timeout: 30m` line means a session ends after 30 minutes without a request. **Analogy.** The session cookie is a coat-check ticket. You hand over your coat at the desk (you sign in) and get a numbered ticket; whoever holds the ticket can collect the coat, which is why the ticket needs the three protections of Listing 8.3. The analogy breaks down in two ways. A coat-check ticket is used once, at the end, while the app checks the session again on every single tile request. And a coat-check ticket stays valid until the cloakroom closes, while a session ends after 30 idle minutes, and an administrator can cancel it at any time.
+The `timeout: 30m` line means a session ends after 30 minutes without a request.
+
+**Analogy.** The session cookie is a coat-check ticket. You hand over your coat at the desk (you sign in) and get a numbered ticket; whoever holds the ticket can collect the coat, which is why the ticket needs the three protections of Listing 8.3.
+
+**Where the analogy breaks down:** in two ways. A coat-check ticket is used once, at the end, while the app checks the session again on every single tile request. And a coat-check ticket stays valid until the cloakroom closes, while a session ends after 30 idle minutes, and an administrator can cancel it at any time.
 
 #### The forged-request problem and the second cookie
 
@@ -300,7 +306,9 @@ The token travels in a second cookie, and this one is deliberately different.
 
 `withHttpOnlyFalse()` makes the CSRF cookie readable by the page's JavaScript, the opposite of the session cookie. That is intended: the Angular frontend must read the value to copy it into a header. Being readable is safe here because the value is useless without the session cookie, which stays hidden. Chapter 16 explains the design fully. What matters for now is that the app uses two cookies for two different jobs.
 
-## Advanced tier: Trust, transport and traffic
+## Advanced tier: Trust, transport, and traffic
+
+*On a first read you can skip to "In this project"; Chapter 16 comes back to security headers, and Chapter 33 to HTTPS.*
 
 ### 8.7 Security headers
 
@@ -324,7 +332,7 @@ The server also sends headers whose only job is to tell the browser to be strict
 
 Reading them in turn:
 
-- **Content-Security-Policy** (CSP) is an allow-list (a list of what is permitted, with everything else refused) that tells the browser what a response may do. `default-src 'none'` means "load nothing from anywhere"; `frame-ancestors 'none'` means "no other page may embed this one in a frame". Since the API returns only JSON and images, it needs no permissions, so it grants none. If an attacker ever got script into a response, the browser would refuse to run it.
+- **Content-Security-Policy** (CSP) is an allow-list (a list of what is permitted, with everything else refused) that tells the browser what a response may do. `default-src 'none'` means "load nothing from anywhere"; `frame-ancestors 'none'` means "no other page may embed this one in a frame." Since the API returns only JSON and images, it needs no permissions, so it grants none. If an attacker ever got script into a response, the browser would refuse to run it.
 - **Referrer-Policy**: `no-referrer` stops the browser from telling the next site which page the visitor came from. This matters because tile URLs carry signed tokens (Chapter 1). Without the policy, following a link from a page could leak a token in the `Referer` header.
 - **Permissions-Policy** switches off browser features the app never uses (camera, microphone, location, payment), so nothing can request them.
 
@@ -394,9 +402,9 @@ The backend is never reached directly by the browser, so the browser sees a sing
 
 ### 8.9 HTTPS and TLS in one page
 
-Plain HTTP travels as readable text, so anyone on the network path can read or change it, including the session cookie. HTTPS is HTTP inside an encrypted channel created by **TLS** (Transport Layer Security). TLS provides three things: **encryption** (eavesdroppers see noise), **integrity** (changes are detected) and authentication (a certificate proves you reached the real host). A **certificate** is a signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. (A public key is one half of a pair of numbers used for encryption: it can be shared freely, while its partner, the private key, stays secret on the server.)
+Plain HTTP travels as readable text, so anyone on the network path can read or change it, including the session cookie. HTTPS is HTTP inside an encrypted channel created by **TLS** (Transport Layer Security). TLS provides three things: **encryption** (eavesdroppers see noise), **integrity** (changes are detected), and authentication (a certificate proves you reached the real host). A **certificate** is a signed statement, issued by an authority the browser trusts, that a public key belongs to a given domain. (A public key is one half of a pair of numbers used for encryption: it can be shared freely, while its partner, the private key, stays secret on the server.)
 
-The project's optional TLS front end is a program called Caddy, and the setting `SESSION_COOKIE_SECURE=true` is what you turn on when you use it. The Caddy configuration adds one more header, `Strict-Transport-Security` (HSTS), which tells the browser to use only HTTPS for this site from then on.
+The project's optional TLS frontend is a program called Caddy, and the setting `SESSION_COOKIE_SECURE=true` is what you turn on when you use it. The Caddy configuration adds one more header, `Strict-Transport-Security`, known as HSTS (HTTP Strict Transport Security), which tells the browser to use only HTTPS for this site from then on.
 
 **Listing 8.8 — `deploy/Caddyfile` (book-m6-final, excerpt: the header block)**
 
@@ -419,7 +427,7 @@ You can watch everything in this chapter with tools you already have. The steps 
 
 **Developer tools.** In a browser, press <kbd>F12</kbd>, open the *Network* tab, and load any page, for example `https://example.com`. Each row is one request; click it to see the method, status code, headers and body. When you later run the app, look for a `/api/tiles?token=...` row when a document page loads, and check its `Cache-Control` header.
 
-**curl.** `curl` is a command-line program that sends requests. It is installed with Git Bash and with macOS, and Windows 10 and later includes it too. The `-i` flag prints the response headers as well. Try it now, against `example.com`, a website reserved for exactly this kind of demonstration:
+**curl.** `curl` is a command-line program that sends requests. It is installed with Git Bash and with macOS, and Windows 10, and later includes it too. The `-i` flag prints the response headers as well. Try it now, against `example.com`, a website reserved for exactly this kind of demonstration:
 
 ```bash
 curl -i https://example.com
@@ -494,7 +502,7 @@ Three bugs from the project's history are best understood with what you now know
 
 **`403` on a change, but reads work.** The CSRF token is missing or wrong (Section 8.6), or your role does not allow the action. The error message says which.
 
-**Confusing `404` and `403`.** In this app, `404` can mean "it does not exist" or "you may not know it exists". Do not assume a `404` means the id is mistyped.
+**Confusing `404` and `403`.** In this app, `404` can mean "it does not exist" or "you may not know it exists." Do not assume a `404` means the id is mistyped.
 
 **A cookie that never arrives.** Common causes are these. The cookie is marked `Secure` but you are on plain HTTP. Or `SameSite=Strict` blocks it on a request that came from another site. Or the request goes to a different origin than the one that set it.
 
@@ -508,7 +516,7 @@ Three bugs from the project's history are best understood with what you now know
 
 ## In this project
 
-- `controller/DocumentController.java`: methods, paths and the multipart upload.
+- `controller/DocumentController.java`: methods, paths, and the multipart upload.
 - `controller/GlobalExceptionHandler.java`: status codes and the JSON error contract.
 - `controller/TileController.java`: the tile endpoint, `Cache-Control: no-store`.
 - `security/SecurityConfig.java`: the CSRF cookie and the security headers.
@@ -558,9 +566,9 @@ Choose one of the headers in Listing 8.5 or Listing 8.6 and write one paragraph 
 - HTTP is a request and response conversation; the server never speaks first.
 - Methods say what to do, and safe and idempotent methods behave differently; status codes say what happened, and the app uses `404` to hide existence.
 - Headers describe messages; the API's bodies are JSON, and uploads use multipart.
-- A session cookie carries the sign-in, protected by `http-only`, `same-site` and `secure`; a second, readable CSRF cookie defends against forged requests.
+- A session cookie carries the sign-in, protected by `http-only`, `same-site`, and `secure`; a second, readable CSRF cookie defends against forged requests.
 - Security headers (CSP, Referrer-Policy, Permissions-Policy, HSTS) and `Cache-Control: no-store` restrict what browsers and caches do.
-- Browsers enforce the same-origin rule; HTTPS adds encryption, integrity and authentication.
+- Browsers enforce the same-origin rule; HTTPS adds encryption, integrity, and authentication.
 - Several of the project's real bugs were HTTP details: the `Accept` header, the CSRF cookie and duplicated headers.
 
 ## Further reading

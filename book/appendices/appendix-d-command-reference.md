@@ -1,7 +1,7 @@
 # Appendix D: Command reference
 
 Commands used in the book, grouped by tool. Run project commands from the repository root unless
-noted. `bash` syntax works in Git Bash on Windows, macOS and Linux.
+noted. `bash` syntax works in Git Bash on Windows, macOS, and Linux.
 
 ## Command line (Chapter 2)
 
@@ -40,25 +40,25 @@ noted. `bash` syntax works in Git Bash on Windows, macOS and Linux.
 On Windows PowerShell use `.\mvnw.cmd` in place of `./mvnw`. The wrapper (`mvnw`) exists from
 `book-m5-platform` onward; earlier tags need Maven installed.
 
-## Node, npm and Angular (Chapters 19 to 24)
+## Node, npm, and Angular (Chapters 19 to 24)
 
 Run these inside the `frontend` folder.
 
 | Command | What it does |
 |---|---|
 | `npm ci` | Install exactly the versions in `package-lock.json` |
-| `npx ng serve` | Start the dev server at http://localhost:4200, proxying `/api` to port 8080 |
+| `npx ng serve` | Start the dev server at `http://localhost:4200`, proxying `/api` to port 8080 |
 | `npx ng build` | Build the production app |
 | `npx ng test --watch=false` | Run the unit tests once |
 | `npx playwright test` | Run the end-to-end tests against the running Docker stack (needs an admin account set through environment variables) |
 
-## Docker and Compose (Chapter 10, 30, 33, 34)
+## Docker and Compose (Chapters 10, 30, 33, and 34)
 
 | Command | What it does |
 |---|---|
 | `docker compose up -d` | Start MySQL only (development) |
-| `docker compose --profile full up -d --build` | Build and start MySQL, the API and the web container |
-| `docker compose --profile full --profile tls up -d --build` | Add the HTTPS front end (Caddy) |
+| `docker compose --profile full up -d --build` | Build and start MySQL, the API, and the web container |
+| `docker compose --profile full --profile tls up -d --build` | Add the HTTPS frontend (Caddy) |
 | `docker compose ps` | Show running services |
 | `docker compose logs -f <service>` | Follow a service's log |
 | `docker compose down` | Stop and remove containers (volumes are kept) |
@@ -80,9 +80,9 @@ Run these in the `frontend` folder, with the full Docker stack running. The pass
 
 | Command | What it does |
 |---|---|
-| `docker compose --profile full up -d --build` | Starts MySQL, the API and the web container (run from the repository root) |
-| `docker compose logs app` | Shows the API's log, which contains a generated first-administrator password once, on the first start of an empty database |
-| `npm ci` | Installs the frontend's dependencies exactly as locked |
-| `npx playwright install chromium` | Downloads the browser the tests drive (on Linux, add `--with-deps` to install its system libraries too) |
-| `export E2E_ADMIN_PASSWORD='<password>'` | Sets the administrator password for the tests in bash; in PowerShell use `$env:E2E_ADMIN_PASSWORD='<password>'`, in Windows cmd `set E2E_ADMIN_PASSWORD=<password>` |
-| `npx playwright test` | Runs the end-to-end tests against the running stack |
+| `docker compose --profile full up -d --build` | Start MySQL, the API, and the web container (run from the repository root) |
+| `docker compose logs app` | Show the API's log, which contains a generated first-administrator password once, on the first start of an empty database |
+| `npm ci` | Install the frontend's dependencies exactly as locked |
+| `npx playwright install chromium` | Download the browser the tests drive (on Linux, add `--with-deps` to install its system libraries too) |
+| `export E2E_ADMIN_PASSWORD='<password>'` | Set the administrator password for the tests in bash; in PowerShell use `$env:E2E_ADMIN_PASSWORD='<password>'`, in Windows cmd `set E2E_ADMIN_PASSWORD=<password>` |
+| `npx playwright test` | Run the end-to-end tests against the running stack |

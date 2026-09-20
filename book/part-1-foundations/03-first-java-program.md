@@ -1,17 +1,17 @@
 <!-- chapter: 3 | part: I | owner: writer-foundations | tag: book-m6-final | status: expanded -->
 # Chapter 3: Your first Java program
 
-The backend of the Secure Document Viewer is written in Java. This chapter teaches the smallest useful core of the language: how to write, compile and run a program, how to store values, how to make decisions and repeat work, and how to package logic into methods. It ends by reading real code from the app: the method that decides how many tiles a page needs, the test that checks it, and the rule that decides whether a password is acceptable. Every idea is small, and each one is used in the project.
+The backend of the Secure Document Viewer is written in Java. This chapter teaches the smallest useful core of the language: how to write, compile, and run a program, how to store values, how to make decisions and repeat work, and how to package logic into methods. It ends by reading real code from the app: the method that decides how many tiles a page needs, the test that checks it, and the rule that decides whether a password is acceptable. Every idea is small, and each one is used in the project.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
-- Explain what a program, source code, the JDK and the JVM are.
-- Write, compile and run a small Java program from the terminal.
+- Explain what a program, source code, the JDK, and the JVM are.
+- Write, compile, and run a small Java program from the terminal.
 - Declare variables of the basic types and combine them with operators.
 - Explain the difference between a character and a byte, and why it mattered for a password rule.
-- Write `if` statements, `switch` and loops.
+- Write `if` statements, `switch`, and loops.
 - Write and call a method with parameters and a return value.
 - Read a compiler error and a stack trace to find the line at fault.
 - Read `TileGrid.tileCount`, its test, and the password rule, and explain each line.
@@ -40,7 +40,9 @@ flowchart LR
 
 You install the **JDK** (Java Development Kit), which contains the compiler, the JVM and the standard library, a large collection of ready-made code. The **JRE** (Java Runtime Environment) is the part needed only to run programs, without the compiler; you will meet it in the Dockerfile in Chapter 10. This book uses Java 25, a long-term-support release, which the project selected when it upgraded (Chapter 6). The project sets `<java.version>25</java.version>` in its `pom.xml`. <!-- source: pom.xml at book-m6-final; dossier decisions.md (Java 25, LTS) -->
 
-**Analogy.** Source code is a recipe in English, bytecode is the same recipe translated into a simple universal shorthand, and the JVM is a cook in each kitchen who knows the shorthand. The analogy breaks down because a cook works from the shorthand at human speed, while the JVM also optimizes the bytecode as it runs, so long-running programs get faster after a warm-up. And a cook may improvise, while the JVM does exactly what the bytecode says.
+**Analogy.** Source code is a recipe in English, bytecode is the same recipe translated into a simple universal shorthand, and the JVM is a cook in each kitchen who knows the shorthand.
+
+**Where the analogy breaks down:** a cook works from the shorthand at human speed, while the JVM also optimizes the bytecode as it runs, so long-running programs get faster after a warm-up. And a cook may improvise, while the JVM does exactly what the bytecode says.
 
 ### 3.2 Hello, world: compile and run
 
@@ -58,12 +60,9 @@ openjdk version "25" ...
 
 The exact wording varies with the vendor and patch level (you may see `25.0.1`, or `java version "25..."`); what matters is the 25.
 
-```text
-```
-
 If you get "command not found", the JDK is not installed or not on your `PATH` (Chapter 2). Also check the compiler: `javac -version` should print `javac 25...`.
 
-Create a file named `Hello.java` with the code in Example 3.1. The file name must match the class name.
+Create a file named `Hello.java` with the code in Example 3.1. The filename must match the class name.
 
 **Example 3.1 — `Hello.java`**
 
@@ -121,7 +120,7 @@ public class SecureDocViewerApplication {
 
 You recognize the class and `main`. The `package` and `import` lines and the `@` lines are explained in Chapter 4. The single line inside `main` starts the whole web server; Chapter 11 explains how.
 
-### 3.3 Variables, types and operators
+### 3.3 Variables, types, and operators
 
 A **variable** is a named place to keep a value. Java is **statically typed**: every variable has a **type** that says what kind of value it holds, and the compiler checks that you use it correctly. Table 3.1 lists the types you will meet most.
 
@@ -160,11 +159,13 @@ Three details trip up beginners. Dividing two `int` values gives an `int` with t
 
 Text is everywhere in the app, from usernames to document titles, so it is worth knowing how Java treats it.
 
-A `String` is a sequence of characters, and you can ask questions of it with methods. `text.length()` counts its characters, `text.isBlank()` is true if it is empty or only spaces, `text.toUpperCase()` returns an upper-case copy, and `text.substring(0, 3)` returns the first three characters. A `String` never changes: every method that seems to modify it returns a new one.
+A `String` is a sequence of characters, and you can ask questions of it with methods. `text.length()` counts its characters, `text.isBlank()` is true if it is empty or only spaces, `text.toUpperCase()` returns an uppercase copy, and `text.substring(0, 3)` returns the first three characters. A `String` never changes: every method that seems to modify it returns a new one.
 
 One more subtlety of text, the difference between a character and a byte, caused a real bug in this project. It is not needed yet, so it waits in Section 3.10 in the Advanced tier.
 
 ## Intermediate tier: Control flow and methods
+
+*On a first read you can skim this tier; Chapters 4 and 5 use these ideas again.*
 
 ### 3.5 Decisions
 
@@ -272,7 +273,7 @@ static int tilesNeeded(int lengthPx, int tileSize) {
 
 `static int tilesNeeded(...)` says: this method returns an `int`. Inside the parentheses are two parameters, each with a type. `return` sends a value back. You call it like this: `int cols = tilesNeeded(1275, 512);`, and `cols` becomes 3.
 
-Why that formula? Whole-number division drops the remainder, so `1275 / 512` is 2, one tile short. Adding `tileSize - 1` first makes any remainder push the result up to the next whole number. This is **ceiling division**, "divide and round up". Check it by hand: `(1275 + 511) / 512` is `1786 / 512`, which is 3 after dropping the remainder. And for an exact fit, `(1024 + 511) / 512` is `1535 / 512`, which is 2, correct. The app needs it because a page rarely divides evenly into tiles.
+Why that formula? Whole-number division drops the remainder, so `1275 / 512` is 2, one tile short. Adding `tileSize - 1` first makes any remainder push the result up to the next whole number. This is **ceiling division**, "divide and round up." Check it by hand: `(1275 + 511) / 512` is `1786 / 512`, which is 3 after dropping the remainder. And for an exact fit, `(1024 + 511) / 512` is `1535 / 512`, which is 2, correct. The app needs it because a page rarely divides evenly into tiles.
 
 A method that returns nothing is declared `void` (like `main`) and does something instead, such as printing. Methods can call other methods, and each call gets its own set of variables. Parameters are **passed by value**: the method receives a copy of a number, so changing the parameter inside the method does not change the caller's variable. Methods are also how you split a big problem: `main` in a real program is usually short, and calls methods that each do one thing well.
 
@@ -341,6 +342,8 @@ Read it top to bottom: the first line says what went wrong, and the first `at` l
 
 ## Advanced tier: Real code from the app
 
+*On a first read you can skip to "In this project"; Chapter 13 returns to validation.*
+
 ### 3.9 A small taste of the app: tile-grid math and its test
 
 You now know enough to read a real class. `TileGrid` holds the math that turns a page's pixel size into a number of tiles. Listing 3.3 is its counting method.
@@ -394,7 +397,7 @@ The project tests this method with a synthetic image so it never needs a real PD
 
 The same file holds the guarantee that gave the class its shape. Its own comment states: "tiles are a lossless partition of the page. Reassembling every tile at its grid offset must reproduce the source image pixel-for-pixel — no seams, no overlap, no dropped edge strips." A test builds a random image whose size is not a multiple of the tile size (613 by 457 with 64-pixel tiles). It slices the image, reassembles it, and compares every pixel. The lesson is bigger than the code: when a class has one clear promise, write the test that proves it. <!-- source: TileGridTest.java at book-m6-final; dossier timeline.md (round-trip test in b6aef4e) -->
 
-### 3.10 Characters, bytes and a real limit
+### 3.10 Characters, bytes, and a real limit
 
 This section is a first look at a subtle point. If it feels heavy, read it once and return to it after Chapter 5; nothing later in Part I depends on it.
 
@@ -482,7 +485,7 @@ Notice the order of the checks. The cheap and most common problems come first, a
 
 **"cannot find symbol."** A typo, a wrong case, or a missing `import`. Java is case-sensitive: `String` and `string` are different.
 
-**Forgetting `static`.** In a small program, calling a method from `main` that is not `static` gives "non-static method cannot be referenced from a static context". Add `static` for now; Chapter 4 explains when you should not.
+**Forgetting `static`.** In a small program, calling a method from `main` that is not `static` gives "non-static method cannot be referenced from a static context." Add `static` for now; Chapter 4 explains when you should not.
 
 **Counting characters when the rule is about bytes.** As Section 3.10 showed, the two can differ. Decide which one your rule is about.
 
@@ -523,7 +526,7 @@ Run Example 3.9 with a string of your own that contains at least one accented le
 
 ### Exercise 3.5 ★★ Write a rule
 
-Write a method `static boolean validTitle(String title)` that returns true only if the title is not blank and at most 200 characters (the size of the `title` column, which is 200 characters; Chapter 9 explains columns). Test it with an empty string, a string of spaces, a normal title and a 201-character string.
+Write a method `static boolean validTitle(String title)` that returns true only if the title is not blank and at most 200 characters (the size of the `title` column; Chapter 9 explains columns). Test it with an empty string, a string of spaces, a normal title, and a 201-character string.
 
 *Solution:* Appendix C, Exercise 3.5.
 

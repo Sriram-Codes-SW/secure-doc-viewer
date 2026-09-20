@@ -11,7 +11,7 @@ Docker caches each layer and reuses it when its inputs are unchanged. Dependenci
 
 ### Exercise 30.3 ★★ Lockout abuse
 
-With an account-wide count that applied to every address, an attacker could fail sign-in for a victim's account from several addresses until the total reached 20, and then the victim's own attempts (from their usual computer) were refused: a denial of service. The final rule applies the account-wide count only to unrecognised devices; an address that signed in successfully in the last 30 days is recognised and isn't blocked by it. The cost: a correct password from a new device is refused (429) during an account-wide lockout until an admin unlocks the account.
+With an account-wide count that applied to every address, an attacker could fail sign-in for a victim's account from several addresses until the total reached 20, and then the victim's own attempts (from their usual computer) were refused: a denial of service. The final rule applies the account-wide count only to unrecognized devices; an address that signed in successfully in the last 30 days is recognized and isn't blocked by it. The cost: a correct password from a new device is refused (429) during an account-wide lockout until an admin unlocks the account.
 
 ### Exercise 30.4 ★★ Order of gates
 

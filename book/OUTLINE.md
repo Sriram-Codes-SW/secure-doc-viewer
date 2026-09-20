@@ -72,7 +72,7 @@ Tag: `book-m6-final`. Assumes: nothing.
 - 1.5 Clients and servers, in one picture
 - 1.6 The parts of the app and the tools you'll meet
 - 1.7 What this app can and can't do
-- 1.8 Three more ingredients: signed addresses, watermarks and checks
+- 1.8 Three more ingredients: signed addresses, watermarks, and checks
 - 1.9 One page view, step by step
 - 1.10 Why not something simpler?
 - 1.11 How this app came to be
@@ -83,12 +83,12 @@ Tag: `book-m6-final`. Assumes: nothing.
 Tag: none. Assumes: 1.
 
 - 2.1 What a terminal and a shell are
-- 2.2 Folders, paths and moving around
-- 2.3 Creating, reading, copying and deleting files
+- 2.2 Folders, paths, and moving around
+- 2.3 Creating, reading, copying, and deleting files
 - 2.4 Editing text files
 - 2.5 Environment variables and the PATH
 - 2.6 Configuration through the environment: `.env` files
-- 2.7 Text files, encodings and line endings
+- 2.7 Text files, encodings, and line endings
 - 2.8 Ports and processes (what "listening on 8080" means)
 - 2.9 A real incident: the secret that started in a file
 - 2.10 A real incident: OneDrive and the locked folder
@@ -99,33 +99,33 @@ Tag: `book-m6-final` (small pieces). Assumes: 2.
 
 - 3.1 What Java, the JDK and the JVM are
 - 3.2 Hello, world: compile and run
-- 3.3 Variables, types and operators
+- 3.3 Variables, types, and operators
 - 3.4 Strings
 - 3.5 Decisions
 - 3.6 Loops
 - 3.7 Methods
 - 3.8 Reading errors
 - 3.9 A small taste of the app: tile-grid math and its test
-- 3.10 Characters, bytes and a real limit
+- 3.10 Characters, bytes, and a real limit
 - 3.11 Validating input: the password rule
 - 3.12 Common mistakes
 
-### Chapter 4: Classes, objects, records and interfaces (`04-classes-and-objects.md`)
+### Chapter 4: Classes, objects, records, and interfaces (`04-classes-and-objects.md`)
 Tag: `book-m6-final`. Assumes: 3.
 
 - 4.1 Classes and objects; fields, constructors
 - 4.2 Encapsulation: private, getters, and rules that stay true
 - 4.3 Records for plain data
 - 4.4 Enums for fixed choices
-- 4.5 Interfaces and why we depend on them
+- 4.5 Interfaces and why the app depends on them
 - 4.6 Objects that need other objects
-- 4.7 Packages, imports and access levels
+- 4.7 Packages, imports, and access levels
 - 4.8 Annotations: a first look
 - 4.9 A note on inheritance and composition
 - 4.10 A real incident: the demoted publisher who could still manage documents
 - 4.11 Common mistakes
 
-### Chapter 5: Collections, generics, lambdas and exceptions (`05-collections-and-exceptions.md`)
+### Chapter 5: Collections, generics, lambdas, and exceptions (`05-collections-and-exceptions.md`)
 Tag: `book-m6-final`. Assumes: 4.
 
 - 5.1 Lists, sets and maps
@@ -135,7 +135,7 @@ Tag: `book-m6-final`. Assumes: 4.
 - 5.5 Optional and the trouble with null
 - 5.6 Exceptions: throwing, catching, custom types
 - 5.7 try-with-resources and files
-- 5.8 Time: Instant, UTC and why the app uses it
+- 5.8 Time: Instant, UTC, and why the app uses it
 - 5.9 Collections that many requests share
 - 5.10 A real incident with time: the audit rows from the future
 - 5.11 Exceptions at the edge: one more incident
@@ -154,7 +154,7 @@ Tag: `book-m0-mvp`, `book-m6-final`. Assumes: 3, 4.
 - 6.8 Lifecycle: compile, test, package, verify
 - 6.9 Convention over configuration, and the alternatives
 - 6.10 Common mistakes
-- 6.11 Pinning, reproducibility and the supply chain
+- 6.11 Pinning, reproducibility, and the supply chain
 - 6.12 The same project at two milestones
 - 6.13 Directory layout
 
@@ -167,7 +167,7 @@ Tag: whole history. Assumes: 2.
 - 7.4 Getting the project
 - 7.5 Tags as bookmarks: the `book-m*` tags
 - 7.6 Branches and merges
-- 7.7 Remotes, pull requests and code review
+- 7.7 Remotes, pull requests, and code review
 - 7.8 `.gitignore` and why secrets never get committed
 - 7.9 Following this book with tags without breaking your work
 - 7.10 Reading history to understand a project
@@ -176,12 +176,12 @@ Tag: whole history. Assumes: 2.
 ### Chapter 8: How the web works (`08-how-the-web-works.md`)
 Tag: `book-m1-accounts`. Assumes: 2.
 
-- 8.1 Browsers, servers, requests and responses
-- 8.2 URLs, methods and status codes
+- 8.1 Browsers, servers, requests, and responses
+- 8.2 URLs, methods, and status codes
 - 8.3 Headers and bodies
 - 8.4 JSON
 - 8.5 Sending files: multipart uploads
-- 8.6 Cookies, sessions and the CSRF token
+- 8.6 Cookies, sessions, and the CSRF token
 - 8.7 Security headers
 - 8.8 Same origin, and why browsers are suspicious
 - 8.9 HTTPS and TLS in one page
@@ -209,11 +209,11 @@ Tag: `book-m2-documents`. Assumes: 2, 8.
 Tag: `book-m1-accounts` (database), `book-m5-platform` (full stack). Assumes: 2, 8.
 
 - 10.1 Why containers exist
-- 10.2 Images, containers, volumes and networks
+- 10.2 Images, containers, volumes, and networks
 - 10.3 Your first containers
 - 10.4 Running MySQL 8.4 with Docker
 - 10.5 Reading the Compose file line by line
-- 10.6 Profiles, networks and the full stack
+- 10.6 Profiles, networks, and the full stack
 - 10.7 Environment variables and secrets in containers
 - 10.8 Building your own image (a first Dockerfile)
 - 10.9 Choices that harden the stack
@@ -255,7 +255,7 @@ Tag: `book-m1-accounts`, `book-m6-final`. Assumes: 8, 11.
 - 12.9 Small controllers that don't leak
 - 12.10 Common mistakes
 
-### Chapter 13: Validation, configuration properties and errors (`13-validation-and-errors.md`)
+### Chapter 13: Validation, configuration properties, and errors (`13-validation-and-errors.md`)
 Tag: `book-m3-hardening`. Assumes: 5, 11, 12.
 
 - 13.1 Never trust input
@@ -278,7 +278,7 @@ Tag: `book-m1-accounts`, `book-m2-documents`. Assumes: 4, 9, 11.
 - 14.4 One query, not thirty: `join fetch`
 - 14.5 Flyway migrations (`V1`, `V2`, `V3`)
 - 14.6 Transactions: `@Transactional` and `TransactionTemplate`
-- 14.7 Locking rows, optimistic and pessimistic
+- 14.7 Locking rows, optimistic, and pessimistic
 - 14.8 Separate transactions: `REQUIRES_NEW`
 - 14.9 Time zones and UTC storage
 - 14.10 Timed sweeps with `@Scheduled`
@@ -314,15 +314,15 @@ Tag: `book-m1-accounts`, `book-m3-hardening`, `book-m5-platform`. Assumes: 15.
 - 16.9 A real incident: the CSRF cookie that vanished at sign-in
 - 16.10 Common mistakes
 
-### Chapter 17: Files, images, PDFs and signatures (`17-files-images-pdfs-signatures.md`)
+### Chapter 17: Files, images, PDFs, and signatures (`17-files-images-pdfs-signatures.md`)
 Tag: `book-m0-mvp`, `book-m5-platform`. Assumes: 5, 11, 12.
 
-- 17.1 Pixels, images and PNG
+- 17.1 Pixels, images, and PNG
 - 17.2 Reading and rendering a PDF
 - 17.3 Slicing an image into a grid
 - 17.4 Drawing text on an image (watermarks)
-- 17.5 Hashes, HMAC and signatures: proving a URL wasn't altered
-- 17.6 Threads, pools and limits: bounded work
+- 17.5 Hashes, HMAC, and signatures: proving a URL wasn't altered
+- 17.6 Threads, pools, and limits: bounded work
 - 17.7 Files on disk safely: staging, atomic move, cleanup
 - 17.8 What a leaked tile URL can do
 - 17.9 Common mistakes
@@ -330,11 +330,11 @@ Tag: `book-m0-mvp`, `book-m5-platform`. Assumes: 5, 11, 12.
 ### Chapter 18: Testing the backend (`18-testing-the-backend.md`)
 Tag: `book-m6-final`. Assumes: 4, 5, 6, 11–16.
 
-- 18.1 Why we test, and the test pyramid
+- 18.1 Why tests matter, and the test pyramid
 - 18.2 JUnit 5 and the anatomy of a test
 - 18.3 Testing pure logic: `TileGridTest`
 - 18.4 Common mistakes when starting out
-- 18.5 Setting up: `@BeforeEach`, fakes and temporary folders
+- 18.5 Setting up: `@BeforeEach`, fakes, and temporary folders
 - 18.6 Spring integration tests and `MockMvc`
 - 18.7 Security tests through the real filter chain
 - 18.8 A test helper that hid a bug: `CsrfCookieFlowTest`
@@ -366,7 +366,7 @@ Tag: `book-m6-final`. Assumes: 3–5, 8.
 - 19.13 Why `fetch()` for tiles and not `HttpClient` or plain image URLs
 - 19.14 Numbers and user input: two small traps
 
-### Chapter 20: Node, npm and the Angular toolchain (`20-node-npm-angular-cli.md`)
+### Chapter 20: Node, npm, and the Angular toolchain (`20-node-npm-angular-cli.md`)
 Tag: `book-m1-accounts`, `book-m6-final`. Assumes: 2, 6, 19.
 
 - 20.1 What Node is; why a frontend needs it
@@ -386,12 +386,12 @@ Tag: `book-m1-accounts`, `book-m6-final`. Assumes: 2, 6, 19.
 Tag: `book-m1-accounts`. Assumes: 19, 20.
 
 - 21.1 Components: a class, a template, a style
-- 21.2 A component's life: creation, hooks and cleanup
+- 21.2 A component's life: creation, hooks, and cleanup
 - 21.3 Templates: binding, conditionals, loops
 - 21.4 Worked example: a small component from scratch
 - 21.5 Reactivity: signals and change detection
 - 21.6 Component inputs and outputs
-- 21.7 Styling, light and dark themes, and accessibility basics
+- 21.7 Styling, light, and dark themes, and accessibility basics
 - 21.8 Tiles, briefly
 - 21.9 CSS backgrounds instead of images or a canvas
 - 21.10 A rendering detail: the one-pixel overlap
@@ -405,7 +405,7 @@ Tag: `book-m1-accounts`, `book-m5-platform`. Assumes: 8, 12, 19, 21.
 - 22.3 Observables in five minutes
 - 22.4 Worked example: what happens when the document list loads
 - 22.5 Interceptors: CSRF header and 401 handling
-- 22.6 Loading, error and empty states
+- 22.6 Loading, error, and empty states
 - 22.7 Handling 429 with `Retry-After`, and 410 Gone
 - 22.8 Session state and idle warnings
 - 22.9 Asking "who am I?" at startup, and sharing activity between tabs
@@ -414,9 +414,9 @@ Tag: `book-m1-accounts`, `book-m5-platform`. Assumes: 8, 12, 19, 21.
 - 22.12 Why one origin: nginx and the proxy
 - 22.13 Polling that must not keep a session alive
 - 22.14 The throttle countdown, mechanically
-- 22.15 The Content-Security Policy
+- 22.15 The Content Security Policy
 
-### Chapter 23: Routing, guards and forms (`23-routing-guards-forms.md`)
+### Chapter 23: Routing, guards, and forms (`23-routing-guards-forms.md`)
 Tag: `book-m1-accounts`, `book-m4-reading`. Assumes: 21, 22.
 
 - 23.1 Routes and pages (`app.routes.ts`)
@@ -464,7 +464,7 @@ blueprint vN** and **Decisions and challenges**. Blueprints are in `book/bluepri
 ### Chapter 25: Milestone 0: The tiled viewer (`25-m0-the-tiled-viewer.md`)
 Tag: `book-m0-mvp`. Blueprint: v0. Assumes: 3–6, 8, 11, 12, 17. (Boot 3.3.4 / Java 21.)
 
-- 25.1 Requirements and the threat we start with
+- 25.1 Requirements and the starting threat
 - 25.2 The vocabulary of a tiled viewer
 - 25.3 Tile grid math (`TileGrid`)
 - 25.4 Turning a PDF into tiles (`TileGenerationService`)
@@ -478,10 +478,10 @@ Tag: `book-m0-mvp`. Blueprint: v0. Assumes: 3–6, 8, 11, 12, 17. (Boot 3.3.4 / 
 - (Architecture blueprint v0)
 - (Decisions and challenges)
 
-### Chapter 26: Milestone 1: Accounts, roles and sessions (`26-m1-accounts.md`)
+### Chapter 26: Milestone 1: Accounts, roles, and sessions (`26-m1-accounts.md`)
 Tag: `book-m1-accounts`. Blueprint: v1. Assumes: 14–16, 19–23, 25.
 
-- 26.1 The product owner's requirements
+- 26.1 The requirements
 - 26.2 The vocabulary of accounts
 - 26.3 Accounts in the database
 - 26.4 The first admin
@@ -498,10 +498,10 @@ Tag: `book-m1-accounts`. Blueprint: v1. Assumes: 14–16, 19–23, 25.
 - (Architecture blueprint v1)
 - (Decisions and challenges)
 
-### Chapter 27: Milestone 2: Documents, ownership and audit (`27-m2-documents.md`)
+### Chapter 27: Milestone 2: Documents, ownership, and audit (`27-m2-documents.md`)
 Tag: `book-m2-documents`. Blueprint: v2. Assumes: 26, 9, 14.
 
-- 27.1 The product owner's requirements
+- 27.1 The requirements
 - 27.2 Ownership and visibility
 - 27.3 The data: three tables
 - 27.4 The entity: how a class becomes rows
@@ -510,8 +510,8 @@ Tag: `book-m2-documents`. Blueprint: v2. Assumes: 26, 9, 14.
 - 27.7 The audit trail
 - 27.8 Why the audit write needs its own transaction
 - 27.9 Exporting to a spreadsheet safely
-- 27.10 Upload, staging and replace
-- 27.11 Files, OneDrive and Windows locks
+- 27.10 Upload, staging, and replace
+- 27.11 Files, OneDrive, and Windows locks
 - 27.12 The storage janitor
 - 27.13 The Manage page
 - 27.14 The test that pins the behavior
@@ -540,7 +540,7 @@ Tag: `book-m3-hardening`. Blueprint: v3. Assumes: 27, 13, 16.
 ### Chapter 29: Milestone 4: The reading experience (`29-m4-reading.md`)
 Tag: `book-m4-reading`. Blueprint: v4. Assumes: 28, 21–23.
 
-- 29.1 The product owner's requirements
+- 29.1 The requirements
 - 29.2 Deep links: the address bar as part of the interface
 - 29.3 Worked example: choosing the first page to show
 - 29.4 Keyboard navigation
@@ -563,17 +563,17 @@ Tag: `book-m5-platform`. Blueprint: v5. Assumes: 29, 10, 24.
 - 30.3 What a container is
 - 30.4 The backend image, line by line
 - 30.5 The frontend image and nginx
-- 30.6 Compose: services, profiles and one published port
+- 30.6 Compose: services, profiles, and one published port
 - 30.7 Continuous integration
 - 30.8 Whose address is this?
 - 30.9 Optional HTTPS with Caddy
 - 30.10 Passwords set by an admin, and sessions with a lifetime
-- 30.11 The three lockout rules, and the recognised device
+- 30.11 The three lockout rules, and the recognized device
 - 30.12 The tile endpoint, now six gates
 - 30.13 Replacing a document without mixing old and new tiles
 - 30.14 Bounding the work
-- 30.15 The rate limit, the tile size, and the product owner's sign-off
-- 30.16 Operations, tests and time
+- 30.15 The rate limit, the tile size, and the project owner's sign-off
+- 30.16 Operations, tests, and time
 - (Architecture blueprint v5)
 - (Decisions and challenges)
 
@@ -589,7 +589,7 @@ Tag: `book-m6-final`. Blueprint: v6. Assumes: 25–30.
 - 31.7 The three pull requests from Dependabot
 - 31.8 Writing the policy down
 - 31.9 The method: probe, fix, prove
-- 31.10 The sign-in race: nine guesses through a limit of five
+- 31.10 The sign-in race: nine guesses through a limit of 5
 - 31.11 Characters are not bytes: the 72-byte password
 - 31.12 The critical advisories in the framework itself
 - 31.13 The admin page that would never let itself expire
@@ -639,11 +639,11 @@ Tag: `book-m5-platform`. Assumes: 8.6, 10, 30.
 - 33.10 Fixed addresses and the trust boundary
 - 33.11 Secrets and configuration
 - 33.12 Secure cookies and HSTS
-- 33.13 Non-root, memory limits, health checks and start order
+- 33.13 Non-root, memory limits, health checks, and start order
 - 33.14 The go-live checklist
 - 33.15 Common mistakes
 
-### Chapter 34: Backups, restores and operations (`34-backups-and-operations.md`)
+### Chapter 34: Backups, restores, and operations (`34-backups-and-operations.md`)
 Tag: `book-m5-platform`. Assumes: 9, 10, 33.
 
 - 34.1 The analogy: a photograph of a whiteboard
@@ -659,7 +659,7 @@ Tag: `book-m5-platform`. Assumes: 9, 10, 33.
 - 34.11 Scheduling backups
 - 34.12 Living with one instance
 
-### Chapter 35: Health, metrics and alerting (`35-metrics-and-monitoring.md`)
+### Chapter 35: Health, metrics, and alerting (`35-metrics-and-monitoring.md`)
 Tag: `book-m5-platform`. Assumes: 11, 33.
 
 - 35.1 The analogy: a car's dashboard
@@ -675,6 +675,7 @@ Tag: `book-m5-platform`. Assumes: 11, 33.
 - 35.11 An alert is a decision, not a graph
 - 35.12 Reading the metrics together: three scenarios
 - 35.13 The audit log as the third signal
+- 35.14 Common mistakes
 
 ### Chapter 36: Supply chain and CI (`36-supply-chain-and-ci.md`)
 Tag: `book-m5-platform`, `book-m6-final`. Assumes: 6, 7, 20, 30.
@@ -690,6 +691,7 @@ Tag: `book-m5-platform`, `book-m6-final`. Assumes: 6, 7, 20, 30.
 - 36.9 Dependabot and the LTS-only rules
 - 36.10 A flaky test on `main`
 - 36.11 When a scan fails: a decision procedure
+- 36.12 Common mistakes
 
 ---
 
@@ -713,7 +715,7 @@ Template (each decision gets a subsection): **The decision** / **What we chose**
 - 37.11 One instance vs. scale-out
 - 37.12 Session cookies vs. tokens kept in the browser
 - 37.13 nginx and Caddy vs. a cloud load balancer
-- 37.14 Recognised-device lockout vs. simpler rules
+- 37.14 Recognized-device lockout vs. simpler rules
 - 37.15 Stopping the app for backups vs. online snapshots
 - 37.16 Newest platform vs. staying on the older supported line
 - 37.17 A worked plan: from one instance to three
@@ -778,7 +780,7 @@ Part opener: `00-part-introduction.md`. This part is a design, not a deployment:
 on AWS. It maps the scale-out plan of Chapter 37 onto AWS services, names what would change in the code,
 and says when to stay on one server.
 
-### Chapter 40: Designing a move to AWS: compute, network, data and state (`40-aws-production.md`)
+### Chapter 40: Designing a move to AWS: compute, network, data, and state (`40-aws-production.md`)
 Owner: editor. Tag: `book-m6-final`. Assumes: 8, 10, 14, 16, 32–37, 39.
 
 - 40.1 The analogy: from your own workshop to a serviced building
@@ -792,7 +794,7 @@ Owner: editor. Tag: `book-m6-final`. Assumes: 8, 10, 14, 16, 32–37, 39.
 - 40.9 Sessions and counters: ElastiCache
 - 40.10 Scheduled jobs: one runner
 
-### Chapter 41: Running it on AWS: secrets, operations, edge and cost (`41-aws-operations.md`)
+### Chapter 41: Running it on AWS: secrets, operations, edge, and cost (`41-aws-operations.md`)
 Owner: editor. Tag: `book-m6-final`. Assumes: 32–37, 39, 40.
 
 - 41.1 The analogy: keys, key cards and locked doors
@@ -802,7 +804,7 @@ Owner: editor. Tag: `book-m6-final`. Assumes: 32–37, 39, 40.
 - 41.5 Backups, disaster recovery, and the restore drill
 - 41.6 CI/CD: GitHub Actions, ECR, and rolling deploys
 - 41.7 Infrastructure as code
-- 41.8 The optional edge: tiles, CloudFront and AWS WAF
+- 41.8 The optional edge: tiles, CloudFront, and AWS WAF
 - 41.9 A security review of the cloud design
 - 41.10 Cost and effort: order of magnitude only
 - 41.11 A migration order, and when not to go

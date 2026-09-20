@@ -16,10 +16,10 @@ Table I.1 lists the chapters and says why the app needs each topic.
 | 1 | The big picture | The design, the three roles, and the app's honest limits |
 | 2 | The command line and your files | Every tool in the book runs from a terminal, and the app's secrets live in environment variables |
 | 3–5 | Java 25: values, control flow, classes, records, interfaces, collections, exceptions, time | The backend is written in Java |
-| 6 | Maven and the project layout | Maven builds, tests and packages the backend |
+| 6 | Maven and the project layout | Maven builds, tests, and packages the backend |
 | 7 | Git and GitHub | The milestone tags are your checkpoints, and the history holds the project's story |
 | 8 | How the web works | The browser and the backend speak HTTP and JSON, and cookies carry the sign-in |
-| 9 | SQL and MySQL | Accounts, documents and the audit trail live in a database |
+| 9 | SQL and MySQL | Accounts, documents, and the audit trail live in a database |
 | 10 | Containers and Docker | MySQL and the whole stack run in containers |
 
 ## Why this order
@@ -30,7 +30,7 @@ Notice the rhythm: an idea, then a tiny teaching example you can run, then the s
 
 ## Before you start
 
-You need a working setup: a terminal, Git, a JDK, Docker and a code editor. The front matter has a step-by-step guide, [Setting up your machine](../front-matter/c-setting-up-your-machine.md), with a check for each tool. Do it once now. You do not need Node.js yet; Part III asks for it. If a tool misbehaves later, the "Common mistakes" section at the end of each chapter lists the failures beginners hit most, with the symptom you will see and the fix.
+You need a working setup: a terminal, Git, a JDK, Docker, and a code editor. The front matter has a step-by-step guide, [Setting up your machine](../front-matter/c-setting-up-your-machine.md), with a check for each tool. Do it once now. You do not need Node.js yet; Part III asks for it. If a tool misbehaves later, the "Common mistakes" section at the end of each chapter lists the failures beginners hit most, with the symptom you will see and the fix.
 
 Every chapter also ends with exercises graded ★, ★★ and ★★★, and each exercise has a worked solution in Appendix C. If you are short of time, do the ★ exercises in every chapter and the ★★ ones for chapters you found hard; the harder ones reward you when a later part builds on the same idea.
 
@@ -45,4 +45,4 @@ Part I is written for a reader who has never programmed. If you have, skim what 
 
 ## What you will have at the end
 
-You will not have built the app yet. You will have a working machine, a small vocabulary that you have used on real snippets from this repository, and the confidence to read a file such as `DocumentController.java` without being lost. You will also have met the app's people (readers, publishers and administrators), its five kinds of would-be attacker, and its seven milestones. Part II starts from there, with the backend.
+You will not have built the app yet. You will have a working machine, a small vocabulary that you have used on real snippets from this repository, and the confidence to read a file such as `DocumentController.java` without being lost. You will also have met the app's people (readers, publishers, and administrators), its five kinds of would-be attacker, and its seven milestones. Part II starts from there, with the backend.

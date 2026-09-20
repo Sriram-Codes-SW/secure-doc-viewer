@@ -9,7 +9,7 @@ By the end of this chapter, you will be able to:
 
 - Explain what a terminal and a shell are, and read the parts of a command.
 - Move between folders and list their contents with commands.
-- Create, read, copy, move and delete files from the command line, and chain simple commands.
+- Create, read, copy, move, and delete files from the command line, and chain simple commands.
 - Read and set an environment variable, and explain the `PATH`.
 - Explain why the project keeps secrets in a `.env` file and how the app finds them.
 - Explain what "listening on port 8080" means, and find what is using a port.
@@ -29,7 +29,9 @@ Why bother? Clicking cannot be written down and repeated. A command can be paste
 
 This book uses `bash` syntax. On macOS and Linux, open the Terminal app. On Windows, install Git for Windows, which includes **Git Bash**, and use that for every command in this book. (Windows also has PowerShell, whose syntax differs; where a PowerShell equivalent matters, the book shows it.)
 
-**Analogy.** A terminal is like a phone call to a very literal assistant: you say exactly what you want, and it does exactly that. The analogy breaks down because the assistant never asks "are you sure?". Commands such as delete run immediately and usually cannot be undone. It also breaks down in that a real assistant understands your intent, while the shell understands only the exact words and punctuation you typed.
+**Analogy.** A terminal is like a phone call to a very literal assistant: you say exactly what you want, and it does exactly that.
+
+**Where the analogy breaks down:** the assistant never asks "are you sure?". Commands such as delete run immediately and usually cannot be undone. It also breaks down in that a real assistant understands your intent, while the shell understands only the exact words and punctuation you typed.
 
 #### Anatomy of a command
 
@@ -41,7 +43,7 @@ ls -l src
 
 Here `ls` is the command, `-l` is a flag that asks for a long listing, and `src` is the argument, the folder to list. Flags start with one dash (short form, `-l`) or two (long form, `--help`). Words are separated by spaces, which is why a name that contains a space needs quotes: `cd "My Documents"`. Almost every command prints a summary of its flags if you add `--help`, for example `ls --help`.
 
-### 2.2 Folders, paths and moving around
+### 2.2 Folders, paths, and moving around
 
 Your files live in **folders** (also called directories) that nest inside each other. A **path** is the address of a file or folder. Paths use forward slashes in `bash`: `/c/dev/secure-doc-viewer` on Git Bash for Windows, or `/Users/you/dev/secure-doc-viewer` on macOS. Your path will differ. Git Bash shows the `C:` drive as `/c`.
 
@@ -57,7 +59,7 @@ The shell is always "in" one folder, called the **working directory**. Table 2.1
 | `cd ..` | Move up one level |
 | `cd ~` | Move to your home folder |
 
-A path is **absolute** if it starts from the top (`/c/dev/...`) and **relative** if it starts from where you are (`src/main`). The name `.` means "this folder" and `..` means "the folder above". Your **home folder** is where your personal files live, and `~` is shorthand for it.
+A path is an **absolute path** if it starts from the top (`/c/dev/...`) and a **relative path** if it starts from where you are (`src/main`). The name `.` means "this folder" and `..` means "the folder above." Your **home folder** is where your personal files live, and `~` is shorthand for it.
 
 Example 2.1 shows a short session. The lines starting with `#` are comments for you; the shell ignores them. If you have not cloned the project yet, use any folder; Chapter 7 shows how to get the project.
 
@@ -71,7 +73,7 @@ cd src/main/resources    # a relative path, three levels at once
 cd ../../..              # back up three levels
 ```
 
-Read the last line as "up, up, up". If you get lost, `cd ~` always takes you home and `pwd` always tells you where you are. Two habits will save you hours. Press <kbd>Tab</kbd> to complete a name, so you type `cd sec` and <kbd>Tab</kbd>. And press <kbd>↑</kbd> to bring back the previous command.
+Read the last line as "up, up, up." If you get lost, `cd ~` always takes you home and `pwd` always tells you where you are. Two habits will save you hours. Press <kbd>Tab</kbd> to complete a name, so you type `cd sec` and <kbd>Tab</kbd>. And press <kbd>↑</kbd> to bring back the previous command.
 
 Figure 2.1 shows how the project's folders nest, using the top of the repository at `book-m6-final`.
 
@@ -97,7 +99,7 @@ secure-doc-viewer/
 
 A folder inside another is written with slashes: `src/main/resources` is `resources` inside `main` inside `src`. The full layout gets its own section in Chapter 6.
 
-### 2.3 Creating, reading, copying and deleting files
+### 2.3 Creating, reading, copying, and deleting files
 
 Table 2.2 gives the essential file commands.
 
@@ -153,9 +155,11 @@ If you want to stay in the terminal, `nano notes.txt` opens a small editor whose
 
 ## Intermediate tier: How programs find their settings
 
+*On a first read you can skim this tier; every later chapter uses environment variables, and Chapter 10 returns to them.*
+
 ### 2.5 Environment variables and the PATH
 
-An **environment variable** is a named value that the operating system (the software that manages your computer, such as Windows, macOS or Linux) hands to every program it starts. You can set and read one in the shell:
+An **environment variable** is a named value that the operating system (the software that manages your computer, such as Windows, macOS, or Linux) hands to every program it starts. You can set and read one in the shell:
 
 **Example 2.2 — An environment variable**
 
@@ -164,7 +168,7 @@ export GREETING="hello"
 echo $GREETING
 ```
 
-The first line sets `GREETING`. The second prints its value; the dollar sign means "the value of the variable named". Variables set this way last only for that terminal window, and only programs started from that window can see them.
+The first line sets `GREETING`. The second prints its value; the dollar sign means "the value of the variable named." Variables set this way last only for that terminal window, and only programs started from that window can see them.
 
 On Windows (PowerShell):
 
@@ -205,7 +209,7 @@ flowchart TB
 
 Notice the first decision. A name with a slash in it, like `./mvnw` (the Maven wrapper of Chapter 6), names one exact file, so the shell never consults `PATH`. That is why you type `./mvnw` and not `mvnw` alone: the current folder is not on `PATH`. A bare name like `java` triggers the search, in order, and the first match wins, which is why the order of folders in `PATH` matters when two versions of Java are installed.
 
-A related variable is **JAVA_HOME**, which many tools (Maven among them, Chapter 6) read to find the folder where your JDK is installed. If a build complains about Java although `java -version` works, check `JAVA_HOME`.
+A related variable is **JAVA_HOME**, which many tools (Maven among them, Chapter 6) read to find the folder where your JDK (Java Development Kit, Chapter 3) is installed. If a build complains about Java although `java -version` works, check `JAVA_HOME`.
 
 ### 2.6 Configuration through the environment: `.env` files
 
@@ -231,7 +235,7 @@ Each line is `NAME=value`. The password lines are empty on purpose: you fill the
 cp .env.example .env
 ```
 
-Then open `.env` in a text editor and fill in the blanks with values you choose. Never paste a real password into a book, a chat or a commit.
+Then open `.env` in a text editor and fill in the blanks with values you choose. Never paste a real password into a book, a chat, or a commit.
 
 How does the app read this file? Its main settings file, `application.yml`, uses placeholders that mean "read this environment variable, or use this default":
 
@@ -251,9 +255,9 @@ spring:
 
 *Path: `src/main/resources/application.yml`*
 
-Read `${DB_HOST:localhost}` as "the value of `DB_HOST`, or `localhost` if it is not set". The `import` line tells the app to read a `.env` file if there is one (`optional:` means no error if it is missing), and the comment states the rule that matters: a real environment variable, if set, overrides the file. That precedence lets one machine, such as a production server, use environment variables and never have a `.env` file at all. **YAML** is a settings format where indentation shows nesting (Chapter 8); Chapter 13 explains the whole file.
+Read `${DB_HOST:localhost}` as "the value of `DB_HOST`, or `localhost` if it is not set". The `import` line tells the app to read a `.env` file if there is one (`optional:` means no error if it is missing), and the comment states the rule that matters: a real environment variable, if set, overrides the file. That precedence lets one machine, such as a production server, use environment variables and never have a `.env` file at all. **YAML** is a settings format where indentation shows nesting; Chapter 13 explains the whole file.
 
-### 2.7 Text files, encodings and line endings
+### 2.7 Text files, encodings, and line endings
 
 A **text file** holds characters. Computers store everything as numbers called bytes, so an **encoding** is the rule that maps characters to bytes. The project's files use **UTF-8**, which stores plain English letters in one byte each and other characters, such as accented letters or emoji, in more. So a character is not always one byte, a fact that has a surprising consequence for passwords in Chapter 3.
 
@@ -261,7 +265,9 @@ A **line ending** marks where a line stops. Windows uses two bytes for it (a car
 
 Now the reason for `.env` in one sentence. Secrets such as the database password and the key used to sign tile URLs must never be committed to version control. **Version control** is a tool that records every change to a project's files so that you can go back to any earlier state; Git is the one this project uses, and [Chapter 7](07-git-and-github.md) teaches it. Its history is permanent and shared, so a secret committed once is exposed for good. So the project keeps a template, `.env.example`, in the repository, and asks you to copy it to `.env`. A file named `.gitignore` lists the files Git must not record, and it lists `.env`. The real values stay on your machine. <!-- source: .gitignore and .env.example at book-m6-final -->
 
-## Advanced tier: Ports, processes and real incidents
+## Advanced tier: Ports, processes, and real incidents
+
+*On a first read you can skip to "In this project"; Chapters 7 and 10 come back to secrets and ports.*
 
 ### 2.8 Ports and processes (what "listening on 8080" means)
 
@@ -276,7 +282,7 @@ An **address** here means which of the computer's network connections the progra
 | `8080` | The backend (Spring Boot) | `server.port` in `application.yml` |
 | `3306` | MySQL | `DB_PORT` in `.env`, published by `docker-compose.yml` |
 | `8081` | The web front door in the full Docker stack | `WEB_PORT` in `docker-compose.yml` |
-| `8443` | The optional HTTPS front end | `TLS_PORT` in `docker-compose.yml` |
+| `8443` | The optional HTTPS frontend | `TLS_PORT` in `docker-compose.yml` |
 | `4200` | The Angular development server | Angular's default |
 
 <!-- source: application.yml, docker-compose.yml at book-m6-final; frontend/README.md -->
@@ -285,7 +291,7 @@ A request to `localhost:8080` never leaves your machine. The project's `docker-c
 
 #### Finding what uses a port
 
-When a start-up fails with "port already in use", find the culprit. The command depends on your system, and one common trap is worth stating: `lsof`, the usual tool on macOS and Linux, does not exist in Git Bash, because Git Bash only imitates a Unix shell on top of Windows.
+When a startup fails with "port already in use", find the culprit. The command depends on your system, and one common trap is worth stating: `lsof`, the usual tool on macOS and Linux, does not exist in Git Bash, because Git Bash only imitates a Unix shell on top of Windows.
 
 On macOS and Linux:
 
@@ -351,7 +357,7 @@ final class FileOperations {
 
 *Path: `src/main/java/com/example/securedocviewer/service/FileOperations.java`*
 
-The method waits between attempts, and the wait grows. The expression `50L << Math.min(attempt, 4)` shifts the number 50 left by the attempt number, which doubles it each time. The waits are 50, 100, 200, 400 and then 800 milliseconds, and they stay at 800 from the fifth wait on. The class allows eight attempts, and it waits after each failure, so the waits add up to 50 + 100 + 200 + 400 + 4 x 800 = 3,950 milliseconds, close to four seconds. The class comment in Listing 2.3 says "about two seconds", which understates what the code does; when a comment and the code disagree, believe the code. The lesson for a beginner is the operating-system one: your files are not only yours. Other programs may hold them, and a sync service can also copy your secrets and your documents to a cloud you did not intend. That is why `.env.example` carries a warning that the storage folder must not be synced. <!-- source: dossier bugs-and-findings.md C4; decisions.md (move out of OneDrive); FileOperations.java and .env.example at book-m6-final -->
+The method waits between attempts, and the wait grows. The expression `50L << Math.min(attempt, 4)` shifts the number 50 left by the attempt number, which doubles it each time. The waits are 50, 100, 200, 400 and then 800 milliseconds, and they stay at 800 from the fifth wait on. The class allows eight attempts, and it waits after each failure, so the waits add up to 50 + 100 + 200 + 400 + 4 x 800 = 3,950 milliseconds, close to four seconds. The class comment in Listing 2.3 says "about two seconds," which understates what the code does; when a comment and the code disagree, believe the code. The lesson for a beginner is the operating-system one: your files are not only yours. Other programs may hold them, and a sync service can also copy your secrets and your documents to a cloud you did not intend. That is why `.env.example` carries a warning that the storage folder must not be synced. <!-- source: dossier bugs-and-findings.md C4; decisions.md (move out of OneDrive); FileOperations.java and .env.example at book-m6-final -->
 
 ### 2.11 Common mistakes
 
@@ -424,9 +430,9 @@ Copy `.env.example` to `.env` (do not commit it). Set `DB_PORT=3307` in the file
 ## Summary
 
 - A terminal runs a shell; commands have a name, flags and arguments, and can be repeated and shared.
-- Paths locate files; `pwd`, `ls` and `cd` navigate, redirection and pipes combine commands, and `rm` deletes permanently.
+- Paths locate files; `pwd`, `ls`, and `cd` navigate, redirection, and pipes combine commands, and `rm` deletes permanently.
 - Environment variables carry settings and secrets into programs; `PATH` tells the shell where programs live.
-- The project keeps secrets in a git-ignored `.env` copied from `.env.example`, and a real environment variable overrides the file.
+- The project keeps secrets in a Git-ignored `.env` copied from `.env.example`, and a real environment variable overrides the file.
 - Files are bytes with an encoding and line endings; other programs, such as sync clients, can lock or copy your files.
 - A server listens on a port; the backend uses 8080 and MySQL uses 3306, and you can find what holds a port.
 

@@ -3,7 +3,7 @@
 
 Parts I to VI took the Secure Document Viewer from a first line of Java to a production-ready single server. They also gave you the vocabulary to explain it. Part VII asks what comes next when one server is no longer enough, or when one server's risks are no longer acceptable: what would it take to run the same app on a cloud platform, and would that make the app's actual services better?
 
-Better is not automatic. A cloud design adds availability and recoverability, and it adds new hard dependencies (a shared cache, object storage, a load balancer), new permissions to get wrong, and new bills. The two chapters weigh both sides. This part is a design study, not a step-by-step build guide: you can read it, and do its exercises, without an AWS account.
+Better is not automatic. A cloud design adds availability and recoverability, and it adds new hard dependencies (a shared cache, object storage, a load balancer), new permissions to get wrong, and new bills. The two chapters weigh both sides. This part is a design study, not a step-by-step build guide: you can read it, and do its exercises, without an Amazon Web Services (AWS) account.
 
 ## What the part covers
 
@@ -13,8 +13,8 @@ Table VII.1 lists the two chapters and the question each one answers.
 
 | Chapter | Topic | The question it answers |
 |---|---|---|
-| 40 | Designing a move to AWS: compute, network, data and state | Which AWS building block replaces each piece of the Compose stack, what would change in the code, and what has to stay atomic when state is shared? |
-| 41 | Running it on AWS: secrets, operations, edge and cost | Who may do what, how do you see, recover and ship it, what do the optional edge services add, what does it cost, and when should you not go? |
+| 40 | Designing a move to AWS: compute, network, data, and state | Which AWS building block replaces each piece of the Compose stack, what would change in the code, and what has to stay atomic when state is shared? |
+| 41 | Running it on AWS: secrets, operations, edge, and cost | Who may do what, how do you see, recover, and ship it, what do the optional edge services add, what does it cost, and when should you not go? |
 
 ## An honest frame
 
@@ -25,7 +25,7 @@ This part is a **design**. The project never built or ran the Secure Document Vi
 Part VII builds on Chapters 32 to 37 and on Chapter 39, and it says so in each chapter's prerequisites:
 
 - Chapters 32 to 36 give the security review, deployment, backups, metrics, and supply chain that the design re-plans.
-- Chapter 37, especially section 37.17, is the seven-step plan that Chapter 40 maps onto AWS services.
+- Chapter 37, especially Section 37.17, is the seven-step plan that Chapter 40 maps onto AWS services.
 - Chapter 39's patterns (immutable versions, twelve-factor configuration, defense in depth) explain why some parts of the app survive the move unchanged.
 
 You need no AWS knowledge. Every AWS term is defined where it first matters, next to the Compose piece it replaces.
@@ -35,7 +35,7 @@ You need no AWS knowledge. Every AWS term is defined where it first matters, nex
 - **Read Chapter 40 before Chapter 41.** The second chapter operates the design of the first.
 - **Keep the Compose stack in mind.** Most AWS services in Chapter 40 are introduced next to the Compose piece they replace; a few, such as the shared cache, are new because the single-server app never needed them.
 - **Ask "do I need this at all?" first.** Section 40.4 and Table 41.2 say when staying on one server is the right answer.
-- **Notice what the cloud does not fix.** The screenshot problem, the missing MFA, and the slow-but-possible harvest are limits of the design, not of the hosting.
+- **Notice what the cloud does not fix.** The screenshot problem, the missing multi-factor authentication (MFA), and the slow-but-possible harvest are limits of the design, not of the hosting.
 - **Take the smallest useful step.** Chapter 41 closes with a migration order that starts with moves that help even a single copy.
 
 ## What you will have

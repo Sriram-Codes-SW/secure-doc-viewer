@@ -1,14 +1,14 @@
 <!-- chapter: 6 | part: I | owner: writer-foundations | tag: book-m6-final | status: expanded -->
 # Chapter 6: Maven and the shape of a project
 
-Chapter 3 compiled one file by hand. The Secure Document Viewer has 84 Java files (tests included) and depends on many libraries written by other people. Nobody compiles that by hand. This chapter teaches Maven, the tool that downloads the libraries, compiles the code, runs the tests and packages the result, and shows where every file in the project belongs. By the end you will be able to build the whole backend with one command and read the file that describes it.
+Chapter 3 compiled one file by hand. The Secure Document Viewer has 84 Java files (tests included) and depends on many libraries written by other people. Nobody compiles that by hand. This chapter teaches Maven, the tool that downloads the libraries, compiles the code, runs the tests, and packages the result, and shows where every file in the project belongs. By the end you will be able to build the whole backend with one command and read the file that describes it.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
 - Explain what a build tool does and why the project needs one.
-- Run the compile, test, package and verify steps and say what each produces.
+- Run the compile, test, package, and verify steps and say what each produces.
 - Read `pom.xml` and say what each section is for.
 - Explain what a dependency is, where Maven finds it, and what a scope does.
 - Explain why the project runs Maven through `mvnw` and pins its versions.
@@ -18,7 +18,7 @@ By the end of this chapter, you will be able to:
 ## Prerequisites
 
 - Chapter 3: Your first Java program
-- Chapter 4: Classes, objects, records and interfaces
+- Chapter 4: Classes, objects, records, and interfaces
 
 ## Beginner tier: What a build tool does
 
@@ -30,7 +30,9 @@ Doing a build by hand is slow, and it is error-prone. You might forget to downlo
 
 A **build tool** does the build from a written description, the same way every time, on every machine. **Maven** is the build tool for this project. You describe the project once in a file called `pom.xml` (POM stands for Project Object Model), and Maven follows the description. The description says *what* the project is and which libraries it uses. It does not list the compile steps, because Maven already knows them. That is a deliberate design, and Section 6.9 returns to it.
 
-**Analogy.** Maven is a recipe-following kitchen assistant: you hand over a recipe and it fetches the ingredients and cooks the dish in a fixed order. The analogy breaks down in two places. First, the ingredients here are other people's code, which can carry security flaws; Section 6.11 and Chapter 36 cover how the project watches for that. Second, a kitchen assistant improvises when something is missing, while Maven stops with an error and tells you what it could not find.
+**Analogy.** Maven is a recipe-following kitchen assistant: you hand over a recipe and it fetches the ingredients and cooks the dish in a fixed order.
+
+**Where the analogy breaks down:** in two places. First, the ingredients here are other people's code, which can carry security flaws; Section 6.11 and Chapter 36 cover how the project watches for that. Second, a kitchen assistant improvises when something is missing, while Maven stops with an error and tells you what it could not find.
 
 ### 6.2 A first build, step by step
 
@@ -81,7 +83,7 @@ You have now run a **phase** of Maven's lifecycle, a named step in a fixed seque
 
 ### 6.3 `pom.xml` line by line
 
-A `pom.xml` is written in **XML**, a format where information sits between named tags: `<name>secure-doc-viewer</name>` means "the name is secure-doc-viewer". A tag that opens with `<name>` closes with `</name>`. Tags nest inside one another, and the nesting is the structure. Anything between `<!--` and `-->` is a comment for people. The first tag inside `<project>` is `<modelVersion>4.0.0</modelVersion>`, which names the version of the POM format itself; it never changes in practice, and you can ignore it.
+A `pom.xml` is written in **XML** (Extensible Markup Language), a format where information sits between named tags: `<name>secure-doc-viewer</name>` means "the name is secure-doc-viewer." A tag that opens with `<name>` closes with `</name>`. Tags nest inside one another, and the nesting is the structure. Anything between `<!--` and `-->` is a comment for people. The first tag inside `<project>` is `<modelVersion>4.0.0</modelVersion>`, which names the version of the POM format itself; it never changes in practice, and you can ignore it.
 
 Here is the top of the project's file.
 
@@ -164,7 +166,7 @@ A scope says when a dependency is needed. Table 6.1 lists the two you will meet 
 
 | Scope | Available when | Example in this project |
 |---|---|---|
-| (none, the default) | Compiling, testing and running | `pdfbox` |
+| (none, the default) | Compiling, testing, and running | `pdfbox` |
 | `runtime` | Testing and running, but not compiling | `mysql-connector-j` |
 | `test` | Only while running tests | `h2`, `spring-boot-starter-test` |
 
@@ -184,9 +186,11 @@ The output is long, and that is instructive: a project that names about twenty d
 
 #### Why so many dependencies?
 
-Each direct dependency does one job the project would not write itself: PDF rendering (`pdfbox`), the database (`spring-boot-starter-data-jpa`, Flyway and the MySQL driver), security, validation and metrics. Writing a PDF renderer from scratch would take years and be worse. Using a well-tested library is the right trade, provided you keep the list short and watch it for known flaws. The project does both, and Chapter 36 shows how.
+Each direct dependency does one job the project would not write itself: PDF rendering (`pdfbox`), the database (`spring-boot-starter-data-jpa`, Flyway and the MySQL driver), security, validation, and metrics. Writing a PDF renderer from scratch would take years and be worse. Using a well-tested library is the right trade, provided you keep the list short and watch it for known flaws. The project does both, and Chapter 36 shows how.
 
 ## Intermediate tier: Running Maven
+
+*On a first read you can skim this tier and return to it when you first run a build.*
 
 ### 6.5 Test dependencies
 
@@ -258,11 +262,11 @@ BOOT-INF/lib/pdfbox-3.0.8.jar
 ...
 ```
 
-The application's own classes live under `BOOT-INF/classes` and every library sits as a nested JAR under `BOOT-INF/lib`. Notice that the PDFBox file name carries the version from Listing 6.2.
+The application's own classes live under `BOOT-INF/classes` and every library sits as a nested JAR under `BOOT-INF/lib`. Notice that the PDFBox filename carries the version from Listing 6.2.
 
 ### 6.7 The Maven wrapper (`mvnw`) and why it pins the version
 
-Different Maven versions can behave differently. If you had Maven 3.8 and a teammate had 3.9, the same command could give different results, and "it builds on my machine" would be the start of a long afternoon. The project therefore ships a **wrapper**: small scripts, `mvnw` (macOS, Linux and Git Bash) and `mvnw.cmd` (Windows), that download and run one exact Maven version. You do not need Maven installed at all.
+Different Maven versions can behave differently. If you had Maven 3.8 and a teammate had 3.9, the same command could give different results, and "it builds on my machine" would be the start of a long afternoon. The project therefore ships a **wrapper**: small scripts, `mvnw` (macOS, Linux, and Git Bash) and `mvnw.cmd` (Windows), that download and run one exact Maven version. You do not need Maven installed at all.
 
 **Listing 6.6 — `maven-wrapper.properties` (book-m6-final)**
 
@@ -324,7 +328,7 @@ flowchart LR
 
 *Figure 6.2 — The Maven phases and what each does in this project*
 
-*Text description:* Four boxes in a row, read left to right: compile, test, package and verify. Each box says what the phase does here: compiling source into classes, running the tests, building the executable JAR, and finally verify, which adds nothing extra in this project and is the phase continuous integration runs. Notice that a phase on the left must succeed before one on the right runs.
+*Text description:* Four boxes in a row, read left to right: compile, test, package, and verify. Each box says what the phase does here: compiling source into classes, running the tests, building the executable JAR, and finally verify, which adds nothing extra in this project and is the phase continuous integration runs. Notice that a phase on the left must succeed before one on the right runs.
 
 <!-- source: pom.xml and .github/workflows/ci.yml at book-m6-final -->
 
@@ -356,7 +360,7 @@ java -jar target/secure-doc-viewer.jar
 
 Maven relies on **convention over configuration**: if you put files where it expects them, it needs no instructions. Java code goes in `src/main/java`, tests in `src/test/java`, and Maven knows how to compile both without a single line of setup. That is why the `pom.xml` in this project is short even though the build does a lot.
 
-Maven is not the only Java build tool. **Gradle** describes the build in a script written in a programming language instead of XML, which gives more flexibility and can be faster on large projects. The price is that every build file can differ from the next, where every Maven project follows the same shape. This book uses Maven because the project does; the project's history records no comparison of build tools, so we will not invent a reason. What you learn transfers: dependencies, scopes, phases and layout have direct counterparts in Gradle.
+Maven is not the only Java build tool. **Gradle** describes the build in a script written in a programming language instead of XML, which gives more flexibility and can be faster on large projects. The price is that every build file can differ from the next, where every Maven project follows the same shape. This book uses Maven because the project does; the project's history records no comparison of build tools, so this book does not invent a reason. What you learn transfers: dependencies, scopes, phases, and layout have direct counterparts in Gradle.
 
 ### 6.10 Common mistakes
 
@@ -368,7 +372,7 @@ Build failures look alarming and are usually one of a few causes. Read the first
 
 **`Permission denied` when you run `./mvnw` on macOS or Linux.** The script lost its execute permission, for example after being copied through a system that dropped it. Fix it with `chmod +x mvnw`. The project's own Dockerfile does exactly this before building (`RUN chmod +x mvnw && ...`), for the same reason.
 
-**A strange error mentioning `\r` or "bad interpreter".** The script's line endings were converted to the Windows style (Chapter 2 introduced line endings), which the Unix shell cannot read. Re-clone with Git's default settings, or ask your editor to save `mvnw` with Unix line endings.
+**A strange error mentioning `\r` or "bad interpreter."** The script's line endings were converted to the Windows style (Chapter 2 introduced line endings), which the Unix shell cannot read. Re-clone with Git's default settings, or ask your editor to save `mvnw` with Unix line endings.
 
 **Downloads fail or stall.** Maven needs the internet the first time. A firewall or an offline machine stops it. Once the cache is filled, you can work offline; the project's Dockerfile runs `dependency:go-offline` to fill the cache in a separate step (Section 6.11).
 
@@ -376,7 +380,9 @@ Build failures look alarming and are usually one of a few causes. Read the first
 
 ## Advanced tier: The shape of the project
 
-### 6.11 Pinning, reproducibility and the supply chain
+*On a first read you can skip to "In this project"; Chapter 36 returns to supply-chain checks.*
+
+### 6.11 Pinning, reproducibility, and the supply chain
 
 Everything in this chapter serves one goal: **a reproducible build**, where the same source code produces the same result on any machine and on any day. The project pins versions at every layer:
 
@@ -450,7 +456,7 @@ Comparing the `pom.xml` at the first and last milestones shows how a project gro
 
 *Path: `pom.xml`*
 
-Web serving, PDF reading, and tests: that is the whole first version. Milestone by milestone, the file gained security, validation, JPA, Flyway, the MySQL driver and monitoring. The versions changed once, at `book-m5-platform`: Spring Boot 3.3.4 to 4.1.1, Java 21 to 25 and PDFBox 3.0.3 to 3.0.8, all in one move. The reason on record is that the threat-modeling review had flagged Spring Boot 3.3 as past its open-source support and PDFBox as behind, and the implementer chose the latest generally available versions checked on Maven Central. Note that the starter's name changed as well, from `spring-boot-starter-web` to `spring-boot-starter-webmvc`, which is the Spring Boot 4 split you read about in Listing 6.3. Chapter 30 tells the whole upgrade. <!-- source: dossier decisions.md (upgrade rationale), reviews.md TM-16; versions.md; pom.xml at book-m0-mvp and book-m5-platform -->
+Web serving, PDF reading, and tests: that is the whole first version. Milestone by milestone, the file gained security, validation, JPA (the Java Persistence API, which stores objects in a database), Flyway, the MySQL driver, and monitoring. The versions changed once, at `book-m5-platform`: Spring Boot 3.3.4 to 4.1.1, Java 21 to 25, and PDFBox 3.0.3 to 3.0.8, all in one move. The reason on record is that the threat-modeling review had flagged Spring Boot 3.3 as past its open-source support and PDFBox as behind, and the implementer chose the latest generally available versions checked on Maven Central. Note that the starter's name changed as well, from `spring-boot-starter-web` to `spring-boot-starter-webmvc`, which is the Spring Boot 4 split you read about in Listing 6.3. Chapter 30 tells the whole upgrade. <!-- source: dossier decisions.md (upgrade rationale), reviews.md TM-16; versions.md; pom.xml at book-m0-mvp and book-m5-platform -->
 
 ### 6.13 Directory layout
 
@@ -488,7 +494,7 @@ The Java folders repeat the packages of Chapter 4. A class in the package `com.e
 
 ### Exercise 6.1 ★ Read the coordinates
 
-Open `pom.xml` at `book-m6-final`. What are the project's `groupId`, `artifactId` and version? Which Java version does it compile for?
+Open `pom.xml` at `book-m6-final`. What are the project's `groupId`, `artifactId`, and version? Which Java version does it compile for?
 
 *Solution:* Appendix C, Exercise 6.1.
 
@@ -518,7 +524,7 @@ Print the `pom.xml` at `book-m0-mvp` and at `book-m2-documents` with `git show <
 
 ## Summary
 
-- A build tool fetches libraries, compiles, tests and packages the same way everywhere; Maven does it from `pom.xml`.
+- A build tool fetches libraries, compiles, tests, and packages the same way everywhere; Maven does it from `pom.xml`.
 - The coordinates (`groupId`, `artifactId`, `version`) identify any library, and the parent supplies tested versions.
 - Dependencies come from Maven Central, arrive with their own dependencies, and use scopes (`runtime`, `test`) to control where they are used.
 - The Spring Boot plugin packages an executable JAR that holds the app, its libraries and the web server.

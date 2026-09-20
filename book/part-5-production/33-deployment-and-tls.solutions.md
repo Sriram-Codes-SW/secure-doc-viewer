@@ -18,7 +18,7 @@ Docker caches each instruction as a layer and reuses a layer only if the instruc
 
 ### Exercise 33.5 ★★ Diagnose
 
-A reasonable order: (1) Are you actually using HTTPS end to end? A `Secure` cookie isn't stored or sent over plain HTTP; open the site by its `https://` address and check the browser's developer tools (Application, Cookies) for the `SDV_SESSION` cookie. (2) Does the app see the request as HTTPS? Check that `FORWARD_HEADERS_STRATEGY` and `TRUSTED_PROXY_REGEX` are set so that `X-Forwarded-Proto` from the proxy is believed. (3) Is something dropping the cookie: a proxy stripping `Set-Cookie`, a different host name between requests, or a session lifetime or idle timeout ending the session (`session-max-lifetime`, 30-minute idle timeout)? Also check the health of the app (a restart signs everyone out, Chapter 34). Any ordered list that starts with the cheapest, most likely checks earns credit.
+A reasonable order: (1) Are you actually using HTTPS end to end? A `Secure` cookie isn't stored or sent over plain HTTP; open the site by its `https://` address and check the browser's developer tools (Application, Cookies) for the `SDV_SESSION` cookie. (2) Does the app see the request as HTTPS? Check that `FORWARD_HEADERS_STRATEGY` and `TRUSTED_PROXY_REGEX` are set so that `X-Forwarded-Proto` from the proxy is believed. (3) Is something dropping the cookie: a proxy stripping `Set-Cookie`, a different hostname between requests, or a session lifetime or idle timeout ending the session (`session-max-lifetime`, 30-minute idle timeout)? Also check the health of the app (a restart signs everyone out, Chapter 34). Any ordered list that starts with the cheapest, most likely checks earns credit.
 
 ### Exercise 33.6 ★★★ Plan the go-live
 

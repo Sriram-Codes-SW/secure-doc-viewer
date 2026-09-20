@@ -7,7 +7,7 @@ HTTP 413 with a JSON body `{"error": "The file is too large (limit 50 MB)."}`. T
 
 ### Exercise 28.2 ★ Reference, not message
 
-The exception message can contain SQL, file paths, class names or other internals that help an attacker and confuse users. The catch-all logs the full exception under an eight-character reference and returns only the reference. A user reports the reference and an operator finds the exact failure in the log, without the client ever seeing the internals.
+The exception message can contain SQL, file paths, class names, or other internals that help an attacker and confuse users. The catch-all logs the full exception under an eight-character reference and returns only the reference. A user reports the reference and an operator finds the exact failure in the log, without the client ever seeing the internals.
 
 ### Exercise 28.3 ★★ Is this page allowed?
 
@@ -19,7 +19,7 @@ The signature check is cheap: it reads at most 1,024 bytes and needs no parser, 
 
 ### Exercise 28.5 ★★ Read the headers
 
-You should see `Content-Security-Policy` (containing `default-src 'none'` and `frame-ancestors 'none'`), `Referrer-Policy: no-referrer`, `Permissions-Policy`, `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`. `SecurityHeadersTest.apiResponsesCarryHardeningHeaders` asserts them.
+You should see `Content-Security-Policy` (containing `default-src 'none'` and `frame-ancestors 'none'`), `Referrer-Policy: no-referrer`, `Permissions-Policy`, `X-Content-Type-Options: nosniff`, and `X-Frame-Options: DENY`. `SecurityHeadersTest.apiResponsesCarryHardeningHeaders` asserts them.
 
 ### Exercise 28.6 ★★★ Health and env
 

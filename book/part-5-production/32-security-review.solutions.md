@@ -24,13 +24,13 @@ A model answer. Asset: the audit history (who viewed what, and when). Actors: ad
 
 The first design counted failures per account across all addresses. Anyone could fail 20 times against a victim's username and lock the real owner out (a denial of service against the victim).
 
-The recognised-device design applies that account-wide counter only to attempts from unrecognised devices. The attacker's gain: while an account is under a distributed attack, its owner cannot sign in from a new device (new laptop, hotel network) until the window passes or an administrator unlocks it. An attacker who knows this can time an attack to coincide with a victim's travel.
+The recognized-device design applies that account-wide counter only to attempts from unrecognized devices. The attacker's gain: while an account is under a distributed attack, its owner cannot sign in from a new device (new laptop, hotel network) until the window passes or an administrator unlocks it. An attacker who knows this can time an attack to coincide with a victim's travel.
 
-A mitigation not in the app: a second proof for unrecognised devices, such as an emailed one-time code or MFA, so that a new device can prove itself without waiting for an administrator.
+A mitigation not in the app: a second proof for unrecognized devices, such as an emailed one-time code or MFA, so that a new device can prove itself without waiting for an administrator.
 
 ### Exercise 32.5 ★★ Reorder the checks
 
-The user would still be refused, but the server would already have done the expensive work: reading the tile from disk, drawing the watermark, and encoding a PNG. A signed-in attacker over their limit could keep sending requests and force that work on every one, spending the server's CPU while receiving nothing useful. That turns the rate limit from a protection for the server into a cosmetic one, and it would also make the `503` busy-cap fire for everyone else. The third comment in the listing warns against exactly this: the limit is enforced "before the disk read/render so a throttled request doesn't pay that cost". The same comment explains why it runs after authentication: "so unauthenticated requests can't burn a legitimate user's allowance".
+The user would still be refused, but the server would already have done the expensive work: reading the tile from disk, drawing the watermark, and encoding a PNG. A signed-in attacker over their limit could keep sending requests and force that work on every one, spending the server's CPU while receiving nothing useful. That turns the rate limit from a protection for the server into a cosmetic one, and it would also make the `503` busy-cap fire for everyone else. The third comment in the listing warns against exactly this: the limit is enforced "before the disk read/render so a throttled request doesn't pay that cost". The same comment explains why it runs after authentication: "so unauthenticated requests can't burn a legitimate user's allowance."
 
 ### Exercise 32.6 ★★★ Review a new endpoint
 

@@ -1,7 +1,7 @@
 <!-- chapter: part-V | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Part V: Production
 
-By the end of Part IV you have a working app. It signs people in, shares documents, tiles and watermarks pages, and records who did what. Part V asks a different question: is it ready for people you don't know, on a machine you don't sit in front of, on a day when something goes wrong?
+By the end of Part IV you have a working app. It signs people in, shares documents, tiles, and watermarks pages, and records who did what. Part V asks a different question: is it ready for people you don't know, on a machine you don't sit in front of, on a day when something goes wrong?
 
 That question is not the same as "does it work?". A prototype works when everything goes right. A production system is judged by what happens when a stranger sends a forged header, when the disk fills up, when a library you didn't write turns out to have a critical flaw, or when the person who built it is asleep. Part V teaches the habits and the machinery for those days.
 
@@ -15,11 +15,11 @@ Table V.1 lists the chapters and the question each one answers.
 |---|---|---|
 | 32 | Security review and threat modeling | How would someone attack this, and how do you find out before they do? |
 | 33 | Deployment and TLS | How does the app reach a real server, and how do you keep the traffic private? |
-| 34 | Backups, restores and operations | If the disk dies tonight, what do you get back tomorrow? |
-| 35 | Health, metrics and alerting | How do you know what the running app is doing? |
+| 34 | Backups, restores, and operations | If the disk dies tonight, what do you get back tomorrow? |
+| 35 | Health, metrics, and alerting | How do you know what the running app is doing? |
 | 36 | Supply chain and CI | How do you trust the code and images you didn't write? |
 
-After these five chapters comes Chapter 37, "The engineering trade-offs", which steps back and weighs every major decision in the app. It sits outside Part V on purpose: it draws on all five parts of the book, and you will get more from it once you have seen the whole system in production.
+After these five chapters comes Chapter 37, "The engineering trade-offs," which steps back and weighs every major decision in the app. It sits outside Part V on purpose: it draws on all five parts of the book, and you will get more from it once you have seen the whole system in production.
 
 ## Why this order
 
@@ -29,7 +29,7 @@ Part V leans on the last two milestone tags. Most code and configuration is quot
 
 ## A note on the reviewers
 
-Chapters 32 to 34 describe findings from two review roles, a "Product Owner reviewer" and a "Senior Technical Manager reviewer". These were AI review agents, briefed to act as independent third parties. A human product owner made the product decisions. The book tells you this each time it matters, because being honest about who found what is part of describing a real project.
+Chapters 32 to 37 describe findings from two review roles, the AI product-owner reviewer and the AI technical-manager reviewer (afterwards the PO reviewer and the TM reviewer). These were AI review agents, briefed to act as independent third parties. The project owner, a person, made the product decisions. The book tells you this each time it matters, because being honest about who found what is part of describing a real project.
 
 ## How to read this part
 

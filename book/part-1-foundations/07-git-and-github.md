@@ -11,7 +11,7 @@ By the end of this chapter, you will be able to:
 - Create a repository, record changes with `git add` and `git commit`, and read the result with `git log` and `git diff`.
 - Clone the project and read its history.
 - Look at the code as it was at any milestone, using tags.
-- Explain branches, merges, remotes and pull requests, and follow the project's use of them.
+- Explain branches, merges, remotes, and pull requests, and follow the project's use of them.
 - Explain why `.gitignore` exists and why secrets are never committed.
 - Follow the book's milestones without breaking your own changes, and recover from the common mistakes.
 
@@ -23,11 +23,13 @@ By the end of this chapter, you will be able to:
 
 ### 7.1 Version control as a save history
 
-Imagine writing a long document and saving copies named `report-final`, `report-final-2` and `report-really-final`. Within a week you cannot say which is newest, what changed between them, or which one you sent to your manager. Version control replaces that habit. A tool records every meaningful change, who made it, when, and why, and lets you return to any earlier state. **Git** is the version control tool this project uses, and it is the most widely used one in the world.
+Imagine writing a long document and saving copies named `report-final`, `report-final-2`, and `report-really-final`. Within a week you cannot say which is newest, what changed between them, or which one you sent to your manager. Version control replaces that habit. A tool records every meaningful change, who made it, when, and why, and lets you return to any earlier state. **Git** is the version control tool this project uses, and it is the most widely used one in the world.
 
 A Git project is a **repository**: your files plus a hidden folder named `.git` that holds the whole history. Each saved state is a **commit**: a snapshot of every tracked file at one moment, with a message describing the change and a unique identifier such as `2d10e07`. Commits form a chain, and each one points to the commit before it. Because each snapshot is complete, you can reload any of them.
 
-**Analogy.** A commit is a numbered save point in a video game; you can reload any one. The analogy breaks down in two ways. First, Git can hold several lines of work at once, each with its own chain of save points, and merge them later; a game has one save file in one timeline. Second, a game save stores your whole world every time, while Git stores the changes compactly and identifies each snapshot by a fingerprint of its contents, so the same identifier means the same content on every computer.
+**Analogy.** A commit is a numbered save point in a video game; you can reload any one.
+
+**Where the analogy breaks down:** in two ways. First, Git can hold several lines of work at once, each with its own chain of save points, and merge them later; a game has one save file in one timeline. Second, a game save stores your whole world every time, while Git stores the changes compactly and identifies each snapshot by a fingerprint of its contents, so the same identifier means the same content on every computer.
 
 Why does this matter for a security project? Three reasons. History lets a reviewer see exactly what changed and why. It lets a team undo a mistake without guessing. And it makes the project's growth readable: the book uses it to give you seven checkpoints at known states.
 
@@ -74,7 +76,7 @@ Untracked files:
   notes.txt
 ```
 
-**Untracked** means Git can see the file but is not recording it. Recording happens in two steps, and the reason for two steps is worth understanding. Git has three places where your work can be: the **working folder** (the files you edit), the **staging area** (a list of changes you have chosen to record next) and the repository (the saved history). You move changes from the first to the second with `git add`, and from the second to the third with `git commit`.
+**Untracked** means Git can see the file but is not recording it. Recording happens in two steps, and the reason for two steps is worth understanding. Git has three places where your work can be: the **working folder** (the files you edit), the **staging area** (a list of changes you have chosen to record next), and the repository (the saved history). You move changes from the first to the second with `git add`, and from the second to the third with `git commit`.
 
 Figure 7.1 draws the three places and the commands that move changes between them.
 
@@ -87,7 +89,7 @@ flowchart LR
 
 *Figure 7.1 — The three places your changes move through*
 
-*Text description:* Three boxes: the working folder, the staging area and the repository, with a labeled arrow from each to the next. `git add` moves changes from the working folder to the staging area, `git commit` moves them into the repository, and `git switch` or `git restore` brings files from the repository back to the working folder.
+*Text description:* Three boxes: the working folder, the staging area, and the repository, with a labeled arrow from each to the next. `git add` moves changes from the working folder to the staging area, `git commit` moves them into the repository, and `git switch` or `git restore` brings files from the repository back to the working folder.
 
 <!-- source: git behavior, as demonstrated in the scratch repository of Section 7.3 -->
 
@@ -114,7 +116,7 @@ Date:   ...
     Add notes about tile size
 ```
 
-The long hexadecimal number is the commit's identifier. Everyone abbreviates it to its first seven or so characters. `HEAD` is Git's name for "where you are now", and `main` is the name of the branch you are on (Section 7.6).
+The long hexadecimal number is the commit's identifier. Everyone abbreviates it to its first seven or so characters. `HEAD` is Git's name for "where you are now," and `main` is the name of the branch you are on (Section 7.6).
 
 Now change the file and see what Git noticed:
 
@@ -163,9 +165,11 @@ The last line is the very first commit: the project began as a small tiled viewe
 git show 2d10e07 --stat
 ```
 
-`--stat` summarizes which files changed. This commit, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests", is the one that introduced the Dockerfile and the Maven wrapper from Chapter 6. It touched 28 files. <!-- source: git show --stat 2d10e07; git log --diff-filter=A for mvnw -->
+`--stat` summarizes which files changed. This commit, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests", is the one that introduced the Dockerfile and the Maven wrapper from Chapter 6. (In that title, CI is continuous integration and e2e means end-to-end: tests that drive the whole running app.) It touched 28 files. <!-- source: git show --stat 2d10e07; git log --diff-filter=A for mvnw -->
 
-## Intermediate tier: Tags, branches and pull requests
+## Intermediate tier: Tags, branches, and pull requests
+
+*On a first read you can skim this tier and return to it when you first work on a branch.*
 
 ### 7.5 Tags as bookmarks: the `book-m*` tags
 
@@ -183,9 +187,11 @@ A **tag** is a permanent name for one commit, like a bookmark. The project has s
 | `book-m5-platform` | Spring Boot 4, Docker, CI, production hardening | `d1b1086` (merge of pull request 5) |
 | `book-m6-final` | The finished app | `a27e069` (merge of pull request 12) |
 
+A few words in the table are new. CSRF (Cross-Site Request Forgery) is an attack on signed-in users that Chapter 8 explains. CI (continuous integration) is a service that builds and tests every proposed change automatically, as Chapter 6 describes.
+
 <!-- source: book/README.md milestone table; dossier timeline.md tag map -->
 
-There is a subtlety worth knowing. Pull requests 1 to 4 were **stacked**: each branch started from the previous one, and all four were merged within about a minute of each other. So each tag marks a merge commit on `main`, and the code at each tag is the cumulative state of the project at that merge. That is exactly what a reader wants from a checkpoint. It also means you should always check what a tag contains with `git show`, and never assume from a pull request's title. <!-- source: dossier timeline.md, caveat for writers -->
+There is a subtlety worth knowing. Pull requests 1 to 4 were **stacked pull requests**: each branch started from the previous one, and all four were merged within about a minute of each other. So each tag marks a merge commit on `main`, and the code at each tag is the cumulative state of the project at that merge. That is exactly what a reader wants from a checkpoint. It also means you should always check what a tag contains with `git show`, and never assume from a pull request's title. <!-- source: dossier timeline.md, caveat for writers -->
 
 Figure 7.2 shows the project's real history as branches and merges. Each phase branch started from the tip of the one before it, which is what "stacked" means, and each was then merged into `main`.
 
@@ -264,13 +270,13 @@ The line appears. Because `main` had no new commits of its own, Git could move `
 
 If two branches change the same lines of the same file, Git cannot decide which version wins, and it stops with a **merge conflict**. It writes both versions into the file, between marker lines `<<<<<<<`, `=======` and `>>>>>>>`. You edit the file to keep what is right, delete the markers, `git add` the file and commit. Conflicts are normal and not a sign that you did something wrong.
 
-### 7.7 Remotes, pull requests and code review
+### 7.7 Remotes, pull requests, and code review
 
 A **remote** is a copy of the repository on another computer, usually GitHub. `git clone` sets one up for you, under the name `origin`. Three commands move commits between copies. To **push** is to send your commits to the remote (`git push`). To **fetch** is to download new commits without touching your files (`git fetch`). To **pull** is to fetch and then merge the new commits into your branch (`git pull`).
 
 On GitHub, a **pull request** (PR) is a proposal to merge one branch into another. It shows the changes, lets others comment line by line, and runs automated checks before anything is merged. **Code review** is the practice of having someone else read the change before it lands. It catches mistakes the author cannot see, spreads knowledge, and leaves a record of why decisions were made.
 
-This project used one pull request per phase, and the pull requests are a record of how it grew. For example, `book-m1-accounts` is the merge of pull request 1, "Phase 1: real accounts, roles, and admin lockdown". And `book-m5-platform` is the merge of pull request 5, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests". Pull request 5 is the largest story: after it was opened, review rounds added fixes for problems the reviewers found, and about 15 commits landed on that branch before it was merged. In this project, the reviewers were AI review agents: a senior technical manager agent and a product owner agent. The technical manager agent gave a final recommendation to merge pull request 5, "subject to the product owner's approval", and it was the project's human owner who approved the merge. The agents advised; a person decided. Part V describes what they found. <!-- source: dossier timeline.md (PR #5 commits); reviews.md (line 5964, TM recommends merge subject to product owner approval; user approves merging #5) -->
+This project used one pull request per phase, and the pull requests are a record of how it grew. For example, `book-m1-accounts` is the merge of pull request 1, "Phase 1: real accounts, roles, and admin lockdown". And `book-m5-platform` is the merge of pull request 5, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests". Pull request 5 is the largest story: after it was opened, review rounds added fixes for problems the reviewers found, and about 15 commits landed on that branch before it was merged. In this project, the reviewers were AI review agents: a senior technical manager agent and a product owner agent. The technical manager agent gave a final recommendation to merge pull request 5, "subject to the product owner's approval," and it was the project's human owner who approved the merge. The agents advised; a person decided. Part V describes what they found. <!-- source: dossier timeline.md (PR #5 commits); reviews.md (line 5964, TM recommends merge subject to product owner approval; user approves merging #5) -->
 
 You can read the pull requests on the repository's *Pull requests* tab (with access to the private repository, Section 7.4), or from the terminal with `gh pr view 5` if you have GitHub's command-line tool, `gh`, signed in.
 
@@ -303,6 +309,8 @@ Why so strict? Git history is permanent and copied to everyone who clones. If yo
 The same care covers where the repository lives on your disk. The project's `.env.example` warns that the tile storage folder must be somewhere that is not synced by OneDrive, Dropbox or a similar service, because those would upload every rendered page to the cloud. The developer learned this the hard way: the project began inside a OneDrive folder, and the sync client copied the repository, the secrets and the tiles, and its file locks broke the moves and deletes the app performs. It was moved out to a plain local folder. <!-- source: dossier timeline.md (project moved out of OneDrive); .env.example at book-m6-final -->
 
 ## Advanced tier: Working safely
+
+*On a first read you can skip to "In this project"; Part IV uses the tags throughout.*
 
 ### 7.9 Following this book with tags without breaking your work
 
@@ -346,7 +354,7 @@ git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_ve
 
 **Your changes vanished after switching to a tag.** You committed while in detached HEAD, then switched away. If you have not yet switched, save the work with `git switch -c rescue` while you are still there. If you have already switched, ask Git for the lost commit's identifier with `git reflog`, the **reflog**, which lists where `HEAD` has been, then `git switch -c rescue <id>`.
 
-**"LF will be replaced by CRLF" warnings on Windows.** This is Git converting line endings (Chapter 2) between the Windows and Unix styles. It is normal. If a script such as `mvnw` fails with a strange `\r` error, the conversion went too far for that file (Chapter 6).
+**"LF will be replaced by CRLF" warnings on Windows.** (LF and CRLF are the Unix and Windows line endings from Chapter 2.) This is Git converting line endings (Chapter 2) between the Windows and Unix styles. It is normal. If a script such as `mvnw` fails with a strange `\r` error, the conversion went too far for that file (Chapter 6).
 
 **"Permission denied" or a request for credentials when cloning.** The repository is private. Check that your GitHub account has access, and that you are signed in through the method your clone address uses.
 
@@ -402,7 +410,7 @@ In your scratch repository, create two branches that change the same line of `no
 
 ## Summary
 
-- Git records a project's history as commits; the working folder, staging area and repository are the three places your changes move through.
+- Git records a project's history as commits; the working folder, staging area, and repository are the three places your changes move through.
 - `git add` stages, `git commit` saves, `git diff` and `git log` show what changed.
 - Tags are permanent names for commits; `git show <tag>:<path>` reads any file at any milestone without changing your files.
 - Branches isolate work and merges join it; pull requests propose merges and trigger review and checks.

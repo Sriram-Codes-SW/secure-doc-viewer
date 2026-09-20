@@ -1,7 +1,7 @@
 # Setting up your machine
 
-You need six things: a terminal, Git, a JDK (Java Development Kit) 25, Node.js 24, Docker and a code
-editor. This chapter walks through each on Windows, macOS and Linux, and ends with a check that
+You need six things: a terminal, Git, a JDK (Java Development Kit) 25, Node.js 24, Docker, and a code
+editor. This chapter walks through each on Windows, macOS, and Linux, and ends with a check that
 proves everything works. Installer pages change over time; where they differ from what is written
 here, follow the official page and use the version numbers below.
 
@@ -163,7 +163,7 @@ or virtualization; follow its prompts and restart if asked.
 
 **Linux:** install Docker Engine and the Compose plugin following
 https://docs.docker.com/engine/install/ for your distribution. To run `docker` without `sudo`,
-add yourself to the `docker` group and log in again.
+add yourself to the `docker` group and sign in to your computer again.
 
 Check it, then run Docker's test container:
 
@@ -183,11 +183,11 @@ The last command should print a message beginning "Hello from Docker!".
 Any code editor works. Two common free choices:
 
 - **IntelliJ IDEA Community Edition** (https://www.jetbrains.com/idea/): strongest for Java.
-- **Visual Studio Code** (https://code.visualstudio.com/): good for Java, TypeScript and Markdown.
+- **Visual Studio Code** (https://code.visualstudio.com/): good for Java, TypeScript, and Markdown.
 
 ## Step 7. Get the code
 
-Choose a folder that is **not** inside OneDrive, Dropbox or another synced folder. Those services
+Choose a folder that is **not** inside OneDrive, Dropbox, or another synced folder. Those services
 lock and rewrite files while the app is using them. For example, use `C:\dev` on Windows and
 `~/dev` on macOS and Linux.
 

@@ -21,7 +21,7 @@ function step(current: number, d: Direction): number {
 
 ### Exercise 19.3 ★★ Extend IdleState
 
-In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
+In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative falls through as "not a warning." The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
 
 ### Exercise 19.4 ★★ A fetchOrNull helper
 
@@ -58,4 +58,4 @@ const firstLoaded = firstWhere(tiles, (t) => t.status === 'loaded');
 
 ### Exercise 19.6 ★★ Tile arithmetic
 
-Columns: 600 ÷ 256 rounds up to 3. Rows: 800 ÷ 256 rounds up to 4. So there are 3 × 4 = 12 tiles. The `left` values are 0, 256 and 512; the `top` values are 0, 256, 512 and 768. Widths are 256, 256 and `min(256, 600 − 512)` = 88; heights are 256, 256, 256 and `min(256, 800 − 768)` = 32. The bottom-right tile (row 3, column 2 when counting from 0) is at left 512, top 768, and is 88 pixels wide and 32 pixels tall. Its key is `"3-2"`.
+Columns: 600 ÷ 256 rounds up to 3. Rows: 800 ÷ 256 rounds up to 4. So there are 3 × 4 = 12 tiles. The `left` values are 0, 256, and 512; the `top` values are 0, 256, 512, and 768. Widths are 256, 256, and `min(256, 600 − 512)` = 88; heights are 256, 256, 256, and `min(256, 800 − 768)` = 32. The bottom-right tile (row 3, column 2 when counting from 0) is at left 512, top 768, and is 88 pixels wide and 32 pixels tall. Its key is `"3-2"`.

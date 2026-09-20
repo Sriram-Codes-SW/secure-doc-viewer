@@ -6,7 +6,7 @@
 |---|---|
 | Author | Claude (Anthropic) |
 | Edition | First edition, version 1.0 |
-| Copyright and licence | Text and figures: copyright 2026, all rights reserved. The code listings are excerpts of the Secure Document Viewer source code, which is released under the MIT License (the `LICENSE` file in the repository). |
+| Copyright and license | Text and figures: copyright 2026, all rights reserved. The code listings are excerpts of the Secure Document Viewer source code, which is released under the MIT License (the `LICENSE` file in the repository). |
 | Code version | The repository tag `book-m6-final`; earlier milestones use the tags `book-m0-mvp` to `book-m5-platform` |
 | Software versions | Java 25, Spring Boot 4.1.1, Spring Security 7, MySQL 8.4, Node 24, Angular 22, TypeScript 6.0, Docker Compose, Maven 3.9.16 (the first five milestones used Spring Boot 3.3.4 and Java 21) |
 | Language | American English |
@@ -16,8 +16,8 @@
 This edition teaches you to build the Secure Document Viewer, a web application that shows PDF
 documents without handing out the PDF, and to understand every decision behind it. Every listing
 that is presented as the project's code is copied from the repository at the tag named in its
-caption; code written only to teach is labelled as an example, and sketches of things the project
-never built are labelled illustrative.
+caption; code written only to teach is labeled as an example, and sketches of things the project
+never built are labeled illustrative.
 
 Part VII is a design study. The project never built or ran the application on a cloud platform, and
 the chapters say so.
@@ -26,22 +26,22 @@ the chapters say so.
 
 The author is Claude, an AI model made by Anthropic. The book and the application were written
 together with the project owner, who directed the work and reviewed it, and with further AI agents
-that helped research, write, review and check the chapters. The Acknowledgments in the preface say
+that helped research, write, review, and check the chapters. The Acknowledgments in the preface say
 more.
 
 ## Accessibility
 
-The book is published as a PDF, an EPUB and a single web page. All three contain real text, and every
+The book is published as a PDF, an EPUB, and a single web page. All three contain real text, and every
 diagram has alternative text and a text description in the body. The PDF is a tagged PDF, so a
 reading order can be followed, and it passes the automated PDF/UA-2 check of the veraPDF validator.
 The EPUB passes the EPUB validator epubcheck. In the EPUB and web editions the difficulty stars on
-the exercises are labelled in words; in the PDF they are shown only as symbols, and the meaning of
-one, two and three stars is explained in How to use this book. These editions were checked with
+the exercises are labeled in words; in the PDF they are shown only as symbols, and the meaning of
+one, two, and three stars is explained in How to use this book. These editions were checked with
 automated tools (veraPDF and epubcheck) and by manual sampling, and have not been tested with screen
 readers or other assistive technology. If you find a barrier, report it as you would an error.
 
 ## Corrections and updates
 
-Software changes. Versions, screens and documentation pages described here were checked on
+Software changes. Versions, screens, and documentation pages described here were checked on
 September 20, 2026. Where a chapter cites documentation, check the current page before you rely on
 a detail. If you find an error, report it to the author or the publisher of your copy.

@@ -1,6 +1,6 @@
 # Appendix E: Troubleshooting
 
-Each entry gives the symptom, the usual cause and the fix. The entries are grouped by where you are
+Each entry gives the symptom, the usual cause, and the fix. The entries are grouped by where you are
 in the book: setup, starting the app, using the app, and tests. Appendix D lists the commands the
 fixes use.
 

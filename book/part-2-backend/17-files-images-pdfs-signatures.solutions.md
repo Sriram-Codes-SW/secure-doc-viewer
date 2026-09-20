@@ -7,7 +7,7 @@ Width: 8.5 × 150 = 1,275 pixels. Height: 11 × 150 = 1,650 pixels. Columns: `ti
 
 ### Exercise 17.2 ★ Why crop, not pad?
 
-Because reassembling the tiles at `(col * tileSize, row * tileSize)` must reproduce the page exactly, and the page itself has no pixels beyond its right and bottom edges. A padded tile would carry a strip of white that doesn't belong to the page: the viewer would show a light band beyond the page's edge, most visible against a dark background; each tile would also claim a size that doesn't match `PageInfo`'s page width and height; and the padding would be extra pixels to store, send and watermark. Cropping keeps the data exactly as large as the page.
+Because reassembling the tiles at `(col * tileSize, row * tileSize)` must reproduce the page exactly, and the page itself has no pixels beyond its right and bottom edges. A padded tile would carry a strip of white that doesn't belong to the page: the viewer would show a light band beyond the page's edge, most visible against a dark background; each tile would also claim a size that doesn't match `PageInfo`'s page width and height; and the padding would be extra pixels to store, send, and watermark. Cropping keeps the data exactly as large as the page.
 
 ### Exercise 17.3 ★★ Tamper with a token
 
@@ -35,7 +35,7 @@ One good answer.
 1. Validate the uploaded file and read it into a temporary file (no shared state changed).
 2. Produce the thumbnail into a **staging** folder or temporary file (invisible to readers). If this fails, delete the staging file; nothing else has changed.
 3. **Atomically rename** the staged file to its final name in the storage folder, with a unique name (for example including a version or random id) so it can't overwrite the current thumbnail. If the rename fails, delete the staging file.
-4. Update the database column to point at the new file name in one short transaction. If it fails, delete the newly renamed file (nothing points at it).
+4. Update the database column to point at the new filename in one short transaction. If it fails, delete the newly renamed file (nothing points at it).
 5. After the transaction commits, delete the *old* thumbnail file. If that fails, log it and leave it for a janitor: the row no longer points at it, so it is unreachable garbage, not an error.
 
 The key decisions: write in a place nobody looks and make it visible in one atomic step; change the database only after the file exists; delete the old file only after the database points at the new one; and give every failure path a cleanup, with a scheduled sweep as the last resort, as `StorageJanitor` does for tiles.

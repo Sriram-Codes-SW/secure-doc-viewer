@@ -13,12 +13,12 @@ Table VI.1 lists the two chapters and what each gives you.
 
 | Chapter | Topic | What you gain |
 |---|---|---|
-| 38 | Design patterns in the code | The names for the small-scale solutions: strategy, chain of responsibility, template method, observer, state machine, bulkhead and more, on the backend and in Angular |
-| 39 | Architectural patterns | The names for the large-scale shape: the single-page app with an API, layers, the modular monolith, the reverse proxy and trust boundary, sessions and signed URLs, the audit log as an event log, and a method for using patterns in decisions |
+| 38 | Design patterns in the code | The names for the small-scale solutions: strategy, chain of responsibility, template method, observer, state machine, bulkhead, and more, on the backend and in Angular |
+| 39 | Architectural patterns | The names for the large-scale shape: the single-page app with an API, layers, the modular monolith, the reverse proxy, and trust boundary, sessions, and signed URLs, the audit log as an event log, and a method for using patterns in decisions |
 
 ## How the two chapters relate
 
-Chapter 38 works at the level of classes and methods: how one piece of code is arranged. Chapter 39 works at the level of the whole system: how the browser, the proxy, the application and the database are arranged. The same idea often appears at both levels. A chain of responsibility is a filter chain inside one server (Chapter 38) and a pipeline of proxies and checks across a request's whole route (Chapter 39). Chapter 37, which you may have read already, is the bridge: it weighs the project's big decisions against their alternatives, and the two chapters here give those alternatives their standard names.
+Chapter 38 works at the level of classes and methods: how one piece of code is arranged. Chapter 39 works at the level of the whole system: how the browser, the proxy, the application, and the database are arranged. The same idea often appears at both levels. A chain of responsibility is a filter chain inside one server (Chapter 38) and a pipeline of proxies and checks across a request's whole route (Chapter 39). Chapter 37, which you may have read already, is the bridge: it weighs the project's big decisions against their alternatives, and the two chapters here give those alternatives their standard names.
 
 ## How to read this part
 

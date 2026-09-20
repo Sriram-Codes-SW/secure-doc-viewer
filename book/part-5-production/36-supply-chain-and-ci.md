@@ -27,7 +27,7 @@ By the end of this chapter, you will be able to:
 
 A restaurant is only as safe as its ingredients. The chef can wash every dish perfectly, but if the flour was contaminated at the mill, customers get sick, and the chef didn't do anything wrong. Your app's ingredients are libraries (Spring, Angular, PDFBox), base images (Java, nginx, MySQL), and the tools that build it. **Supply-chain risk** is the chance that one of them is flawed or malicious.
 
-The analogy breaks down in three places. Software ingredients change constantly, so an ingredient that was safe on Monday can have a published flaw by Friday. You also inherit ingredients-of-ingredients without ever choosing them: a library you add pulls in libraries of its own. And unlike flour, a flawed library can be fixed with a new version that costs nothing, if you know about it and can adopt it safely. The whole chapter is about knowing and adopting.
+**Where the analogy breaks down:** in three places. Software ingredients change constantly, so an ingredient that was safe on Monday can have a published flaw by Friday. You also inherit ingredients-of-ingredients without ever choosing them: a library you add pulls in libraries of its own. And unlike flour, a flawed library can be fixed with a new version that costs nothing, if you know about it and can adopt it safely. The whole chapter is about knowing and adopting.
 
 ### 36.2 Terms you need
 
@@ -61,7 +61,7 @@ The fix was a single line in `pom.xml`, with a comment that explains it. Here it
 
 Read it as a small piece of engineering practice. The property `tomcat.version` overrides the version that Spring Boot manages for the Tomcat libraries. The comment names the three advisories, so the next person knows why the override exists, and says when to remove it, so the override doesn't outlive its reason. An override with no comment becomes a mystery that nobody dares delete.
 
-The lesson is worth stating: a framework release can lag its own dependency's security fixes, so you can't rely on the framework alone. You need something that looks at what you actually ship. That something is the OSV scan in section 36.5.
+The lesson is worth stating: a framework release can lag its own dependency's security fixes, so you can't rely on the framework alone. You need something that looks at what you actually ship. That something is the OSV scan in Section 36.6.
 
 ## Intermediate tier: The workflow
 
@@ -89,12 +89,12 @@ concurrency:
 | Backend tests | `./mvnw -B verify` on Java 25 | Unit and integration tests pass (H2 in MySQL mode, and MySQL 8.4 through Testcontainers, because the runner has Docker) |
 | Frontend tests and build | `npm ci`, `ng test`, `ng build --configuration production` on Node 24 | Frontend tests pass and the production build compiles |
 | Known-vulnerability scan (OSV) | The OSV scanner on `pom.xml` and `frontend/package-lock.json` | No Maven or npm dependency, including transitive ones, has an advisory known to the OSV database on the day the job ran |
-| End-to-end (Docker stack) | Builds the full stack with throwaway secrets, scans both images with Trivy, then runs Playwright | The real containers work together, contain no fixable HIGH or CRITICAL vulnerabilities, and the browser journey succeeds |
+| End-to-end (Docker stack) | Builds the full stack with throwaway secrets, scans both images with Trivy, then runs Playwright | The real containers work together, contain no fixable HIGH, or CRITICAL vulnerabilities, and the browser journey succeeds |
 
 The `e2e` job declares `needs: [backend, frontend]`, so it starts only after both pass. That ordering saves time: there's no point building Docker images when a unit test has already failed.
 
 <!-- source: .github/workflows/ci.yml at book-m6-final -->
-Figure 36.1 shows how the four jobs relate. Any red node fails the run. GitHub shows the failed status on the pull request; whether a failure also blocks merging depends on branch protection or repository rulesets. On September 20, 2026 the project's private repository could not enable them (the GitHub API answered HTTP 403, "Upgrade to GitHub Pro or make this repository public"), so here a red run is a signal that the reviewer must honor, not a lock.
+Figure 36.1 shows how the four jobs relate. Any red node fails the run. GitHub shows the failed status on the pull request; whether a failure also blocks merging depends on branch protection or repository rulesets. On September 20, 2026, the project's private repository could not enable them (the GitHub API answered HTTP 403, "Upgrade to GitHub Pro or make this repository public"), so here a red run is a signal that the reviewer must honor, not a lock.
 
 ```mermaid
 flowchart TB
@@ -139,7 +139,7 @@ backend:
 ```
 
 - `runs-on: ubuntu-latest` picks the kind of virtual machine GitHub provides for the job.
-- `actions/checkout` copies your repository onto that machine. Each `uses:` line runs a prebuilt **action**, a reusable step written by someone else. That makes actions part of your supply chain too, which is why they are pinned (section 36.7).
+- `actions/checkout` copies your repository onto that machine. Each `uses:` line runs a prebuilt **action**, a reusable step written by someone else. That makes actions part of your supply chain too, which is why they are pinned (Section 36.8).
 - `actions/setup-java` installs a JDK. `distribution: temurin` and `java-version: '25'` match the version the project builds with. `cache: maven` saves the downloaded dependencies between runs so the job doesn't download the internet each time.
 - `./mvnw -B verify` runs the Maven wrapper (Chapter 6, which pins Maven 3.9.16) in **batch mode** (`-B`, which suppresses interactive-terminal noise in logs). `verify` runs the whole lifecycle through the tests. The comment records that these tests need no extra services; the MySQL test starts its own database through Testcontainers.
 
@@ -180,7 +180,7 @@ The scanner itself runs as a container (`docker run --rm`), pinned by digest. It
 
 Line by line: the `for` loop scans the two images the compose build produced. Trivy runs in its own container, and mounting `/var/run/docker.sock` lets it read images from the host's Docker engine. `--scanners vuln` limits it to vulnerabilities (Trivy can also look for leaked secrets and misconfigurations). `--severity HIGH,CRITICAL` ignores lower-severity findings, so the build fails only on serious ones. `--ignore-unfixed` skips flaws for which no fixed version exists yet, because you can't act on those. `--exit-code 1` makes any remaining finding fail the step.
 
-Two of those options are deliberate trade-offs, and it helps to name them. Failing only on HIGH and CRITICAL keeps the signal strong: if every low-severity note failed the build, people would learn to ignore red builds. Ignoring unfixed findings keeps the build actionable: a red build should always mean "there is something you can do". The cost is that a serious unfixed flaw doesn't turn the build red, so a person still has to keep an eye on the advisories for the software they run.
+Two of those options are deliberate trade-offs, and it helps to name them. Failing only on HIGH and CRITICAL keeps the signal strong: if every low-severity note failed the build, people would learn to ignore red builds. Ignoring unfixed findings keeps the build actionable: a red build should always mean "there is something you can do." The cost is that a serious unfixed flaw doesn't turn the build red, so a person still has to keep an eye on the advisories for the software they run.
 
 ### 36.7 Throwaway secrets in the end-to-end job
 
@@ -200,7 +200,7 @@ After the stack builds, the job scans the images (Listing 36.4), then loops up t
 
 ## Advanced tier: Pinning and update rules
 
-*On a first read you can skip to "In this project".*
+*On a first read you can skip to "In this project."*
 
 ### 36.8 Pinning by digest and commit SHA
 
@@ -241,7 +241,7 @@ flowchart TB
 
 *Figure 36.2 — How the LTS-only rules filter Dependabot's proposals*
 
-*Text description:* A decision flow. Dependabot finds a newer version and asks whether an ignore rule matches. If yes, for example a non-LTS Node or MySQL version or a TypeScript minor version, no pull request is opened. If no, a grouped pull request is opened, CI runs the tests, scans and end-to-end run, and a person reads the release notes and merges.
+*Text description:* A decision flow. Dependabot finds a newer version and asks whether an ignore rule matches. If yes, for example a non-LTS Node or MySQL version or a TypeScript minor version, no pull request is opened. If no, a grouped pull request is opened, CI runs the tests, scans, and end-to-end run, and a person reads the release notes and merges.
 
 **Table 36.2 — Dependabot rules from PR #10**
 
@@ -294,11 +294,11 @@ A red scan is not a disaster, but it needs a decision. Here is a practical order
 4. **Run the whole suite.** The tests and the end-to-end run tell you whether the upgrade broke anything.
 5. **If there is no fix yet,** decide whether the flaw is reachable in your app, add a note where the team will see it, and check again when a fix appears. Trivy's `--ignore-unfixed` means this case won't turn the build red, so someone has to remember to look.
 
-## Common mistakes
+### 36.12 Common mistakes
 
 - **Pinning without an update path.** Symptom: months later the images are old and a scan finds problems in them. Fix: keep Dependabot for the `docker` and `github-actions` ecosystems.
 - **Using `npm install` in CI.** Symptom: CI passes with versions you never reviewed. Fix: `npm ci`.
-- **Ignoring a red scan "because it is only a library".** Every library runs with your app's permissions. Read the advisory.
+- **Ignoring a red scan "because it is only a library."** Every library runs with your app's permissions. Read the advisory.
 - **Adding an override and forgetting it.** Symptom: an old `tomcat.version` line pins you to a version older than what the framework now ships. Fix: always write the removal condition next to the override.
 - **Broad permissions in a workflow.** Symptom: a compromised step can push code. Fix: start from `contents: read` and add only what a job needs.
 - **Printing secrets in CI logs.** Fix: generate them at run time and mask them with `::add-mask::`, as the end-to-end job does.

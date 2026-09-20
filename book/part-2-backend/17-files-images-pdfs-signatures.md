@@ -1,5 +1,5 @@
 <!-- chapter: 17 | part: II | owner: writer-backend | tag: book-m6-final | status: expanded -->
-# Chapter 17: Files, images, PDFs and signatures
+# Chapter 17: Files, images, PDFs, and signatures
 
 The heart of the Secure Document Viewer is that the browser never receives your PDF. The server turns each page into a picture, cuts it into small square tiles, stamps the viewer's identity on each tile, and serves them through links that cannot be forged. This chapter teaches the pieces: pixels and images, drawing a PDF page, slicing, drawing text, signing links, limiting how much work runs at once, and handling files on disk so that a failure never leaves a mess.
 
@@ -10,22 +10,22 @@ By the end of this chapter, you will be able to:
 - Explain what pixels and a PNG image are, and estimate how much memory a rendered page needs.
 - Explain how a page image is sliced into a grid of tiles, work out the grid for a given page, and say why edge tiles are cropped.
 - Read the rendering loop in `TileGenerationService` and the drawing code in `WatermarkService`.
-- Explain what a hash, an HMAC and a signed token are, and say what each field of a tile token protects against.
+- Explain what a hash, an HMAC (hash-based message authentication code) and a signed token are, and say what each field of a tile token protects against.
 - Explain why the server limits how much work runs at once, and how a semaphore does it.
-- Describe how uploaded files are staged, committed, versioned and cleaned up, and why the order of the steps matters.
+- Describe how uploaded files are staged, committed, versioned, and cleaned up, and why the order of the steps matters.
 
 ## Prerequisites
 
 - Chapter 3: your first Java program (integer division)
-- Chapter 5: collections, lambdas and exceptions
+- Chapter 5: collections, lambdas, and exceptions
 - Chapter 11: Spring Boot foundations
 - Chapter 12: REST controllers and JSON
-- Chapter 13: Validation, configuration properties and errors (`BadRequestException`, the upload limits)
+- Chapter 13: Validation, configuration properties, and errors (`BadRequestException`, the upload limits)
 - Chapter 15: Spring Security I (what a hash is)
 
 ## Beginner tier: Pictures and grids
 
-### 17.1 Pixels, images and PNG
+### 17.1 Pixels, images, and PNG
 
 A digital image is a grid of **pixels**, tiny colored squares. A page rendered at 150 **dots per inch (DPI)**, the project's `render-dpi: 150` in `application.yml`, has 150 pixels for every inch of paper. An A4 sheet is about 8.27 by 11.69 inches, so the arithmetic is width in inches times DPI: about 1,240 by 1,754 pixels.
 
@@ -48,7 +48,7 @@ Why turn a PDF into pictures at all? A PDF in the browser can be saved, copied a
 
 Turning a PDF page into a `BufferedImage` is called **rasterizing**. A PDF describes a page as instructions ("draw this text here, this image there"), and rasterizing carries them out onto a grid of pixels. The project uses the Apache PDFBox library (version 3.0.8, from `pom.xml`), which can open a PDF and draw a page at a chosen DPI. `TileGenerationService` does the work. Listing 17.1 shows the heart of it, and the checks that guard it.
 
-**Listing 17.1 — `TileGenerationService.java` (`book-m6-final`, simplified: the surrounding methods, error handling and the tile-saving helper are omitted; the two excerpts are from different places in the class)**
+**Listing 17.1 — `TileGenerationService.java` (`book-m6-final`, simplified: the surrounding methods, error handling, and the tile-saving helper are omitted; the two excerpts are from different places in the class)**
 
 ```java
 try (PDDocument document = loadPdf(source)) {
@@ -84,7 +84,7 @@ private void requireWithinLimits(PDDocument document) {
 
 The method opens the PDF, checks it against the limits before drawing anything, and creates a `PDFRenderer`. Then it loops over the pages: `renderImageWithDPI(pageIndex, properties.getRenderDpi())` draws one page as a `BufferedImage` at 150 DPI, and `tileAndSave` (Section 17.3) slices it and writes the tiles into a per-page directory in a staging area. The `try (...)` closes the PDF when the loop ends, even on error (Chapter 5).
 
-Three details are worth a closer look. First, `setSubsamplingAllowed(true)` lets PDFBox decode an enormous embedded photo at reduced resolution instead of in full, since the output is only 150 DPI anyway; the comment says so. Second, before each page the loop checks a `cancelled` flag, so a render that exceeds `render-timeout` can be abandoned at the next page boundary and free its slot (Section 17.6). Third, the PDF is loaded from a file on disk, not from memory. The upload is streamed into a temporary file first, and `loadPdf` uses a temp-file cache because, as its comment says, "large PDFs are buffered on disk, not in the heap". (The **heap** is the region of memory where Java keeps its objects.)
+Three details are worth a closer look. First, `setSubsamplingAllowed(true)` lets PDFBox decode an enormous embedded photo at reduced resolution instead of in full, since the output is only 150 DPI anyway; the comment says so. Second, before each page the loop checks a `cancelled` flag, so a render that exceeds `render-timeout` can be abandoned at the next page boundary and free its slot (Section 17.6). Third, the PDF is loaded from a file on disk, not from memory. The upload is streamed into a temporary file first, and `loadPdf` uses a temp-file cache because, as its comment says, "large PDFs are buffered on disk, not in the heap." (The **heap** is the region of memory where Java keeps its objects.)
 
 ### 17.3 Slicing an image into a grid
 
@@ -122,7 +122,7 @@ public final class TileGrid {
 
 *Path: `src/main/java/com/example/securedocviewer/service/TileGrid.java`*
 
-`tileCount` rounds up. Integer division in Java drops the remainder (Chapter 3), so adding `tileSize - 1` before dividing is the standard round-up trick: `(1240 + 511) / 512` is `1751 / 512`, which is 3 (the remainder is dropped). `sliceTile` computes the top-left corner from row and column (`x = col * tileSize`), then takes the smaller of a full tile and what remains, so the last tiles are cropped rather than padded. The class comment states the payoff: reassembling every tile at `(col * tileSize, row * tileSize)` "reproduces the source image exactly, with no seams and no bleed". The private constructor stops anyone creating an object of a class that only holds static methods.
+`tileCount` rounds up. Integer division in Java drops the remainder (Chapter 3), so adding `tileSize - 1` before dividing is the standard round-up trick: `(1240 + 511) / 512` is `1751 / 512`, which is 3 (the remainder is dropped). `sliceTile` computes the top-left corner from row and column (`x = col * tileSize`), then takes the smaller of a full tile and what remains, so the last tiles are cropped rather than padded. The class comment states the payoff: reassembling every tile at `(col * tileSize, row * tileSize)` "reproduces the source image exactly, with no seams, and no bleed." The private constructor stops anyone creating an object of a class that only holds static methods.
 
 **A worked example.** Take the A4 page from Section 17.1, 1,240 by 1,754 pixels, and 512-pixel tiles.
 
@@ -130,10 +130,10 @@ public final class TileGrid {
 
 | Direction | Calculation | Result | Sizes of the tiles |
 |---|---|---|---|
-| Columns | `tileCount(1240, 512)` | 3 | 512, 512, and 1240 − 1024 = **216** |
-| Rows | `tileCount(1754, 512)` | 4 | 512, 512, 512, and 1754 − 1536 = **218** |
+| Columns | `tileCount(1240, 512)` | 3 | 512, 512, and 1240 − 1024 = 216 |
+| Rows | `tileCount(1754, 512)` | 4 | 512, 512, 512, and 1754 − 1536 = 218 |
 
-So the page is a grid of 4 rows by 3 columns, 12 tiles. Nine are full 512 × 512 squares; the right column is 216 pixels wide and the bottom row is 218 tall, and the corner tile is 216 × 218. The comment in `application.yml` gives the same figure for a letter page at 150 DPI: "~12 tiles". The numbers also explain the rate limit in Chapter 26: reading one page fetches about a dozen tiles. Figure 17.1 shows the whole journey from an uploaded file to the tiles on disk.
+So the page is a grid of 4 rows by 3 columns, 12 tiles. Nine are full 512 × 512 squares; the right column is 216 pixels wide and the bottom row is 218 tall, and the corner tile is 216 × 218. The comment in `application.yml` gives the same figure for a letter page at 150 DPI: "~12 tiles." The numbers also explain the rate limit in Chapter 26: reading one page fetches about a dozen tiles. Figure 17.1 shows the whole journey from an uploaded file to the tiles on disk.
 
 ```mermaid
 flowchart TB
@@ -153,7 +153,7 @@ flowchart TB
 
 *Figure 17.1 — How an uploaded PDF becomes tiles on disk*
 
-*Text description:* A chain in two rows, read left to right and then down, with seven boxes. The upload is streamed into a staging folder, the PDF marker is checked, and the PDF is opened and checked for page count and size. Each page is then rendered at 150 DPI, sliced into 512-pixel tiles and saved as PNG files. Finally the staging folder is moved to the version folder in one step. The cheap checks come first and the expensive rendering last.
+*Text description:* A chain in two rows, read left to right and then down, with seven boxes. The upload is streamed into a staging folder, the PDF marker is checked, and the PDF is opened and checked for page count and size. Each page is then rendered at 150 DPI, sliced into 512-pixel tiles, and saved as PNG files. Finally the staging folder is moved to the version folder in one step. The cheap checks come first and the expensive rendering last.
 
 <!-- source: TileGenerationService.java at book-m6-final -->
 
@@ -191,9 +191,9 @@ storage/
 
 ### 17.4 Drawing text on an image (watermarks)
 
-A watermark is text drawn into the picture. Here it shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log, so a leaked screenshot points back to a sign-in (a comment in `application.yml` says so). Its look is configurable: `watermark-opacity: 0.2` and `watermark-spacing: 1.5`, the gap between copies as a multiple of the text height. `WatermarkService` does the drawing, and `TileController` applies it to each tile at request time (Chapter 12). The class comment gives the reason for stamping on the way out rather than during upload: "one stored tile serves every viewer, and every response is still individually traceable back to who requested it and when."
+A watermark is text drawn into the picture. Here it shows the viewer, a timestamp in UTC (Coordinated Universal Time) and a short trace code that matches the session column of the audit log, so a leaked screenshot points back to a sign-in (a comment in `application.yml` says so). Its look is configurable: `watermark-opacity: 0.2` and `watermark-spacing: 1.5`, the gap between copies as a multiple of the text height. `WatermarkService` does the drawing, and `TileController` applies it to each tile at request time (Chapter 12). The class comment gives the reason for stamping on the way out rather than during upload: "one stored tile serves every viewer, and every response is still individually traceable back to who requested it and when."
 
-**Listing 17.4 — `WatermarkService.applyWatermark` (`book-m6-final`, simplified: the long explanatory comments, the tile-sizing lines and the closing lines are omitted)**
+**Listing 17.4 — `WatermarkService.applyWatermark` (`book-m6-final`, simplified: the long explanatory comments, the tile-sizing lines, and the closing lines are omitted)**
 
 ```java
 public BufferedImage applyWatermark(BufferedImage source, String viewerLabel, String traceCode, int nominalTileSize) {
@@ -226,7 +226,7 @@ public BufferedImage applyWatermark(BufferedImage source, String viewerLabel, St
 
 Reading it through: the method creates a new image the same size as the tile and gets a `Graphics2D`, Java's drawing object. It first draws the original tile onto it, then builds two lines of text, the viewer's name and the UTC time (plus the trace code when one is given). It sets a translucent red ink (`opacity`, 0.2 by default) and rotates the drawing surface by 30 degrees (`-Math.PI / 6` radians). A loop, left out here, repeats the two lines across the whole tile in a brick pattern. The `finally` calls `g.dispose()` to release the drawing resources even if something fails.
 
-The repetition is deliberate. Edge tiles are cropped shorter than full ones (Section 17.3), so a single centered mark could land entirely outside a small tile. The source comment explains: repeating the mark "so every tile carries some of it — and a full-size tile carries at least one complete, readable copy". The settings are also clamped inside the service (opacity between 0.05 and 0.6, spacing between 0.5 and 6.0), so a mistaken configuration can't make the mark invisible or overwhelming.
+The repetition is deliberate. Edge tiles are cropped shorter than full ones (Section 17.3), so a single centered mark could land entirely outside a small tile. The source comment explains: repeating the mark "so every tile carries some of it — and a full-size tile carries at least one complete, readable copy." The settings are also clamped inside the service (opacity between 0.05 and 0.6, spacing between 0.5 and 6.0), so a mistaken configuration can't make the mark invisible or overwhelming.
 
 The layout came from a real bug in the first version: copies were spaced a fixed 150 pixels apart, but the label was about 400 pixels wide, so they overprinted and became unreadable. The fix measures the text and derives the spacing from it (`Layout`), splits the label into two short lines, and adds a test that fails if copies overlap (`adjacentCopiesNeverOverprintEachOther` in `WatermarkServiceTest`). <!-- source: dossier bugs-and-findings A1; commit 32d040f --> The lesson: **derive a layout from the measured content, not from a guess, and add a regression test.**
 
@@ -234,13 +234,13 @@ The layout came from a real bug in the first version: copies were spaced a fixed
 
 *If you're reading for the first time, Section 17.5 is the most important one here; 17.6 and 17.7 are about resource limits and files.*
 
-### 17.5 Hashes, HMAC and signatures: proving a URL wasn't altered
+### 17.5 Hashes, HMAC, and signatures: proving a URL wasn't altered
 
 The browser asks for tiles by URL, and anyone could type a different tile or document number into a URL. The server needs a way to hand out links only *it* can create. Here is the idea through an analogy. A signed tile URL works like a wristband at a concert. The box office (the server) checks your ticket once, then gives you a wristband printed with today's date and a hologram that only the box office can make. Security at each door (each tile request) doesn't phone the box office; it checks the hologram and the date.
 
 **Where the analogy breaks down:** a wristband works for anyone wearing it, but a tile URL is also bound to your session: pasted into another browser, it's refused. And a wristband lasts all night, while a tile URL expires after two minutes.
 
-Now the precise version. A hash (Chapter 15) is a fixed-length fingerprint of some data. An HMAC (hash-based message authentication code) is a hash computed from a message *and a secret key*, here with the algorithm HmacSHA256. Without the key, nobody can produce the right fingerprint for a message, and change a single character of the message and the fingerprint changes completely. The project's **signed token** is the message plus its fingerprint. What is the message? `SignedTilePayload` says.
+Now the precise version. A hash (Chapter 15) is a fixed-length fingerprint of some data. An HMAC (hash-based message authentication code) is a hash computed from a message *and a secret key*, here with the algorithm HmacSHA256. Without the key, nobody can produce the right fingerprint for a message, and if you change a single character of the message, the fingerprint changes completely. The project's **signed token** is the message plus its fingerprint. What is the message? `SignedTilePayload` says.
 
 **Listing 17.5 — `SignedTilePayload.java` (`book-m6-final`, simplified: the comments and imports are omitted)**
 
@@ -284,9 +284,9 @@ payload, once decoded:
 <document-id>|2|1|0|1|<session-binding>|1790000120
 ```
 
-The two halves are joined with a dot. **base64url** is a way to write arbitrary bytes using only letters, digits and two symbols, so the token is safe inside a URL. Anyone can decode the first half and read the fields, so a token is *not secret*; what matters is that nobody without the key can produce a matching second half. Now the code that issues and verifies it.
+The two halves are joined with a dot. **base64url** is a way to write arbitrary bytes using only letters, digits, and two symbols, so the token is safe inside a URL. Anyone can decode the first half and read the fields, so a token is *not secret*; what matters is that nobody without the key can produce a matching second half. Now the code that issues and verifies it.
 
-**Listing 17.6 — `SignedUrlService.java` (`book-m6-final`, simplified: `parseCanonical`, the helper methods and comments are omitted)**
+**Listing 17.6 — `SignedUrlService.java` (`book-m6-final`, simplified: `parseCanonical`, the helper methods, and comments are omitted)**
 
 ```java
 public String issueToken(String documentId, int page, int row, int col, int tileVersion, String sessionBinding) {
@@ -321,7 +321,7 @@ public SignedTilePayload verifyAndDecode(String token) {
 
 Read it as a recipe. `issueToken` fills in one tile's details plus an expiry time (now plus the configured lifetime), writes them as one canonical string, encodes it, and appends the HMAC. `verifyAndDecode` splits the token at the dot, recomputes the HMAC from the received payload with its own key, and compares. A mismatch means the token was altered or forged, so it is refused with `InvalidTokenException`, which `GlobalExceptionHandler` maps to `401`. Only after the signature checks out is the payload parsed and the expiry compared with the clock.
 
-Two details matter. The first is a **constant-time comparison**, a check whose running time does not depend on how many characters match. `constantTimeEquals` compares with `MessageDigest.isEqual`, which takes the same time however many characters match. An attacker therefore can't learn a signature one character at a time by measuring how fast the server refuses ("Avoids leaking timing information about how much of the signature matched", per the source). And the signature covers every field, which the class comment states directly: holders "cannot forge a new one, extend it, or repurpose it for a different tile". The key never leaves the server, and `ViewerProperties` refuses to start without one at least 32 characters long (Chapter 13).
+Two details matter. The first is a **constant-time comparison**, a check whose running time does not depend on how many characters match. `constantTimeEquals` compares with `MessageDigest.isEqual`, which takes the same time however many characters match. An attacker therefore can't learn a signature one character at a time by measuring how fast the server refuses ("Avoids leaking timing information about how much of the signature matched," per the source). And the signature covers every field, which the class comment states directly: holders "cannot forge a new one, extend it, or repurpose it for a different tile." The key never leaves the server, and `ViewerProperties` refuses to start without one at least 32 characters long (Chapter 13).
 
 Figure 17.2 shows the life of a token: issued once for a whole page, then presented once per tile.
 
@@ -343,23 +343,23 @@ sequenceDiagram
 
 *Figure 17.2 — Issuing and checking a signed tile token*
 
-*Text description:* A sequence with the browser, the URL controller, the signing service and the tile controller. In the upper half the browser asks for a page's tile URLs and receives a grid whose URLs each carry a signed token. In the lower half the browser sends one token to the tile controller, which asks the signing service to verify it and returns either one PNG or an error status.
+*Text description:* A sequence with the browser, the URL controller, the signing service, and the tile controller. In the upper half the browser asks for a page's tile URLs and receives a grid whose URLs each carry a signed token. In the lower half the browser sends one token to the tile controller, which asks the signing service to verify it and returns either one PNG or an error status.
 
 <!-- source: PageTileUrlController.java, SignedUrlService.java and TileController.java at book-m6-final -->
 
 The server holds no list of issued tokens. Everything it needs to check a token is in the token itself and in its own secret key, which is why the check in the lower half of the figure is fast and needs no database.
 
-**A stronger claim, and its limit.** Anyone who holds a valid token can use it until it expires; the HMAC proves it was issued by the server, not that the bearer is the right person. That's why `TileController` adds independent checks: the session binding, the rate limit and a fresh access check on every request (Chapter 12 and Chapter 16). The signature is one layer of several, and Table 17.4 summarizes them at the end of the chapter.
+**A stronger claim, and its limit.** Anyone who holds a valid token can use it until it expires; the HMAC proves it was issued by the server, not that the bearer is the right person. That's why `TileController` adds independent checks: the session binding, the rate limit, and a fresh access check on every request (Chapter 12 and Chapter 16). The signature is one layer of several, and Table 17.4 summarizes them at the end of the chapter.
 
-### 17.6 Threads, pools and limits: bounded work
+### 17.6 Threads, pools, and limits: bounded work
 
-Watermarking and encoding a tile uses the **CPU**, the processor that does the computing. Rendering a PDF uses a lot more, plus memory. A server serves many users at once, using threads: a thread is one line of work a program runs alongside others. If everyone's request needs a heavy step and there's no limit, a crowd of readers, or one hostile client, can make the machine slow for everyone. The remedy is to **bound** the work: allow so many at once, and refuse or delay the rest.
+Watermarking and encoding a tile uses the **CPU** (central processing unit), the processor that does the computing. Rendering a PDF uses a lot more, plus memory. A server serves many users at once, using threads: a thread is one line of work a program runs alongside others. If everyone's request needs a heavy step and there's no limit, a crowd of readers, or one hostile client, can make the machine slow for everyone. The remedy is to **bound** the work: allow so many at once, and refuse or delay the rest.
 
 *Pattern note: A limit that keeps one part from exhausting everything else is the bulkhead pattern, and a render's lifecycle is a small state machine (Chapter 38, Sections 38.9 and 38.8).*
 
 `TileWorkLimiter` bounds tile work across *all* users. The per-user rate limit (`TileRateLimiter`, Chapter 26) bounds each reader; this bounds the server. It uses a **semaphore**, a counter of permits: a task must take a permit to run and returns it when done. Picture a car park with a fixed number of spaces and a barrier. A car enters only if a space is free; otherwise it waits a moment and is turned away.
 
-**Listing 17.7 — `TileWorkLimiter.run` (`book-m6-final`, class comment and imports omitted)**
+**Listing 17.7 — `TileWorkLimiter.run` (`book-m6-final`, class comment, and imports omitted)**
 
 ```java
 public <T> T run(Callable<T> work) throws Exception {
@@ -381,7 +381,7 @@ public <T> T run(Callable<T> work) throws Exception {
 
 The same idea limits PDF rendering, with more care, because a render can take minutes. `TileGenerationService` has a semaphore of `max-concurrent-renders` (2) permits. An upload waits up to `render-queue-timeout-seconds` (30) for a permit, and otherwise gets a `503`. The render itself runs on a *separate* thread from the one handling the request, so the request thread can give up when `render-timeout` (3 minutes) passes. The render then stops at its next page boundary, cleans up after itself, and only *then* returns its permit. The class comment explains why: "a permit is held until its render thread has actually stopped, so abandoned renders still count against `max-concurrent-renders` and can't pile up CPU or heap behind it."
 
-The history explains the design. The first version had no time limit: a pathological PDF could hold one of the two render slots forever, so a reviewer (an AI agent playing a security reviewer) asked for one. The first fix added the time limit; a later round made the pool queue-free and made each slot stay held until its render had truly stopped. <!-- source: dossier bugs-and-findings G3; commits 1ce2c8b, 782ab6b --> The lesson: **a limit that counts only the work you are waiting for lets abandoned work pile up unseen; count everything that is still running.**
+The history explains the design. The first version had no time limit: a pathological PDF could hold one of the two render slots forever, so the AI technical-manager reviewer asked for one. The first fix added the time limit; a later round made the pool queue-free and made each slot stay held until its render had truly stopped. <!-- source: dossier bugs-and-findings G3; commits 1ce2c8b, 782ab6b --> The lesson: **a limit that counts only the work you are waiting for lets abandoned work pile up unseen; count everything that is still running.**
 
 ### 17.7 Files on disk safely: staging, atomic move, cleanup
 
@@ -449,9 +449,9 @@ public void commit(RenderedDocument rendered, String documentId, int version) th
 
 The method refuses to write into a folder that already exists, so a new render can never mix with an old one. And `moveDirectory` renames the whole staging folder to its final name. A rename within one file system is atomic: it either happens completely or not at all, so a reader never sees a folder that is half moved. `FileOperations` uses the operating system's atomic rename (`StandardCopyOption.ATOMIC_MOVE`), and retries it briefly if the file system reports a lock.
 
-**A real incident: locked folders on Windows.** The project was first built in a folder synchronized by OneDrive. Sync clients and antivirus scanners briefly hold files that were written a moment earlier, so renames and deletes of tile folders failed at random with "access denied". *The fix:* `FileOperations` retries each move or delete up to eight times, with pauses that grow from 50 to 800 milliseconds (a little under four seconds in all; the class comment says "about two seconds", but its constants add up to more). It falls back to copy-and-delete if a folder stays locked. The janitor skips a locked folder and tries again next time. The root fix was moving the project out of the synced folder, and `application.yml` now carries a warning: "Keep it out of synced folders (OneDrive, Dropbox)". The developer also noticed a security angle: the sync client was uploading every rendered tile to a cloud service, which defeats the purpose of never handing out the document. <!-- source: dossier bugs-and-findings C4; commit ba00693 --> The lesson: **file operations fail for reasons outside your program; retry the transient ones and clean up the rest.**
+**A real incident: locked folders on Windows.** The project was first built in a folder synchronized by OneDrive. Sync clients and antivirus scanners briefly hold files that were written a moment earlier, so renames and deletes of tile folders failed at random with "access denied." *The fix:* `FileOperations` retries each move or delete up to eight times, with pauses that grow from 50 to 800 milliseconds (a little under four seconds in all; the class comment says "about two seconds," but its constants add up to more). It falls back to copy-and-delete if a folder stays locked. The janitor skips a locked folder and tries again next time. The root fix was moving the project out of the synced folder, and `application.yml` now carries a warning: "Keep it out of synced folders (OneDrive, Dropbox)." The developer also noticed a security angle: the sync client was uploading every rendered tile to a cloud service, which defeats the purpose of never handing out the document. <!-- source: dossier bugs-and-findings C4; commit ba00693 --> The lesson: **file operations fail for reasons outside your program; retry the transient ones and clean up the rest.**
 
-**Versions make replacement safe.** Replacing a PDF doesn't overwrite tiles. It renders into a new version directory (`v2`), and only when that is complete does the database row switch its `tile_version` to 2, in one transaction under a row lock (Chapter 14). The old directory is deleted *afterward*. Readers mid-page still have tokens naming version 1, and they get `410 Gone` on their next tile and reload cleanly, instead of receiving a mix of old and new pages. <!-- source: dossier decisions D8; commit cd0f5c2 --> Two later findings tightened this. Tokens were found to *not* yet sign the version at first, so an old link silently served the new render; now the version is one of the signed fields (Table 17.3). <!-- source: dossier bugs-and-findings G8; commit f682716 --> And a leftover `v2` folder from a failed database commit once made every later replacement fail with a `500` until the janitor removed it. Now a leftover target version is cleared under the row lock before the new render is committed. <!-- source: dossier bugs-and-findings F2 -->
+**Versions make replacement safe.** Replacing a PDF doesn't overwrite tiles. It renders into a new version directory (`v2`), and only when that is complete does the database row switch its `tile_version` to 2, in one transaction under a row lock (Chapter 14). The old directory is deleted *afterward*. Readers mid-page still have tokens naming version 1, and they get `410 Gone` on their next tile and reload cleanly, instead of receiving a mix of old and new pages. <!-- source: dossier decisions D8; commit cd0f5c2 --> Two later findings tightened this. At first, tokens did *not* sign the version, so an old link silently served the new render. Now the version is one of the signed fields (Table 17.3). <!-- source: dossier bugs-and-findings G8; commit f682716 --> And a leftover `v2` folder from a failed database commit once made every later replacement fail with a `500` until the janitor removed it. Now a leftover target version is cleared under the row lock before the new render is committed. <!-- source: dossier bugs-and-findings F2 -->
 
 **The janitor cleans what remains.** Some failures can't be undone at the moment they happen (a crash between committing tiles and saving the row, or a delete that hits a locked folder). `StorageJanitor` (Chapter 14) sweeps directories nothing points to. It is deliberately conservative: it touches only directories whose names look like document ids, and only ones older than an hour. It also keeps all versions of a document whose *current* version is missing from disk, because then the others may be the only copy left.
 
@@ -470,7 +470,7 @@ Suppose a signed tile URL ends up somewhere it shouldn't: in a browser's history
 | HMAC signature | `SignedUrlService.verifyAndDecode` | Forged or edited links |
 | Expiry (120 seconds) | `SignedUrlService.verifyAndDecode` | Using an old link |
 | Session binding | `SessionKeys.tileBindingMatches` | Pasting a link into another browser or account |
-| A live signed-in session | Spring Security | Using the link after sign-out, timeout or revocation |
+| A live signed-in session | Spring Security | Using the link after sign-out, timeout, or revocation |
 | Per-user rate limit | `TileRateLimiter` | Fetching every tile of every page in a burst |
 | Fresh access check | `DocumentService.tileAccessIfViewable` | Using a link after the document was unshared or deleted |
 | Render version | `TileController` | Mixing tiles of a replaced document |
@@ -580,7 +580,7 @@ You are adding a "replace thumbnail" feature that writes one image file and upda
 - An image is a grid of pixels held in memory at about four bytes each; PNG stores it without loss, and a pixel-count limit protects memory.
 - PDFBox rasterizes each page at a chosen DPI; `TileGrid` rounds tile counts up and crops edge tiles so tiles reassemble exactly, and one A4 page becomes 12 tiles.
 - Watermarks are drawn per tile at request time in a repeated brick pattern, so each viewer gets different pixels and every tile carries some of the mark.
-- An HMAC over every field, with a secret key, makes tokens unforgeable; constant-time comparison, expiry, version and session binding finish the job, and a leaked token still yields one watermarked tile.
+- An HMAC over every field, with a secret key, makes tokens unforgeable; constant-time comparison, expiry, version, and session binding finish the job, and a leaked token still yields one watermarked tile.
 - A semaphore bounds concurrent work; excess requests get `503` with `Retry-After`, and abandoned work still counts.
 - Files are staged, committed atomically by version and cleaned by a conservative janitor; the order of the steps decides what a failure leaves behind.
 

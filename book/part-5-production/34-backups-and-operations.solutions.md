@@ -2,10 +2,10 @@
 
 ### Exercise 34.1 ★ Name the state
 
-- **Login sessions:** no. They live in the app's memory; after a restore, users sign in again.
+- **Sign-in sessions:** no. They live in the app's memory; after a restore, users sign in again.
 - **Tiles:** yes (`app-storage` volume). They are the only copy of the content.
 - **Audit log:** yes. It is in MySQL, so the dump covers it.
-- **`.env` file:** yes, kept with the backup and protected like it. `SIGNING_SECRET` keys the recognised-device hashes, and the database passwords are needed to start MySQL against the old data.
+- **`.env` file:** yes, kept with the backup and protected like it. `SIGNING_SECRET` keys the recognized-device hashes, and the database passwords are needed to start MySQL against the old data.
 - **Source PDFs:** nothing to back up; they are deleted after ingest, so the tiles hold the content.
 
 ### Exercise 34.2 ★ Read a command
@@ -26,4 +26,4 @@ A good answer names: a scratch environment (a separate compose project with its 
 
 ### Exercise 34.6 ★★★ Plan a change
 
-Two changes, in the spirit of the chapter: (1) the tile store needs a way to take a point-in-time snapshot (storage-level snapshots, or object storage with versioned keys) so that the archive doesn't depend on the files being still while it is read; (2) the database and the tile store need a common reference point, for example a recorded database position or snapshot time that says which tile versions belong to it, so a restore can be checked or made consistent afterward. Chapter 37's alternatives point the same way: object storage such as S3 (section 37.7) for versioned tiles, and a managed database (section 37.9) with point-in-time recovery. Even then, the "current tile version" pointer in the database still has to match the tiles, so consistency needs design, not just a different product.
+Two changes, in the spirit of the chapter: (1) the tile store needs a way to take a point-in-time snapshot (storage-level snapshots, or object storage with versioned keys) so that the archive doesn't depend on the files being still while it is read; (2) the database and the tile store need a common reference point, for example a recorded database position or snapshot time that says which tile versions belong to it, so a restore can be checked or made consistent afterward. Chapter 37's alternatives point the same way: object storage such as S3 (Section 37.7) for versioned tiles, and a managed database (Section 37.9) with point-in-time recovery. Even then, the "current tile version" pointer in the database still has to match the tiles, so consistency needs design, not just a different product.

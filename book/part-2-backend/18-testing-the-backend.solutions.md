@@ -53,8 +53,8 @@ What the two experiments show: the tests are tied to the *behavior* (locking hap
 
 A worked outline, since results depend on your machine.
 
-1. **Without `start.await()`**, each task begins as soon as its thread is scheduled. On a quick machine the twelve requests may run almost one after another. Against the correct, atomic `reserve`, the test still passes, because the throttle is correct. That is fine, but it shows the test stopped forcing an overlap.
-2. **With a non-atomic throttle** (check first, count afterward) **and the latch in place**, the twelve requests all pass the check before any is counted, so far more than 5 passwords are actually verified, and the assertion on the count of `401` responses fails. That is the test doing its job.
+1. **Without `start.await()`**, each task begins as soon as its thread is scheduled. On a quick machine the 12 requests may run almost one after another. Against the correct, atomic `reserve`, the test still passes, because the throttle is correct. That is fine, but it shows the test stopped forcing an overlap.
+2. **With a non-atomic throttle** (check first, count afterward) **and the latch in place**, the 12 requests all pass the check before any is counted, so far more than 5 passwords are actually verified, and the assertion on the count of `401` responses fails. That is the test doing its job.
 3. **With a non-atomic throttle and no latch**, the test may pass on some runs, because the overlap that exposes the bug is not guaranteed. That is a test that cannot be trusted.
 
 A paragraph that earns full credit says: a concurrency test is trustworthy when (a) it forces the overlap rather than hoping for it, (b) it asserts exact outcomes that the protection guarantees, and (c) you have seen it fail against the bug it is meant to catch.
@@ -64,8 +64,8 @@ A paragraph that earns full credit says: a concurrency test is trustworthy when 
 One good answer, for "a document unshared from a user stops serving new tiles to them":
 
 - **Name:** `unsharingADocumentStopsNewTileRequestsFromThatUser`.
-- **Level:** an application test with `MockMvc` (Section 18.6), because the promise spans the sharing endpoints, the signed-URL issuing endpoint, the tile controller and the access check; a unit test of one class could not prove it.
-- **Arrange:** create a publisher, a reader and a PDF; the publisher uploads it and shares it with the reader; the reader signs in and requests a tile URL and one tile, which succeeds.
+- **Level:** an application test with `MockMvc` (Section 18.6), because the promise spans the sharing endpoints, the signed-URL issuing endpoint, the tile controller, and the access check; a unit test of one class could not prove it.
+- **Arrange:** create a publisher, a reader, and a PDF; the publisher uploads it and shares it with the reader; the reader signs in and requests a tile URL and one tile, which succeeds.
 - **Act:** the publisher unshares the document (`DELETE /api/documents/{id}/shares/{username}`), then the reader requests the same tile again with the still-valid token.
 - **Assert:** the response is `404` with the JSON error shape, not `200`. This is the "re-check on every tile" behavior described in the `TileController` class comment.
 

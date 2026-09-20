@@ -1,16 +1,16 @@
 <!-- chapter: 10 | part: I | owner: writer-foundations | tag: book-m6-final | status: expanded -->
 # Chapter 10: Containers and Docker
 
-The app needs MySQL, and later a web server and more. Installing each by hand on every machine would be slow and error-prone. Docker lets you run each program in a sealed, repeatable package. This chapter teaches images, containers, volumes and Docker Compose, using the project's real `docker-compose.yml` and `Dockerfile`, and finishes Part I. After it, you will be able to start the project's database with one command and read every line of the file that describes the whole stack.
+The app needs MySQL, and later a web server and more. Installing each by hand on every machine would be slow and error-prone. Docker lets you run each program in a sealed, repeatable package. This chapter teaches images, containers, volumes, and Docker Compose, using the project's real `docker-compose.yml` and `Dockerfile`, and finishes Part I. After it, you will be able to start the project's database with one command and read every line of the file that describes the whole stack.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
 - Explain why containers exist and how they differ from virtual machines.
-- Distinguish an image, a container, a volume and a network, and inspect each with a command.
+- Distinguish an image, a container, a volume, and a network, and inspect each with a command.
 - Start the project's MySQL database with Docker Compose and check that it is healthy.
-- Read a Compose file, including ports, volumes, environment, profiles, networks and health checks.
+- Read a Compose file, including ports, volumes, environment, profiles, networks, and health checks.
 - Explain how secrets reach a container without being committed or baked into an image.
 - Read a two-stage `Dockerfile` and explain why its steps are in that order.
 - Diagnose the common Docker problems.
@@ -29,7 +29,9 @@ By the end of this chapter, you will be able to:
 
 Compare this with a **virtual machine**, which pretends to be a whole computer and boots a whole operating system inside your computer. A container is lighter. It shares your computer's operating system core and starts in seconds, where a virtual machine takes a minute and gigabytes. The cost is weaker isolation than a virtual machine offers, which is one reason the project also hardens its images (Section 10.9).
 
-**Analogy.** A container is a shipping container: it holds anything, looks the same to every ship and crane, and needs no knowledge of what is inside. The analogy breaks down in two ways. A shipping container is inert cargo, while a Docker container is a running program. And a shipping container is sealed from the outside, while a Docker container is open to exactly the doors (ports) and shared folders (volumes) you choose to give it.
+**Analogy.** A container is a shipping container: it holds anything, looks the same to every ship and crane, and needs no knowledge of what is inside.
+
+**Where the analogy breaks down:** in two ways. A shipping container is inert cargo, while a Docker container is a running program. And a shipping container is sealed from the outside, while a Docker container is open to exactly the doors (ports) and shared folders (volumes) you choose to give it.
 
 What does this buy the project? Three things:
 
@@ -37,7 +39,7 @@ What does this buy the project? Three things:
 - **Cleanliness.** You do not install MySQL on your computer. When you are finished, you remove the container and nothing is left behind.
 - **A description you can read.** The whole stack is written down in a file, so nobody has to remember the setup steps.
 
-### 10.2 Images, containers, volumes and networks
+### 10.2 Images, containers, volumes, and networks
 
 Four words carry the whole idea.
 
@@ -94,9 +96,11 @@ docker ps -a
 
 ## Intermediate tier: Docker Compose
 
+*On a first read you can skim this tier; Chapter 33 returns to the full stack.*
+
 ### 10.4 Running MySQL 8.4 with Docker
 
-You could start MySQL with one long `docker run` command, but you would have to retype it exactly, and a long command invites typing mistakes. **Docker Compose** describes one or more containers in a file, `docker-compose.yml`, and starts them with one command. It is written in YAML, the indentation-based format from Chapter 8.
+You could start MySQL with one long `docker run` command, but you would have to retype it exactly, and a long command invites typing mistakes. **Docker Compose** describes one or more containers in a file, `docker-compose.yml`, and starts them with one command. It is written in YAML, the indentation-based format from Chapter 2.
 
 The database first appears at `book-m1-accounts`, where the file held only MySQL. Here it is, in full, exactly as it was at that milestone.
 
@@ -208,11 +212,11 @@ Line by line:
 
 Compare the health check in Listing 10.1 with the one here. The early version passed the password on the command line as `-p${DB_ROOT_PASSWORD}`. The final version changed it: `$$` defers the variable's expansion until the command runs inside the container, and the password is passed through the environment variable `MYSQL_PWD`, not as an argument. The stated reason is that the password then never appears in the stored command (which `docker inspect` would reveal) or in the process's argument list (which other users of the machine could see). It is a small change with a general lesson: a secret on a command line is visible in more places than you expect.
 
-Be honest about what the change achieves, though, because the MySQL 8.4 manual is blunt about `MYSQL_PWD`. It says that using `MYSQL_PWD` to specify a password "must be considered extremely insecure", because on some systems any user who can list processes can also see their environment. It also says that the variable "is deprecated as of MySQL 8.4" and may be removed in a future version. The trade the project made is narrower than "secure". The password is gone from the command line and from the stored command. Inside the container, only that container's own processes can see the environment. A stricter option is an **option file**, a small configuration file for the MySQL client that holds the password and is readable only by its owner (mode `400` or `600`); you point the client at it with `--defaults-extra-file`. The manual also describes `mysql_config_editor`, which stores credentials in an obscured login file. Chapter 34 uses `MYSQL_PWD` for its backup commands for the same reason as here, and you should treat either approach as a step up from `-p` on the command line, not as the last word. <!-- source: MySQL 8.4 Reference Manual, "Environment Variables" (MYSQL_PWD) and "End-User Guidelines for Password Security" (option files, file mode 400 or 600), checked 2026-09-20 --> <!-- source: docker-compose.yml comments at book-m6-final; git log -S MYSQL_PWD (commit 1ce2c8b, "Ultrareview prep") -->
+Be honest about what the change achieves, though, because the MySQL 8.4 manual is blunt about `MYSQL_PWD`. It says that using `MYSQL_PWD` to specify a password "must be considered extremely insecure," because on some systems any user who can list processes can also see their environment. It also says that the variable "is deprecated as of MySQL 8.4" and may be removed in a future version. The trade the project made is narrower than "secure." The password is gone from the command line and from the stored command. Inside the container, only that container's own processes can see the environment. A stricter option is an **option file**, a small configuration file for the MySQL client that holds the password and is readable only by its owner (mode `400` or `600`); you point the client at it with `--defaults-extra-file`. The manual also describes `mysql_config_editor`, which stores credentials in an obscured login file. Chapter 34 uses `MYSQL_PWD` for its backup commands for the same reason as here, and you should treat either approach as a step up from `-p` on the command line, not as the last word. <!-- source: MySQL 8.4 Reference Manual, "Environment Variables" (MYSQL_PWD) and "End-User Guidelines for Password Security" (option files, file mode 400 or 600), checked 2026-09-20 --> <!-- source: docker-compose.yml comments at book-m6-final; git log -S MYSQL_PWD (commit 1ce2c8b, "Ultrareview prep") -->
 
-### 10.6 Profiles, networks and the full stack
+### 10.6 Profiles, networks, and the full stack
 
-A Compose file can hold several services. The final file adds `app` (the backend), `web` (the frontend server) and `tls` (an optional HTTPS front end). It uses **profiles** so that you start only what you need. The header comment lists the three ways to run it:
+A Compose file can hold several services. The final file adds `app` (the backend), `web` (the frontend server), and `tls` (an optional HTTPS frontend). It uses **profiles** so that you start only what you need. The header comment lists the three ways to run it:
 
 **Listing 10.3 — `docker-compose.yml` (book-m6-final, excerpt: header comment)**
 
@@ -279,7 +283,7 @@ The fixed address matters. The `web` service is pinned to `172.28.0.10` on a net
 
 ### 10.7 Environment variables and secrets in containers
 
-The Compose file contains no passwords. It reads `${DB_PASSWORD}` from `.env`, the git-ignored file from Chapter 2, and passes it into the container. The `app` service uses `env_file: .env` for the same purpose. The result: secrets live in one local file, and the repository holds only the template.
+The Compose file contains no passwords. It reads `${DB_PASSWORD}` from `.env`, the Git-ignored file from Chapter 2, and passes it into the container. The `app` service uses `env_file: .env` for the same purpose. The result: secrets live in one local file, and the repository holds only the template.
 
 A second protection keeps secrets out of images. When you build an image, Docker sends the project folder to the builder as the **build context**, and a careless `COPY . .` could copy `.env` into the image, where anyone who receives the image could read it. The file `.dockerignore` excludes files from the context, the same way `.gitignore` excludes them from Git.
 
@@ -304,6 +308,8 @@ frontend/
 **We simplify here.** An environment variable is visible to anyone who can inspect the container. For a small deployment that is acceptable; larger systems use a dedicated secrets store. Section 33.11 covers how the project handles secrets and configuration in a real deployment.
 
 ## Advanced tier: Building your own images
+
+*On a first read you can skip to "In this project"; Chapter 33 comes back to image hardening.*
 
 ### 10.8 Building your own image (a first Dockerfile)
 
@@ -382,7 +388,7 @@ Collect the security choices scattered through this chapter's listings:
 - **Published on localhost only.** MySQL and the web port are bound to `127.0.0.1`; the backend is not published at all.
 - **Resource limits.** `mem_limit` on the containers keeps one runaway process from taking the machine.
 - **Health checks.** They let Compose start services in a safe order and let operators see real status.
-- **Scanned images.** The project's CI builds the images and scans them for known vulnerabilities, failing on any high or critical issue that has a fix (Chapter 36).
+- **Scanned images.** The project's CI builds the images and scans them for known vulnerabilities, failing on any high, or critical issue that has a fix (Chapter 36).
 
 These were not all there at first. The threat-modeling review, an AI review agent, listed "no Dockerfile, no CI, no Maven wrapper" as a finding. The Docker stack arrived in the fifth phase. It was then tightened over several review rounds, and non-root nginx and digest pinning came in the second round. <!-- source: dossier reviews.md TM-14; bugs-and-findings.md (round 2, commit f682716); ci.yml at book-m6-final -->
 
@@ -390,7 +396,7 @@ A related decision concerns upgrades. When the bot Dependabot proposed moving My
 
 ### 10.10 Why Docker and not the obvious alternatives?
 
-Two alternatives come to mind. You could **install MySQL directly** on your computer. That works, but the installation drifts: your version differs from a teammate's, uninstalling leaves files behind, and the steps live only in someone's head. Or you could use a virtual machine, which is heavier and slower for the same repeatability. The container's cost is that you must learn one more tool and keep Docker running; the benefit is that "the database" is one line, and it is the same line everywhere. For an application with a database, a web server and an optional HTTPS front end, that trade is strongly in favor of containers. Chapter 33 shows how the same images are deployed.
+Two alternatives come to mind. You could **install MySQL directly** on your computer. That works, but the installation drifts: your version differs from a teammate's, uninstalling leaves files behind, and the steps live only in someone's head. Or you could use a virtual machine, which is heavier and slower for the same repeatability. The container's cost is that you must learn one more tool and keep Docker running; the benefit is that "the database" is one line, and it is the same line everywhere. For an application with a database, a web server, and an optional HTTPS frontend, that trade is strongly in favor of containers. Chapter 33 shows how the same images are deployed.
 
 ### 10.11 A real incident: the address the proxy forwarded
 
@@ -400,7 +406,7 @@ The fix came in stages: nginx now overwrites the header with the true peer addre
 
 ### 10.12 Common mistakes
 
-**"Cannot connect to the Docker daemon" or "docker: command not found."** (The daemon is Docker's background service.) Docker itself is not running or not installed. Start Docker Desktop and wait for it to say it is running. On Windows, Docker may also need the Windows Subsystem for Linux updated and virtualization enabled in the BIOS, as the project's owner found.
+**"Cannot connect to the Docker daemon" or "docker: command not found."** (The daemon is Docker's background service.) Docker itself is not running or not installed. Start Docker Desktop and wait for it to say it is running. On Windows, Docker may also need the Windows Subsystem for Linux updated and virtualization enabled in the BIOS (the computer's low-level startup settings), as the project's owner found.
 
 **"Set DB_PASSWORD in .env."** Compose printed the message from a `:?` placeholder. You have no `.env`, or the variable is blank. Copy `.env.example` to `.env` and fill it in (Chapter 2).
 
@@ -418,17 +424,17 @@ The fix came in stages: nginx now overwrites the header with the true peer addre
 
 ## In this project
 
-- `docker-compose.yml`: MySQL, and behind profiles the backend, web server and TLS front end. Milestone `book-m1-accounts` has the MySQL-only version; `book-m5-platform` added the full stack.
+- `docker-compose.yml`: MySQL, and behind profiles the backend, web server, and TLS frontend. Milestone `book-m1-accounts` has the MySQL-only version; `book-m5-platform` added the full stack.
 - `Dockerfile` and `frontend/Dockerfile`: the backend and frontend images.
-- `.dockerignore`: keeps `.env`, `storage/` and `target/` out of the build context, so secrets never enter an image. <!-- source: .dockerignore at book-m6-final -->
+- `.dockerignore`: keeps `.env`, `storage/`, and `target/` out of the build context, so secrets never enter an image. <!-- source: .dockerignore at book-m6-final -->
 - `.env.example`: the template for the variables Compose reads.
-- `deploy/Caddyfile`: the optional HTTPS front end (Chapter 33).
+- `deploy/Caddyfile`: the optional HTTPS frontend (Chapter 33).
 
 ## Try it
 
 ### Exercise 10.1 ★ Image or container?
 
-For each, say image, container, volume or network: `mysql:8.4`; the running `securedocs-mysql`; `mysql-data`.
+For each, say image, container, volume, or network: `mysql:8.4`; the running `securedocs-mysql`; `mysql-data`.
 
 *Solution:* Appendix C, Exercise 10.1.
 
@@ -458,7 +464,7 @@ In Listing 10.4, find the lines that make the backend wait for MySQL. Then expla
 
 ### Exercise 10.6 ★★★ Reorder the Dockerfile
 
-In Listing 10.6, imagine moving `COPY src src` above the `dependency:go-offline` step. Describe, step by step, what happens when you change one line of Java code and rebuild, before and after the move. Which version is faster, and why?
+In Listing 10.6, imagine moving `COPY src src` above the `dependency:go-offline` step. Describe, step by step, what happens when you change one line of Java code and rebuild, before, and after the move. Which version is faster, and why?
 
 *Solution:* Appendix C, Exercise 10.6.
 
@@ -467,9 +473,9 @@ In Listing 10.6, imagine moving `COPY src src` above the `dependency:go-offline`
 - Docker runs programs in isolated, repeatable containers created from images; it is lighter than a virtual machine.
 - Volumes keep data across container removal; networks let containers reach each other by service name.
 - Compose describes services in one file; profiles select which start; health checks say when a service is ready; `depends_on` orders them.
-- Secrets come from a git-ignored `.env`, never from the repository, and `.dockerignore` keeps them out of images.
+- Secrets come from a Git-ignored `.env`, never from the repository, and `.dockerignore` keeps them out of images.
 - A multi-stage Dockerfile builds in one image and ships a smaller, non-root one, and its step order decides how well builds are cached.
-- Pinning by digest, publishing on localhost only and scanning images are the project's hardening choices, and each has a reason.
+- Pinning by digest, publishing on localhost only, and scanning images are the project's hardening choices, and each has a reason.
 
 ## Further reading
 

@@ -16,13 +16,13 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
-- Chapter 8: HTTP, cookies, and how a request travels.
-- Chapter 10: containers and Compose.
-- Chapter 14: transactions, row locks, and versioned data.
-- Chapter 16: filters, sessions, and throttling.
-- Chapters 32 to 36: threat modeling, deployment, backups, metrics, and CI.
-- Chapter 37: the engineering trade-offs.
-- Chapter 38: design patterns in the code.
+- Chapter 8: HTTP, cookies, and how a request travels
+- Chapter 10: containers and Compose
+- Chapter 14: transactions, row locks, and versioned data
+- Chapter 16: filters, sessions, and throttling
+- Chapters 32 to 36: threat modeling, deployment, backups, metrics, and CI
+- Chapter 37: the engineering trade-offs
+- Chapter 38: design patterns in the code
 
 ## Beginner tier: The shape of a system
 
@@ -30,7 +30,7 @@ By the end of this chapter, you will be able to:
 
 A design pattern is like the layout of a single room: where the door goes, where the light falls. An **architectural pattern** is like the plan of the city: where the roads run, where the gates are, which districts may talk to which, and where the water comes in. You can fix a badly placed door in an afternoon. Moving a road means rebuilding what stands beside it.
 
-The analogy breaks down in two ways. Software is cheaper to rearrange than a city, but not as cheap as beginners assume: the parts hold each other up through data, deployments, and habits. And a city grows without a plan, while software that grows without a plan still has an architecture. It isn't one anyone chose.
+**Where the analogy breaks down:** in two ways. Software is cheaper to rearrange than a city, but not as cheap as beginners assume: the parts hold each other up through data, deployments, and habits. And a city grows without a plan, while software that grows without a plan still has an architecture. It isn't one anyone chose.
 
 That second point matters for this chapter. The Secure Document Viewer has an architecture whether or not anyone had a name for it. Naming it lets you see what it costs, and decide on purpose.
 
@@ -78,7 +78,7 @@ Read it from top to bottom, the way a request travels. Each arrow crosses a boun
 
 The pattern shows up sharply in this project because the whole design rests on it. The README's first argument is that hiding a button in the browser protects nothing, because the client is in the attacker's hands. So the server checks everything, every time, and the client is treated as a convenience.
 
-**What it costs.** Two codebases in two languages, and an API that becomes a contract between them, so a change to one side can break the other. The project pays part of this with one origin: nginx serves the app and proxies `/api`, so cookies and CSRF tokens work without extra cross-origin settings (Chapter 22).
+**What it costs.** Two codebases in two languages, and an API that becomes a contract between them, so a change to one side can break the other. The project pays part of this with one origin: nginx serves the app and proxies `/api`, so cookies and cross-site request forgery (CSRF) tokens work without extra cross-origin settings (Chapter 22).
 
 **When not to use it.** For a mostly-static site with a few pages, a server that returns finished HTML is simpler, faster to show, and easier for search engines. An SPA earns its cost when the interface is interactive and stateful, as a viewer with keyboard shortcuts, zoom, and idle warnings is.
 
@@ -118,7 +118,7 @@ flowchart TB
 
 Verify the rule that matters most, which is that dependencies point down. No class outside the `controller` package imports a controller, so the arrow never points up. `DocumentController`, for instance, depends on `DocumentService` and a small helper, and nothing else.
 
-Now the honest part. The project **approximates** the pattern; it doesn't follow it strictly. Two controllers, `UserAdminController` and `UserDirectoryController`, hold a repository directly and query it, skipping the service layer. `TileController` coordinates eleven collaborators, including the rate limiter, the work limiter, the watermark service, and the audit log, so it does the work of a business-logic layer as well as HTTP. `AuthController` has thirteen `private final` fields, twelve of them collaborators, several of them Spring Security internals, and `UserAdminController` revokes a user's sessions itself after a role change, a business rule that sits in a controller. In a small app, a service that only forwards one call is ceremony, so these are places where the rule is relaxed, and you should know where.
+Now the honest part. The project *approximates* the pattern; it doesn't follow it strictly. Two controllers, `UserAdminController` and `UserDirectoryController`, hold a repository directly and query it, skipping the service layer. `TileController` coordinates eleven collaborators, including the rate limiter, the work limiter, the watermark service, and the audit log, so it does the work of a business-logic layer as well as HTTP. `AuthController` has thirteen `private final` fields, twelve of them collaborators, and several of them Spring Security internals. And `UserAdminController` revokes a user's sessions itself after a role change: a business rule that sits in a controller. In a small app, a service that only forwards one call is ceremony, so these are places where the rule is relaxed, and you should know where.
 
 Beneath the controllers the layering is looser still, as Figure 39.2 shows. `StorageJanitor` (in `service`) reads `DocumentRepository`, while `DocumentService` (in `document`) calls the tile service: a cycle between two packages. `UserAccountService` (in `account`) calls `KnownDevices` in `security`, while `security` reads accounts: a second cycle. Nothing enforces direction, so nothing stops a third from appearing.
 
@@ -126,7 +126,7 @@ Beneath the controllers the layering is looser still, as Figure 39.2 shows. `Sto
 
 **What it costs.** Indirection: to follow one request you open a controller, a service, and a repository. And a temptation to create a layer for the sake of it.
 
-**When not to use it.** When a layer would only pass calls through. The rule of thumb this project follows is to add a service when there is a rule to enforce. `DocumentService` checks ownership and visibility, so it exists. A directory lookup has no rule beyond "publishers may search", which the security configuration already enforces.
+**When not to use it.** When a layer would only pass calls through. The rule of thumb this project follows is to add a service when there is a rule to enforce. `DocumentService` checks ownership and visibility, so it exists. A directory lookup has no rule beyond "publishers may search," which the security configuration already enforces.
 
 ## Intermediate tier: Boundaries and how they are crossed
 
@@ -138,13 +138,13 @@ Beneath the controllers the layering is looser still, as Figure 39.2 shows. `Sto
 
 **The pattern.** A **modular monolith** is a single deployable whose inside is divided into modules with clear responsibilities and limited knowledge of one another. The opposite extreme is **microservices**, where each module is its own deployable that talks to the others over the network.
 
-**Where it lives.** The whole backend is one jar in one container (`Dockerfile`), and the source is divided into packages: `account`, `audit`, `document`, `security`, `service`, `controller`, and a few for models and exceptions. The packages carry meaning: accounts don't know about documents, and documents know about accounts, audit, and tiles. The imports show it: the `document` package imports from `account`, `audit`, `exception`, `model`, and `service`. But the meaning is not airtight: the two cycles of section 39.5 mean that `service` and `document`, and `account` and `security`, each know about the other.
+**Where it lives.** The whole backend is one jar in one container (`Dockerfile`), and the source is divided into packages: `account`, `audit`, `document`, `security`, `service`, `controller`, and a few for models and exceptions. The packages carry meaning: accounts don't know about documents, and documents know about accounts, audit, and tiles. The imports show it: the `document` package imports from `account`, `audit`, `exception`, `model`, and `service`. But the meaning is not airtight: the two cycles of Section 39.5 mean that `service` and `document`, and `account` and `security`, each know about the other.
 
 Again, the honesty. Nothing *enforces* those boundaries. There is no module descriptor and no architecture test in the repository, so a future change could add an import in the wrong direction and nothing would complain except a reviewer. The project is a modular monolith by convention, not by machinery.
 
-**What it costs.** One database, one release, one process to scale: a slow tile render and a login share the same JVM, which is why the project added the bulkhead and rate limiter of Chapter 38. Those are separate pools of permits, not separate resources: both kinds of work still draw on the same CPU and memory, so they limit how many at once, not how much. And the shared database means any module can, technically, read any table.
+**What it costs.** One database, one release, one process to scale: a slow tile render and a sign-in share the same JVM, which is why the project added the bulkhead and rate limiter of Chapter 38. Those are separate pools of permits, not separate resources: both kinds of work still draw on the same CPU and memory, so they limit how many at once, not how much. And the shared database means any module can, technically, read any table.
 
-**When not to use it, and when to go further.** For a small team and one product, this is usually the right size, and Chapter 37 (section 37.11) says what scaling out would require. Microservices are justified when parts must scale or be released independently, or when separate teams need to own them. They are over-engineering here: they would add network calls where there are method calls, distributed failures where there are exceptions, and several deployments where there is one. The project's records show no evaluation of microservices, so this is the book's assessment, not a project decision.
+**When not to use it, and when to go further.** For a small team and one product, this is usually the right size, and Chapter 37 (Section 37.11) says what scaling out would require. Microservices are justified when parts must scale or be released independently, or when separate teams need to own them. They are over-engineering here: they would add network calls where there are method calls, distributed failures where there are exceptions, and several deployments where there is one. The project's records show no evaluation of microservices, so this is the book's assessment, not a project decision.
 
 ### 39.7 The gateway and the trust boundary
 
@@ -152,17 +152,17 @@ Again, the honesty. Nothing *enforces* those boundaries. There is no module desc
 
 **The pattern.** Put a reverse proxy (Chapter 16), sometimes called a **gateway** when it does more, at the edge. It terminates TLS, serves static files, forwards the rest, and sets the rules about headers. Everything behind it trusts it, and nothing else.
 
-**Where it lives.** Chapters 32 and 33 covered it in detail. Two pieces are worth naming as architecture. Caddy handles TLS and HSTS; nginx serves the app, proxies `/api`, sets the frontend's security headers, and overwrites `X-Forwarded-For`. The app trusts forwarded headers only from nginx's fixed address. The trust boundary is the line between what the inside believes and what it must check.
+**Where it lives.** Chapters 32 and 33 covered it in detail. Two pieces are worth naming as architecture. Caddy handles TLS and HTTP Strict Transport Security (HSTS); nginx serves the app, proxies `/api`, sets the frontend's security headers, and overwrites `X-Forwarded-For`. The app trusts forwarded headers only from nginx's fixed address. The trust boundary is the line between what the inside believes and what it must check.
 
 **What it approximates.** This is a reverse proxy, not an API gateway in the product sense. It doesn't authenticate callers, rate-limit them, or transform requests; the app does all of that. That's a choice with a reason: it keeps every security rule in one language and one test suite (Chapter 18), and it means the gateway can be swapped without moving any rules.
 
-**What it costs.** Trust that depends on fixed addresses and on five settings agreeing, and a failure mode that is silent when they drift (Chapter 33, exercise 33.3). **When not to use it:** a single container that you reach directly on a laptop doesn't need a proxy, and the `docker compose up -d` profile that starts only MySQL is exactly that.
+**What it costs.** Trust that depends on fixed addresses and on five settings agreeing, and a failure mode that is silent when they drift (Chapter 33, Exercise 33.3). **When not to use it:** a single container that you reach directly on a laptop doesn't need a proxy, and the `docker compose up -d` profile that starts only MySQL is exactly that.
 
 ### 39.8 The pipeline: pipes and filters for the request path
 
 **The problem.** A request must pass a series of independent checks. If you write them as one long method, each check becomes tangled with the others, and adding one means editing all of them.
 
-**The pattern.** **Pipes and filters** (also called a pipeline): the request flows through a chain of small stages, each doing one job and either passing the request on or refusing it. At the code level you met the same idea in Chapter 38 as the chain of responsibility. At the system level the whole request path is one pipeline.
+**The pattern.** **Pipes and filters** (also called a pipeline): the request flows through a chain of small stages, each doing one job, and either passing the request on or refusing it. At the code level you met the same idea in Chapter 38 as the chain of responsibility. At the system level the whole request path is one pipeline.
 
 **Where it lives.** Figure 39.3 shows the path of an API request.
 
@@ -182,7 +182,7 @@ flowchart TB
 <!-- source: SecurityConfig.java (addFilterBefore and addFilterAfter around AuthorizationFilter) and frontend/nginx.conf at book-m6-final -->
 *Figure 39.3 — The request path as a pipeline: each stage can refuse, and the order is part of the design*
 
-*Text description:* Two rows, read left to right, the top row first. The top row: Caddy, then nginx (with its location rules and headers), then the Spring Security filter chain (CSRF, sessions and others), then the session lifetime filter. The bottom row: the authorization filter with its rules (`denyAll` last), then the password-change filter, and finally the controller and service checks. Notice that each stage can refuse the request, and that the order is part of the design.
+*Text description:* Two rows, read left to right, the top row first. The top row: Caddy, then nginx (with its location rules and headers), then the Spring Security filter chain (CSRF, sessions, and others), then the session lifetime filter. The bottom row: the authorization filter with its rules (`denyAll` last), then the password-change filter, and finally the controller and service checks. Notice that each stage can refuse the request, and that the order is part of the design.
 
 Two of the filters are the project's own, and their position is written in the configuration:
 
@@ -235,7 +235,7 @@ sequenceDiagram
 
 *Text description:* A conversation between a browser and the API. The browser signs in with a CSRF header and receives a session cookie and a CSRF cookie. It asks for the tile URLs of a page and receives signed URLs valid for 120 seconds. It then requests a tile with the cookie and receives a watermarked PNG that must not be cached.
 
-**What it costs.** The session state lives in the memory of one instance, so scaling out needs a shared store (section 37.5). The signed URLs need a secret that every instance shares, and rotating it invalidates outstanding URLs. **Why not tokens only?** Chapter 37 (section 37.12) sets out the trade: the project gets immediate revocation (sign-out and admin revoke end the session and every URL derived from it), and pays with statefulness.
+**What it costs.** The session state lives in the memory of one instance, so scaling out needs a shared store (Section 37.5). The signed URLs need a secret that every instance shares, and rotating it invalidates outstanding URLs. **Why not tokens only?** Chapter 37 (Section 37.12) sets out the trade: the project gets immediate revocation (sign-out and admin revoke end the session and every URL derived from it), and pays with statefulness.
 
 ## Advanced tier: State, change, and operations
 
@@ -243,7 +243,7 @@ sequenceDiagram
 
 ### 39.10 The append-only audit log as an event log
 
-**The problem.** Later you'll need to answer "who did what, and when", and the answer must not be quietly changed after the fact.
+**The problem.** Later you'll need to answer "who did what, and when," and the answer must not be quietly changed after the fact.
 
 **The pattern.** An **event log** is an ordered record of things that happened, added to and never edited. Each entry says what occurred, who caused it, and when.
 
@@ -259,7 +259,7 @@ sequenceDiagram
 
 **The problem.** A reader is in the middle of a document while a publisher replaces it. If you overwrite the tiles in place, a reader can see half old and half new, and a failure halfway leaves the document broken.
 
-*See also: Chapter 40, Section 40.8 applies this pattern to S3.*
+*See also: Chapter 40, Section 40.8 applies this pattern to Amazon S3.*
 
 **The pattern.** Never change something readers are using. Build the new version beside the old one, then switch a single pointer to it in one atomic step, and remove the old version afterward. This is the idea of **copy-on-write**. The old version is immutable while anyone can see it, and the switch is all-or-nothing.
 
@@ -329,7 +329,7 @@ sequenceDiagram
 <!-- source: DocumentService.replaceFile, DocumentRepository.findByIdForUpdate (PESSIMISTIC_WRITE) at book-m6-final; README; dossier decisions D8 -->
 *Figure 39.5 — Replacing a document: rendering happens first, and under the lock the tiles move into place and the pointer switches*
 
-*Text description:* A conversation between a publisher, DocumentService, tile storage, and MySQL. The service renders into a staging folder outside the lock, then begins a transaction and locks the document row, rechecks the caller's rights, clears debris and commits the tiles to the next version, points the document at the new version, and commits. Finally it deletes the previous version on a best-effort basis.
+*Text description:* A conversation between a publisher, DocumentService, tile storage, and MySQL. The service renders into a staging folder outside the lock, then begins a transaction and locks the document row, rechecks the caller's rights, clears debris, and commits the tiles to the next version, points the document at the new version, and commits. Finally it deletes the previous version on a best-effort basis.
 
 Notice three details. The slow work (rendering) happens *before* the lock. Under the lock, the code moves the new tiles into place (a fast local rename today; Chapter 40 discusses what changes when tiles are uploaded) and switches the pointer, so the lock is held only briefly. After the lock is taken, the code re-checks that the caller may still manage the document, because rendering can take long enough for the owner to be demoted; this is the same check-then-act care as in Chapter 32. And the old version is deleted last and only as best effort: if that fails, the storage janitor (Chapter 34) cleans up later, and readers are unaffected.
 
@@ -341,7 +341,7 @@ The pattern also reached into the token. After a review round found that old til
 
 **The problem.** The same build must run on a laptop, in CI, and in production, with different secrets and addresses, and secrets must never live in the code.
 
-*See also: Chapter 41, Section 41.2 shows secrets injected as environment variables on ECS.*
+*See also: Chapter 41, Section 41.2 shows secrets injected as environment variables on Amazon ECS.*
 
 **The pattern.** The **twelve-factor app** is a published methodology for building services that deploy cleanly. Its third factor is the relevant one here: store configuration in the environment, not in the code.
 
@@ -373,7 +373,7 @@ How closely does the project follow the whole checklist? Table 39.2 is honest ab
 | Config in the environment | Yes: Listing 39.3, `.env`, compose |
 | Backing services as attached resources | Yes: MySQL is reached through `DB_HOST` and `DB_PORT`, so swapping it is a configuration change |
 | Build, release, run kept separate | Yes: multi-stage Dockerfile builds once; compose runs the image (Chapter 33) |
-| Stateless processes | **No:** sessions and rate-limit counters are in memory and tiles are on local disk (Chapter 37, sections 37.5 and 37.7) |
+| Stateless processes | **No:** sessions and rate-limit counters are in memory and tiles are on local disk (Chapter 37, Sections 37.5 and 37.7) |
 | Dev and prod parity | Largely: MySQL 8.4 in Docker for development, and the integration test runs on real MySQL 8.4 (Chapter 18) |
 
 The "stateless" row is the important one. It's the reason the project runs one instance, and the reason Section 37.17 needs seven steps to change that. Knowing the pattern told the project what its limits would be before it hit them.
@@ -404,7 +404,7 @@ The honest exceptions matter too. `SESSION_COOKIE_SECURE` defaults to `false`, s
 
 **The problem.** A running system can fail in ways nobody sees until a user complains.
 
-**The pattern.** A common way to watch a service is by three questions, known as **RED**: the **R**ate of requests, the **E**rrors, and the **D**uration. Health checks answer the yes-or-no "is it alive".
+**The pattern.** A common way to watch a service is by three questions, known as **RED**: the **R**ate of requests, the **E**rrors, and the **D**uration. Health checks answer the yes-or-no "is it alive."
 
 **Where it lives.** Chapter 35 covers it in full. Mapped onto RED: `sdv_tiles_served_total` is the rate of the busiest operation; `sdv_tiles_rate_limited_total`, `sdv_tiles_busy_total`, `sdv_render_rejected_total`, and `sdv_render_timed_out_total` count refusals and failures; `sdv_render_seconds` is the duration of the heaviest job. Spring Boot's own HTTP and JVM metrics fill the gaps for every endpoint.
 
@@ -433,7 +433,7 @@ flowchart LR
 ### 39.16 The five steps
 
 1. **Start from the problem and the constraints, not the pattern.** Write the problem in one sentence and list what is fixed: time, team, existing systems, and what you must not break. A pattern chosen first looks for a problem to solve.
-2. **List at least two or three real options,** including "do nothing" and "the simplest thing".
+2. **List at least two or three real options,** including "do nothing" and "the simplest thing."
 3. **Name the pattern for each option,** with the standard name and one plain-words sentence. Naming lets you look up known costs and known failures.
 4. **State the cost of each option,** in the same terms every time: what it makes harder, what state or operations it adds, what breaks first at scale (Chapter 37's headings do this).
 5. **Decide, write it down, and say what would make you revisit it.** A decision record with a trigger turns "we'll fix it later" into something with a date attached.
@@ -443,9 +443,9 @@ flowchart LR
 Here is a real decision from the project, put through the framework. It's the sign-in lockout, and it changed twice. The facts come from the pull request for the platform milestone (PR #5), the README, and the commit that introduced the final design (`82c24b6`).
 
 <!-- source: PR #5 body "TM3-1"; commit 82c24b6; README "Sign-in lockout"; dossier decisions D7 -->
-**Step 1: problem and constraints.** Attackers guess passwords, and a stolen password must be hard to find by guessing. Constraints: no MFA and no identity provider (Chapter 37, section 37.6); one instance, so counters are in memory; real owners must not be locked out by strangers.
+**Step 1: problem and constraints.** Attackers guess passwords, and a stolen password must be hard to find by guessing. Constraints: no multi-factor authentication (MFA) and no identity provider (Chapter 37, Section 37.6); one instance, so counters are in memory; real owners must not be locked out by strangers.
 
-**Step 2: options.** (a) Count failures per account and address, and per address. (b) Add a counter for the account from all addresses. (c) Add that counter only for addresses the account hasn't signed in from before. (d) Do nothing: rely on BCrypt's slowness and strong passwords. (e) Add a second proof, such as multi-factor authentication or an identity provider (out of scope here; see section 37.6). This is a retelling with the framework, not a decision made with it: the facts come from the pull request and the commits.
+**Step 2: options.** (a) Count failures per account and address, and per address. (b) Add a counter for the account from all addresses. (c) Add that counter only for addresses the account hasn't signed in from before. (d) Do nothing: rely on BCrypt's slowness and strong passwords. (e) Add a second proof, such as multi-factor authentication or an identity provider (out of scope here; see Section 37.6). This is a retelling with the framework, not a decision made with it: the facts come from the pull request and the commits.
 
 **Step 3: patterns.** (a) is **rate limiting** by two keys. (b) is the same with a wider key. (c) adds an **allowlist of known devices** for the widest key, and makes the rule conditional on it. (d) is no control. (e) is delegated authentication.
 
@@ -459,9 +459,9 @@ Here is a real decision from the project, put through the framework. It's the si
 | (b) plus account-wide from anywhere | The botnet | Anyone can lock out any user by failing 20 times: a new attack |
 | (c) account-wide only for unknown devices | The botnet, without hurting the owner on a usual device | Storage of hashed addresses; a new device is locked out during an attack until the window passes or an administrator unlocks it |
 | (d) do nothing | Nothing beyond BCrypt's cost per guess | Unlimited guessing; the review's first finding was exactly this |
-| (e) MFA or an identity provider | A stolen or guessed password alone | A new dependency, enrollment and recovery work, and a project outside the app's current scope |
+| (e) MFA or an identity provider | A stolen or guessed password alone | A new dependency, enrollment, and recovery work, and a project outside the app's current scope |
 
-**Step 5: the decision and the record.** The project shipped (a) first, tried (b) as the fix for a different problem, saw (by review) that (b) created a denial-of-service, and settled on (c). The record is in the README, in prose that states the cost plainly: "while an account is under a distributed attack, its owner can still sign in from a usual device, but not from a new one … until the window passes or an admin presses Unlock". The audit event records which rule fired, so the trade-off is visible when it bites. The trigger to revisit is in Chapter 37 (section 37.14): when the app gains MFA or an identity provider.
+**Step 5: the decision and the record.** The project shipped (a) first, tried (b) as the fix for a different problem, saw (by review) that (b) created a denial-of-service, and settled on (c). The record is in the README, in prose that states the cost plainly: "while an account is under a distributed attack, its owner can still sign in from a usual device, but not from a new one … until the window passes or an admin presses Unlock". The audit event records which rule fired, so the trade-off is visible when it bites. The trigger to revisit is in Chapter 37 (Section 37.14): when the app gains MFA or an identity provider.
 
 Notice what the framework did. It didn't produce the answer; it made the second option's flaw visible, because the cost step forced the question "who benefits from this rule?".
 
@@ -489,11 +489,11 @@ To keep the vocabulary honest, here are architecture-level patterns you'll meet 
 
 | Pattern | One line |
 |---|---|
-| Microservices | One team and one deployable; the network calls and distributed failures would add cost without a need (section 39.6) |
+| Microservices | One team and one deployable; the network calls and distributed failures would add cost without a need (Section 39.6) |
 | Message queue and asynchronous jobs | Uploads render inside the request; the reviewers deferred background processing, and bounded concurrency covers the main risk |
-| Event sourcing and CQRS | Ordinary tables and one model are enough; the audit log records events but isn't the source of truth (section 39.10) |
+| Event sourcing and CQRS | Ordinary tables and one model are enough; the audit log records events but isn't the source of truth (Section 39.10) |
 | Service mesh | There is no fleet of services to connect |
-| Caching layer for tiles | Watermarking per viewer defeats shared caching (Chapter 37, section 37.2) |
+| Caching layer for tiles | Watermarking per viewer defeats shared caching (Chapter 37, Section 37.2) |
 
 <!-- source: PR #3 body ("Deferred: processing uploads in the background"); README Limitations -->
 
@@ -525,26 +525,26 @@ Table 39.5 maps the patterns of Chapters 38 and 39 to the chapters where you met
 ## Common mistakes
 
 - **Choosing the pattern first.** Symptom: a design that has the right names and no clear problem. Fix: write the problem in one sentence before the pattern.
-- **Following the diagram, not the code.** A layered diagram is not proof that the layers hold. Check the imports, as section 39.5 does.
+- **Following the diagram, not the code.** A layered diagram is not proof that the layers hold. Check the imports, as Section 39.5 does.
 - **Splitting before you must.** Symptom: several services, one team, and a week lost to network errors. Fix: start with a modular monolith and split along a boundary that hurts.
 - **Calling a convention a guarantee.** "Append-only" and "modular" were both conventions here. Say which of your rules the machinery enforces.
 - **Copying an architecture from a large company.** Their constraints (thousands of engineers, global traffic) aren't yours. Check the constraints in step 1.
-- **Skipping the cost step.** If a design record has no "what it costs", it's advertising, not a decision.
+- **Skipping the cost step.** If a design record has no "what it costs," it's advertising, not a decision.
 - **Never revisiting.** A decision without a trigger stays forever, long after its reasons are gone. Write the trigger down.
 
 ## In this project
 
 | Path | First appears | What it shows |
 |---|---|---|
-| `frontend/` and `src/main/java/.../controller/` | `controller/` from `book-m0-mvp` (with a static page); Angular from `book-m1-accounts` | Client-server and SPA (section 39.4) |
-| `src/main/java/com/example/securedocviewer/` (packages) | `book-m0-mvp`, extended through `book-m2-documents` | Layers and modules (sections 39.5, 39.6) |
-| `frontend/nginx.conf`, `deploy/Caddyfile` | `book-m5-platform` | Gateway and trust boundary (section 39.7) |
-| `src/main/java/.../security/SecurityConfig.java` | `book-m1-accounts` | Pipeline and secure by default (sections 39.8, 39.14) |
-| `src/main/java/.../service/SignedUrlService.java` | `book-m0-mvp` | Capability URLs in the hybrid (section 39.9) |
-| `src/main/java/.../audit/AuditLogService.java` | `book-m1-accounts` (in `service/`), `audit/` package from `book-m2-documents` | Event log (section 39.10) |
-| `src/main/java/.../document/DocumentService.java` | `book-m2-documents`, versioned in `book-m5-platform` | Atomic switch (section 39.11) |
-| `src/main/resources/application.yml` | `book-m0-mvp` | Configuration from the environment (section 39.12) |
-| `docker-compose.yml`, `Dockerfile` | Compose with MySQL only from `book-m1-accounts`; full stack and `Dockerfile` from `book-m5-platform` | Infrastructure as code, immutable images (section 39.13) |
+| `frontend/` and `src/main/java/.../controller/` | `controller/` from `book-m0-mvp` (with a static page); Angular from `book-m1-accounts` | Client-server and SPA (Section 39.4) |
+| `src/main/java/com/example/securedocviewer/` (packages) | `book-m0-mvp`, extended through `book-m2-documents` | Layers and modules (Sections 39.5, 39.6) |
+| `frontend/nginx.conf`, `deploy/Caddyfile` | `book-m5-platform` | Gateway and trust boundary (Section 39.7) |
+| `src/main/java/.../security/SecurityConfig.java` | `book-m1-accounts` | Pipeline and secure by default (Sections 39.8, 39.14) |
+| `src/main/java/.../service/SignedUrlService.java` | `book-m0-mvp` | Capability URLs in the hybrid (Section 39.9) |
+| `src/main/java/.../audit/AuditLogService.java` | `book-m1-accounts` (in `service/`), `audit/` package from `book-m2-documents` | Event log (Section 39.10) |
+| `src/main/java/.../document/DocumentService.java` | `book-m2-documents`, versioned in `book-m5-platform` | Atomic switch (Section 39.11) |
+| `src/main/resources/application.yml` | `book-m0-mvp` | Configuration from the environment (Section 39.12) |
+| `docker-compose.yml`, `Dockerfile` | Compose with MySQL only from `book-m1-accounts`; full stack and `Dockerfile` from `book-m5-platform` | Infrastructure as code, immutable images (Section 39.13) |
 
 See any with `git show book-m6-final:<path>`.
 
@@ -554,32 +554,44 @@ See any with `git show book-m6-final:<path>`.
 
 For each, name the architectural pattern: (a) nginx overwrites `X-Forwarded-For`; (b) `try_files $uri $uri/ /index.html`; (c) `.anyRequest().denyAll()`; (d) a new folder `v3` beside `v2` and then a single database update.
 
+*Solution:* Appendix C, Exercise 39.1.
+
 ### Exercise 39.2 ★★ Check the layers
 
 Pick any two controllers and list the classes they depend on. For each, say whether it follows the layered rule that dependencies point down, and whether it skips a layer. Use `git show book-m6-final:<path>` and read the constructor.
 
+*Solution:* Appendix C, Exercise 39.2.
+
 ### Exercise 39.3 ★★ Cost first
 
-Choose one of the eight patterns in sections 39.4 to 39.15. Write its cost and its "when not to use it" without looking at the chapter, then compare.
+Choose one of the twelve patterns in Sections 39.4 to 39.15. Write its cost and its "when not to use it" without looking at the chapter, then compare.
+
+*Solution:* Appendix C, Exercise 39.3.
 
 ### Exercise 39.4 ★★ The twelve factors
 
 Section 39.12 marks "stateless processes" as not met. Name three specific pieces of state in the code that stop the app being stateless, and say which Chapter 37 decision each belongs to.
 
+*Solution:* Appendix C, Exercise 39.4.
+
 ### Exercise 39.5 ★★★ Apply the framework
 
 Suppose a manager asks for a "download my reading history" feature that lists every page a user has viewed. Apply the five steps: problem and constraints, three options, the pattern for each, the cost, and a decision record with a trigger.
 
+*Solution:* Appendix C, Exercise 39.5 (a worked outline).
+
 ### Exercise 39.6 ★★★ Argue against a pattern
 
-Argue for or against splitting the tile-rendering code into its own service. Use section 39.6 and Chapter 37, name what would have to be true for the split to be right, and say what you would measure first.
+Argue for or against splitting the tile-rendering code into its own service. Use Section 39.6 and Chapter 37, name what would have to be true for the split to be right, and say what you would measure first.
+
+*Solution:* Appendix C, Exercise 39.6 (a worked outline).
 
 ## Summary
 
 - An architectural pattern names a large, expensive-to-change decision: how the parts are stacked, where the edge is, where state lives, and how the system is built and watched.
 - The project uses about a dozen: client-server and SPA, layers, a modular monolith, a reverse proxy at the edge, a request pipeline, a session-plus-signed-URL hybrid, an audit event log, immutable versions with an atomic switch, environment configuration, infrastructure as code, layered defenses, and observability.
 - It approximates several rather than following them strictly (layers with two shortcuts, a modular monolith by convention, an audit log that isn't event sourcing), and saying so is part of using the vocabulary honestly.
-- Every pattern has a cost and a "when not to". Naming it lets you look the cost up before you pay it.
+- Every pattern has a cost and a "when not to." Naming it lets you look the cost up before you pay it.
 - The five-step framework turns pattern names into decisions: problem and constraints, options, pattern names, costs, and a recorded decision with a trigger.
 - The lockout example shows the payoff: the cost step exposed the flaw in the obvious option.
 
@@ -587,8 +599,6 @@ Part VII applies these ideas to a cloud design, and the epilogue then ties the p
 
 ## Further reading
 
-- The Twelve-Factor App: https://12factor.net/
-- Martin Fowler, "MonolithFirst": https://martinfowler.com/bliki/MonolithFirst.html
-- Michael Nygard, "Documenting Architecture Decisions": https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions
-- Spring Security reference, architecture (the filter chain): https://docs.spring.io/spring-security/reference/servlet/architecture.html
-- OWASP, Secure by Design principles: https://owasp.org/www-project-developer-guide/draft/foundations/security_principles/
+- *The Twelve-Factor App*. https://12factor.net/
+- *Spring Security Reference Documentation*, "Architecture" (the filter chain). https://docs.spring.io/spring-security/reference/servlet/architecture.html
+- *OWASP Developer Guide*, "Security Principles." https://owasp.org/www-project-developer-guide/draft/foundations/security_principles/

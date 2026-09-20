@@ -11,7 +11,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - actor: Chapters 4, 12, **32**
 - Actuator: Chapters 16, **28**, 33, 35, 37, 40
 - adapter: Chapter **38**
-- administrator: Chapters **1**, 4, 11, 15–16, 18, 22–24, 27, 29, 32, 35, 37
+- administrator: Chapters **1**, 4, 11–13, 15–16, 18, 22–24, 27, 29, 32, 35, 37
 - alert: Chapters 21, 23, **35**, 37, 41
 - Amazon CloudFront: Chapter **41**
 - Amazon CloudWatch: Chapters **40**, 41
@@ -36,7 +36,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - atomic: Chapters **5**, 16–18, 27, 30–31, 37–40
 - audit log: Chapters 1, 10, 12–13, 15, 26–27, 29–30, 32, 34, **35**, 39–40
 - audit trail: Chapters **1**, 4, 9, 14, 27, 32
-- authentication: Chapters **1**, 8, 12, 15–17, 25, 32, 37–39
+- authentication: Chapters **1**, 8, 12, 15–17, 25, 32, 37–39, 41
 - authorization: Chapters **1**, 15–16, 22, 26, 39
 - auto-configuration: Chapter **11**
 - Availability Zone (AZ): Chapters **40**, 41
@@ -79,7 +79,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - chain of responsibility: Chapters **38**, 39
 - change detection: Chapter **21**
 - checked exception: Chapters **5**, 14
-- CI (continuous integration): Chapters **6**, 30–31, 36
+- CI (continuous integration): Chapters **6**, 7, 30–31, 36
 - CIDR: Chapter **40**
 - class: Chapters 2, **3**, 4–6, 11–19, 21–23, 25–30, 32, 34–35, 37–40
 - clickjacking: Chapter **16**
@@ -97,7 +97,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - computed signal: Chapter **21**
 - concurrency: Chapters **13**, 18
 - conditional expression: Chapter **19**
-- constant-time comparison: Chapters **17**, 25
+- constant-time comparison: Chapter **17**
 - constraint: Chapters **9**, 14, 26, 39
 - constructor: Chapters **4**, 11–12, 14, 18, 21–22, 25–26, 29–30, 35, 38
 - constructor injection: Chapters **4**, 11, 38
@@ -105,7 +105,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - Content-Security-Policy (CSP): Chapters **8**, 16, 22, 28, 32, 41
 - contrast: Chapters **21**, 24
 - control: Chapters 1–3, 7–8, 11–13, 18, 23–25, 27, **32**, 33, 35, 37–41
-- controller: Chapters 3–5, 8, **11**, 12–18, 24–28, 30, 38–39
+- controller: Chapters 3–5, 8, **11**, 12–18, 24–30, 38–39
 - convention over configuration: Chapter **6**
 - cookie: Chapters 1, **8**, 11–12, 15–16, 18, 20, 22, 24, 26, 30, 32–33, 37–41. See also double-submit cookie, SameSite, session cookie
 - coordinates: Chapter **6**
@@ -113,11 +113,11 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - CORS (cross-origin resource sharing): Chapters **8**, 20, 22
 - counter: Chapters 16, 18–19, 21, 30–34, **35**, 37–41
 - CPU: Chapters **17**, 25, 30, 35, 37–38, 40
-- CRLF: Chapter **2**
+- CRLF: Chapters **2**, 7
 - Crockford Base32: Chapter **29**
 - cron expression: Chapter **14**
-- CSRF (cross-site request forgery): Chapters **8**, 12–13, 15–16, 18, 20, 22, 26, 32–33, 37, 39. See also CSRF token, double-submit cookie, SameSite
-- CSRF token: Chapters **8**, 13, 15–16, 18, 26
+- CSRF (cross-site request forgery): Chapters 7, **8**, 12–13, 15–16, 18, 20, 22, 24, 26, 32–33, 37–41. See also CSRF token, double-submit cookie, SameSite
+- CSRF token: Chapters **8**, 15–16, 18, 26
 - CSV injection: Chapter **27**
 - CVE: Chapters **31**, 32
 
@@ -189,7 +189,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - foreign key: Chapters **9**, 14
 - framework: Chapters **4**, 5–6, 9, 11–14, 18, 22, 24, 27–28, 31, 36–39
 - front end: see frontend
-- frontend: Chapters **1**, 2, 6, 8, 10, 13, 19–24, 26–31, 33, 35–36, 38–41
+- frontend: Chapters **1**, 2, 6, 8, 10, 13, 19–24, 26–33, 35–41
 
 ## G
 
@@ -213,7 +213,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - HMAC: Chapters **15**, 17, 25–26, 32, 37
 - home folder: Chapters **2**, 6
 - host: Chapters 2, 8, **10**, 20, 30, 32–34, 39, 41
-- HSTS (HTTP Strict Transport Security): Chapters 8, **30**, 33, 40
+- HSTS (HTTP Strict Transport Security): Chapters 8, **30**, 33, 37, 39–40
 - HTTP: Chapters 1–7, **8**, 9–41
 - HTTPS: Chapters 1–32, **33**, 34–41
 
@@ -235,7 +235,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - instant: Chapters 4, **5**, 14, 18, 31, 40
 - integration test: Chapters **18**, 27
 - interceptor: Chapters **22**, 23, 26, 29, 38
-- interface: Chapters **4**, 5–6, 11, 13–15, 19, 24, 38–41
+- interface: Chapters **4**, 5–6, 11, 13–15, 19–20, 24, 38–41
 - interpolation: Chapter **21**
 - inversion of control: Chapter **11**
 
@@ -274,7 +274,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - library: Chapters 1, 4–6, 9–10, **11**, 12, 15, 18–20, 30–32, 35–36, 38
 - lifecycle hook: Chapter **21**
 - lifecycle rule: Chapter **40**
-- line ending: Chapters **2**, 6
+- line ending: Chapters **2**, 6–7
 - list: Chapters 0–4, **5**, 6–41
 - literal: Chapters **3**, 19
 - load balancer: see Application Load Balancer (ALB)
@@ -388,7 +388,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - rate limit: Chapters **1**, 12, 17, 26, 29–30, 32, 37
 - rate limiter: Chapters **38**, 39
 - reader: Chapters **1**, 4, 9, 11–12, 14–24, 26–30, 32, 34–35, 37–41
-- recognised device: Chapters **16**, 30, 34, 37
+- recognized device: Chapters **16**, 30, 34, 37
 - record: Chapters 1–2, **4**, 5–9, 11–16, 18–20, 22–23, 25–32, 35–41
 - RED: Chapters 18, 25, 36–37, **39**
 - redirection: Chapter **2**
@@ -443,7 +443,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - semaphore: Chapters **17**, 30, 38
 - serialization: Chapters **12**, 40
 - server: Chapters 0, **1**, 2, 5–6, 8–17, 19–26, 28–40
-- service: Chapters 0–6, 10, **11**, 12–15, 17–19, 21–31, 33–41
+- service: Chapters 0–7, 10, **11**, 12–15, 17–19, 21–31, 33–41
 - service layer: Chapters **38**, 39
 - service name: Chapter **10**
 - servlet filter: Chapter **15**
@@ -463,7 +463,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - sliding window: Chapters **26**, 38
 - sliding window log: Chapter **38**
 - source code: Chapters **3**, 6
-- SPA (single-page application): Chapters **16**, 23, 39
+- SPA (single-page application): Chapters **16**, 23, 26, 39
 - SPA fallback: Chapter **33**
 - spec: Chapters 20, 22–23, **24**, 29
 - Spring: see Spring Boot
@@ -540,7 +540,7 @@ Each entry lists the chapters where the term is defined (in bold) and where it i
 - upsert: Chapter **30**
 - URL: Chapters **1**, 2–3, 8, 11–17, 19–30, 32–33, 35, 37, 39–41
 - user enumeration: Chapter **15**
-- UTC: Chapters **5**, 14, 17–18, 25, 29–30, 37
+- UTC: Chapters 1, **5**, 14, 17–18, 25, 29–30, 37
 - UTF-8: Chapters **2**, 3, 15, 31
 - UUID: Chapters **13**, 25, 27
 

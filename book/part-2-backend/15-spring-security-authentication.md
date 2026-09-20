@@ -17,14 +17,14 @@ By the end of this chapter, you will be able to:
 
 ## Prerequisites
 
-- Chapter 5: collections, lambdas and exceptions
+- Chapter 5: collections, lambdas, and exceptions
 - Chapter 8: how the web works (cookies, headers)
 - Chapter 11: Spring Boot foundations
 - Chapter 12: REST controllers and JSON
-- Chapter 13: Validation, configuration properties and errors
+- Chapter 13: Validation, configuration properties, and errors
 - Chapter 14: Storing data with JPA and Flyway
 
-**A note on versions.** The chapter belongs to milestone 1 (`book-m1-accounts`), but each listing is labeled with the tag it was copied from. `Role.java` and `DatabaseUserDetailsService.java` are identical at `book-m1-accounts` and `book-m6-final`. The 72-byte check, the full sign-in code and the security chain shown here come from `book-m6-final`, because those files gained features after milestone 1.
+**A note on versions.** The chapter belongs to milestone 1 (`book-m1-accounts`), but each listing is labeled with the tag it was copied from. `Role.java` and `DatabaseUserDetailsService.java` are identical at `book-m1-accounts` and `book-m6-final`. The 72-byte check, the full sign-in code, and the security chain shown here come from `book-m6-final`, because those files gained features after milestone 1.
 
 ## Beginner tier: Proving who you are
 
@@ -42,7 +42,7 @@ A **servlet** is Java's name for a piece of code that handles web requests, and 
 
 *Pattern note: A filter chain is the chain of responsibility pattern (Chapter 38, Section 38.3; pipes and filters, Chapter 39, Section 39.8).*
 
-Spring Security is a chain of such filters, each with one job. One reads the session and works out who the caller is. One checks the CSRF token (Chapter 16). One decides whether the request is allowed. If any filter refuses, the controller never runs. You describe the chain in one place, a bean of type `SecurityFilterChain`. The project's begins like this.
+Spring Security is a chain of such filters, each with one job. One reads the session and works out who the caller is. One checks the cross-site request forgery (CSRF) token (Chapter 16). One decides whether the request is allowed. If any filter refuses, the controller never runs. You describe the chain in one place, a bean of type `SecurityFilterChain`. The project's begins like this.
 
 **Listing 15.1 — `SecurityConfig.java` (`book-m6-final`, simplified: the method's other parameters are omitted, and only the opening lines and the last disabled features are shown)**
 
@@ -67,13 +67,13 @@ public class SecurityConfig {
 
 `@Configuration` marks a class whose `@Bean` methods create beans by hand (Chapter 11). `@EnableWebSecurity` switches on the Spring Security machinery. The `HttpSecurity` parameter is a builder: you call methods on it to describe the chain, and `http.build()` produces the finished `SecurityFilterChain`.
 
-The last three lines *turn off* features Spring Security would otherwise provide. `formLogin` is a ready-made HTML sign-in page, `httpBasic` is a browser pop-up asking for a username and password, and Spring's built-in `logout` handles a logout address. The project disables all three because the Angular app has its own sign-in screen and talks to its own endpoints, `/api/auth/login` and `/api/auth/logout`, that return JSON (Chapter 12). The middle of the chain, the CSRF and authorization rules, is Chapter 16.
+The last three lines *turn off* features Spring Security would otherwise provide. `formLogin` is a ready-made HTML sign-in page, `httpBasic` is a browser pop-up asking for a username and password, and Spring's built-in `logout` handles a sign-out address. The project disables all three because the Angular app has its own sign-in screen and talks to its own endpoints, `/api/auth/login` and `/api/auth/logout`, that return JSON (Chapter 12). The middle of the chain, the CSRF and authorization rules, is Chapter 16.
 
 Why write the chain by hand instead of using defaults? Because the defaults assume a server that renders web pages, while this app is an API used by a single-page application. Every default you leave on is a behavior you'd have to understand, test and defend, so the project turns on only what it uses.
 
 ### 15.3 Storing passwords: hashing, salting, BCrypt
 
-The database must never contain passwords. Anyone who could read it, through a leaked backup, a stolen disk or a mistake, would have every account, and people reuse passwords across sites. Instead the database stores a **hash**: the output of a one-way function that turns a password into a fixed-length string of characters. "One-way" means that given the hash you can't practically get back the password. To check a sign-in, the server hashes what was typed and compares the two hashes.
+The database must never contain passwords. Anyone who could read it, through a leaked backup, a stolen disk, or a mistake, would have every account, and people reuse passwords across sites. Instead the database stores a **hash**: the output of a one-way function that turns a password into a fixed-length string of characters. "One-way" means that given the hash you can't practically get back the password. To check a sign-in, the server hashes what was typed and compares the two hashes.
 
 *Pattern note: A password encoder that can be swapped or upgraded is the strategy pattern (Chapter 38, Section 38.4).*
 
@@ -129,7 +129,7 @@ public static boolean fitsBcrypt(String password) {
 
 The check counts bytes in UTF-8, not characters. A letter in the English alphabet is one byte, but an accented letter like `é` takes two, a Chinese character takes three, and an emoji takes four. A passphrase of 20 emoji looks short but is 80 bytes, so it doesn't fit. The rule is enforced when a password is set and again at sign-in (you'll see where in Section 15.5), so an over-long attempt is refused cleanly instead of failing deep inside the hashing library. A related rule in the same class limits passwords to between 12 and 128 characters. Length, more than complexity, is what makes a password hard to guess.
 
-## Intermediate tier: Sessions, roles and the sign-in
+## Intermediate tier: Sessions, roles, and the sign-in
 
 *If you're reading for the first time, Sections 15.4 and 15.5 are the heart of the chapter; 15.6 to 15.8 fill in the details.*
 
@@ -166,7 +166,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
 
 Line by line: the class is a `@Service` bean (Chapter 11) that implements the Spring Security interface `UserDetailsService`, whose one method is `loadUserByUsername`. It receives `AppUserRepository` by constructor injection (Chapter 14). It looks the user up by the *normalized* username, lower-cased and trimmed, so `Alice` and `alice` are the same account; the account-creation code enforces the same rule, which is why the `username` column's unique constraint works as a case-insensitive one. If nothing is found it throws `UsernameNotFoundException`, and Spring Security handles the rest.
 
-`User.withUsername(...)` is a builder for Spring Security's own `UserDetails` object, which carries a username, a password *hash*, roles and flags. Note that it holds the stored hash, never a password. `.roles("ADMIN")` becomes the **authority** string `ROLE_ADMIN`: Spring stores every permission as a text authority, and `roles(...)` is shorthand that adds the `ROLE_` prefix for you. `.disabled(!user.isEnabled())` marks a switched-off account, which makes authentication fail no matter how correct the password is.
+`User.withUsername(...)` is a builder for Spring Security's own `UserDetails` object, which carries a username, a password *hash*, roles, and flags. Note that it holds the stored hash, never a password. `.roles("ADMIN")` becomes the **authority** string `ROLE_ADMIN`: Spring stores every permission as a text authority, and `roles(...)` is shorthand that adds the `ROLE_` prefix for you. `.disabled(!user.isEnabled())` marks a switched-off account, which makes authentication fail no matter how correct the password is.
 
 What connects this service to the hash comparison? The `AuthenticationManager` bean in `SecurityConfig` wraps a `DaoAuthenticationProvider`, which is constructed with this service and the password encoder. When asked to authenticate, that provider calls `loadUserByUsername`, checks that the account isn't disabled, and calls the encoder's `matches`. Three small pieces, each with one job, produce the whole check.
 
@@ -199,11 +199,11 @@ sequenceDiagram
 
 *Figure 15.1 — The sign-in sequence in `AuthController.login`*
 
-*Text description:* A sequence between the browser, `AuthController`, `LoginThrottle`, the authentication manager and the session. The controller first reserves an attempt from the throttle and then authenticates. A choice follows. A wrong password, unknown user or disabled account gives one fixed `401`. A correct password hands the attempt back, changes the session id, rotates the CSRF token, sets two flags on the session and returns `200` with the cookies.
+*Text description:* A sequence between the browser, `AuthController`, `LoginThrottle`, the authentication manager, and the session. The controller first reserves an attempt from the throttle and then authenticates. A choice follows. A wrong password, unknown user, or disabled account gives one fixed `401`. A correct password hands the attempt back, changes the session id, rotates the CSRF token, sets two flags on the session and returns `200` with the cookies.
 
 <!-- source: AuthController.java at book-m6-final -->
 
-Two things to notice. The throttle is asked *before* the password is looked at, and the reservation is given back only on success. And every failure, whatever its cause, ends in the same `401`, while a success creates a session with a *new* id and a *new* CSRF token; the next three excerpts follow the figure step by step.
+Two things to notice. The throttle is asked *before* the password is looked at, and the reservation is given back only on success. And every failure, whatever its cause, ends in the same `401`, while a success creates a session with a *new* id and a *new* CSRF token. The next three excerpts follow the figure step by step.
 
 **Listing 15.5 — `AuthController.java` (`book-m6-final`, excerpt 1 of 3: `login`, start; indentation reduced and the lockout handling replaced by `// ...`)**
 
@@ -252,7 +252,7 @@ try {
 
 *Path: `src/main/java/com/example/securedocviewer/controller/AuthController.java`*
 
-**Step 3: authenticate.** The over-long password check (Section 15.3) comes first. Then `authenticationManager.authenticate(...)` is handed an *unauthenticated* token, a plain "someone claims to be this user with this password", and the manager (the `DaoAuthenticationProvider` from Section 15.4) either returns a fully authenticated `Authentication` object or throws an `AuthenticationException`. **Step 4: one answer for every failure.** Whatever went wrong, the code throws a *new* `BadCredentialsException` with a fixed message. Section 15.8 explains why.
+**Step 3: authenticate.** The over-long password check (Section 15.3) comes first. Then `authenticationManager.authenticate(...)` is handed an *unauthenticated* token, a plain "someone claims to be this user with this password," and the manager (the `DaoAuthenticationProvider` from Section 15.4) either returns a fully authenticated `Authentication` object or throws an `AuthenticationException`. **Step 4: one answer for every failure.** Whatever went wrong, the code throws a *new* `BadCredentialsException` with a fixed message. Section 15.8 explains why.
 
 In short, the third excerpt does this: *prove the password was right, then start a fresh session, then remember a few facts about it.* If you lose the thread in the details, hold on to that sentence.
 
@@ -285,7 +285,7 @@ return ResponseEntity.ok(toCurrentUser(authentication, request));
 
 **Step 5: hand back the reserved attempt** (`succeeded`), because the password was right, and record a few facts. One is a metric (a counter for the operators' dashboard, Chapter 35). Another is the address as a "known device" (an address this account has signed in from successfully; Chapter 16). The last is the account's last sign-in time. The value `mustChangePassword` says whether this account is still using a password an administrator set (Chapter 16, Section 16.7).
 
-**Step 6: create the session.** `request.getSession(true)` makes sure a session exists. `sessionAuthenticationStrategy.onAuthentication` then changes the session's id and registers it, which prevents a **session fixation** attack in which an attacker plants a known id before you sign in (Chapter 16). `rotateCsrfToken` issues a fresh CSRF token. Then the code builds a `SecurityContext`, Spring Security's container for "who is signed in", puts the authenticated user in it, and saves it into the session with `securityContextRepository.saveContext`. From now on, the security filters find the user by reading the session, which is what "being signed in" means in this app.
+**Step 6: create the session.** `request.getSession(true)` makes sure a session exists. `sessionAuthenticationStrategy.onAuthentication` then changes the session's id and registers it, which prevents a **session fixation** attack in which an attacker plants a known id before you sign in (Chapter 16). `rotateCsrfToken` issues a fresh CSRF token. Then the code builds a `SecurityContext`, Spring Security's container for "who is signed in," puts the authenticated user in it, and saves it into the session with `securityContextRepository.saveContext`. From now on, the security filters find the user by reading the session, which is what "being signed in" means in this app.
 
 **Step 7: remember a few things on the session** (whether a password change is pending, and the time of sign-in, used by the lifetime filter in Chapter 16). Then write an **audit event**, a row in the append-only record of who did what (Chapter 14's `REQUIRES_NEW` explained why audit rows survive failures, and Chapter 27 tells how the audit trail was built). Finally, return the current user's public details. The response never includes the session id. The class comment states the rule: it "travels only in the httpOnly session cookie set by the container."
 
@@ -327,7 +327,7 @@ server:
 - `name: SDV_SESSION` renames the container's default cookie so the app is recognizable in the browser's developer tools.
 - `http-only: true` hides the cookie from JavaScript. If an attacker ever manages to run a script inside the page, they still can't read the session id.
 - `same-site: strict` tells the browser to send the cookie only for requests that begin on the app's own site, which blocks a whole class of cross-site tricks (Chapter 16).
-- `secure` means "send it only over HTTPS". It defaults to `false` for local development and is set to `true` wherever the app is served over HTTPS; the file's own comment says it "Must be true anywhere the app is served over HTTPS".
+- `secure` means "send it only over HTTPS." It defaults to `false` for local development and is set to `true` wherever the app is served over HTTPS; the file's own comment says it "Must be true anywhere the app is served over HTTPS."
 - `timeout: 30m` is the idle timeout: 30 minutes without a request ends the session.
 
 **Sessions versus tokens.** The alternative to a server-side session is a token: a signed piece of text that the browser stores and sends with each request, usually in a header. One example is a **JWT** (JSON Web Token), a signed text holding your identity and an expiry. The server can check it without keeping any records. Table 15.2 compares the two for this project.
@@ -359,9 +359,9 @@ public enum Role {
 
 *Path: `src/main/java/com/example/securedocviewer/account/Role.java`*
 
-The class comment explains them: every signed-in user can read documents they have access to, publishers can also upload, and admins can additionally manage accounts, sessions and the audit log. The roles are cumulative on purpose: a `PUBLISHER` can do everything a reader can, plus upload. Chapter 16 shows the rules that enforce them.
+The class comment explains them: every signed-in user can read documents they have access to, publishers can also upload, and administrators can additionally manage accounts, sessions and the audit log. The roles are cumulative on purpose: a `PUBLISHER` can do everything a reader can, plus upload. Chapter 16 shows the rules that enforce them.
 
-Where do accounts come from? There is **no self-registration**. An administrator creates every account (`UserAccountService.create`), which checks the username against the pattern `[a-z0-9._-]{3,32}` and the password against the length rules, and sets "must change password" so the new user chooses their own at first sign-in. The very first administrator has to come from somewhere, and `BootstrapAdmin` supplies it. On a completely empty database it creates an account whose password comes from the `BOOTSTRAP_ADMIN_PASSWORD` setting. If that isn't set, the password is a random 20-character value that it prints to the log once. Its class comment compares this to what Spring Boot itself does for a default user. A generated password is flagged "must change", precisely because it appeared in a log. Once any account exists, the class does nothing.
+Where do accounts come from? There is **no self-registration**. An administrator creates every account (`UserAccountService.create`), which checks the username against the pattern `[a-z0-9._-]{3,32}` and the password against the length rules, and sets "must change password" so the new user chooses their own at first sign-in. The very first administrator has to come from somewhere, and `BootstrapAdmin` supplies it. On a completely empty database it creates an account whose password comes from the `BOOTSTRAP_ADMIN_PASSWORD` setting. If that isn't set, the password is a random 20-character value that it prints to the log once. Its class comment compares this to what Spring Boot itself does for a default user. A generated password is flagged "must change," precisely because it appeared in a log. Once any account exists, the class does nothing.
 
 ### 15.8 Same answer for wrong password and unknown user
 
@@ -369,7 +369,7 @@ If the server said "no such user" in one case and "wrong password" in another, a
 
 The test that guards it is `wrongPasswordAndUnknownUserGetTheSameAnswer` in `SecurityIntegrationTest` (Chapter 18). It signs in once with a real user and a wrong password, once with a name that doesn't exist, and asserts that the two response bodies are *equal*. The audit log records every failure with the attempted username (Chapters 14 and 27), so operators can see what an attacker sees only as silence.
 
-We simplify here about one thing: response *time* can also leak information, because hashing a password takes longer than failing to find a user. Spring Security's `DaoAuthenticationProvider` narrows this difference by hashing a dummy password when the user isn't found; the project adds nothing of its own on top. The sign-in throttle (Chapter 16) limits how many guesses anyone gets, which keeps the remaining leak from being useful in practice.
+We simplify one thing here: response *time* can also leak information, because hashing a password takes longer than failing to find a user. Spring Security's `DaoAuthenticationProvider` narrows this difference by hashing a dummy password when the user isn't found; the project adds nothing of its own on top. The sign-in throttle (Chapter 16) limits how many guesses anyone gets, which keeps the remaining leak from being useful in practice.
 
 ## Advanced tier: Keeping the credential itself out of reach
 
@@ -408,15 +408,15 @@ public class SessionKeys {
 
 *Path: `src/main/java/com/example/securedocviewer/security/SessionKeys.java`*
 
-The trick is an **HMAC**, a keyed fingerprint: a hash (Section 15.3) computed with a secret key, so only the holder of the key can produce it. You'll meet HMAC properly in Chapter 17; for now it's enough to know that it's applied to the session id with the server's secret. A derived value can be shown to the outside world because nobody can run the calculation backward to recover the id. And because `tile-binding:` and `admin-handle:` are mixed in as labels, a value derived for one purpose can't be replayed for the other. Each exposure of "something about the session" is a separate derivation, so leaking one doesn't leak the others. This is a general design habit worth adopting: **never expose a credential when a value derived from it will do.**
+The trick is an **HMAC** (hash-based message authentication code), a keyed fingerprint: a hash (Section 15.3) computed with a secret key, so only the holder of the key can produce it. You'll meet HMAC properly in Chapter 17; for now it's enough to know that it's applied to the session id with the server's secret. A derived value can be shown to the outside world because nobody can run the calculation backward to recover the id. And because `tile-binding:` and `admin-handle:` are mixed in as labels, a value derived for one purpose can't be replayed for the other. Each exposure of "something about the session" is a separate derivation, so leaking one doesn't leak the others. This is a general design habit worth adopting: **never expose a credential when a value derived from it will do.**
 
 ### 15.10 Three real incidents
 
-Three findings from this project's reviews show these ideas failing and being fixed. In each, a security review by an AI agent (Chapter 32 explains how the reviews worked) found the problem before any real user could.
+Three findings from this project's reviews show these ideas failing and being fixed. In each, a security review by the AI technical-manager reviewer (Chapter 32 explains how the reviews worked) found the problem before any real user could.
 
 **The session id in the admin list.** *The problem:* the first version of the admin API returned every live session id, and the session id was the only credential. *How it was found:* the reviewer signed in as an ordinary user, read another user's session id from the list, used it to request tile URLs and received a tile; the watermark and audit log named the *victim*. *The fix:* real roles, an admin-only admin API, and sessions listed by opaque handle (Section 15.9). *The lesson:* never return a credential in an API, and take identity from a verified principal, never from something the caller can supply. <!-- source: dossier bugs-and-findings B (TM-1); commit 68b4945, PR #1 -->
 
-**Sign-in that accepted anything.** *The problem:* the first prototype accepted any username with no password check at all, even an empty password or one 5,000 characters long. *The fix:* accounts with BCrypt hashes, the whole of this chapter. *The lesson:* a demo login is a decision you must replace before anyone but you can reach the server. <!-- source: dossier bugs-and-findings B (TM-2); commit 68b4945 -->
+**Sign-in that accepted anything.** *The problem:* the first prototype accepted any username with no password check at all, even an empty password or one 5,000 characters long. *The fix:* accounts with BCrypt hashes, the whole of this chapter. *The lesson:* a demo sign-in is a decision you must replace before anyone but you can reach the server. <!-- source: dossier bugs-and-findings B (TM-2); commit 68b4945 -->
 
 **The 500 from an emoji password.** *The problem:* creating an account with a 100-character password produced a server error instead of a clear message. *How it was found:* a later review round probed the limits. *The cause:* validation allowed 12 to 128 *characters*, but BCrypt refuses more than 72 *bytes*, and 30 emoji can exceed that. *The fix:* validate the UTF-8 byte length and add a test (`fitsBcrypt`, Listing 15.3). *The lesson:* characters are not bytes; validate in the unit the library cares about. <!-- source: dossier bugs-and-findings G2; commit 1ce2c8b -->
 
@@ -476,7 +476,7 @@ Using Listings 15.5 and 15.6, list in order every method called when the passwor
 
 ### Exercise 15.5 ★★★ Sessions or tokens?
 
-Suppose the product owner asks for "sign out everywhere, immediately, when a user's password changes". Explain how the current design does this and what it would take with a token-only design. Then name one requirement for which tokens would be the better choice, and say what the project would give up by switching.
+Suppose the project owner asks for "sign out everywhere, immediately, when a user's password changes." Explain how the current design does this and what it would take with a token-only design. Then name one requirement for which tokens would be the better choice, and say what the project would give up by switching.
 
 *Solution:* Appendix C, Exercise 15.5 (a worked outline).
 
@@ -489,9 +489,9 @@ You are adding a "forgot password" feature that sends an email. The form takes a
 ## Summary
 
 - Authentication proves who you are; authorization decides what you may do.
-- Spring Security is a chain of servlet filters described by one `SecurityFilterChain` bean; the project turns off the form, Basic and logout features it doesn't use.
+- Spring Security is a chain of servlet filters described by one `SecurityFilterChain` bean; the project turns off the form, Basic, and logout features it doesn't use.
 - Passwords are stored as salted BCrypt hashes, labeled by the delegating encoder so the algorithm can change; BCrypt accepts at most 72 bytes, and the project counts bytes.
-- `DatabaseUserDetailsService`, the password encoder and `DaoAuthenticationProvider` together perform the check.
+- `DatabaseUserDetailsService`, the password encoder, and `DaoAuthenticationProvider` together perform the check.
 - Sign-in runs in a deliberate order: throttle, validate, authenticate, then create a fresh session with a fresh id and CSRF token, and record it.
 - A server-side session and an `httpOnly`, `SameSite=Strict` cookie keep you signed in without exposing the session id to scripts; the requirements, not fashion, chose sessions over tokens.
 - Three cumulative roles are loaded from the database; there is no self-registration.

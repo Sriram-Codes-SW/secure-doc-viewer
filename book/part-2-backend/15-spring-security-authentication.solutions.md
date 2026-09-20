@@ -46,7 +46,7 @@ For a user that doesn't exist: the path is the same up to `loadUserByUsername`, 
 
 A worked outline.
 
-- **Current design.** `UserAdminController.resetPassword` and `AuthController.changePassword` call `sessions.revokeAllFor(...)`, which expires every session of that user in the `SessionRegistry`. Spring Security then rejects each of those sessions on its very next request. Because the server owns the record, "immediately" is easy.
+- **Current design.** `UserAdminController.resetPassword` and `AuthController.changePassword` call `sessions.revokeAllFor(...)`, which expires every session of that user in the `SessionRegistry`. Spring Security then rejects each of those sessions on its very next request. Because the server owns the record, "immediately" is simple.
 - **Token-only design.** A signed token stays valid until it expires and needs no server lookup, so nothing tells the server the token should now be refused. To add "sign out everywhere" you would need server-side state anyway: a list of revoked tokens, or a per-user "tokens issued before this time are invalid" value checked on every request. That is most of the server-side state a session already gives you.
 - **When tokens win.** When many independent servers, or a third party, must verify identity without contacting a central store, or when the client isn't a browser and can't keep cookies. Switching would give up instant revocation, the `httpOnly` protection from scripts, and the simple admin session list. It would also make it necessary to protect the token in the browser, which scripts can read if it's kept in storage.
 

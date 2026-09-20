@@ -67,20 +67,38 @@ mark('1 manuscript assembly')
 # ---- 2. diagrams (cached on the diagram sources) ---------------------------------------------------
 blocks = re.findall(r'```mermaid\n.*?```', manuscript, flags=re.S)
 MERMAID_CONFIG = os.path.join(HERE, 'mermaid-config.json')
-# the cache key covers the diagram sources AND the rendering settings
-digest = hashlib.sha256(('\n'.join(blocks) + open(MERMAID_CONFIG, encoding='utf-8').read()).encode('utf-8')).hexdigest()
-stamp = os.path.join(DIAGRAMS, 'sources.sha256')
-raw = os.path.join(DIAGRAMS, 'rendered-raw.md')
-cached = os.path.exists(raw) and os.path.exists(stamp) and open(stamp).read().strip() == digest
-if cached:
+CONFIG_TEXT = open(MERMAID_CONFIG, encoding='utf-8').read()
+CACHE = os.path.join(DIAGRAMS, 'cache')
+os.makedirs(CACHE, exist_ok=True)
+# Each diagram is cached under a key made from its own source AND the rendering settings, so a change to one
+# diagram (or to the settings) re-renders only what changed.
+keys = [hashlib.sha256((CONFIG_TEXT + b).encode('utf-8')).hexdigest()[:20] for b in blocks]
+todo = [i for i, k in enumerate(keys) if not os.path.exists(os.path.join(CACHE, k + '.png'))]
+if not todo:
     print(f'diagrams unchanged ({len(blocks)}), skipping the render')
 else:
+    # Rendering runs in small batches, each in its own headless Chrome, so the memory Chrome holds is released
+    # between batches (one big run can exhaust a small machine). The pictures are the same as one run makes.
+    print(f'rendering {len(todo)} of {len(blocks)} diagrams', flush=True)
+    BATCH = 6
     env0 = dict(os.environ, PUPPETEER_SKIP_DOWNLOAD='1')
-    subprocess.run('npx --yes -p @mermaid-js/mermaid-cli mmdc -p "' + os.path.join(HERE, 'puppeteer-config.json').replace(BACKSLASH, '/') + '" -c "' + MERMAID_CONFIG.replace(BACKSLASH, '/') + '" -w 4000 -i manuscript.md '
-                   '-o diagrams/rendered.md -e png -s 2 -b white', cwd=OUT, check=True, shell=True, env=env0)
-    shutil.copyfile(os.path.join(DIAGRAMS, 'rendered.md'), raw)
-    with open(stamp, 'w') as f:
-        f.write(digest)
+    work = os.path.join(DIAGRAMS, 'batch')
+    for start in range(0, len(todo), BATCH):
+        chunk = todo[start:start + BATCH]
+        shutil.rmtree(work, ignore_errors=True)
+        os.makedirs(work)
+        with open(os.path.join(work, 'in.md'), 'w', encoding='utf-8', newline=chr(10)) as f:
+            f.write((chr(10) * 2).join(blocks[i] for i in chunk) + chr(10))
+        subprocess.run('npx --yes -p @mermaid-js/mermaid-cli mmdc -p "' + os.path.join(HERE, 'puppeteer-config.json').replace(BACKSLASH, '/')
+                       + '" -c "' + MERMAID_CONFIG.replace(BACKSLASH, '/') + '" -w 4000 -i in.md -o out.md -e png -s 2 -b white',
+                       cwd=work, check=True, shell=True, env=env0, stdout=subprocess.DEVNULL)
+        for k, i in enumerate(chunk):
+            shutil.move(os.path.join(work, f'out-{k + 1}.png'), os.path.join(CACHE, keys[i] + '.png'))
+        print(f'  diagrams {start + 1}-{start + len(chunk)} of {len(todo)} rendered', flush=True)
+    shutil.rmtree(work, ignore_errors=True)
+# the document refers to the diagrams by position (rendered-1.png, rendered-2.png ...)
+for n, k in enumerate(keys, 1):
+    shutil.copyfile(os.path.join(CACHE, k + '.png'), os.path.join(DIAGRAMS, f'rendered-{n}.png'))
 
 mark('2 diagrams (render or cache check)')
 # ---- 3. alternative text -------------------------------------------------------------------------

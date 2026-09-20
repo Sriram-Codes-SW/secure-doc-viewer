@@ -1,5 +1,5 @@
 <!-- chapter: 27 | part: IV | owner: writer-app | tag: book-m2-documents | status: expanded -->
-# Chapter 27: Milestone 2: Documents, ownership and audit
+# Chapter 27: Milestone 2: Documents, ownership, and audit
 
 ## Learning objectives
 
@@ -7,7 +7,7 @@
 - Explain why a document you may not see answers 404, not 403.
 - Read the per-tile access query and say why access is re-checked on every tile request.
 - Describe what the second Flyway migration adds, and how JPA annotations map a class onto those tables.
-- Explain how the audit trail is stored, filtered and exported, and why a spreadsheet export needs special care.
+- Explain how the audit trail is stored, filtered, and exported, and why a spreadsheet export needs special care.
 - Explain the bug that made denied requests vanish from the audit log, and why the fix is a separate transaction.
 - Explain why file moves retry, and how the storage janitor cleans up conservatively.
 
@@ -21,7 +21,7 @@ the [Part IV introduction](00-part-introduction.md).
 
 ## Beginner tier: Who owns a document?
 
-### 27.1 The product owner's requirements
+### 27.1 The requirements
 
 At milestone 1 the app knew who you were, but not what was yours. Every signed-in user saw every
 document, and anyone could upload (`PO-4`, `TM-7`). Documents lived in memory, so a restart
@@ -29,10 +29,10 @@ lost them and left their tiles orphaned on disk (`PO-5`, `TM-8`). The audit log 
 buffer in memory: old events were dropped as new ones arrived, and important events, such as a denied
 request, were not recorded at all (`TM-9`).
 
-The reviewers, AI review agents playing a product owner and a senior technical manager, listed more. There was no delete, rename or replace. Uploads that failed showed a raw error (`PO-8`). The audit log had only tile hits, truncated ids and no filters or export (`PO-12`). And the document list had no owner, date or search (`PO-13`). Pull request #2 answers `PO-4`, `PO-5`, `PO-6`, `PO-8`, `PO-12`, `PO-13` and
+The AI product-owner reviewer and the AI technical-manager reviewer listed more. There was no delete, rename, or replace. Uploads that failed showed a raw error (`PO-8`). The audit log had only tile hits, truncated ids, and no filters or export (`PO-12`). And the document list had no owner, date, or search (`PO-13`). Pull request #2 answers `PO-4`, `PO-5`, `PO-6`, `PO-8`, `PO-12`, `PO-13` and
 `TM-7`, `TM-8`, `TM-9`.
 
-The product owner also made one design choice when asked how visibility should work. They approved
+The project owner also made one design choice when asked how visibility should work. They approved
 Phase 2 with both options: sharing with named users, and a document open to everyone. That means two
 kinds of visibility. A document can be shared with named users, or it can be open to everyone who is signed in.
 <!-- source: PR #2 body; reviews record; decisions D15 -->
@@ -67,7 +67,7 @@ allow these two.
 Table 27.1 shows who can do what. "Manage" means rename, change visibility, share, unshare,
 replace the PDF, or delete.
 
-**Table 27.1 — Access at book-m2-documents**
+**Table 27.1 — Access at `book-m2-documents`**
 
 | Person | Private, not shared | Private, shared with them | Everyone | Manage |
 |---|---|---|---|---|
@@ -77,20 +77,20 @@ replace the PDF, or delete.
 | An admin | sees | sees | sees | yes |
 
 Two cells need attention. A user who can't see a private document gets **404 "not found"**, never
-403 "forbidden". A 403 would confirm that a document with that id exists. A 404 says the same thing
+403 "forbidden." A 403 would confirm that a document with that id exists. A 404 says the same thing
 for a document that doesn't exist, so an outsider learns nothing. And a user who *can* see a document
 but isn't the owner gets a 403 if they try to manage it: they already know it exists, so refusing
 honestly costs nothing.
 
 **Analogy.** A private document is a locked drawer whose label you can't read. If you aren't
-allowed, the office answers "no such drawer", not "that drawer is locked". **Where the analogy breaks
+allowed, the office answers "no such drawer," not "that drawer is locked." **Where the analogy breaks
 down:** an office worker could look through the cabinet and see the drawer. On a server, the only
 thing an outsider ever sees is the response, so the response is the entire disclosure.
 <!-- source: PR #2 body; DocumentService.java at book-m2-documents -->
 
 ### 27.3 The data: three tables
 
-Documents, their pages and their shares move into MySQL through Flyway migration `V2`, next to the
+Documents, their pages, and their shares move into MySQL through Flyway migration `V2`, next to the
 accounts table from Chapter 26.
 
 **Listing 27.2 — `V2__documents_shares_audit.sql` (book-m2-documents, first 40 lines; the audit table follows in the file)**
@@ -221,7 +221,7 @@ public class Document {
 
 Each annotation answers one question about the mapping.
 
-- `@Entity` and `@Table` say "this class is a table". `@Id` marks the primary key: a UUID string
+- `@Entity` and `@Table` say "this class is a table." `@Id` marks the primary key: a UUID string
   generated by the code, not by the database.
 - `@ManyToOne ... @JoinColumn(name = "owner_id")` says many documents have one owner, stored in the
   `owner_id` column. `FetchType.LAZY` means the owner isn't loaded until you ask for it, which avoids
@@ -276,7 +276,7 @@ rule in Table 27.1: the document is visible if its visibility is `EVERYONE`, or 
 owner, or the caller's username is in the set of users the document is shared with.
 
 The return type, `Optional<String>`, is a box that is either holding a title or empty. A title means
-"visible, and here is a label for the audit record". Empty means "not visible or not there", and the
+"visible, and here is a label for the audit record." Empty means "not visible or not there," and the
 caller turns empty into a 404. Admins take a different route in `DocumentService.titleIfViewable`,
 which skips the visibility test.
 
@@ -341,7 +341,7 @@ management action. The rules are exact:
 The Manage page's sharing box suggests names as you type. `UserDirectoryController`
 (`GET /api/users?q=...`) supplies them. Its Javadoc states the safeguards. The controller is limited to PUBLISHER and ADMIN in `SecurityConfig`, because readers never share. It returns usernames only, and at most 20 per query, so it can't dump account details. It matches by name prefix among enabled accounts and leaves out the caller.
 
-**A gap that a later review closed.** At this milestone the picker had no minimum query length, so a single character already listed names. It also listed admin accounts. The AI product-owner reviewer later flagged both as a directory leak (`PO2-10`). By `book-m6-final` a query shorter than 2 or
+**A gap that a later review closed.** At this milestone the picker had no minimum query length, so a single character already listed names. It also listed admin accounts. The PO reviewer later flagged both as a directory leak (`PO2-10`). By `book-m6-final` a query shorter than 2 or
 longer than 32 characters returns an empty list, and admin accounts are hidden (Chapter 30).
 <!-- source: DocumentService.java, UserDirectoryController.java at book-m2-documents; DocumentAccessIntegrationTest; research answer V1 -->
 
@@ -388,9 +388,9 @@ denied access; and throttling. At this tag there is still one `TILE_VIEWED` row 
 becomes a flooding problem, fixed in Chapter 30, where one `PAGE_VIEWED` event replaces up to about
 35 rows per page.
 
-The admin screen filters events by type, user and document, pages through them, lets an
+The admin screen filters events by type, user, and document, pages through them, lets an
 administrator click a user or document to filter by it, and exports the result as CSV. A retention
-job removes events older than a configurable number of days (180 by default), once a day. The schedule is a cron expression, a compact timetable with fields for second, minute, hour, day, month and weekday. The default is `0 30 3 * * *`, which means 03:30:00 every day, and it can be changed in configuration.
+job removes events older than a configurable number of days (180 by default), once a day. The schedule is a cron expression, a compact timetable with fields for second, minute, hour, day, month, and weekday. The default is `0 30 3 * * *`, which means 03:30:00 every day, and it can be changed in configuration.
 
 **Listing 27.7 — `AuditLogService.record` (book-m2-documents, simplified: one method)**
 
@@ -429,7 +429,7 @@ The event that most needs to be kept is the one that vanishes. That is the bug o
 `ACCESS_DENIED` events were not being saved.
 
 `Propagation.REQUIRES_NEW` tells Spring: "run this method in a brand-new transaction, separate from
-whoever called me". The audit insert commits on its own, before the caller's transaction ends, so the
+whoever called me." The audit insert commits on its own, before the caller's transaction ends, so the
 caller's later rollback can't touch it. Look back at Listing 27.5: `audit.record(...)` comes *before*
 `throw new DocumentNotFoundException`, and now the record survives.
 
@@ -473,7 +473,7 @@ There are two protections in five lines.
 1. **Quoting.** Every non-empty value is wrapped in double quotes, and any double quote inside is
    doubled (`"` becomes `""`), which is how CSV represents a quote. Without it, a title containing a
    comma would shift every later column.
-2. **Formula neutralization.** Spreadsheets treat a cell that begins with `=`, `+`, `-` or `@` as a
+2. **Formula neutralization.** Spreadsheets treat a cell that begins with `=`, `+`, `-`, or `@` as a
    formula. A user controls document titles, so a title like `=HYPERLINK("http://example.com/x","Click")`
    would turn into a live formula when an admin opens the export. The code prefixes a single quote to
    any value starting with one of those characters (or a tab or carriage return), which makes the
@@ -488,11 +488,11 @@ wrote, and the reader of the export is a privileged person with a program that c
 *Assumes the earlier tiers. This tier covers upload safety, cleanup and the operating-system
 problem that shaped the file code.*
 
-### 27.10 Upload, staging and replace
+### 27.10 Upload, staging, and replace
 
 The upload path has a rule: nothing becomes visible until everything succeeded. Uploads render into a
 staging folder, and are moved into place only when every page succeeded. A corrupt file returns 400
-and leaves nothing on disk. Replacing a document's PDF keeps its id, title, visibility and shares.
+and leaves nothing on disk. Replacing a document's PDF keeps its id, title, visibility, and shares.
 
 The database side matters too. In `DocumentService.upload` the tiles are committed to their final
 folder first, then the database row is saved, and if the save fails the tiles are deleted. A crash
@@ -504,7 +504,7 @@ appears only for something that really happened. (Chapter 28 rewrites the ingest
 upload to disk; Chapter 30 adds versioned tile folders so that a replace is atomic.)
 <!-- source: DocumentService.java at book-m2-documents; PR #2 body -->
 
-### 27.11 Files, OneDrive and Windows locks
+### 27.11 Files, OneDrive, and Windows locks
 
 While building this phase, file moves and deletes of tile folders failed intermittently. The project
 lived inside a OneDrive folder, and on Windows, antivirus scanners and sync clients briefly hold files
@@ -559,9 +559,9 @@ and if the directory stays locked it falls back to copy-and-delete.
 
 **The root fix was different.** The implementer noticed that OneDrive was also syncing every rendered
 tile, and the local secrets file, to the cloud, "which defeats the never-hand-out-the-document
-design". The product owner moved the project to `C:\dev\secure-doc-viewer`, and the pull request
+design." The project owner moved the project to `C:\dev\secure-doc-viewer`, and the pull request
 recommends that `STORAGE_ROOT` (now configurable) point outside OneDrive or any sync folder.
-**The lesson:** keep working files and storage out of sync folders; a sync client is another program
+**The lesson.** Keep working files and storage out of sync folders; a sync client is another program
 opening your files, and it may copy what you meant to keep private.
 <!-- source: FileOperations.java at book-m2-documents; bugs record C4; PR #2 body -->
 
@@ -602,17 +602,17 @@ int removeOrphans(Instant olderThan) throws IOException {
 *Path: `src/main/java/com/example/securedocviewer/service/StorageJanitor.java`*
 
 The rule for deleting a directory has three conditions, all required: its name looks like a document
-id (a UUID), the database has no document with that id, **and** it is more than an hour old. The
-class comment calls this "deliberately conservative". A janitor that deletes things is dangerous, so each condition guards against a specific mistake. The name pattern keeps it from touching unrelated folders someone put in the storage root. The database check keeps it from deleting real documents. The age check keeps it from deleting a folder whose upload is still in progress. `@Scheduled` with
+id (a UUID), the database has no document with that id, *and* it is more than an hour old. The
+class comment calls this "deliberately conservative." A janitor that deletes things is dangerous, so each condition guards against a specific mistake. The name pattern keeps it from touching unrelated folders someone put in the storage root. The database check keeps it from deleting real documents. The age check keeps it from deleting a folder whose upload is still in progress. `@Scheduled` with
 `fixedDelayString = "PT6H"` runs the sweep every six hours (after a two-minute initial delay).
-`PT6H` is the ISO 8601 notation for "a period of time, six hours". One locked folder can't stop the
+`PT6H` is the ISO 8601 notation for "a period of time, six hours." One locked folder can't stop the
 sweep: `tryDelete` logs and moves on, and the next sweep retries.
 <!-- source: StorageJanitor.java at book-m2-documents; PR #2 body -->
 
 ### 27.13 The Manage page
 
-On the frontend, the pull request adds a **Manage** page for each document you control. It has details, a rename box, visibility, sharing with suggestions from the picker, and a "replace PDF" control. Delete takes two steps: you press Delete and then confirm, so that a mis-click doesn't destroy a document. The
-document list gains a search box, the owner, the date and a visibility badge, and a Manage link on
+On the frontend, the pull request adds a *Manage* page for each document you control. It has details, a rename box, visibility, sharing with suggestions from the picker, and a "replace PDF" control. Delete takes two steps: you press *Delete* and then confirm, so that a mis-click doesn't destroy a document. The
+document list gains a search box, the owner, the date, and a visibility badge, and a Manage link on
 documents you control. After an upload you land on the Manage page, so a private document can be shared
 straight away. The audit panel on the admin page gets filters, paging, click-to-filter on a user or
 document, and the CSV export.
@@ -666,7 +666,7 @@ Other tests in the class cover the other cells of Table 27.1:
 ## Common mistakes
 
 **Answering 403 for a document the caller can't see.** Symptom: an outsider can probe which ids
-exist. Fix: 404 for "can't see", 403 only for "can see but can't manage" (Section 27.2).
+exist. Fix: 404 for "can't see," 403 only for "can see but can't manage" (Section 27.2).
 
 **Checking access only when issuing URLs.** Symptom: unsharing doesn't cut off an open page. Fix: check
 again on every tile request (Section 27.5).
@@ -733,13 +733,13 @@ flowchart LR
 
 *Figure 27.1 — Blueprint v2 (`book-m2-documents`)*
 
-*Text description:* A left-to-right flowchart. The Angular app goes through SecurityConfig to DocumentController (list, upload, rename, replace, delete, shares), UserDirectoryController, PageTileUrlController, TileController and AdminController. DocumentController, PageTileUrlController and TileController all consult DocumentService, which reads and writes MySQL (dotted line), where users, documents, shares and audit events now live from migrations V1 and V2. DocumentController uses TileGenerationService, which writes tiles to disk; StorageJanitor cleans disk and reads MySQL. DocumentController, TileController and AdminController write to AuditLogService, which stores events in MySQL, and TileController also uses TileRateLimiter and SignedUrlService. Notice that one service, DocumentService, decides access for three different controllers.
+*Text description:* A left-to-right flowchart. The Angular app goes through SecurityConfig to DocumentController (list, upload, rename, replace, delete, shares), UserDirectoryController, PageTileUrlController, TileController, and AdminController. DocumentController, PageTileUrlController, and TileController all consult DocumentService, which reads and writes MySQL (dotted line), where users, documents, shares, and audit events now live from migrations V1 and V2. DocumentController uses TileGenerationService, which writes tiles to disk; StorageJanitor cleans disk and reads MySQL. DocumentController, TileController, and AdminController write to AuditLogService, which stores events in MySQL, and TileController also uses TileRateLimiter and SignedUrlService. Notice that one service, DocumentService, decides access for three different controllers.
 <!-- source: book/blueprints/v2-documents.md; classes named in the diagram, present at book-m2-documents under src/main/java/com/example/securedocviewer/: controller/AdminController.java, audit/AuditEvent.java, audit/AuditLogService.java, controller/DocumentController.java, document/DocumentService.java, controller/PageTileUrlController.java, security/SecurityConfig.java, service/SignedUrlService.java, service/StorageJanitor.java, controller/TileController.java, service/TileGenerationService.java, security/TileRateLimiter.java, controller/UserDirectoryController.java; db/migration/V1, V2 -->
 
 What changed since v1:
 
 - a `document/` package replaces the in-memory `DocumentRegistry`, with migration `V2`;
-- documents gain an owner, a visibility and per-user shares;
+- documents gain an owner, a visibility, and per-user shares;
 - endpoints for rename, replace, delete and shares appear;
 - the audit log becomes persistent, with search and CSV export;
 - `UserDirectoryController`, `StorageJanitor` and `FileOperations` are added;
@@ -751,22 +751,22 @@ What changed since v1:
 
 ### Decision: 404, not 403
 
-**The decision.** A user who may not see a document gets "not found". **The options considered.**
+**The decision.** A user who may not see a document gets "not found." **The options considered.**
 403 (honest, but confirms existence) or 404. **Why this one.** It stops an outsider from learning
 that a document exists. **What it costs.** A legitimate user who loses access can't tell "removed"
-from "unshared", which the "access lost" screen of Chapter 30 handles in the interface.
+from "unshared," which the "access lost" screen of Chapter 30 handles in the interface.
 <!-- source: PR #2 body -->
 
 ### Decision: users plus everyone
 
-**The decision.** Two visibilities: private with explicit shares, and everyone. **Why.** The product
+**The decision.** Two visibilities: private with explicit shares, and everyone. **Why.** The project
 owner chose to have both per-user sharing and an open-to-everyone setting in Phase 2. **What it costs.** No groups, so
 sharing with ten people is ten shares.
 <!-- source: decisions D15 -->
 
 ### Decision: the audit trail lives in the database
 
-**The decision.** Replace the in-memory ring with a persistent table, filters, paging, export and a retention purge. **Why.** A 500-entry buffer forgets what happened last week, and
+**The decision.** Replace the in-memory ring with a persistent table, filters, paging, export, and a retention purge. **Why.** A 500-entry buffer forgets what happened last week, and
 resets at every restart (`TM-9`). **What it costs.** Every audited action is a database write, which is why
 later milestones cap the noisiest events.
 <!-- source: PR #2 body; reviews record TM-9 -->
@@ -792,7 +792,7 @@ environment, not only the code.
 
 ## In this project
 
-**Table 27.2 — Where the concepts live (at book-m2-documents)**
+**Table 27.2 — Where the concepts live (at `book-m2-documents`)**
 
 | Concept | Where |
 |---|---|
@@ -845,7 +845,7 @@ change in the design to make the reader's already-loaded page disappear too.
 
 ## Summary
 
-- Each document has an owner, a visibility and optional shares; admins see everything; outsiders get 404.
+- Each document has an owner, a visibility, and optional shares; admins see everything; outsiders get 404.
 - Access is re-checked on every tile request, so unsharing takes effect immediately.
 - Three tables (`document`, `document_page`, `document_share`) hold the model, and JPA annotations map classes onto them.
 - The audit trail is a database table written in its own transaction, so failures are still recorded.

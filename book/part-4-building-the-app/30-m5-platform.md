@@ -6,7 +6,7 @@
 - Describe the platform upgrade (Spring Boot 4.1.1, Java 25) and what it broke.
 - Read the two Dockerfiles and the Compose file, and explain what each line is for.
 - Explain why a forwarded client address is only believed from one known proxy, and how that was found wrong.
-- Explain the recognised-device lockout design and the denial-of-service problem it solves.
+- Explain the recognized-device lockout design and the denial-of-service problem it solves.
 - Explain versioned tiles, and why a replaced document answers 410 to stale URLs.
 - Explain how rendering and tile serving are bounded, and why each bound exists.
 - Read the tile endpoint as a sequence of independent gates and say what each one protects.
@@ -29,27 +29,27 @@ Until now the app ran as a program on one developer's machine, with the database
 everything else started by hand. Three review findings drove the first commit of this milestone:
 
 - Spring Boot 3.3 was past open-source support and PDFBox was behind (`TM-16`).
-- There was no Dockerfile, no continuous integration and no Maven wrapper (`TM-14`).
+- There was no Dockerfile, no continuous integration (CI), and no Maven wrapper (`TM-14`).
 - There were no controller, integration or end-to-end tests (`TM-13`).
 
-The reviewers were AI review agents playing a product owner and a senior technical manager. The
-first commit answers with a platform upgrade, containers, a CI pipeline and end-to-end tests. What
+The reviewers were the AI product-owner reviewer and the AI technical-manager reviewer. The
+first commit answers with a platform upgrade, containers, a CI pipeline, and end-to-end tests. What
 followed were review rounds on that commit, and this chapter is mostly their story: the pull
 request was submitted, reviewed, corrected and re-reviewed several times before it merged.
 <!-- source: PR #5 body; milestone brief m5 -->
 
 ### 30.2 The upgrade
 
-The product owner asked to start Phase 5 and to use Spring Boot 4 if possible, on the principle of
+The project owner asked to start Phase 5 and to use Spring Boot 4 if possible, on the principle of
 keeping the technology as new as it can be while it is still a standard release. The implementer chose the latest GA (general
 availability, meaning final, not preview) versions, checked on Maven Central, the public repository
 of Java libraries:
 
 **Table 30.1 — The platform upgrade**
 
-| Component | After (book-m5-platform) | Note |
+| Component | After (`book-m5-platform`) | Note |
 |---|---|---|
-| Spring Boot | 4.1.1 (from 3.3.4) | Brings Spring Security 7, Jackson 3, Hibernate 7 and Flyway 12 |
+| Spring Boot | 4.1.1 (from 3.3.4) | Brings Spring Security 7, Jackson 3, Hibernate 7, and Flyway 12 |
 | Java | 25 (from 21) | A long-term-support release |
 | PDFBox | 3.0.8 (from 3.0.3) | The PDF rendering library |
 | Maven wrapper | 3.9.16 | New in this milestone |
@@ -74,12 +74,12 @@ from one file.
 
 **Analogy.** An image is a sealed lunch box packed at the factory; a container is the lunch box being
 eaten. Every box from the same factory batch has the same contents, wherever it is opened. **Where the
-analogy breaks down:** a lunch box is eaten once, while a container can be stopped, restarted and
+analogy breaks down:** a lunch box is eaten once, while a container can be stopped, restarted, and
 have data attached to it in a *volume* that outlives it. What you pack in the image is fixed; what
 lives in a volume changes.
 
 The project's stack has up to four containers: MySQL, the backend (`app`), the frontend server
-(`web`, which is nginx) and an optional HTTPS front end (`tls`, which is Caddy).
+(`web`, which is nginx), and an optional HTTPS proxy (`tls`, which is Caddy).
 
 ### 30.4 The backend image, line by line
 
@@ -139,8 +139,8 @@ use up to 75 percent of the container's memory for its heap and to run headless 
 `VOLUME` marks where uploaded tiles live so that they survive the container.
 
 **Why pin by digest.** The `@sha256:...` suffix names one exact image, not "whatever `25-jdk`
-means today". A tag can be re-pointed; a digest can't. The comment says Dependabot updates the
-digest, so pinning doesn't freeze the image, it makes updates deliberate.
+means today." A tag can be re-pointed; a digest can't. The comment says Dependabot updates the
+digest, so pinning doesn't freeze the image; it makes updates deliberate.
 <!-- source: Dockerfile at book-m5-platform; PR #5 body -->
 
 ### 30.5 The frontend image and nginx
@@ -166,7 +166,7 @@ EXPOSE 8080
 
 Same two-stage idea. The first stage uses Node 24 to install dependencies with `npm ci` (which
 installs exactly what the lock file says) and to build the Angular application for production. The
-second stage copies only the built files, plain HTML, CSS and JavaScript, into **nginx**, a web
+second stage copies only the built files, plain HTML, CSS, and JavaScript, into **nginx**, a web
 server. The "unprivileged" nginx image runs as a non-root user and listens on port 8080, not 80,
 because non-root processes can't bind low ports.
 
@@ -176,9 +176,9 @@ The comment at the top of the frontend Dockerfile explains why: "so the browser 
 (the session and CSRF cookies depend on that)." From the browser's point of view, the page and the API live at one address. The `SameSite=Strict` cookies from Chapter 26 need that.
 <!-- source: frontend/Dockerfile at book-m5-platform; PR #5 body -->
 
-### 30.6 Compose: services, profiles and one published port
+### 30.6 Compose: services, profiles, and one published port
 
-**Listing 30.3 — `docker-compose.yml` (book-m5-platform, simplified: the `app` and `web` services, most comments and the `mysql` and `tls` services removed)**
+**Listing 30.3 — `docker-compose.yml` (book-m5-platform, simplified: the `app` and `web` services, most comments, and the `mysql` and `tls` services removed)**
 
 ```yaml
   app:
@@ -229,13 +229,13 @@ Here are the ideas, one at a time.
   Plain `docker compose up -d` starts MySQL only, for development with the app running from your
   editor. `docker compose --profile full up -d --build` starts the whole stack. (An optional
   `tls` profile adds HTTPS.)
-- **`env_file: .env`** loads secrets from a file that is not in git (the secrets rule from Chapter 28). The MySQL service in the same file refuses to start without a database password:
+- **`env_file: .env`** loads secrets from a file that is not in git (the `.env` rule from Section 26.13). The MySQL service in the same file refuses to start without a database password:
   `${DB_PASSWORD:?Set DB_PASSWORD in .env}`.
 - **`mem_limit`** caps the container's memory. The JVM sizes its heap from it (75 percent, from the
   Dockerfile), so a runaway render can't take the host down.
 - **`depends_on` with `condition: service_healthy`** makes ordering real: the app waits until MySQL
   reports healthy, and nginx waits until the app does. A **health check** is a command Docker runs
-  repeatedly; the app's calls the health endpoint from Chapter 28.
+  repeatedly; the app's health check calls the health endpoint from Chapter 28.
 - **`expose` versus `ports`.** The app only *exposes* 8080 inside the Compose network. Only nginx
   *publishes* a port to the host, and only on `127.0.0.1` (this machine, not the network). Everything
   a user reaches goes through nginx first.
@@ -266,7 +266,7 @@ and pull request. It has four jobs:
 Every third-party action in the workflow is pinned to a full commit hash, with the version in a comment. The reason is the same as for images pinned by digest: a moving tag lets someone else's change enter your build.
 <!-- source: ci.yml at book-m5-platform; PR #5 body -->
 
-## Intermediate tier: Proxies, addresses, sessions and trust
+## Intermediate tier: Proxies, addresses, sessions, and trust
 
 *Assumes the beginner tier. This tier shows how a request travels through nginx (and optionally
 Caddy) and what the backend may believe about it, then the account rules that grew out of the
@@ -283,7 +283,7 @@ backend believes it from anyone, a client can pretend to be any address.
 sent, and the app trusted the result. So a client could send a fake address in the header and reset
 its own sign-in lockout at will, and the audit log would record the invented address. The pull
 request's first description claimed direct callers couldn't spoof; that was false, and the
-description now keeps the struck-through claim and a "Correction". The technical review (`TM2-1`,
+description now keeps the struck-through claim and a "Correction." The TM reviewer (`TM2-1`,
 high, introduced by this pull request) found it and recommended not merging until it was fixed.
 
 **The fix, in two steps.** Commit `2d82253` made nginx *overwrite* the header with the real address
@@ -337,13 +337,13 @@ server {
 Read the trust boundary.
 
 - `set_real_ip_from 172.28.0.11` says: only a request that arrives from this address (Caddy, in the
-  optional TLS profile) may tell nginx the real client address, through `X-Forwarded-For`. From
+  optional TLS (Transport Layer Security) profile) may tell nginx the real client address, through `X-Forwarded-For`. From
   anyone else the header is ignored.
-- In the `/api/` location, `proxy_set_header X-Forwarded-For $remote_addr` **replaces** the header with
+- In the `/api/` location, `proxy_set_header X-Forwarded-For $remote_addr` *replaces* the header with
   the address nginx actually sees. Whatever the client sent is discarded. The backend then trusts
   nginx's address only (`172.28.0.10`), so it believes exactly one link in the chain.
 - `location ^~ /api/`: the `^~` modifier means "if this prefix matches, stop looking at regular
-  expression rules". A separate finding (`TM2-7`) had shown that a static-file rule (for `.js`
+  expression rules." A separate finding (`TM2-7`) had shown that a static-file rule (for `.js`
   files) could capture an API path whose name ended in `.js`; `^~` prevents that.
 - `proxy_request_buffering off` streams the upload to the backend instead of nginx storing it first,
   and `client_max_body_size 51m` matches the backend's multipart limit (50 MB plus form overhead),
@@ -351,17 +351,16 @@ Read the trust boundary.
 - `server_tokens off` hides nginx's version in responses.
 <!-- source: frontend/nginx.conf at book-m5-platform; PR #5 body; decisions D11; bugs record D1, D6 -->
 
-The audit log after the fix shows the real peer, not the spoofed `203.0.113.x` addresses the reviewer
-had injected. **The lesson:** a forwarded-address header is only as trustworthy as the proxy
+The audit log after the fix shows the real peer, not the spoofed `203.0.113.x` addresses the TM reviewer had injected. **The lesson.** A forwarded-address header is only as trustworthy as the proxy
 configuration behind it, so test *through* the proxy, and correct wrong claims in writing.
 
 ### 30.9 Optional HTTPS with Caddy
 
 An optional Compose profile, `tls`, puts **Caddy** in front of nginx. Caddy terminates TLS (it holds
-the certificate and speaks HTTPS to browsers) and adds an **HSTS** header, which tells browsers to use
+the certificate and speaks HTTPS to browsers) and adds an **HTTP Strict Transport Security (HSTS)** header, which tells browsers to use
 only HTTPS for this site from then on. Two modes are provided. `TLS_MODE=internal` uses Caddy's own
 local certificate authority, for trying it out (browsers will warn until you trust it); setting
-`TLS_MODE` to an e-mail address requests a real certificate from Let's Encrypt, which needs a public
+`TLS_MODE` to an email address requests a real certificate from Let's Encrypt, which needs a public
 domain name and open ports.
 
 The `includeSubDomains` part of HSTS is *opt-in* through `HSTS_POLICY`, because turning it on
@@ -404,7 +403,7 @@ public class PasswordChangeRequiredFilter extends OncePerRequestFilter {
 *Path: `src/main/java/com/example/securedocviewer/security/PasswordChangeRequiredFilter.java`*
 
 A **filter** sees every request before a controller does. This one asks: is this session flagged
-"must change password", and is the path under `/api/` but not `/api/auth/` (where the password
+"must change password," and is the path under `/api/` but not `/api/auth/` (where the password
 change lives)? If so it answers 403 with a JSON body that includes `passwordChangeRequired: true`,
 which the Angular app reads to route the user to the Account page. The class comment says why it
 lives here: "Enforced here, not just in the UI." A user who skips the screen and calls the API
@@ -452,7 +451,7 @@ already existed before the rule was deployed: their clock starts at the first re
 The pull request lists "absolute session lifetime" among the ultrareview preparation fixes.
 <!-- source: security/PasswordChangeRequiredFilter.java, SessionLifetimeFilter.java at book-m5-platform; PR #5 body -->
 
-### 30.11 The three lockout rules, and the recognised device
+### 30.11 The three lockout rules, and the recognized device
 
 Milestone 1 throttled failed sign-ins per account and address, and per address. A first fix for the
 spoofing finding added a rule: an account-wide lockout across all addresses. The next review found
@@ -468,13 +467,13 @@ The final design, commit `82c24b6`, uses a 15-minute window and three rules.
 |---|---|---|
 | Account plus address | 5 failures | always |
 | Address | 20 failures | always |
-| Account-wide | 20 failures | only *unrecognised* devices |
+| Account-wide | 20 failures | only *unrecognized* devices |
 
 The third rule is what stops rotating addresses from buying unlimited guesses. The exemption is what
-stops the attack on victims: a recognised device is a network address from which the account has signed in successfully within the
-last 30 days, and a recognised device isn't blocked by the account-wide count.
+stops the attack on victims: a recognized device is a network address from which the account has signed in successfully within the
+last 30 days, and a recognized device isn't blocked by the account-wide count.
 
-**Listing 30.7 — `KnownDevices` (book-m5-platform, simplified: constructors, hash and normalization removed)**
+**Listing 30.7 — `KnownDevices` (book-m5-platform, simplified: constructors, hash, and normalization removed)**
 
 ```java
 static final Duration RETENTION = Duration.ofDays(30);
@@ -557,13 +556,13 @@ migration succeed on a database that already has rows.)
 device is refused (HTTP 429) until an admin unlocks the account. Unlocking is an admin action that
 is itself audited (`USER_UNLOCKED`). The README states the trade-off plainly.
 
-**Verified live.** The lockout design was tested with a plan approved by the technical review:
+**Verified live.** The lockout design was tested with a plan approved by the TM reviewer:
 throwaway containers acting as attackers, each with its own address on the Compose network.
 Four attacker addresses each made five wrong guesses; a fifth, fresh address was refused on its first
-attempt (429), audited as the account-wide rule. The recognised host still signed in normally.
+attempt (429), audited as the account-wide rule. The recognized host still signed in normally.
 Spoofed forwarding headers, sent through nginx and even straight to the app container, still got 429.
 The correct password from a new address was refused until an admin unlocked it, and then worked.
-Eighteen of eighteen checks passed. The attackers' passwords were passed through an environment file
+All 18 checks passed. The attackers' passwords were passed through an environment file
 and never printed.
 <!-- source: PR #5 body (Live two-IP test); decisions D7; KnownDevices.java, V3 sql at book-m5-platform -->
 
@@ -575,7 +574,7 @@ came with letting people replace documents and upload heavy PDFs.*
 
 ### 30.12 The tile endpoint, now six gates
 
-At milestone 0 the tile endpoint verified a token, checked a session, read a tile and stamped it.
+At milestone 0 the tile endpoint verified a token, checked a session, read a tile, and stamped it.
 This is the same method at milestone 5, where the checks before the work have grown to six (Table
 30.3). Compare it with Listing 25.9.
 
@@ -671,7 +670,7 @@ and safe questions come first.
 
 The order is deliberate. The comments say the rate limit runs "after auth so unauthenticated requests
 can't burn a legitimate user's allowance, and before the disk read/render so a throttled request
-doesn't pay that cost." Cheap in-memory checks come before the database check. All of them come before the expensive work of reading, watermarking and encoding a PNG.
+doesn't pay that cost." Cheap in-memory checks come before the database check. All of them come before the expensive work of reading, watermarking, and encoding a PNG.
 
 Three details are worth a closer look.
 
@@ -680,7 +679,7 @@ Three details are worth a closer look.
   busy server doesn't punish the reader for retrying.
 - **Audit volume.** At milestone 2 every tile wrote an audit row, and a page is about 35 tiles. The review found
   the log flooded (`TM2-4`, `PO2-4`), so now `recordAtMostEvery` writes one `PAGE_VIEWED` event per
-  session, document, page and interval (10 minutes), and denials and rate limits are capped too. The
+  session, document, page, and interval (10 minutes), and denials and rate limits are capped too. The
   `PAGE_VIEW_AUDIT_INTERVAL` constant names it.
 - **The trace code.** The lines you met in Chapter 29 are here, with the comment "enough to single
   out one sign-in in the audit log's session column, too short to be of any other use."
@@ -770,11 +769,15 @@ The sequence is what matters.
    will retry, and the code logs rather than failing a replace that has already succeeded.
 
 **3. Tokens that name their version.** Chapter 25's token signed the document, page, row, column,
-session binding and expiry. Milestone 5 adds the render version to the signed fields:
+session binding and expiry. Milestone 5 adds the render version to the signed fields, as Listing 30.11 shows:
+
+**Listing 30.11 — `SignedTilePayload.canonicalString` (book-m5-platform, excerpt: the return line)**
 
 ```java
 return documentId + "|" + page + "|" + row + "|" + col + "|" + tileVersion + "|" + sessionBinding + "|" + expiresAtEpochSeconds;
 ```
+
+*Path: `src/main/java/com/example/securedocviewer/model/SignedTilePayload.java`*
 
 That change came from a probe in a later round: before it, old tile URLs silently served the new
 render, so a page could still mix old and new tiles. With the version in the signed token, a stale URL
@@ -782,7 +785,7 @@ fails gate 5 with a 410 (Gone), and the viewer reloads the page with an "updated
 is signed, so it can't be edited to ask for an older render.
 
 **A fine distinction: 410 versus 500.** If the tile for the *current* version is missing on disk, the
-fault is not "the document was replaced". It is damage on the server, such as a mismatched restore.
+fault is not "the document was replaced." It is damage on the server, such as a mismatched restore.
 `loadTile` handles it: when a tile is gone, it re-reads the current version; if it equals the version
 in the request, it throws an internal error (a logged 500), not a 410. Otherwise the client would
 reload forever. This is the fix for the endless-reload loop you will meet in Chapter 31.
@@ -800,8 +803,7 @@ tightened it. The final design has four limits.
    is also configured to buffer to temporary files rather than the heap, and to subsample very large
    embedded images.
 2. **A time limit.** A render runs on its own thread, and the request waits up to a configured
-   timeout (`render-timeout`). After that it gives up, answers 400 "This PDF took too long to
-   prepare. Try a smaller or simpler file.", and tells the render to stop at its next page boundary.
+   timeout (`render-timeout`). After that it gives up, answers 400 with the message "This PDF took too long to prepare. Try a smaller or simpler file." and tells the render to stop at its next page boundary.
 3. **Slots held until the thread really stops.** If a request abandons a render, the render thread
    still runs until it reaches a page boundary. The permit is released only when that thread has
    finished, so abandoned renders continue to count against the cap and can't pile up behind it.
@@ -810,7 +812,7 @@ tightened it. The final design has four limits.
    watermark, encode) is CPU work too, and per-user rate limits don't bound the server when many users
    pull tiles at once.
 
-**Listing 30.11 — `TileWorkLimiter` (book-m5-platform, simplified: imports removed)**
+**Listing 30.12 — `TileWorkLimiter` (book-m5-platform, simplified: imports removed)**
 
 ```java
 /**
@@ -860,34 +862,33 @@ The permit count defaults to twice the number of CPU cores when not configured. 
 requests a **fair** semaphore, which serves waiting threads in arrival order.
 <!-- source: TileWorkLimiter.java, TileGenerationService.java at book-m5-platform; PR #5 body; bugs record D5, G3, G10 -->
 
-### 30.15 The rate limit, the tile size, and the product owner's sign-off
+### 30.15 The rate limit, the tile size, and the project owner's sign-off
 
 Two product numbers changed in this milestone. Tiles became 512 pixels instead of 256, and the
-per-user rate limit rose from 120 to 180 requests per minute. The reason was reading itself: with 256
-pixel tiles a page took about 35 tiles, and normal reading tripped the limit, leaving a blank page
+per-user rate limit rose from 120 to 180 requests per minute. The reason was reading itself: with 256-pixel
+tiles a page took about 35 tiles, and normal reading tripped the limit, leaving a blank page
 (`PO2-1`; the first finding of this kind was `PO-7`).
 
-The final technical review pointed out the cost and called it a low-severity product decision. Larger tiles and a higher limit let a scraper pull about six times more pixels per minute (180 requests of 512-pixel tiles against 120 of 256-pixel tiles). The review's estimate for copying a 500-page
+The TM reviewer's final review pointed out the cost and called it a low-severity product decision. Larger tiles and a higher limit let a scraper pull about six times more pixels per minute (180 requests of 512-pixel tiles against 120 of 256-pixel tiles). The review's estimate for copying a 500-page
 document by script fell from about 2.4 hours to about 33 minutes, roughly 4.4 times faster overall;
-the two ratios measure different things, pixels per minute and time for a whole document. Documents uploaded
-before the change keep 256-pixel tiles. The review asked for explicit product-owner sign-off and a
+the two ratios measure different things, pixels per minute, and time for a whole document. Documents uploaded
+before the change keep 256-pixel tiles. The TM reviewer asked for explicit project-owner sign-off and a
 statement in the README's Limitations.
 
-The implementer laid the options out for the product owner. Now: normal reading at about 15 pages a minute before any pause, and about 30 minutes to copy a 500-page document by script. Earlier: about 3 pages a minute, and about 2.4 hours. Every tile is watermarked, so copies are traceable; the
-limit only slows copying. The product owner first asked how different limits for sensitive documents would work, which became an open idea: per-document sensitivity levels. Then the product owner decided to go ahead with the
+The implementer laid the options out for the project owner. Now: normal reading at about 15 pages a minute before any pause, and about 33 minutes to copy a 500-page document by script (the implementer's table rounded this to about 30 minutes). Earlier: about 3 pages a minute, and about 2.4 hours. Every tile is watermarked, so copies are traceable; the
+limit only slows copying. The project owner first asked how different limits for sensitive documents would work, which became an open idea: per-document sensitivity levels. Then the project owner decided to go ahead with the
 current rate-limit setup and to watch how it works in practice. The README records the
 sign-off.
 <!-- source: decisions D6; PR #5 body; commits 66f7152, 51ea941 -->
 
-### 30.16 Operations, tests and time
+### 30.16 Operations, tests, and time
 
 **Metrics.** A Prometheus endpoint (a standard format for monitoring numbers) reports counters for
-tiles served and rate-limited, sign-in outcomes, render time and rejected renders. It is limited to
+tiles served and rate-limited, sign-in outcomes, render time, and rejected renders. It is limited to
 allowed addresses, loopback by default, and nginx doesn't serve it, so it is not reachable from the
 internet.
 
-**A real-database test.** Until now tests ran against an in-memory H2 database in MySQL mode. The
-technical review (`TM2-8`) asked for the real thing, so `MySqlIntegrationTest` uses Testcontainers, a
+**A real-database test.** Until now tests ran against an in-memory H2 database in MySQL mode. The TM reviewer (`TM2-8`) asked for the real thing, so `MySqlIntegrationTest` uses Testcontainers, a
 library that starts a real MySQL 8.4 in Docker for the test. It checks that Flyway migrations V1 to
 V3 apply, that two concurrent replacements are serialized by the row lock, and that timestamps are
 stored as UTC.
@@ -896,9 +897,9 @@ stored as UTC.
 events with times in the future. The cause: a backend started for development, whose JVM ran in the Asia/Kolkata timezone, wrote local time, while the Docker backend wrote UTC, and both wrote to the same
 database. The fix pinned JDBC to UTC and made the admin audit view show UTC, like the watermark and the
 CSV export. The test sets the database server at UTC-3 and the JVM in Asia/Kolkata, and was
-verified to *fail* without the pin. **The lesson:** store instants in UTC, and test with a
+verified to *fail* without the pin. **The lesson.** Store instants in UTC, and test with a
 deliberately odd timezone. (25 audit rows in the developer's local database had been written in local time; the
-product owner approved a one-off `UPDATE` to shift them back. That repair is not in the repository.)
+project owner approved a one-off `UPDATE` to shift them back. That repair is not in the repository.)
 
 **Backups.** The runbook stops the app while backing up, so the database dump and the tile archive
 always match (a review finding). A restore drill was done. A backup was restored into a scratch MySQL and a scratch volume. Every document's current tile version was present, the app booted on it, and Flyway validated V1 to V3. A reader signed in and received a watermarked tile.
@@ -968,16 +969,16 @@ flowchart TB
 
 *Figure 30.1 — Blueprint v5 (`book-m5-platform`)*
 
-*Text description:* A left-to-right flowchart of the Docker Compose network. The user's browser reaches nginx directly or through the optional Caddy container (HTTPS and HSTS). Inside the Spring Boot app, a request passes the SessionLifetimeFilter and PasswordChangeRequiredFilter, then SecurityConfig with LoginThrottle and KnownDevices, then the controllers. Controllers use DocumentService (backed by MySQL with migrations V1 to V3), TileWorkLimiter with TileRateLimiter, and TileGenerationService, which writes versioned tile folders to the app-storage volume; StorageJanitor cleans that volume, and Prometheus, from allowed addresses only, reads ViewerMetrics. This is a deployment-oriented view of what was added or changed since Blueprint v4: SignedUrlService, SessionKeys, WatermarkService and AuditLogService still exist at this tag but are left out to keep the drawing readable.
+*Text description:* A top-to-bottom flowchart of the Docker Compose network. The user's browser reaches nginx directly or through the optional Caddy container (HTTPS and HSTS). Inside the Spring Boot app, a request passes the SessionLifetimeFilter and PasswordChangeRequiredFilter, then SecurityConfig with LoginThrottle and KnownDevices, then the controllers. Controllers use DocumentService (backed by MySQL with migrations V1 to V3), TileWorkLimiter with TileRateLimiter, and TileGenerationService, which writes versioned tile folders to the app-storage volume; StorageJanitor cleans that volume, and Prometheus, from allowed addresses only, reads ViewerMetrics. This is a deployment-oriented view of what was added or changed since Blueprint v4: SignedUrlService, SessionKeys, WatermarkService, and AuditLogService still exist at this tag but are left out to keep the drawing readable.
 <!-- source: book/blueprints/v5-platform.md; classes named in the diagram, present at book-m5-platform under src/main/java/com/example/securedocviewer/: document/Document.java, document/DocumentService.java, security/KnownDevices.java, security/LoginThrottle.java, security/PasswordChangeRequiredFilter.java, security/SecurityConfig.java, security/SessionLifetimeFilter.java, service/StorageJanitor.java, document/TileAccess.java, service/TileGenerationService.java, security/TileRateLimiter.java, service/TileWorkLimiter.java, service/ViewerMetrics.java; db/migration/V1, V2, V3; Dockerfile; docker-compose.yml; frontend/nginx.conf; deploy/Caddyfile -->
 
 ## Decisions and challenges
 
 ### Decision: Spring Boot 4 and Java 25
 
-**The decision.** Adopt the newest general-availability versions, at the product owner's instruction.
+**The decision.** Adopt the newest general-availability versions, at the project owner's instruction.
 **The options considered.** Stay on Boot 3.3 with a patch, move to the newest 3.x, or move to 4.
-**Why this one.** The product owner asked to keep the technology new as long as it is a standard
+**Why this one.** The project owner asked to keep the technology new as long as it is a standard
 version, and Boot 3.3 was out of support. **What it costs.** A migration to Jackson 3 and Spring
 Security 7, and a discovery in a later round: Boot 4.1.1 shipped a Tomcat with critical advisories that
 had to be pinned to a fixed version (Chapter 31).
@@ -986,7 +987,7 @@ had to be pinned to a fixed version (Chapter 31).
 ### Incident: the proxy that believed the client
 
 **The problem.** nginx appended to a client-supplied `X-Forwarded-For`, so a client could spoof its
-address and reset the sign-in lockout. **How it was found.** The technical review found it by testing
+address and reset the sign-in lockout. **How it was found.** The TM reviewer found it by testing
 through nginx (`TM2-1`), and recommended not merging until it was fixed. **The fix.** nginx overwrites
 the header, the API trusts only nginx's address, and a Playwright test proves the behavior through
 the proxy. **The lesson.** Trust is a property of a network position, not of a header. The pull
@@ -997,8 +998,8 @@ and replaced.
 ### Incident: a fix that created a denial of service
 
 **The problem.** The first fix for the spoofing finding added an account-wide lockout, which let anyone
-lock out any user (`TM3-1`). **How it was found.** The technical review's re-read of the fix.
-**The fix.** Recognised devices, with the documented trade-off for new devices. **The lesson.** A
+lock out any user (`TM3-1`). **How it was found.** The TM reviewer's re-read of the fix.
+**The fix.** Recognized devices, with the documented trade-off for new devices. **The lesson.** A
 defense that counts failures per victim can be turned into a weapon against the victim. Ask who can
 trigger it.
 <!-- source: decisions D7; bugs record E1 -->
@@ -1014,7 +1015,7 @@ pair one atomic switch, and make every reference name the version it means.
 
 ### Decision: 512-pixel tiles and 180 requests a minute
 
-**The decision.** Larger tiles and a higher limit, accepted by the product owner. **The options
+**The decision.** Larger tiles and a higher limit, accepted by the project owner. **The options
 considered.** 256 pixels and 120 a minute (safer against scraping, blank pages for real readers) or
 512 and 180. **Why this one.** Normal reading no longer trips the limit; every tile is watermarked so
 copies stay traceable. **What it costs.** A scraper pulls about six times more pixels a minute, and a 500-page
@@ -1023,8 +1024,7 @@ harvest drops from about 2.4 hours to about 33 minutes; the README's Limitations
 
 ### Incident: audit times in the future
 
-**The problem.** Events appeared dated in the future. **How it was found.** The AI product-owner
-reviewer's re-review (`PO2-5`). **The fix.** UTC pinned in JDBC, UTC shown everywhere, and a Testcontainers
+**The problem.** Events appeared dated in the future. **How it was found.** The PO reviewer's re-review (`PO2-5`). **The fix.** UTC pinned in JDBC, UTC shown everywhere, and a Testcontainers
 test with an odd timezone that fails without the pin. **The lesson.** Two programs writing to one
 database must agree on time.
 <!-- source: bugs record C6 -->
@@ -1036,7 +1036,7 @@ never ran.
 
 ## In this project
 
-**Table 30.4 — Where the concepts live (at book-m5-platform)**
+**Table 30.4 — Where the concepts live (at `book-m5-platform`)**
 
 | Concept | Where |
 |---|---|
@@ -1049,7 +1049,7 @@ never ran.
 | CI and tests | `.github/workflows/ci.yml`, `MySqlIntegrationTest`, `frontend/e2e/secure-viewing.spec.ts` |
 
 Table 30.4 lists the places to look at this tag. Tests at the end of the review rounds: 114 backend,
-31 frontend and an end-to-end run that includes accessibility checks.
+31 frontend, and an end-to-end run that includes accessibility checks.
 <!-- source: PR #5 body -->
 
 To see any of these files as it was at this milestone, run `git show book-m5-platform:<path>`, for example `git show book-m5-platform:pom.xml`.
@@ -1069,7 +1069,7 @@ In Listing 30.1, why are dependencies downloaded before the source is copied?
 ### Exercise 30.3 ★★ Lockout abuse
 
 Explain how the account-wide lockout rule let an attacker lock out a victim, and how the
-recognised-device rule stops that. What does it cost?
+recognized-device rule stops that. What does it cost?
 
 ### Exercise 30.4 ★★ Order of gates
 
@@ -1084,12 +1084,12 @@ query parameter?
 ### Exercise 30.6 ★★★ Design a limit
 
 Suppose you wanted to cap concurrent audit CSV exports at 2. Sketch the code using the pattern of
-Listing 30.11, and say what the user should see when the cap is reached.
+Listing 30.12, and say what the user should see when the cap is reached.
 
 ## Summary
 
-- The platform moved to supported versions, containers, a CI pipeline and end-to-end tests.
-- Multi-stage builds, unprivileged users, digest pins and health checks make images small, safe and
+- The platform moved to supported versions, containers, a CI pipeline, and end-to-end tests.
+- Multi-stage builds, unprivileged users, digest pins, and health checks make images small, safe, and
   repeatable.
 - A proxy header is believed only from one known address; the proxy overwrites it.
 - Lockout rules must be abuse-proof, not only attack-proof.

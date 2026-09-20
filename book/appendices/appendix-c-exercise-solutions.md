@@ -461,7 +461,7 @@ CREATE TABLE document_comment (
 CREATE INDEX ix_comment_document_time ON document_comment (document_id, created_at);
 ```
 
-Key decisions: comments on a deleted document have no meaning, so `ON DELETE CASCADE` on `document_id` (as `document_page` and `document_share` do). Users are disabled, never deleted, so the author foreign key needs no cascade, and the default refusal to delete a user with comments is consistent with that policy. If comments had to survive as evidence, the audit table's approach applies instead: copy the author's username and the document title into the row and drop the foreign keys (denormalize), at the cost of copies that can go stale. The index serves "comments of this document in time order". The type sizes and the 2,000-character limit are choices you should be able to defend.
+Key decisions: comments on a deleted document have no meaning, so `ON DELETE CASCADE` on `document_id` (as `document_page` and `document_share` do). Users are disabled, never deleted, so the author foreign key needs no cascade, and the default refusal to delete a user with comments is consistent with that policy. If comments had to survive as evidence, the audit table's approach applies instead: copy the author's username and the document title into the row and drop the foreign keys (denormalize), at the cost of copies that can go stale. The index serves "comments of this document in time order." The type sizes and the 2,000-character limit are choices you should be able to defend.
 
 ## Chapter 10 solutions
 
@@ -497,11 +497,11 @@ The cookie name is `SDV_SESSION`, under `server.servlet.session.cookie.name`. Th
 
 ### Exercise 11.2 ★ List the dependencies
 
-`DocumentController` receives `DocumentService documents` and `RequestActors actors`. `DocumentService` receives `DocumentRepository`, `AppUserRepository`, `TileGenerationService`, `AuditLogService` and `PlatformTransactionManager`. Going one level further, `RequestActors` needs `SessionKeys`, which needs `ViewerProperties`, and `TileGenerationService` needs `ViewerProperties` and `ViewerMetrics`. A diagram has `DocumentController` at the top with arrows down to those two, and so on, as in Figure 11.1. Notice that `ViewerProperties` is at the bottom of several branches: one shared bean serves them all.
+`DocumentController` receives `DocumentService documents` and `RequestActors actors`. `DocumentService` receives `DocumentRepository`, `AppUserRepository`, `TileGenerationService`, `AuditLogService`, and `PlatformTransactionManager`. Going one level further, `RequestActors` needs `SessionKeys`, which needs `ViewerProperties`, and `TileGenerationService` needs `ViewerProperties` and `ViewerMetrics`. A diagram has `DocumentController` at the top with arrows down to those two, and so on, as in Figure 11.1. Notice that `ViewerProperties` is at the bottom of several branches: one shared bean serves them all.
 
 ### Exercise 11.3 ★★ Find the `@Value` settings
 
-`BootstrapAdmin`'s constructor has `@Value("${secure-doc-viewer.bootstrap-admin.username:admin}")`, so the username defaults to `admin`, and `@Value("${secure-doc-viewer.bootstrap-admin.password:}")`, so the password defaults to empty, which the class treats as "generate a random one". In `application.yml`, the block under `secure-doc-viewer.bootstrap-admin` sets them from the environment variables `BOOTSTRAP_ADMIN_USERNAME` (default `admin`) and `BOOTSTRAP_ADMIN_PASSWORD` (default empty).
+`BootstrapAdmin`'s constructor has `@Value("${secure-doc-viewer.bootstrap-admin.username:admin}")`, so the username defaults to `admin`, and `@Value("${secure-doc-viewer.bootstrap-admin.password:}")`, so the password defaults to empty, which the class treats as "generate a random one." In `application.yml`, the block under `secure-doc-viewer.bootstrap-admin` sets them from the environment variables `BOOTSTRAP_ADMIN_USERNAME` (default `admin`) and `BOOTSTRAP_ADMIN_PASSWORD` (default empty).
 
 ### Exercise 11.4 ★★ Who wins?
 
@@ -516,10 +516,10 @@ A worked outline. Spring needs to know which constructor to call. When a class h
 A worked outline, since the exact text depends on your versions.
 
 - **Unset the signing secret.** Failure at step 3 of Section 11.2 (creating objects): binding `ViewerProperties` fails validation, and the error mentions `SIGNING_SECRET must be set`. This is the easiest to act on, because the message was written by the project and names the variable.
-- **`server.port` set to text.** Failure in step 1 or when the web server is created: Spring can't convert the value to a number, and the error names the property and the value. Also easy: the property name is in the message.
-- **Delete `@Service` from a class.** Failure at step 3: `DocumentController` (or another class) asks for a bean of that type and none exists, so startup stops with an error that names the type and the class that needed it. This one is easy to act on too, if you read the "Caused by" chain from the bottom.
+- **`server.port` set to text.** Failure in step 1 or when the web server is created: Spring can't convert the value to a number, and the error names the property and the value. Also clear: the property name is in the message.
+- **Delete `@Service` from a class.** Failure at step 3: `DocumentController` (or another class) asks for a bean of that type and none exists, so startup stops with an error that names the type and the class that needed it. This one is straightforward to act on too, if you read the "Caused by" chain from the bottom.
 
-What makes a message easy to act on: it names the thing that is wrong (the property, the type) and, where the project wrote it, says what to do. Restore each change before the next experiment.
+What makes a message straightforward to act on: it names the thing that is wrong (the property, the type) and, where the project wrote it, says what to do. Restore each change before the next experiment.
 
 ## Chapter 12 solutions
 
@@ -533,7 +533,7 @@ In `DocumentController`, `delete` returns `ResponseEntity<Void>` built with `Res
 
 ### Exercise 12.3 ★★ Read the JSON of your own copy
 
-Every key of an element in the array matches a component of `DocumentSummary`: `documentId`, `title`, `pageCount`, `owner`, `visibility`, `createdAtEpochSeconds`, `updatedAtEpochSeconds`, `canManage` and `sharedWithCount`. For a reader (or anyone who can't manage the document), `canManage` is `false` and `sharedWithCount` is `null`, because the count is only filled in for users who can manage the document. That way a reader can't learn how widely a document is shared.
+Every key of an element in the array matches a component of `DocumentSummary`: `documentId`, `title`, `pageCount`, `owner`, `visibility`, `createdAtEpochSeconds`, `updatedAtEpochSeconds`, `canManage`, and `sharedWithCount`. For a reader (or anyone who can't manage the document), `canManage` is `false` and `sharedWithCount` is `null`, because the count is only filled in for users who can manage the document. That way a reader can't learn how widely a document is shared.
 
 ### Exercise 12.4 ★★ Rename a component
 
@@ -551,7 +551,7 @@ One good answer.
 
 ### Exercise 12.6 ★★★ Follow the tile chain
 
-The requests you should see for a page, in order: the document detail (`GET /api/documents/{id}`), the tile-URL grid for the page (`GET /api/documents/{id}/pages/{n}/tile-urls`), then one `GET /api/tiles?token=...` per tile, several in parallel. Decoding the part of the token before the dot with a base64url decoder gives a pipe-separated string with seven fields: the document id, page, row, column, tile version, a session binding and an expiry time in epoch seconds (the canonical string of `SignedTilePayload`). You would not want the *session binding* logged if it were the session id, but it is not the session id: it is a keyed value derived from it, so the design makes the token safe to leak in a log or a shared screenshot for its short lifetime. What a leaked token still allows is fetching that one tile, from the session it was issued to, until it expires; the signature (the part after the dot) stops anyone changing any of the fields.
+The requests you should see for a page, in order: the document detail (`GET /api/documents/{id}`), the tile-URL grid for the page (`GET /api/documents/{id}/pages/{n}/tile-urls`), then one `GET /api/tiles?token=...` per tile, several in parallel. Decoding the part of the token before the dot with a base64url decoder gives a pipe-separated string with seven fields: the document id, page, row, column, tile version, a session binding, and an expiry time in epoch seconds (the canonical string of `SignedTilePayload`). You would not want the *session binding* logged if it were the session id, but it is not the session id: it is a keyed value derived from it, so the design makes the token safe to leak in a log or a shared screenshot for its short lifetime. What a leaked token still allows is fetching that one tile, from the session it was issued to, until it expires; the signature (the part after the dot) stops anyone changing any of the fields.
 
 ## Chapter 13 solutions
 
@@ -561,7 +561,7 @@ The requests you should see for a page, in order: the document detail (`GET /api
 
 ### Exercise 13.2 ★ The reference code
 
-`{"error": "Something went wrong on our side. Reference: <8 characters>."}` with status `500`. The sentence and the reference are safe to show. The exception, with its message and stack trace, is written to the server log by `log.error("Unhandled error, reference {}", reference, e)`, next to the same reference, so an operator can find it from what a user reports.
+`{"error": "Something went wrong on our side. Reference: <8 characters>."}` with status `500`. The sentence and the reference are safe to show. The exception, with its message, and stack trace, is written to the server log by `log.error("Unhandled error, reference {}", reference, e)`, next to the same reference, so an operator can find it from what a user reports.
 
 ### Exercise 13.3 ★★ Add an exception and a mapping
 
@@ -590,7 +590,7 @@ Unset `SIGNING_SECRET` in your shell, and remove or rename the `.env` file if it
 
 ### Exercise 13.5 ★★★ Design the limits
 
-One good answer, in order: (1) role or sign-in required, `401` or `403`, before the body is read, protecting time and bandwidth; (2) maximum request size 2 MB (`413`), protecting memory and disk; (3) stream to a temporary file instead of holding it in memory; (4) check the file's leading bytes against the expected image format (PNG starts with a fixed 8-byte signature, JPEG with `FF D8`), `400`, because the client-supplied name and content type can't be trusted; (5) decode with a maximum pixel area (width times height), `400`, protecting memory against a small file that expands hugely; (6) re-encode into a standard format and discard the original, so anything hidden in the file is dropped; (7) limit the rate per user, `429`. The PDF-specific limits with no equivalent are the page count and the render-slot and timeout layers, because decoding one small image is cheap and bounded; the size, signature and pixel-area checks are still needed.
+One good answer, in order: (1) role or sign-in required, `401` or `403`, before the body is read, protecting time and bandwidth; (2) maximum request size 2 MB (`413`), protecting memory and disk; (3) stream to a temporary file instead of holding it in memory; (4) check the file's leading bytes against the expected image format (PNG starts with a fixed 8-byte signature, JPEG with `FF D8`), `400`, because the client-supplied name and content type can't be trusted; (5) decode with a maximum pixel area (width times height), `400`, protecting memory against a small file that expands hugely; (6) re-encode into a standard format and discard the original, so anything hidden in the file is dropped; (7) limit the rate per user, `429`. The PDF-specific limits with no equivalent are the page count and the render-slot and timeout layers, because decoding one small image is cheap and bounded; the size, signature, and pixel-area checks are still needed.
 
 ### Exercise 13.6 ★★★ Why three places?
 
@@ -669,7 +669,7 @@ For a user that doesn't exist: the path is the same up to `loadUserByUsername`, 
 
 A worked outline.
 
-- **Current design.** `UserAdminController.resetPassword` and `AuthController.changePassword` call `sessions.revokeAllFor(...)`, which expires every session of that user in the `SessionRegistry`. Spring Security then rejects each of those sessions on its very next request. Because the server owns the record, "immediately" is easy.
+- **Current design.** `UserAdminController.resetPassword` and `AuthController.changePassword` call `sessions.revokeAllFor(...)`, which expires every session of that user in the `SessionRegistry`. Spring Security then rejects each of those sessions on its very next request. Because the server owns the record, "immediately" is simple.
 - **Token-only design.** A signed token stays valid until it expires and needs no server lookup, so nothing tells the server the token should now be refused. To add "sign out everywhere" you would need server-side state anyway: a list of revoked tokens, or a per-user "tokens issued before this time are invalid" value checked on every request. That is most of the server-side state a session already gives you.
 - **When tokens win.** When many independent servers, or a third party, must verify identity without contacting a central store, or when the client isn't a browser and can't keep cookies. Switching would give up instant revocation, the `httpOnly` protection from scripts, and the simple admin session list. It would also make it necessary to protect the token in the browser, which scripts can read if it's kept in storage.
 
@@ -695,12 +695,12 @@ Run, against your own copy:
 curl -i http://localhost:8080/api/auth/me
 ```
 
-You should find `Content-Security-Policy`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`, matching the rows of Table 16.1 (`SecurityHeadersTest` asserts the same list). Which would you notice last is a judgment: most people would say `Permissions-Policy`, because the API never uses those browser features anyway, so nothing visibly breaks when it's missing; the headers whose absence has real consequences are the CSP and `Referrer-Policy`, because the signed tile URLs would leak through the latter.
+You should find `Content-Security-Policy`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, `X-Content-Type-Options: nosniff`, and `X-Frame-Options: DENY`, matching the rows of Table 16.1 (`SecurityHeadersTest` asserts the same list). Which would you notice last is a judgment: most people would say `Permissions-Policy`, because the API never uses those browser features anyway, so nothing visibly breaks when it's missing; the headers whose absence has real consequences are the CSP and `Referrer-Policy`, because the signed tile URLs would leak through the latter.
 
 ### Exercise 16.4 ★★ 404 or 403?
 
 - (a) `404`. `DocumentService` reports a document the caller can't view as not found, so its existence isn't revealed.
-- (b) `403`. The reader can see the document, so hiding it would be pointless, but sharing needs ownership (as a publisher) or the admin role, and `requireManageable` throws `ForbiddenException`.
+- (b) `403`. The reader can see the document, so hiding it would be pointless, but sharing needs ownership (as a publisher) or the administrator role, and `requireManageable` throws `ForbiddenException`.
 - (c) `403`. `SecurityConfig` requires the `ADMIN` role for `/api/admin/**`, and the access-denied handler writes the JSON.
 - (d) `401`. Nobody is signed in, so the authentication entry point answers `Sign-in required.`
 
@@ -708,7 +708,7 @@ You should find `Content-Security-Policy`, `Referrer-Policy: no-referrer`, `Perm
 
 ### Exercise 16.5 ★★★ Break the throttle in a scratch copy
 
-A worked outline. With check-then-act, all twelve threads pass `checkAllowed` at nearly the same instant, because no failure has been recorded yet, and each then spends about a tenth of a second in BCrypt before recording its failure. Far more than five passwords are actually verified, so the count of `401` responses is well above `MAX_FAILURES_PER_ACCOUNT` and the assertion `assertEquals(MAX_FAILURES_PER_ACCOUNT, guessed, ...)` fails. The exact number varies by run, which is itself the sign of a race. The original passes because `reserve` is `synchronized` and counts before the password is verified, so the sixth simultaneous caller finds the limit already reached and gets `429`. Put the code back and confirm that the test passes every time.
+A worked outline. With check-then-act, all 12 threads pass `checkAllowed` at nearly the same instant, because no failure has been recorded yet, and each then spends about a tenth of a second in BCrypt before recording its failure. Far more than five passwords are actually verified, so the count of `401` responses is well above `MAX_FAILURES_PER_ACCOUNT` and the assertion `assertEquals(MAX_FAILURES_PER_ACCOUNT, guessed, ...)` fails. The exact number varies by run, which is itself the sign of a race. The original passes because `reserve` is `synchronized` and counts before the password is verified, so the sixth simultaneous caller finds the limit already reached and gets `429`. Put the code back and confirm that the test passes every time.
 
 ### Exercise 16.6 ★★★ Design a lockout that can't be abused
 
@@ -716,7 +716,7 @@ One good answer.
 
 - **Count atomically.** Reserve an attempt before checking the PIN, as `LoginThrottle.reserve` does, and give it back on success. Do the check and the count under one lock or one atomic database update (for example, an `UPDATE ... SET attempts = attempts + 1 WHERE attempts < 3` and look at the number of rows changed).
 - **Scope the count.** Count per account *and* per address, so a single address can't burn everyone's attempts and one account's attempts from one address can't be reset by other addresses.
-- **Protect the owner.** Don't let unknown addresses lock the owner out of a device they've used successfully: keep a short list of recognised devices (stored as keyed hashes, not raw addresses), as `KnownDevices` does.
+- **Protect the owner.** Don't let unknown addresses lock the owner out of a device they've used successfully: keep a short list of recognized devices (stored as keyed hashes, not raw addresses), as `KnownDevices` does.
 - **Recovery.** A locked-out legitimate owner needs a path that an attacker can't trigger for them: an administrator unlock, or a reset link sent to a verified channel, plus an audit event recording the lock and unlock. Accept and document the trade-off, as the project does for a new device during a lockout.
 - **Store.** In memory is fine for a single instance and a short window (a restart clears it); use the database if attempts must survive restarts or be shared between instances.
 
@@ -728,7 +728,7 @@ Width: 8.5 × 150 = 1,275 pixels. Height: 11 × 150 = 1,650 pixels. Columns: `ti
 
 ### Exercise 17.2 ★ Why crop, not pad?
 
-Because reassembling the tiles at `(col * tileSize, row * tileSize)` must reproduce the page exactly, and the page itself has no pixels beyond its right and bottom edges. A padded tile would carry a strip of white that doesn't belong to the page: the viewer would show a light band beyond the page's edge, most visible against a dark background; each tile would also claim a size that doesn't match `PageInfo`'s page width and height; and the padding would be extra pixels to store, send and watermark. Cropping keeps the data exactly as large as the page.
+Because reassembling the tiles at `(col * tileSize, row * tileSize)` must reproduce the page exactly, and the page itself has no pixels beyond its right and bottom edges. A padded tile would carry a strip of white that doesn't belong to the page: the viewer would show a light band beyond the page's edge, most visible against a dark background; each tile would also claim a size that doesn't match `PageInfo`'s page width and height; and the padding would be extra pixels to store, send, and watermark. Cropping keeps the data exactly as large as the page.
 
 ### Exercise 17.3 ★★ Tamper with a token
 
@@ -756,7 +756,7 @@ One good answer.
 1. Validate the uploaded file and read it into a temporary file (no shared state changed).
 2. Produce the thumbnail into a **staging** folder or temporary file (invisible to readers). If this fails, delete the staging file; nothing else has changed.
 3. **Atomically rename** the staged file to its final name in the storage folder, with a unique name (for example including a version or random id) so it can't overwrite the current thumbnail. If the rename fails, delete the staging file.
-4. Update the database column to point at the new file name in one short transaction. If it fails, delete the newly renamed file (nothing points at it).
+4. Update the database column to point at the new filename in one short transaction. If it fails, delete the newly renamed file (nothing points at it).
 5. After the transaction commits, delete the *old* thumbnail file. If that fails, log it and leave it for a janitor: the row no longer points at it, so it is unreachable garbage, not an error.
 
 The key decisions: write in a place nobody looks and make it visible in one atomic step; change the database only after the file exists; delete the old file only after the database points at the new one; and give every failure path a cleanup, with a scheduled sweep as the last resort, as `StorageJanitor` does for tiles.
@@ -815,8 +815,8 @@ What the two experiments show: the tests are tied to the *behavior* (locking hap
 
 A worked outline, since results depend on your machine.
 
-1. **Without `start.await()`**, each task begins as soon as its thread is scheduled. On a quick machine the twelve requests may run almost one after another. Against the correct, atomic `reserve`, the test still passes, because the throttle is correct. That is fine, but it shows the test stopped forcing an overlap.
-2. **With a non-atomic throttle** (check first, count afterward) **and the latch in place**, the twelve requests all pass the check before any is counted, so far more than 5 passwords are actually verified, and the assertion on the count of `401` responses fails. That is the test doing its job.
+1. **Without `start.await()`**, each task begins as soon as its thread is scheduled. On a quick machine the 12 requests may run almost one after another. Against the correct, atomic `reserve`, the test still passes, because the throttle is correct. That is fine, but it shows the test stopped forcing an overlap.
+2. **With a non-atomic throttle** (check first, count afterward) **and the latch in place**, the 12 requests all pass the check before any is counted, so far more than 5 passwords are actually verified, and the assertion on the count of `401` responses fails. That is the test doing its job.
 3. **With a non-atomic throttle and no latch**, the test may pass on some runs, because the overlap that exposes the bug is not guaranteed. That is a test that cannot be trusted.
 
 A paragraph that earns full credit says: a concurrency test is trustworthy when (a) it forces the overlap rather than hoping for it, (b) it asserts exact outcomes that the protection guarantees, and (c) you have seen it fail against the bug it is meant to catch.
@@ -826,8 +826,8 @@ A paragraph that earns full credit says: a concurrency test is trustworthy when 
 One good answer, for "a document unshared from a user stops serving new tiles to them":
 
 - **Name:** `unsharingADocumentStopsNewTileRequestsFromThatUser`.
-- **Level:** an application test with `MockMvc` (Section 18.6), because the promise spans the sharing endpoints, the signed-URL issuing endpoint, the tile controller and the access check; a unit test of one class could not prove it.
-- **Arrange:** create a publisher, a reader and a PDF; the publisher uploads it and shares it with the reader; the reader signs in and requests a tile URL and one tile, which succeeds.
+- **Level:** an application test with `MockMvc` (Section 18.6), because the promise spans the sharing endpoints, the signed-URL issuing endpoint, the tile controller, and the access check; a unit test of one class could not prove it.
+- **Arrange:** create a publisher, a reader, and a PDF; the publisher uploads it and shares it with the reader; the reader signs in and requests a tile URL and one tile, which succeeds.
 - **Act:** the publisher unshares the document (`DELETE /api/documents/{id}/shares/{username}`), then the reader requests the same tile again with the still-valid token.
 - **Assert:** the response is `404` with the JSON error shape, not `200`. This is the "re-check on every tile" behavior described in the `TileController` class comment.
 
@@ -855,7 +855,7 @@ function step(current: number, d: Direction): number {
 
 ### Exercise 19.3 ★★ Extend IdleState
 
-In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative falls through as "not a warning". The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
+In `app.ts`, `checkIdle` stores the state and only tests for `'expired'`, and `app.html` tests for `'warning'`, so neither breaks by itself; the new alternative falls through as "not a warning." The compiler complains only where code exhaustively depends on the list, and there is none here. The lesson: unions catch wrong values, not missing handling, unless you write a `switch` with a `never` check. Verify by running `npx tsc --noEmit -p tsconfig.app.json` in a scratch copy.
 
 ### Exercise 19.4 ★★ A fetchOrNull helper
 
@@ -892,7 +892,7 @@ const firstLoaded = firstWhere(tiles, (t) => t.status === 'loaded');
 
 ### Exercise 19.6 ★★ Tile arithmetic
 
-Columns: 600 ÷ 256 rounds up to 3. Rows: 800 ÷ 256 rounds up to 4. So there are 3 × 4 = 12 tiles. The `left` values are 0, 256 and 512; the `top` values are 0, 256, 512 and 768. Widths are 256, 256 and `min(256, 600 − 512)` = 88; heights are 256, 256, 256 and `min(256, 800 − 768)` = 32. The bottom-right tile (row 3, column 2 when counting from 0) is at left 512, top 768, and is 88 pixels wide and 32 pixels tall. Its key is `"3-2"`.
+Columns: 600 ÷ 256 rounds up to 3. Rows: 800 ÷ 256 rounds up to 4. So there are 3 × 4 = 12 tiles. The `left` values are 0, 256, and 512; the `top` values are 0, 256, 512, and 768. Widths are 256, 256, and `min(256, 600 − 512)` = 88; heights are 256, 256, 256, and `min(256, 800 − 768)` = 32. The bottom-right tile (row 3, column 2 when counting from 0) is at left 512, top 768, and is 88 pixels wide and 32 pixels tall. Its key is `"3-2"`.
 
 ## Chapter 20 solutions
 
@@ -914,7 +914,7 @@ A `dist/` folder appears, containing `dist/frontend/browser/` with `index.html` 
 
 ### Exercise 20.5 ★★★ No lock file
 
-Without a lock file, `npm install` may pick the newest 6.0.x available (for example a later patch than the one you tested with) and writes a new lock file. `npm ci` refuses to run because its whole purpose is to install exactly what a lock file records; with none, there is nothing to reproduce.
+Without a lock file, `npm install` may pick the newest 6.0.x available (for example a later patch than the one you tested with) and write a new lock file. `npm ci` refuses to run because its whole purpose is to install exactly what a lock file records; with none, there is nothing to reproduce.
 
 ### Exercise 20.6 ★★ Reorder the Dockerfile
 
@@ -997,7 +997,7 @@ If the reload returned the same version that was reported gone (for example beca
 
 ### Exercise 22.6 ★★ Why `switchMap`
 
-The reader types "al" and a request for "al" starts, and the server is slow to answer. The reader types "alice" and a request for "alice" starts, and the server answers it quickly. With `mergeMap`, both requests stay alive; when the slow answer for "al" finally arrives, it is emitted after the answer for "alice", replacing the correct suggestions with the ones for "al". `switchMap` cancels the "al" request as soon as "alice" starts, so a stale answer can never arrive.
+The reader types "al" and a request for "al" starts, and the server is slow to answer. The reader types "alice" and a request for "alice" starts, and the server answers it quickly. With `mergeMap`, both requests stay alive; when the slow answer for "al" finally arrives, it is emitted after the answer for "alice," replacing the correct suggestions with the ones for "al." `switchMap` cancels the "al" request as soon as "alice" starts, so a stale answer can never arrive.
 
 ## Chapter 23 solutions
 
@@ -1126,6 +1126,7 @@ Rules match top to bottom, and the last one catches everything nobody thought of
 - `a` stays `a`: rejected, fewer than 3 characters.
 - `Carol!` becomes `carol!`: rejected, because `!` is not in `[a-z0-9._-]`.
 - `dave.smith` stays `dave.smith`: accepted.
+
 (All of them also need an acceptable password of 12 to 128 characters and a role, and must not already exist.)
 
 ### Exercise 26.4 ★★ Sliding window
@@ -1177,7 +1178,7 @@ HTTP 413 with a JSON body `{"error": "The file is too large (limit 50 MB)."}`. T
 
 ### Exercise 28.2 ★ Reference, not message
 
-The exception message can contain SQL, file paths, class names or other internals that help an attacker and confuse users. The catch-all logs the full exception under an eight-character reference and returns only the reference. A user reports the reference and an operator finds the exact failure in the log, without the client ever seeing the internals.
+The exception message can contain SQL, file paths, class names, or other internals that help an attacker and confuse users. The catch-all logs the full exception under an eight-character reference and returns only the reference. A user reports the reference and an operator finds the exact failure in the log, without the client ever seeing the internals.
 
 ### Exercise 28.3 ★★ Is this page allowed?
 
@@ -1189,7 +1190,7 @@ The signature check is cheap: it reads at most 1,024 bytes and needs no parser, 
 
 ### Exercise 28.5 ★★ Read the headers
 
-You should see `Content-Security-Policy` (containing `default-src 'none'` and `frame-ancestors 'none'`), `Referrer-Policy: no-referrer`, `Permissions-Policy`, `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY`. `SecurityHeadersTest.apiResponsesCarryHardeningHeaders` asserts them.
+You should see `Content-Security-Policy` (containing `default-src 'none'` and `frame-ancestors 'none'`), `Referrer-Policy: no-referrer`, `Permissions-Policy`, `X-Content-Type-Options: nosniff`, and `X-Frame-Options: DENY`. `SecurityHeadersTest.apiResponsesCarryHardeningHeaders` asserts them.
 
 ### Exercise 28.6 ★★★ Health and env
 
@@ -1205,7 +1206,7 @@ With 10 minutes (600 s) left of a 1,800 s timeout, `idleState` returns `{ kind: 
 
 ### Exercise 29.2 ★ Keys while typing
 
-Arrow keys move the text cursor inside an input. If the viewer also turned pages, you couldn't edit the number you were typing. `onKeydown` returns early when the event target is an `INPUT`, `TEXTAREA` or `SELECT`, when it is editable content, and when Ctrl, Cmd or Alt is held.
+Arrow keys move the text cursor inside an input. If the viewer also turned pages, you couldn't edit the number you were typing. `onKeydown` returns early when the event target is an `INPUT`, `TEXTAREA`, or `SELECT`, when it is editable content, and when Ctrl, Cmd, or Alt is held.
 
 ### Exercise 29.3 ★★ Which page opens?
 
@@ -1235,7 +1236,7 @@ Docker caches each layer and reuses it when its inputs are unchanged. Dependenci
 
 ### Exercise 30.3 ★★ Lockout abuse
 
-With an account-wide count that applied to every address, an attacker could fail sign-in for a victim's account from several addresses until the total reached 20, and then the victim's own attempts (from their usual computer) were refused: a denial of service. The final rule applies the account-wide count only to unrecognised devices; an address that signed in successfully in the last 30 days is recognised and isn't blocked by it. The cost: a correct password from a new device is refused (429) during an account-wide lockout until an admin unlocks the account.
+With an account-wide count that applied to every address, an attacker could fail sign-in for a victim's account from several addresses until the total reached 20, and then the victim's own attempts (from their usual computer) were refused: a denial of service. The final rule applies the account-wide count only to unrecognized devices; an address that signed in successfully in the last 30 days is recognized and isn't blocked by it. The cost: a correct password from a new device is refused (429) during an account-wide lockout until an admin unlocks the account.
 
 ### Exercise 30.4 ★★ Order of gates
 
@@ -1327,13 +1328,13 @@ A model answer. Asset: the audit history (who viewed what, and when). Actors: ad
 
 The first design counted failures per account across all addresses. Anyone could fail 20 times against a victim's username and lock the real owner out (a denial of service against the victim).
 
-The recognised-device design applies that account-wide counter only to attempts from unrecognised devices. The attacker's gain: while an account is under a distributed attack, its owner cannot sign in from a new device (new laptop, hotel network) until the window passes or an administrator unlocks it. An attacker who knows this can time an attack to coincide with a victim's travel.
+The recognized-device design applies that account-wide counter only to attempts from unrecognized devices. The attacker's gain: while an account is under a distributed attack, its owner cannot sign in from a new device (new laptop, hotel network) until the window passes or an administrator unlocks it. An attacker who knows this can time an attack to coincide with a victim's travel.
 
-A mitigation not in the app: a second proof for unrecognised devices, such as an emailed one-time code or MFA, so that a new device can prove itself without waiting for an administrator.
+A mitigation not in the app: a second proof for unrecognized devices, such as an emailed one-time code or MFA, so that a new device can prove itself without waiting for an administrator.
 
 ### Exercise 32.5 ★★ Reorder the checks
 
-The user would still be refused, but the server would already have done the expensive work: reading the tile from disk, drawing the watermark, and encoding a PNG. A signed-in attacker over their limit could keep sending requests and force that work on every one, spending the server's CPU while receiving nothing useful. That turns the rate limit from a protection for the server into a cosmetic one, and it would also make the `503` busy-cap fire for everyone else. The third comment in the listing warns against exactly this: the limit is enforced "before the disk read/render so a throttled request doesn't pay that cost". The same comment explains why it runs after authentication: "so unauthenticated requests can't burn a legitimate user's allowance".
+The user would still be refused, but the server would already have done the expensive work: reading the tile from disk, drawing the watermark, and encoding a PNG. A signed-in attacker over their limit could keep sending requests and force that work on every one, spending the server's CPU while receiving nothing useful. That turns the rate limit from a protection for the server into a cosmetic one, and it would also make the `503` busy-cap fire for everyone else. The third comment in the listing warns against exactly this: the limit is enforced "before the disk read/render so a throttled request doesn't pay that cost". The same comment explains why it runs after authentication: "so unauthenticated requests can't burn a legitimate user's allowance."
 
 ### Exercise 32.6 ★★★ Review a new endpoint
 
@@ -1359,7 +1360,7 @@ Docker caches each instruction as a layer and reuses a layer only if the instruc
 
 ### Exercise 33.5 ★★ Diagnose
 
-A reasonable order: (1) Are you actually using HTTPS end to end? A `Secure` cookie isn't stored or sent over plain HTTP; open the site by its `https://` address and check the browser's developer tools (Application, Cookies) for the `SDV_SESSION` cookie. (2) Does the app see the request as HTTPS? Check that `FORWARD_HEADERS_STRATEGY` and `TRUSTED_PROXY_REGEX` are set so that `X-Forwarded-Proto` from the proxy is believed. (3) Is something dropping the cookie: a proxy stripping `Set-Cookie`, a different host name between requests, or a session lifetime or idle timeout ending the session (`session-max-lifetime`, 30-minute idle timeout)? Also check the health of the app (a restart signs everyone out, Chapter 34). Any ordered list that starts with the cheapest, most likely checks earns credit.
+A reasonable order: (1) Are you actually using HTTPS end to end? A `Secure` cookie isn't stored or sent over plain HTTP; open the site by its `https://` address and check the browser's developer tools (Application, Cookies) for the `SDV_SESSION` cookie. (2) Does the app see the request as HTTPS? Check that `FORWARD_HEADERS_STRATEGY` and `TRUSTED_PROXY_REGEX` are set so that `X-Forwarded-Proto` from the proxy is believed. (3) Is something dropping the cookie: a proxy stripping `Set-Cookie`, a different hostname between requests, or a session lifetime or idle timeout ending the session (`session-max-lifetime`, 30-minute idle timeout)? Also check the health of the app (a restart signs everyone out, Chapter 34). Any ordered list that starts with the cheapest, most likely checks earns credit.
 
 ### Exercise 33.6 ★★★ Plan the go-live
 
@@ -1369,10 +1370,10 @@ A model answer. `.env`: strong unique `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `SIGNIN
 
 ### Exercise 34.1 ★ Name the state
 
-- **Login sessions:** no. They live in the app's memory; after a restore, users sign in again.
+- **Sign-in sessions:** no. They live in the app's memory; after a restore, users sign in again.
 - **Tiles:** yes (`app-storage` volume). They are the only copy of the content.
 - **Audit log:** yes. It is in MySQL, so the dump covers it.
-- **`.env` file:** yes, kept with the backup and protected like it. `SIGNING_SECRET` keys the recognised-device hashes, and the database passwords are needed to start MySQL against the old data.
+- **`.env` file:** yes, kept with the backup and protected like it. `SIGNING_SECRET` keys the recognized-device hashes, and the database passwords are needed to start MySQL against the old data.
 - **Source PDFs:** nothing to back up; they are deleted after ingest, so the tiles hold the content.
 
 ### Exercise 34.2 ★ Read a command
@@ -1393,7 +1394,7 @@ A good answer names: a scratch environment (a separate compose project with its 
 
 ### Exercise 34.6 ★★★ Plan a change
 
-Two changes, in the spirit of the chapter: (1) the tile store needs a way to take a point-in-time snapshot (storage-level snapshots, or object storage with versioned keys) so that the archive doesn't depend on the files being still while it is read; (2) the database and the tile store need a common reference point, for example a recorded database position or snapshot time that says which tile versions belong to it, so a restore can be checked or made consistent afterward. Chapter 37's alternatives point the same way: object storage such as S3 (section 37.7) for versioned tiles, and a managed database (section 37.9) with point-in-time recovery. Even then, the "current tile version" pointer in the database still has to match the tiles, so consistency needs design, not just a different product.
+Two changes, in the spirit of the chapter: (1) the tile store needs a way to take a point-in-time snapshot (storage-level snapshots, or object storage with versioned keys) so that the archive doesn't depend on the files being still while it is read; (2) the database and the tile store need a common reference point, for example a recorded database position or snapshot time that says which tile versions belong to it, so a restore can be checked or made consistent afterward. Chapter 37's alternatives point the same way: object storage such as S3 (Section 37.7) for versioned tiles, and a managed database (Section 37.9) with point-in-time recovery. Even then, the "current tile version" pointer in the database still has to match the tiles, so consistency needs design, not just a different product.
 
 ## Chapter 35 solutions
 
@@ -1451,23 +1452,23 @@ The exercise is hypothetical. The `typescript` rule ignores minor and major upda
 
 ### Exercise 37.1 ★ Where is the choice?
 
-Examples: 37.1 tiles, no PDF: README "Why this design" and `TileGenerationService`. 37.2 watermark timing: README "Watermarking happens on the way out" and `WatermarkService`. 37.4 URL signing: `SignedUrlService`. 37.5 sessions: README Limitations. 37.7 tile storage: `storage-root` in the README configuration table and `StorageJanitor`. 37.11 one instance: README "Go-live checklist".
+Examples: Section 37.1 tiles, no PDF: README "Why this design" and `TileGenerationService`. Section 37.2 watermark timing: README "Watermarking happens on the way out" and `WatermarkService`. Section 37.4 URL signing: `SignedUrlService`. Section 37.5 sessions: README Limitations. Section 37.7 tile storage: `storage-root` in the README configuration table and `StorageJanitor`. Section 37.11 one instance: README "Go-live checklist."
 
 ### Exercise 37.2 ★★ Why S3 forces a rethink
 
 If tiles move to S3 behind a CDN with signed URLs, the CDN serves tile bytes and the app no longer sees each request. Consequences:
 
-- **Watermarking (37.2):** stamping happens in the app at serve time. At the edge, either you stamp somewhere else (an image service or edge function) or you serve unstamped tiles, which loses attribution.
-- **Session checks (37.4):** the app checks the session on every tile request. A CDN signed URL is checked by the CDN, which knows nothing about your session, so logout and unsharing no longer cut off outstanding URLs until they expire. You would shorten lifetimes or add an edge authorizer.
-- **Rate limiting (37.8):** per-user counters in the app no longer see tile traffic.
+- **Watermarking (Section 37.2):** stamping happens in the app at serve time. At the edge, either you stamp somewhere else (an image service or edge function) or you serve unstamped tiles, which loses attribution.
+- **Session checks (Section 37.4):** the app checks the session on every tile request. A CDN signed URL is checked by the CDN, which knows nothing about your session, so sign-out and unsharing no longer cut off outstanding URLs until they expire. You would shorten lifetimes or add an edge authorizer.
+- **Rate limiting (Section 37.8):** per-user counters in the app no longer see tile traffic.
 
 ### Exercise 37.3 ★★ Order of change
 
-One defensible order: (1) shared sessions and counters in Redis (37.5), (2) tile storage on S3 (37.7), (3) managed database (37.9), (4) more instances behind a load balancer (37.11), (5) CDN signed URLs (37.4). Reasoning: a second instance is unsafe until sessions, counters, and tiles are all shared, so those come first; the CDN change comes last because it changes watermarking and session checks. Any order that puts 37.11 after 37.5 and 37.7 and justifies it is acceptable.
+One defensible order: (1) shared sessions and counters in Redis (Section 37.5), (2) tile storage on S3 (Section 37.7), (3) managed database (Section 37.9), (4) more instances behind a load balancer (Section 37.11), (5) CDN signed URLs (Section 37.4). Reasoning: a second instance is unsafe until sessions, counters, and tiles are all shared, so those come first; the CDN change comes last because it changes watermarking and session checks. Any order that puts Section 37.11 after Sections 37.5 and 37.7 and justifies it is acceptable.
 
 ### Exercise 37.4 ★★★ A switch trigger as an alert
 
-Example for 37.5 to 37.11 (needing a second instance): alert when average CPU of the app container stays above 80% for 15 minutes while `sdv_tiles_rate_limited_total` is flat (load is real reader traffic, not throttled harvesting). For 37.8: alert when the rate of `sdv_tiles_rate_limited_total` per hour exceeds an agreed share of `sdv_tiles_served_total`, meaning readers are hurt by the limit. The answer must name a metric from Chapter 35 and a threshold with a time window.
+Example for Sections 37.5 to 37.11 (needing a second instance): alert when average CPU of the app container stays above 80% for 15 minutes while `sdv_tiles_rate_limited_total` is flat (load is real reader traffic, not throttled harvesting). For Section 37.8: alert when the rate of `sdv_tiles_rate_limited_total` per hour exceeds an agreed share of `sdv_tiles_served_total`, meaning readers are hurt by the limit. The answer must name a metric from Chapter 35 and a threshold with a time window.
 
 ### Exercise 37.5 ★★ Cookie or token?
 
@@ -1482,7 +1483,7 @@ Step 3 (tiles to shared storage) hides the most work: it touches URL signing, wa
 ### Exercise 38.1 ★ Name the pattern
 
 - (a) A **factory method** (and the class it builds is a **value object**): `Viewer.of(authentication)` in `document/Viewer.java`.
-- (b) A **template method with a callback**: `TransactionTemplate.execute(...)` runs the fixed steps (begin, commit or roll back) and calls your lambda for the variable step; used in `document/DocumentService.java`.
+- (b) A **template method with a callback**: `TransactionTemplate.execute(...)` runs the fixed steps (begin, commit, or roll back) and calls your lambda for the variable step; used in `document/DocumentService.java`.
 - (c) A **composite** of **strategies**: it groups two `SessionAuthenticationStrategy` objects and is itself used as one; in `security/SecurityConfig.java`.
 - (d) An **observer** (publish-subscribe): the method is called when the framework publishes a session event; in `security/SessionMetadata.java`.
 
@@ -1509,11 +1510,11 @@ In `TileGenerationService.render`: the state is created as `RUNNING`; the render
 
 ### Exercise 38.5 ★★★ Apply the fifth question
 
-A worked outline; any three good answers will do. Examples. *Builder:* a builder for `TileAccess` (three fields), where the record's constructor is already clear and checked by the compiler. *Strategy:* a `TitleValidator` interface with one implementation for `validTitle`, which is a few lines in `DocumentService` and has no second candidate. *Observer:* publishing an event whenever a document is renamed so that a class can update the `updatedAt` time, when the entity's setter already calls `touch()` in one line. *Bulkhead:* a separate limiter for the audit search endpoint, which is used only by administrators and is bounded by its `size` limit of 500. In each case the simpler design is the direct one: a constructor, a private method, a call inside the setter, an existing validation. The test for over-engineering is to say what goes wrong without the pattern; if the answer is "nothing", leave it out.
+A worked outline; any three good answers will do. Examples. *Builder:* a builder for `TileAccess` (three fields), where the record's constructor is already clear and checked by the compiler. *Strategy:* a `TitleValidator` interface with one implementation for `validTitle`, which is a few lines in `DocumentService` and has no second candidate. *Observer:* publishing an event whenever a document is renamed so that a class can update the `updatedAt` time, when the entity's setter already calls `touch()` in one line. *Bulkhead:* a separate limiter for the audit search endpoint, which is used only by administrators and is bounded by its `size` limit of 500. In each case the simpler design is the direct one: a constructor, a private method, a call inside the setter, an existing validation. The test for over-engineering is to say what goes wrong without the pattern; if the answer is "nothing," leave it out.
 
 ### Exercise 38.6 ★★★ A decision in pattern words
 
-One good answer, using Section 37.5 (in-memory sessions and counters versus a shared store). *Pattern in use:* a **sliding window log** rate limiter and a **reserve and compensate** rule in `TileRateLimiter` and `LoginThrottle`, plus a `SessionRegistry` that keeps sessions in memory; all are ordinary objects in one process. *Cost as the chapter states it:* per-instance state; the limiter's memory grows with the limit and needs a sweep; and a restart clears counters and sessions. *What would change:* the counters and the session registry would move behind an interface that a shared store implements (a **strategy**), the reserve step would have to be atomic in the store (for example, an atomic increment or a script), and the sweeps would be replaced by expiry in the store. *Team of five:* keep the in-memory version until the need for a second instance is real, because the shared store is another service to run, secure and back up, which a small team pays for every day; but write the counters behind a small interface now if a move is likely, since that costs a few lines and makes the later change local. Either answer earns full credit if it names the problem, the pattern, the cost and the trigger for changing.
+One good answer, using Section 37.5 (in-memory sessions and counters versus a shared store). *Pattern in use:* a **sliding window log** rate limiter and a **reserve and compensate** rule in `TileRateLimiter` and `LoginThrottle`, plus a `SessionRegistry` that keeps sessions in memory; all are ordinary objects in one process. *Cost as the chapter states it:* per-instance state; the limiter's memory grows with the limit and needs a sweep; and a restart clears counters and sessions. *What would change:* the counters and the session registry would move behind an interface that a shared store implements (a **strategy**), the reserve step would have to be atomic in the store (for example, an atomic increment or a script), and the sweeps would be replaced by expiry in the store. *Team of five:* keep the in-memory version until the need for a second instance is real, because the shared store is another service to run, secure, and back up, which a small team pays for every day; but write the counters behind a small interface now if a move is likely, since that costs a few lines and makes the later change local. Either answer earns full credit if it names the problem, the pattern, the cost, and the trigger for changing.
 
 ## Chapter 39 solutions
 
@@ -1531,7 +1532,7 @@ Check your answer against the "What it costs" and "When not to use it" lines of 
 
 ### Exercise 39.4 ★★ The twelve factors
 
-Three pieces of in-memory or local state: (1) sessions, held by the app in memory (37.5); (2) the rate-limit counters, `TileRateLimiter` and the sign-in throttle `LoginThrottle` (37.5, 37.8); (3) the tiles on the local disk volume (37.7). A fourth is the audit throttle, which limits how often events are written and lives in a map in `AuditLogService`. All of them are correct with one instance and wrong with several; that is the connection to decision 37.11 and the plan in 37.17.
+Three pieces of in-memory or local state: (1) sessions, held by the app in memory (Section 37.5); (2) the rate-limit counters, `TileRateLimiter` and the sign-in throttle `LoginThrottle` (Sections 37.5, 37.8); (3) the tiles on the local disk volume (Section 37.7). A fourth is the audit throttle, which limits how often events are written and lives in a map in `AuditLogService`. All of them are correct with one instance and wrong with several; that is the connection to decision Section 37.11 and the plan in Section 37.17.
 
 ### Exercise 39.5 ★★★ Apply the framework
 
@@ -1539,13 +1540,13 @@ A model answer. Problem and constraints: users want a list of pages they have vi
 
 ### Exercise 39.6 ★★★ Argue against a pattern
 
-Against: rendering is CPU-heavy but happens inside the request today, bounded by the render pool (two at once) and timeout; splitting it adds a network call, a second deployable, shared storage, and new failure modes (what does the upload return if the render service is down?). The project's records show no evaluation, and one team runs one deployable. For: rendering is the resource hog, so a separate service could be scaled and limited independently and a hostile PDF could not starve sign-ins. What would have to be true: rendering load must actually slow other requests despite the bulkhead; the team or scale must justify the operational cost. What to measure first: `sdv_render_seconds`, `sdv_render_rejected_total`, and `sdv_render_abandoned_running` (Chapter 35), plus CPU and response times of unrelated endpoints during renders. If those are healthy, the split is over-engineering. A defensible middle course, noted in section 39.6: keep the monolith and improve the modules' boundaries first.
+Against: rendering is CPU-heavy but happens inside the request today, bounded by the render pool (two at once) and timeout; splitting it adds a network call, a second deployable, shared storage, and new failure modes (what does the upload return if the render service is down?). The project's records show no evaluation, and one team runs one deployable. For: rendering is the resource hog, so a separate service could be scaled and limited independently and a hostile PDF could not starve sign-ins. What would have to be true: rendering load must actually slow other requests despite the bulkhead; the team or scale must justify the operational cost. What to measure first: `sdv_render_seconds`, `sdv_render_rejected_total`, and `sdv_render_abandoned_running` (Chapter 35), plus CPU and response times of unrelated endpoints during renders. If those are healthy, the split is over-engineering. A defensible middle course, noted in Section 39.6: keep the monolith and improve the modules' boundaries first.
 
 ## Chapter 40 solutions
 
 ### Exercise 40.1 ★ Map the pieces
 
-`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). They belong in one cutover, because a Fargate task has only ephemeral storage and cannot run first with a local database and tile folders (move A of Figure 41.5). Caddy's replacement, the load balancer with its certificate and DNS record, is part of that first cutover too, so that even one task is reachable, but it is not one of the three state moves.
+`mysql` container: Amazon RDS for MySQL (Multi-AZ). `app-storage` volume: an Amazon S3 bucket. `.env` file: AWS Secrets Manager, with an IAM task role for AWS permissions. Caddy: an Application Load Balancer with an AWS Certificate Manager certificate and a Route 53 record. Of the four, all but Caddy could be adopted first with one instance still running, provided that instance runs on AWS as a single Fargate task (Section 40.4): the `.env` file (Secrets Manager), the database (RDS) and the tiles (S3). They belong in one cutover, because a Fargate task has only ephemeral storage and cannot run first with a local database and tile folders (move A of Figure 41.5). Caddy's replacement, the load balancer with its certificate and DNS record, is part of that first cutover too, so that even one task is reachable, but it is not one of the three state moves.
 
 ### Exercise 40.2 ★ Code or documentation?
 
@@ -1571,7 +1572,7 @@ Steps of the single atomic operation, per user: (1) remove entries from the user
 
 ### Exercise 41.1 ★ Idle or usage cost?
 
-Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and the two always-on tasks (a load balancer and a cache cluster belong here too). Follows use: S3 requests, data transfer out, and logs. For an app with 80 readers, worry first about the fixed group: with few readers, the always-on pieces are most of the bill, whether or not anyone reads a document, and that is exactly why staying on one machine can be the right answer (Table 41.2).
+Bills while it exists (idle cost): the NAT gateway, the Multi-AZ standby, and the two always-on tasks (a load balancer and a cache cluster belong here too). Follows use: S3 requests, data transfer out, and logs. For an app with 80 readers, worry first about the fixed group: with few readers, the always-on pieces are most of the bill, whether, or not anyone reads a document, and that is exactly why staying on one machine can be the right answer (Table 41.2).
 
 ### Exercise 41.2 ★★ Order the moves
 
@@ -1583,4 +1584,4 @@ Service task role: `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` on `arn:aws
 
 ### Exercise 41.4 ★★★ Argue for staying
 
-A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take move A (Secrets Manager, RDS and S3 in one cutover) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.
+A model answer. With 80 readers, one machine very likely has headroom, and a short outage at a quiet hour may be acceptable; measurements to ask for: `sdv_tiles_busy_total` (server-wide tile cap reached), `sdv_render_rejected_total`, CPU and memory during peak, the measured restore time from a real restore drill, and the number of concurrent readers at peak. If those are healthy and the restore drill meets the recovery time, recommend staying on Compose (Table 41.2). The smallest change still worth recommending: move the database to a managed service with point-in-time recovery, and keep tiles on the volume but copy them off the machine on a schedule, or take move A (Secrets Manager, RDS, and S3 in one cutover) on one instance. Any answer that uses Table 41.2, names measurements, and proposes a bounded first step earns credit.

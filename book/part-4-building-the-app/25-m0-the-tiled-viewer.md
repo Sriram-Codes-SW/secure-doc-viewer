@@ -22,7 +22,7 @@ Java 21 and PDFBox 3.0.3 (`pom.xml` at `book-m0-mvp`); the upgrade to Spring Boo
 
 ## Beginner tier: Serving a page as small tiles
 
-### 25.1 Requirements and the threat we start with
+### 25.1 Requirements and the starting threat
 
 The project starts from one product goal: let a person read a PDF in a browser without being able to
 walk away with the file. The first commit describes the approach. The server never hands out the PDF.
@@ -45,7 +45,7 @@ The README lists each concern and the answer to it. Table 25.1 condenses it.
 | The reader might try to... | How the design answers |
 |---|---|
 | Save the PDF | The PDF stops existing as a servable file after ingest. Only disconnected PNG tiles remain. No endpoint returns a whole page. |
-| Copy a tile URL | The URL carries a signature over document, page, row, column, session and expiry. Change any field and it fails. |
+| Copy a tile URL | The URL carries a signature over document, page, row, column, session, and expiry. Change any field and it fails. |
 | Reuse the URL later | The URL expires (120 seconds by default), and the expiry is inside the signed payload. |
 | Share the URL with someone | The URL is tied to the session it was issued to, and the session is re-checked on every tile request. |
 | Keep using URLs after signing out | The session is checked separately from the token's expiry, so signing out kills every URL at once. |
@@ -59,7 +59,7 @@ attributable to a person.
 <!-- source: README at book-m0-mvp (Why this design; Limitations); commit b6aef4e -->
 
 At this tag the product is backend only. It has controllers, services, a session service, an
-in-memory `DocumentRegistry`, five unit-test classes and one static `index.html`. There is no database
+in-memory `DocumentRegistry`, five unit-test classes, and one static `index.html`. There is no database
 and no Angular yet.
 <!-- source: git ls-tree -r book-m0-mvp; timeline -->
 
@@ -131,7 +131,7 @@ inch). Rendered at 150 dots per inch, the scale is 150 / 72, about 2.083, so the
   pixels wide;
 - rows = (1,650 + 255) / 256 = 7, and the last row is 1,650 - 6 × 256 = 114 pixels tall.
 
-That is 5 × 7 = **35 tiles per page**, which is the figure the project's later notes use ("a page is
+That is 5 × 7 = *35 tiles per page*, which is the figure the project's later notes use ("a page is
 about 35 tiles"). Remember it: it drives the rate-limit decisions in Chapters 26 and 30.
 
 **Why test the math separately.** `TileGridTest` includes a test that the commit message calls a
@@ -210,9 +210,9 @@ public BufferedImage loadRawTile(String documentId, int page, int row, int col) 
 The layout on disk is `{storage-root}/{documentId}/page-{n}/tile-{row}_{col}.png`. The class
 comment compares it with an object-storage "bucket": it is the same idea as folders in a cloud store.
 `tileAndSave` computes the grid with `TileGrid`, creates the page folder, writes each tile as a PNG
-image, and returns a `PageInfo` record describing the grid (rows, columns, tile size and page size in
+image, and returns a `PageInfo` record describing the grid (rows, columns, tile size, and page size in
 pixels). `loadRawTile` is the read side. Its name says the tile is *raw*: its Javadoc warns that this
-method "never returns a copy that's safe to serve directly", because the watermark hasn't been applied.
+method "never returns a copy that's safe to serve directly," because the watermark hasn't been applied.
 
 The upload does not keep the PDF: after `ingest` only tiles exist. The **manifest** (`DocumentManifest`)
 records the document's id, title, page count and one `PageInfo` per page, and is what the client asks
@@ -247,9 +247,9 @@ sequenceDiagram
     B->>B: paint each tile at (col * tileSize, row * tileSize)
 ```
 
-*Figure 25.1 — One page, request by request (book-m0-mvp)*
+*Figure 25.1 — One page, request by request (`book-m0-mvp`)*
 
-*Text description:* A sequence diagram with two participants, the browser and the server, and time running downward. The browser signs in and receives a session id, then asks for the grid of signed tile URLs. In a loop, for each tile, the browser sends a request and the server verifies the signature and expiry, checks that the session is live, loads the raw tile, applies the watermark and returns a PNG image. Last, the browser paints each tile at its column and row offset. Notice that the two checks happen once per tile, not once per page.
+*Text description:* A sequence diagram with two participants, the browser, and the server, and time running downward. The browser signs in and receives a session id, then asks for the grid of signed tile URLs. In a loop, for each tile, the browser sends a request and the server verifies the signature and expiry, checks that the session is live, loads the raw tile, applies the watermark and returns a PNG image. Last, the browser paints each tile at its column and row offset. Notice that the two checks happen once per tile, not once per page.
 <!-- source: request flow at book-m0-mvp: controller/SessionController.java, controller/PageTileUrlController.java, controller/TileController.java, security/SessionService.java, service/SignedUrlService.java, service/TileGenerationService.java, service/WatermarkService.java (all under src/main/java/com/example/securedocviewer/) and src/main/resources/static/index.html -->
 
 
@@ -298,7 +298,7 @@ wristband works for whoever wears it, in the same way a copied URL works until i
 The service issues a token that grants access to exactly one tile of one page of one document, for
 one session, until a fixed expiry. The token is two base64url strings joined by a dot: the payload,
 and an HMAC-SHA256 signature over it. **Base64url** is a way to write any bytes using only letters,
-digits, hyphen and underscore, so the result is safe inside a URL. HMAC (hash-based message
+digits, hyphen, and underscore, so the result is safe inside a URL. HMAC (hash-based message
 authentication code) mixes a secret key into a hash, so only a holder of the key can produce a
 matching signature. Change any field of the payload and the signature no longer matches.
 
@@ -380,10 +380,7 @@ Walk through `verifyAndDecode` in order, because the order is the design.
 1. **Shape.** Split at the first dot. Two parts, or reject.
 2. **Decode** the payload. Text that isn't base64url is rejected.
 3. **Recompute** the signature from the decoded payload with the server's secret and compare it with
-   the one supplied. The comparison uses `MessageDigest.isEqual`, a constant-time comparison, a check whose running time does not depend on how many characters match: an
-   ordinary string comparison stops at the first difference, so an attacker who measures response
-   times could learn how many leading characters were right. A constant-time comparison always takes
-   the same time.
+   the one supplied. The comparison uses `MessageDigest.isEqual`, a constant-time comparison: its running time does not depend on how many characters match. An ordinary string comparison stops at the first difference, so an attacker who measures response times could learn how many leading characters were right.
 4. **Only then parse** the fields and check the expiry.
 
 The signature is verified before the payload is parsed, so untrusted data reaches the parsing code
@@ -404,7 +401,7 @@ them distinguishable. `TileController` performs the second check (Section 25.8).
 
 - a token round-trips to the same payload;
 - a token whose last signature character was flipped is rejected;
-- a "Franken-token", made by splicing another tile's payload onto this token's signature, is rejected: it has a valid-looking signature on the wrong payload;
+- a "Franken-token," made by splicing another tile's payload onto this token's signature, is rejected: it has a valid-looking signature on the wrong payload;
 - an expired token is rejected (the test sets a negative lifetime, so the token is already old when issued);
 - text that isn't a token at all is rejected.
 
@@ -418,7 +415,7 @@ Watermarking could happen at ingest or at serve time. At ingest, every viewer wo
 identical copy, so a leak couldn't be traced. Stamping a copy per user up front would store N copies of
 every tile for N viewers. The project stamps on the way out: one stored tile serves everyone, and every
 response is individually attributable. The cost, in the README's words, is "CPU per request and losing
-shared caching", which is why tile responses are marked `Cache-Control: no-store`.
+shared caching," which is why tile responses are marked `Cache-Control: no-store`.
 <!-- source: WatermarkService Javadoc and README at book-m0-mvp; decisions D5 -->
 
 **Listing 25.7 — `WatermarkService.java` (book-m0-mvp, simplified: imports and Javadoc removed)**
@@ -469,7 +466,7 @@ pattern with a trace code.
 input; at least one pixel changes; and two different viewer labels produce different output, which
 proves each viewer's copy is distinct.
 
-The cost is real: every tile request decodes a PNG, draws on it and encodes it again. A later review
+The cost is real: every tile request decodes a PNG, draws on it, and encodes it again. A later review
 recorded this as a low-severity limitation (`TM-17`).
 <!-- source: WatermarkService.java, WatermarkServiceTest.java at book-m0-mvp; reviews record TM-17 -->
 
@@ -480,7 +477,7 @@ Four controllers make up the API. Two matter most for the design.
 **Asking for tile URLs.** `PageTileUrlController` answers
 `GET /api/documents/{documentId}/pages/{page}/tile-urls`.
 
-**Listing 25.8 — `PageTileUrlController.tileUrls` (book-m0-mvp, simplified: Javadoc, constructor and fields removed)**
+**Listing 25.8 — `PageTileUrlController.tileUrls` (book-m0-mvp, simplified: Javadoc, constructor, and fields removed)**
 
 ```java
 @GetMapping("/tile-urls")
@@ -519,7 +516,7 @@ a page-level or document-level download link. The header `X-Session-Id` carries 
 
 **Redeeming a tile.** `TileController` is the only endpoint that returns pixels.
 
-**Listing 25.9 — `TileController.getTile` (book-m0-mvp, simplified: imports, Javadoc, constructor and fields removed)**
+**Listing 25.9 — `TileController.getTile` (book-m0-mvp, simplified: imports, Javadoc, constructor, and fields removed)**
 
 ```java
 @GetMapping(value = "/api/tiles", produces = MediaType.IMAGE_PNG_VALUE)
@@ -557,7 +554,7 @@ reach another.
 **Errors.** Failures throw exceptions, and `GlobalExceptionHandler` maps them to responses.
 `InvalidTokenException` and `SessionExpiredException` both become HTTP **401 (Unauthorized)** with a
 JSON body `{"error": "..."}`. This is why the README says to try editing a token character (401,
-signature mismatch), waiting past the lifetime (401, expired), or logging out and retrying an
+signature mismatch), waiting past the lifetime (401, expired), or signing out and retrying an
 unexpired token (401, session revoked).
 
 `DocumentController` handles `POST /api/documents` (upload) and `GET /api/documents/{id}` (manifest).
@@ -670,7 +667,7 @@ tile it fetches the image, turns it into a bitmap with `createImageBitmap`, and 
 `(col * grid.tileSize, row * grid.tileSize)`: the same formula as `TileGrid`, now used to put the
 page back together. The canvas is sized from the manifest's `pageWidthPx` and `pageHeightPx`.
 
-Notice `await` inside the nested loops: tiles are fetched **one after another**, not in parallel. That
+Notice `await` inside the nested loops: tiles are fetched *one after another*, not in parallel. That
 is simple and correct, and slow. The Angular viewer of Chapter 26 fetches with a pool of parallel
 workers, handles the rate-limit answers, and abandons a page's requests when you turn the page. The
 canvas also goes away: the Angular viewer lays tiles out as positioned elements, and the canvas
@@ -690,7 +687,7 @@ The README's own limitations are a to-do list for the rest of Part IV.
 - **Watermarking every tile costs CPU and defeats caching.** At scale one would watermark more
   coarsely or cache per (tile, viewer) with a short lifetime.
 - **A determined user with a legitimate session can request every tile and reassemble them.** The
-  watermark makes that traceable, and per-session rate limiting "would make it slow". The README lists
+  watermark makes that traceable, and per-session rate limiting "would make it slow." The README lists
   it among "possible next steps"; it arrives in Chapter 26.
 
 Chapter 32 collects these into a proper threat model.
@@ -698,7 +695,7 @@ Chapter 32 collects these into a proper threat model.
 
 ## Common mistakes
 
-**Trusting the browser to hide the file.** Symptom: "the download button is hidden, so it's protected".
+**Trusting the browser to hide the file.** Symptom: "the download button is hidden, so it's protected."
 Fix: the protection must be on the server. If a URL returns the file, anyone can call it.
 
 **Padding edge tiles.** Symptom: a thin seam, or a mismatch at the right and bottom edges. Fix: crop
@@ -753,7 +750,7 @@ flowchart LR
 
 *Figure 25.2 — Blueprint v0 (`book-m0-mvp`)*
 
-*Text description:* A left-to-right flowchart. The browser, a static page that draws tiles on a canvas, calls four controllers inside the Spring Boot application. SessionController uses the in-memory SessionService. DocumentController uses TileGenerationService and the in-memory DocumentRegistry. PageTileUrlController uses SignedUrlService and SessionService. TileController uses SignedUrlService, SessionService, TileGenerationService and WatermarkService. A dotted line shows TileGenerationService writing tiles to disk. Notice that there is no database: sessions and documents live in memory and only the tiles are on disk.
+*Text description:* A left-to-right flowchart. The browser, a static page that draws tiles on a canvas, calls four controllers inside the Spring Boot application. SessionController uses the in-memory SessionService. DocumentController uses TileGenerationService and the in-memory DocumentRegistry. PageTileUrlController uses SignedUrlService and SessionService. TileController uses SignedUrlService, SessionService, TileGenerationService, and WatermarkService. A dotted line shows TileGenerationService writing tiles to disk. Notice that there is no database: sessions and documents live in memory and only the tiles are on disk.
 <!-- source: book/blueprints/v0-mvp.md; classes named in the diagram, present at book-m0-mvp under src/main/java/com/example/securedocviewer/: controller/DocumentController.java, service/DocumentRegistry.java, controller/PageTileUrlController.java, controller/SessionController.java, security/SessionService.java, service/SignedUrlService.java, controller/TileController.java, service/TileGenerationService.java, service/TileGrid.java, service/WatermarkService.java -->
 
 This is the starting point, so nothing has changed since a previous version. Signing in takes only a
@@ -766,9 +763,7 @@ memory.
 
 **The decision.** Never expose the source PDF: rasterize pages at ingest, slice them into tiles,
 deliver tiles through short-lived HMAC-signed URLs bound to a session, and reassemble them in the
-browser. **Why this one.** The first commit records this rationale and isolates the grid math in
-`TileGrid` with a round-trip test. **The options considered.** The alternatives weighed at MVP time
-aren't recorded in the repository history, so this book doesn't invent them. **What it costs.** Every
+browser. **The options considered.** The alternatives weighed at MVP time aren't recorded in the repository history, so this book doesn't invent them. **Why this one.** The first commit records this rationale and isolates the grid math in `TileGrid` with a round-trip test. **What it costs.** Every
 tile request does work on the server (Section 25.7), and the design stays a deterrent rather than a
 guarantee.
 <!-- source: commit b6aef4e; decisions D4 -->
@@ -790,7 +785,7 @@ rendering out of it.
 
 ### Challenge: the MVP was a demo, and a review said so
 
-**The problem.** This version signed anyone in who typed a username. Later, independent reviews by AI review agents (one playing a product owner, one a senior technical manager) found four problems. Login accepted any username with no password (`TM-2`). Admin endpoints needed only a valid session and listed every live session id (`TM-1`). The tile token contained the session id, so a leaked URL leaked a credential (`TM-4`). And the signing secret was committed in `application.yml` (`TM-6`); the file at this tag holds a visibly demo-only value. **How it was found.** The reviews ran against the working
+**The problem.** This version signed anyone in who typed a username. Later, independent reviews by the AI product-owner reviewer and the AI technical-manager reviewer found four problems. Sign-in accepted any username with no password (`TM-2`). Admin endpoints needed only a valid session and listed every live session id (`TM-1`). The tile token contained the session id, so a leaked URL leaked a credential (`TM-4`). And the signing secret was committed in `application.yml` (`TM-6`); the file at this tag holds a visibly demo-only value. **How it was found.** The reviews ran against the working
 product after the MVP and a first Angular baseline existed. **The fix.** Milestone 1 (Chapter 26)
 addressed these: real accounts, roles, a keyed session binding in tokens, and a secret supplied
 through the environment. **Where it goes next.** Chapter 26 walks through the fixes, and Chapter 32
@@ -801,7 +796,7 @@ findings into a to-do list instead of a surprise.
 
 ## In this project
 
-**Table 25.2 — Where the concepts live (at book-m0-mvp)**
+**Table 25.2 — Where the concepts live (at `book-m0-mvp`)**
 
 | Concept | Where |
 |---|---|

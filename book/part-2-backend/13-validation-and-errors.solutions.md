@@ -7,7 +7,7 @@
 
 ### Exercise 13.2 ★ The reference code
 
-`{"error": "Something went wrong on our side. Reference: <8 characters>."}` with status `500`. The sentence and the reference are safe to show. The exception, with its message and stack trace, is written to the server log by `log.error("Unhandled error, reference {}", reference, e)`, next to the same reference, so an operator can find it from what a user reports.
+`{"error": "Something went wrong on our side. Reference: <8 characters>."}` with status `500`. The sentence and the reference are safe to show. The exception, with its message, and stack trace, is written to the server log by `log.error("Unhandled error, reference {}", reference, e)`, next to the same reference, so an operator can find it from what a user reports.
 
 ### Exercise 13.3 ★★ Add an exception and a mapping
 
@@ -36,7 +36,7 @@ Unset `SIGNING_SECRET` in your shell, and remove or rename the `.env` file if it
 
 ### Exercise 13.5 ★★★ Design the limits
 
-One good answer, in order: (1) role or sign-in required, `401` or `403`, before the body is read, protecting time and bandwidth; (2) maximum request size 2 MB (`413`), protecting memory and disk; (3) stream to a temporary file instead of holding it in memory; (4) check the file's leading bytes against the expected image format (PNG starts with a fixed 8-byte signature, JPEG with `FF D8`), `400`, because the client-supplied name and content type can't be trusted; (5) decode with a maximum pixel area (width times height), `400`, protecting memory against a small file that expands hugely; (6) re-encode into a standard format and discard the original, so anything hidden in the file is dropped; (7) limit the rate per user, `429`. The PDF-specific limits with no equivalent are the page count and the render-slot and timeout layers, because decoding one small image is cheap and bounded; the size, signature and pixel-area checks are still needed.
+One good answer, in order: (1) role or sign-in required, `401` or `403`, before the body is read, protecting time and bandwidth; (2) maximum request size 2 MB (`413`), protecting memory and disk; (3) stream to a temporary file instead of holding it in memory; (4) check the file's leading bytes against the expected image format (PNG starts with a fixed 8-byte signature, JPEG with `FF D8`), `400`, because the client-supplied name and content type can't be trusted; (5) decode with a maximum pixel area (width times height), `400`, protecting memory against a small file that expands hugely; (6) re-encode into a standard format and discard the original, so anything hidden in the file is dropped; (7) limit the rate per user, `429`. The PDF-specific limits with no equivalent are the page count and the render-slot and timeout layers, because decoding one small image is cheap and bounded; the size, signature, and pixel-area checks are still needed.
 
 ### Exercise 13.6 ★★★ Why three places?
 

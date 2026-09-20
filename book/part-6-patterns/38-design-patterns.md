@@ -12,13 +12,13 @@ By the end of this chapter, you will be able to:
 - Say what problem a pattern solves, what it costs, and when it is over-engineering.
 - Tell where the project follows a pattern closely and where it only approximates one.
 - Use pattern names to describe a design decision, connecting them to the trade-offs of Chapter 37.
-- Recognize the Angular counterparts: injection, interceptors and guards, and signals.
+- Recognize the Angular counterparts: injection, interceptors, and guards, and signals.
 
 ## Prerequisites
 
 - Chapter 4: classes, objects, records and interfaces
-- Chapters 11 to 16: beans, controllers, transactions, filters and throttling
-- Chapters 17 and 18: bounded work, atomic file handling and tests
+- Chapters 11 to 16: beans, controllers, transactions, filters, and throttling
+- Chapters 17 and 18: bounded work, atomic file handling, and tests
 - Chapters 19 to 23: the Angular basics (needed only for Section 38.13)
 - Chapter 37: the engineering trade-offs (referred to in Section 38.14)
 
@@ -26,16 +26,16 @@ By the end of this chapter, you will be able to:
 
 ### 38.1 What a design pattern is
 
-A carpenter has names for joints: a dovetail, a mortise and tenon, a butt joint. Each is a solution to a problem that keeps coming back ("how do I join two boards at a corner so it holds under pull?"). Each has known strengths and weaknesses, and a carpenter who says "use a dovetail" saves ten minutes of explanation. A design pattern is the software version: a named, reusable solution to a problem that recurs in code. The classic catalog is the 1994 book *Design Patterns* by Gamma, Helm, Johnson and Vlissides, whose authors are nicknamed the "Gang of Four", and it names 23 patterns. Many more have been named since.
+A carpenter has names for joints: a dovetail, a mortise, and tenon, a butt joint. Each is a solution to a problem that keeps coming back ("how do I join two boards at a corner so it holds under pull?"). Each has known strengths and weaknesses, and a carpenter who says "use a dovetail" saves ten minutes of explanation. A design pattern is the software version: a named, reusable solution to a problem that recurs in code. The classic catalog is the 1994 book *Design Patterns* by Gamma, Helm, Johnson, and Vlissides, whose authors are nicknamed the "Gang of Four," and it names 23 patterns. Many more have been named since.
 
 **Where the analogy breaks down:** a joint is a physical object you cut the same way each time. A pattern is a *shape*, and every use adapts it: the code differs, the names differ, and sometimes only part of the pattern appears. A pattern is also not a library you can import. It is an idea you recognize and choose.
 
-Every pattern in this chapter is described in the same five parts, so that you learn to ask the same questions of any pattern you meet.
+Every pattern in this chapter is described in the same five parts, so that you learn to ask the same questions of any pattern you meet:
 
 1. **The problem:** what keeps going wrong without it.
 2. **The pattern:** its standard name and a one-sentence definition in plain words.
 3. **Where it lives:** the file and the tag, checked in the code. If the project only approximates a pattern, this part says so plainly.
-4. **What it costs:** every pattern adds something, such as a class, an indirection or a rule to remember.
+4. **What it costs:** every pattern adds something, such as a class, an indirection, or a rule to remember.
 5. **When not to use it:** the situations in which the pattern is only clutter.
 
 The fifth part matters as much as the others. A beginner who has learned a pattern is tempted to use it everywhere, a habit sometimes called **pattern-itis**. Good design starts from the problem, and a pattern earns its place only when the problem is really there.
@@ -76,7 +76,7 @@ public record Viewer(String username, boolean admin, boolean publisher) {
 
 *Path: `src/main/java/com/example/securedocviewer/document/Viewer.java`*
 
-`Viewer` is a record: its three fields can't change after construction, and two `Viewer`s with the same values are equal, which is what makes it a value object. It is deliberately small. `DocumentService` receives a `Viewer` rather than Spring's `Authentication`, so the service's rules mention only "admin" and "publisher", not framework types. The static method `of` is the factory: it reads the authority strings (`ROLE_ADMIN`, `ROLE_PUBLISHER`) once, and applies the rule that an administrator is also a publisher. Every controller calls `Viewer.of(authentication)`, so that translation exists in exactly one place. The same shape appears in `WatermarkService.Layout.of(...)` and in `UserSummary.of(user)`, and it comes at almost no cost.
+`Viewer` is a record: its three fields can't change after construction, and two `Viewer`s with the same values are equal, which is what makes it a value object. It is deliberately small. `DocumentService` receives a `Viewer` rather than Spring's `Authentication`, so the service's rules mention only "admin" and "publisher," not framework types. The static method `of` is the factory: it reads the authority strings (`ROLE_ADMIN`, `ROLE_PUBLISHER`) once, and applies the rule that an administrator is also a publisher. Every controller calls `Viewer.of(authentication)`, so that translation exists in exactly one place. The same shape appears in `WatermarkService.Layout.of(...)` and in `UserSummary.of(user)`, and it comes at almost no cost.
 
 **When not to use a factory method:** a plain constructor is clearer when there is only one way to build the object. A factory is worth adding when construction involves a decision or a translation, as here.
 
@@ -93,9 +93,9 @@ public record Viewer(String username, boolean admin, boolean publisher) {
 
 Figure 16.2 showed where they sit. What makes it a good chain is that neither filter knows about the other: each does one job, and their order, set in one place in `SecurityConfig`, decides how they combine. A new check is a new class and one line of configuration.
 
-The Angular app has the same idea in an HTTP interceptor, and here it is worth being precise. **An interceptor is a link in a chain of responsibility, but the project registers a chain of one.** The `provideHttpClient(withInterceptors([sessionInterceptor]))` call in `app.config.ts` lists a single interceptor. (The CSRF header that Chapter 16 described is *not* project code: Angular's built-in support copies the cookie into the header, as a comment in `app.config.ts` says.)
+The Angular app has the same idea in an HTTP interceptor, and here it is worth being precise. **An interceptor is a link in a chain of responsibility, but the project registers a chain of one.** The `provideHttpClient(withInterceptors([sessionInterceptor]))` call in `app.config.ts` lists a single interceptor. (The CSRF (cross-site request forgery) header that Chapter 16 described is *not* project code: Angular's built-in support copies the cookie into the header, as a comment in `app.config.ts` says.)
 
-**Listing 38.2 — `session.interceptor.ts` (`book-m6-final`, simplified: the imports, the long comments and the `passwordChangeRequired` branch are omitted)**
+**Listing 38.2 — `session.interceptor.ts` (`book-m6-final`, simplified: the imports, the long comments, and the `passwordChangeRequired` branch are omitted)**
 
 ```typescript
 export const sessionInterceptor: HttpInterceptorFn = (req, next) => {
@@ -123,7 +123,7 @@ export const sessionInterceptor: HttpInterceptorFn = (req, next) => {
 
 *Path: `frontend/src/app/core/session.interceptor.ts`*
 
-The interceptor calls `next(req)`, which is "pass the request down the chain", and then acts on the *response* on its way back. It records that the user is active, and on a `401` it clears local state and returns the user to the sign-in screen. So a chain runs in both directions.
+The interceptor calls `next(req)`, which is "pass the request down the chain," and then acts on the *response* on its way back. It records that the user is active, and on a `401` it clears local state and returns the user to the sign-in screen. So a chain runs in both directions.
 
 **What it costs:** a chain hides the total behavior. To know what happens to a request you must read the whole configuration, and the order matters. **When not to use it:** when there are two fixed steps that always run in the same order, a plain method calling two other methods is easier to read than a chain.
 
@@ -160,7 +160,7 @@ public SessionAuthenticationStrategy sessionAuthenticationStrategy(SessionRegist
 
 *Path: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
-The first method returns an `AuthorizationManager`, an interface with one method, so a lambda (Chapter 5) *is* the strategy. The metrics endpoint's rule (Chapter 16) plugs in a decision function that says "allowed only from these address ranges". The second bean builds a **composite**: a strategy made of other strategies, treated as one. Signing in must both change the session id (defeating fixation) and register the session (so an admin can list it), and the composite runs both. That is a second named pattern, **composite**: a group of objects that can be used like a single one.
+The first method returns an `AuthorizationManager`, an interface with one method, so a lambda (Chapter 5) *is* the strategy. The metrics endpoint's rule (Chapter 16) plugs in a decision function that says "allowed only from these address ranges." The second bean builds a **composite**: a strategy made of other strategies, treated as one. Signing in must both change the session id (defeating fixation) and register the session (so an admin can list it), and the composite runs both. That is a second named pattern, **composite**: a group of objects that can be used like a single one.
 
 **What a strategy costs:** an interface, and a reader must find *which* implementation is active. **When not to use it:** when there is one behavior and no realistic second one. The project doesn't create its own strategy interfaces for such cases. There is no `TokenSigner` interface with one implementation, because `SignedUrlService` is a concrete class. Section 37.4 compares it with signed URLs from a cloud provider, a change you would make only if the need arose.
 
@@ -192,7 +192,7 @@ private static final RowMapper<AuditEvent> ROW_MAPPER = (ResultSet rs, int rowNu
 
 *Path: `src/main/java/com/example/securedocviewer/audit/AuditLogService.java`*
 
-In Listing 38.4, `TransactionTemplate.execute` is the skeleton: it begins a transaction, calls the lambda, commits if it returns and rolls back if it throws (Chapter 14). The lambda is the variable step, and it is the *only* thing the project writes. In Listing 38.5, `JdbcTemplate` runs the query and loops over rows, and the `RowMapper` lambda says how to turn *one row* into an `AuditEvent`. In both, the framework controls the flow and calls your code at the right moment, which is the inversion of control from Chapter 11.
+In Listing 38.4, `TransactionTemplate.execute` is the skeleton: it begins a transaction, calls the lambda, commits if it returns, and rolls back if it throws (Chapter 14). The lambda is the variable step, and it is the *only* thing the project writes. In Listing 38.5, `JdbcTemplate` runs the query and loops over rows, and the `RowMapper` lambda says how to turn *one row* into an `AuditEvent`. In both, the framework controls the flow and calls your code at the right moment, which is the inversion of control from Chapter 11.
 
 **What it costs:** control flow that jumps between your lambda and the framework, which makes stepping through it in a debugger surprising. **When not to use it:** for the fixed skeleton of a single call, a template class is more machinery than a try/catch. It pays when the boilerplate is error-prone, as transaction handling is.
 
@@ -230,7 +230,7 @@ public void onIdChanged(HttpSessionIdChangedEvent event) {
 
 *Path: `src/main/java/com/example/securedocviewer/security/SessionMetadata.java`*
 
-`SessionMetadata` remembers where and when each session signed in, for the admin list. It never asks the container "has a session ended?". It is *told* when a session is destroyed, and removes its record, and when the id changes at sign-in (Chapter 15) it moves the record to the new id. The code that ends sessions knows nothing about this class. In Angular, the same idea appears as RxJS observables and signals (Section 38.13).
+`SessionMetadata` remembers where and when each session signed in, for the admin list. It never asks the container "has a session ended?" It is *told* when a session is destroyed, and removes its record, and when the id changes at sign-in (Chapter 15) it moves the record to the new id. The code that ends sessions knows nothing about this class. In Angular, the same idea appears as RxJS observables and signals (Section 38.13).
 
 **What it costs:** hidden control flow. Reading `SessionMetadata` won't tell you *who* triggers `onDestroyed`. **When not to use it:** when the caller can call the other component directly and the coupling is fine, an event is only a longer way to write a method call.
 
@@ -294,7 +294,7 @@ The Angular side has one too. `idle.ts` defines `IdleState` as a union of three 
 
 ### 38.9 Bulkhead and rate limiter: bounding what one part can take
 
-**The problem:** without limits, one busy or hostile part of the system can use all of a shared resource, and everything else fails with it. **The pattern:** a **bulkhead**, named after the watertight compartments of a ship, gives each kind of work its own separate limit so that flooding one compartment can't sink the rest. A **rate limiter** bounds how often something may happen in a period. **Where they live:** `TileWorkLimiter` (Listing 17.7) is a semaphore that caps *tile* work across all users; `TileGenerationService` has a *separate* semaphore for PDF renders. Because the two limits are independent, a burst of slow uploads can't consume the permits that tile serving needs, and the reverse. That is the bulkhead idea, and we say "approximates" because the project uses two semaphores rather than a general-purpose bulkhead library: it's the idea, written by hand at the two places that need it. The compartments are separate permit pools, not separate resources: both kinds of work draw on the same CPU, memory and Tomcat threads, so the design limits how many jobs run at once, not how much each job takes.
+**The problem:** without limits, one busy or hostile part of the system can use all of a shared resource, and everything else fails with it. **The pattern:** a **bulkhead**, named after the watertight compartments of a ship, gives each kind of work its own separate limit so that flooding one compartment can't sink the rest. A **rate limiter** bounds how often something may happen in a period. **Where they live:** `TileWorkLimiter` (Listing 17.7) is a semaphore that caps *tile* work across all users; `TileGenerationService` has a *separate* semaphore for PDF renders. Because the two limits are independent, a burst of slow uploads can't consume the permits that tile serving needs, and the reverse. That is the bulkhead idea, and we say "approximates" because the project uses two semaphores rather than a general-purpose bulkhead library: it's the idea, written by hand at the two places that need it. The compartments are separate permit pools, not separate resources: both kinds of work draw on the same CPU (central processing unit), memory and Tomcat threads, so the design limits how many jobs run at once, not how much each job takes.
 
 The per-user rate limiter is `TileRateLimiter`. It keeps, for each user, a list of the times of recent requests, and refuses a new one when the list already holds the maximum for the window.
 
@@ -372,7 +372,7 @@ sequenceDiagram
 
 *Figure 38.2 — Counting a request, and refunding it when the server is busy*
 
-*Text description:* A sequence between a reader, the tile controller, the rate limiter and the work limiter. The controller counts the request first, then asks the work limiter for a permit. If no permit arrives within two seconds, the controller refunds the counted request and answers `503`; otherwise it returns the tile with `200`.
+*Text description:* A sequence between a reader, the tile controller, the rate limiter, and the work limiter. The controller counts the request first, then asks the work limiter for a permit. If no permit arrives within two seconds, the controller refunds the counted request and answers `503`; otherwise it returns the tile with `200`.
 
 <!-- source: TileController.getTile, TileRateLimiter and TileWorkLimiter at book-m6-final -->
 
@@ -384,7 +384,7 @@ The refund arrived together with the server-wide cap on concurrent tile work, in
 
 ### 38.12 Adapter and facade in small doses
 
-**The problem:** your code needs something from a library or framework in a shape the library doesn't provide, and you don't want the library's types to spread everywhere. **The pattern:** an **adapter** translates one interface into the one your code expects; a **facade** offers a small, simple interface over a larger subsystem. **Where they live, approximately.** `RequestActors` turns a servlet request and an `Authentication` into the project's own `Actor` (username, session handle, client address), which every audit call needs, so no controller assembles it by hand. `ViewerMetrics` wraps Micrometer's registry behind methods named for the domain (`tileServed()`, `signIn(outcome)`), and registers every sign-in outcome at zero on startup so the metric exists before its first event. Neither is a textbook adapter, since neither implements a specific target interface, so the honest description is "adapter in spirit", a thin class that keeps a library's vocabulary out of business code. **What it costs:** one more class between you and the library. **When not to use it:** when you would only be renaming a single call.
+**The problem:** your code needs something from a library or framework in a shape the library doesn't provide, and you don't want the library's types to spread everywhere. **The pattern:** an **adapter** translates one interface into the one your code expects; a **facade** offers a small, simple interface over a larger subsystem. **Where they live, approximately.** `RequestActors` turns a servlet request and an `Authentication` into the project's own `Actor` (username, session handle, client address), which every audit call needs, so no controller assembles it by hand. `ViewerMetrics` wraps Micrometer's registry behind methods named for the domain (`tileServed()`, `signIn(outcome)`), and registers every sign-in outcome at zero on startup so the metric exists before its first event. Neither is a textbook adapter, since neither implements a specific target interface, so the honest description is "adapter in spirit," a thin class that keeps a library's vocabulary out of business code. **What it costs:** one more class between you and the library. **When not to use it:** when you would only be renaming a single call.
 
 ### 38.13 The Angular side in patterns
 
@@ -421,7 +421,7 @@ The project does *not* use a state-management library such as NgRx, and does not
 
 ### 38.14 Patterns in decisions, and patterns the project does not need
 
-Chapter 37 argued that a design decision is a choice between options with costs. Patterns give the options names. Take one decision from that chapter, keeping sessions and the counters that limit sign-ins and tiles in memory rather than in a shared store (Section 37.5). Seen through this chapter, the project chose a *sliding window log* and a *reserve-and-compensate* rule, implemented as ordinary objects in one process. The cost is exactly what the patterns' costs predict: the state is per instance, so running three copies would multiply the limits by three. Naming the patterns lets you state the cost plainly and recognize the moment to change.
+Chapter 37 argued that a design decision is a choice between options with costs. Patterns give the options names. Take one decision from that chapter, keeping sessions, and the counters that limit sign-ins and tiles in memory rather than in a shared store (Section 37.5). Seen through this chapter, the project chose a *sliding window log* and a *reserve-and-compensate* rule, implemented as ordinary objects in one process. The cost is exactly what the patterns' costs predict: the state is per instance, so running three copies would multiply the limits by three. Naming the patterns lets you state the cost plainly and recognize the moment to change.
 
 Here is a short list of patterns you'll meet elsewhere that this project doesn't need, with a sentence on why.
 
@@ -430,7 +430,7 @@ Here is a short list of patterns you'll meet elsewhere that this project doesn't
 - **Decorator and proxy written by hand.** Spring adds proxies for `@Transactional` itself (Chapter 11); the project writes none of its own.
 - **Command and undo.** Nothing in the app is undoable.
 - **Circuit breaker and retry frameworks.** There are no calls to other services to protect (`pom.xml` has no such library).
-- **CQRS, event sourcing and sagas.** These suit systems with many services or heavy write volumes. The audit log is append-only (Chapter 39), but the app is not event-sourced.
+- **CQRS, event sourcing, and sagas.** These suit systems with many services or heavy write volumes. The audit log is append-only (Chapter 39), but the app is not event-sourced.
 - **Microservices.** The app is one deployable; Section 37.11 explains why one instance is enough for now and what running several would require (shared sessions and shared tile storage first).
 
 ### 38.15 Common mistakes
@@ -440,7 +440,7 @@ Here is a short list of patterns you'll meet elsewhere that this project doesn't
 - **Naming instead of thinking.** "It's the strategy pattern" is not a justification; the problem and the cost are.
 - **Forcing the code into a name.** Half of a pattern is often the right amount. Say "approximates" and move on, as this chapter does.
 - **Abstracting on the first use.** A common rule is to wait for the third case before extracting a pattern. The project's two limiters were written separately and stayed separate.
-- **Hiding control flow.** Observers, callbacks and chains make code shorter and its behavior harder to trace. Use them where the decoupling is worth it.
+- **Hiding control flow.** Observers, callbacks, and chains make code shorter and its behavior harder to trace. Use them where the decoupling is worth it.
 - **Forgetting the tests.** A pattern that makes code harder to test is a bad fit. The project chose constructor injection partly because a test can call `new SignedUrlService(properties)` (Chapter 18).
 
 ## In this project
@@ -460,7 +460,7 @@ Here is a short list of patterns you'll meet elsewhere that this project doesn't
 | Observer | `security/SessionMetadata.java`; Angular signals and RxJS | 21, 22 |
 | State machine | `service/TileGenerationService.java` (`RenderState`); Angular `core/idle.ts` | 17, 19 |
 | Bulkhead and sliding window rate limiter | `service/TileWorkLimiter.java`, `security/TileRateLimiter.java` | 17, 26 |
-| Reserve and compensate | `security/LoginThrottle.java`, `TileController` and `TileRateLimiter` | 16 |
+| Reserve and compensate | `security/LoginThrottle.java`, `TileController`, and `TileRateLimiter` | 16 |
 | Guard clause and fail fast | `account/BootstrapAdmin.java`, `service/TileGenerationService.java`, `config/ViewerProperties.java` | 11, 13 |
 | Adapter and facade (approximate) | `audit/RequestActors.java`, `service/ViewerMetrics.java` | 12, 35 |
 
@@ -505,11 +505,11 @@ Choose one decision from Chapter 37 and rewrite it in this chapter's vocabulary:
 ## Summary
 
 - A design pattern is a named, reusable solution to a recurring problem; it is a vocabulary and a shape, not a library, and every use adapts it.
-- Every pattern has a cost and a place where it is clutter; the fifth question, "when not to use it?", is the one that stops pattern-itis.
-- The project uses dependency injection, repositories, a service layer, records as value objects and factory methods throughout, and chains of responsibility, strategies and composites through Spring Security.
+- Every pattern has a cost and a place where it is clutter; the fifth question, "when not to use it?," is the one that stops pattern-itis.
+- The project uses dependency injection, repositories, a service layer, records as value objects, and factory methods throughout, and chains of responsibility, strategies and composites through Spring Security.
 - Callbacks (`TransactionTemplate`, `RowMapper`) let the framework own the boilerplate; builders make configuration read like a sentence; events let parts react without calling each other.
-- A small state machine with `compareAndSet` settles the race between a render finishing and a request timing out; a semaphore bulkhead bounds how many jobs run at once (not how much CPU or memory each takes) and a sliding window limiter bounds how often a reader may ask, and reserve-then-compensate makes limits correct under parallel requests.
-- The Angular code has an interceptor (a chain of one), guards, signals and a bounded worker pool, but no state library, and the chapter says plainly where the project only approximates a pattern.
+- A small state machine with `compareAndSet` settles the race between a render finishing and a request timing out; a semaphore bulkhead bounds how many jobs run at once (not how much CPU or memory each takes); a sliding window limiter bounds how often a reader may ask; and reserve-then-compensate makes limits correct under parallel requests.
+- The Angular code has an interceptor (a chain of one), guards, signals, and a bounded worker pool, but no state library, and the chapter says plainly where the project only approximates a pattern.
 
 ## Further reading
 

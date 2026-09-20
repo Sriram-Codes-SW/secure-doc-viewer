@@ -11,7 +11,7 @@ By the end of this chapter, you will be able to:
 - Describe what `@SpringBootApplication` does when the program starts.
 - Explain what a bean is and how dependency injection supplies one to another class.
 - Read a constructor-injected class such as `DocumentController` and name each of its dependencies.
-- Configure the application through `application.yml`, environment variables and profiles, and predict which value wins.
+- Configure the application through `application.yml`, environment variables, and profiles, and predict which value wins.
 - Explain what a starter dependency and auto-configuration are, and where the project overrides a managed version.
 - Write and read a log line, and choose the right level.
 
@@ -26,7 +26,7 @@ By the end of this chapter, you will be able to:
 
 ### 11.1 What a framework is
 
-Imagine you want to open a restaurant. You could build the building, wire the electricity, install plumbing, and only then start cooking. Or you could rent a fitted-out kitchen where the ovens, the extraction fans and the fire alarms already exist, and you bring your recipes. A framework is the fitted-out kitchen: a large body of ready-made code that already knows how to start a program, listen for web requests and connect to a database. You supply the recipes, which are the pieces specific to your application.
+Imagine you want to open a restaurant. You could build the building, wire the electricity, install plumbing, and only then start cooking. Or you could rent a fitted-out kitchen where the ovens, the extraction fans, and the fire alarms already exist, and you bring your recipes. A framework is the fitted-out kitchen: a large body of ready-made code that already knows how to start a program, listen for web requests and connect to a database. You supply the recipes, which are the pieces specific to your application.
 
 A **library** is a single tool you pick up when you need it, such as a PDF reader. You call the library, and you decide when. With a framework, the direction reverses: the framework calls you. Your code sits in classes that the framework finds, creates and invokes at the right moment. This reversal has a name, **inversion of control**, and it explains most of what looks strange about Spring at first. Here is the difference as two tiny sketches. They are written to teach, so they are Examples, not project code.
 
@@ -46,9 +46,9 @@ public List<DocumentSummary> list() {                   // the framework calls y
 }
 ```
 
-Nobody in the project writes code that says "when a request for `/api/documents` arrives, call `list`". You write the method and the label, and Spring does the waiting, the listening and the calling.
+Nobody in the project writes code that says "when a request for `/api/documents` arrives, call `list`." You write the method and the label, and Spring does the waiting, the listening and the calling.
 
-**Where the analogy breaks down:** a rented kitchen has walls you can see. A framework's structure is mostly invisible: it's made of rules such as "any class with this label gets created at startup". When something goes wrong, you often need to know the rule to understand the behavior. Much of Part II is these rules.
+**Where the analogy breaks down:** a rented kitchen has walls you can see. A framework's structure is mostly invisible: it's made of rules such as "any class with this label gets created at startup." When something goes wrong, you often need to know the rule to understand the behavior. Much of Part II is these rules.
 
 Spring is the framework the project uses. **Spring Boot** is a layer on top of it that chooses sensible defaults, so a program can start with almost no setup. The project uses Spring Boot 4.1.1 on Java 25 (`pom.xml`, tag `book-m6-final`). Two other pieces appear in this chapter. Maven downloads the libraries (Chapter 6). Tomcat is the web server built into the finished program, so running the app is one command and needs no separate server installation.
 
@@ -91,17 +91,17 @@ What happens when you run the program? You start it with Maven's wrapper from th
 
 Then `main` runs, and `SpringApplication.run` does roughly the following, in order. This is a simplified description; the real sequence has more steps, but this is the outline to keep in mind.
 
-1. **Read the configuration:** `application.yml`, environment variables and any active profile (Section 11.4).
+1. **Read the configuration:** `application.yml`, environment variables, and any active profile (Section 11.4).
 2. **Scan for classes to manage:** every class in `com.example.securedocviewer` and below that carries a label such as `@Service` or `@RestController` (Section 11.3).
-3. **Create the objects and connect them:** each managed class is instantiated, and its dependencies are supplied (Section 11.3). The database connection, the security filters, the web server and the scheduler are created here too, by auto-configuration.
-4. **Run start-up tasks:** for example, `BootstrapAdmin` creates the first administrator on an empty database (Section 11.7).
+3. **Create the objects and connect them:** each managed class is instantiated, and its dependencies are supplied (Section 11.3). The database connection, the security filters, the web server, and the scheduler are created here too, by auto-configuration.
+4. **Run startup tasks:** for example, `BootstrapAdmin` creates the first administrator on an empty database (Section 11.7).
 5. **Start listening:** the embedded web server accepts requests on the port from `server.port` (8080 in `application.yml`).
 
 If any step fails, the program stops with an error and never listens. That's deliberate, and Section 11.7 explains why.
 
 ### 11.3 Beans and dependency injection
 
-When Spring starts, it creates one object of every class it finds that is labeled as a managed component (with annotations such as `@Component`, `@Service`, `@RestController` or `@Configuration`). Each such object is a **bean**, and the box that holds them all is the **application context**. By default there is one instance of each bean, shared by the whole program.
+When Spring starts, it creates one object of every class it finds that is labeled as a managed component (with annotations such as `@Component`, `@Service`, `@RestController`, or `@Configuration`). Each such object is a **bean**, and the box that holds them all is the **application context**. By default there is one instance of each bean, shared by the whole program.
 
 *Pattern note: Constructor injection is the dependency injection pattern (Chapter 38, Section 38.2).*
 
@@ -165,7 +165,7 @@ graph LR
 
 *Figure 11.1 — Part of the dependency chain behind `DocumentController`*
 
-*Text description:* A left-to-right graph with `DocumentController` at the left, pointing to `DocumentService` and `RequestActors`. `RequestActors` points to `SessionKeys`, which points to `ViewerProperties`. `DocumentService` points to five things: two repositories, `TileGenerationService`, `AuditLogService` and the transaction manager, and `TileGenerationService` also points to `ViewerProperties`. Notice that `ViewerProperties` sits at the right end of two branches, so one shared bean serves both.
+*Text description:* A left-to-right graph with `DocumentController` at the left, pointing to `DocumentService` and `RequestActors`. `RequestActors` points to `SessionKeys`, which points to `ViewerProperties`. `DocumentService` points to five things: two repositories, `TileGenerationService`, `AuditLogService`, and the transaction manager, and `TileGenerationService` also points to `ViewerProperties`. Notice that `ViewerProperties` sits at the right end of two branches, so one shared bean serves both.
 
 <!-- source: constructors of DocumentController, DocumentService, RequestActors, SessionKeys and TileGenerationService at book-m6-final; partial: TileGenerationService also takes ViewerMetrics, omitted here -->
 
@@ -174,7 +174,7 @@ Spring builds the leaves first: `ViewerProperties`, then `SessionKeys` and `Tile
 
 Spring picks a dependency by type, not by name. If two beans of the same type exist, Spring can't choose without more information, and startup fails. `KnownDevices` shows a related detail. It has two constructors: a public one that Spring uses, and a second one, visible only inside its own package, which the unit tests use to supply a fixed clock. When there is more than one constructor, Spring needs to be told which to call, and the public one carries an explicit `@Autowired` label for that.
 
-Not every bean can be created by labeling a class. Sometimes the class belongs to a library and you can't edit it. For those, a `@Configuration` class contains `@Bean` methods: each method builds an object, and its return value becomes a bean. `SecurityConfig` declares eight beans this way (a password encoder, a session registry and so on), and Listing 11.3 shows one.
+Not every bean can be created by labeling a class. Sometimes the class belongs to a library and you can't edit it. For those, a `@Configuration` class contains `@Bean` methods: each method builds an object, and its return value becomes a bean. `SecurityConfig` declares eight beans this way (a password encoder, a session registry, and so on), and Listing 11.3 shows one.
 
 **Listing 11.3 — A hand-built bean in `SecurityConfig.java` (`book-m6-final`, excerpt: method `passwordEncoder`)**
 
@@ -258,7 +258,7 @@ spring:
     import: optional:file:.env[.properties]
 ```
 
-(`book-m6-final`, `application.yml`, excerpt.) This says: "if there is a file named `.env` next to the program, read it as a list of `NAME=value` lines." It is `optional`, so its absence is fine. The `.env` file is kept out of Git (Chapter 7), which is how a developer's secrets stay off GitHub. "Real environment variables win", says the comment beside it.
+(`book-m6-final`, `application.yml`, excerpt.) This says: "if there is a file named `.env` next to the program, read it as a list of `NAME=value` lines." It is `optional`, so its absence is fine. The `.env` file is kept out of Git (Chapter 7), which is how a developer's secrets stay off GitHub. "Real environment variables win," says the comment beside it.
 
 A profile is a named set of extra settings that you switch on. The tests use one: `@ActiveProfiles("test")` makes Spring also read `application-test.yml`, which overrides the datasource to point at an in-memory H2 database instead of MySQL. Chapter 14 and Chapter 18 cover why. The naming rule is always `application-<profile>.yml`.
 
@@ -280,11 +280,11 @@ public BootstrapAdmin(UserAccountService accounts,
 
 *Path: `src/main/java/com/example/securedocviewer/account/BootstrapAdmin.java`*
 
-`@Value` puts the value of one property into one parameter. The `:admin` after the property name is the default when nothing sets it, and the empty default after `password:` means "no password configured", which the class treats as "generate a random one" (Chapter 15). `@Value` is fine for one or two settings; for a group of related settings, a typed class is easier to read and validate.
+`@Value` puts the value of one property into one parameter. The `:admin` after the property name is the default when nothing sets it, and the empty default after `password:` means "no password configured," which the class treats as "generate a random one" (Chapter 15). `@Value` is fine for one or two settings; for a group of related settings, a typed class is easier to read and validate.
 
 ### 11.5 Starters and auto-configuration
 
-Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-starter-webmvc`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa` and `spring-boot-starter-flyway`. A starter is a single dependency that pulls in a matched set of libraries for one job, at versions known to work together. Table 11.2 lists the ones the project uses.
+Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-starter-webmvc`, `spring-boot-starter-security`, `spring-boot-starter-data-jpa`, and `spring-boot-starter-flyway`. A starter is a single dependency that pulls in a matched set of libraries for one job, at versions known to work together. Table 11.2 lists the ones the project uses.
 
 **Table 11.2 — The starters in `pom.xml` (`book-m6-final`) and what each brings**
 
@@ -293,16 +293,16 @@ Look at the dependencies in `pom.xml` and you'll see names like `spring-boot-sta
 | `spring-boot-starter-webmvc` | Spring's web layer: controllers, JSON conversion, and the embedded Tomcat server |
 | `spring-boot-starter-security` | Spring Security (Chapters 15 and 16) |
 | `spring-boot-starter-validation` | Bean Validation annotations such as `@NotBlank` (Chapter 13) |
-| `spring-boot-starter-data-jpa` | JPA, Hibernate and Spring Data repositories (Chapter 14) |
+| `spring-boot-starter-data-jpa` | JPA, Hibernate, and Spring Data repositories (Chapter 14) |
 | `spring-boot-starter-flyway` | Flyway database migrations (Chapter 14) |
 | `spring-boot-starter-actuator` | Health and metrics endpoints (Chapter 35) |
-| `spring-boot-starter-test` and friends | JUnit, Mockito and the test tools (Chapter 18) |
+| `spring-boot-starter-test` and friends | JUnit, Mockito, and the test tools (Chapter 18) |
 
-A comment in the project's `pom.xml` notes that "Spring Boot 4 splits the old all-in-one starters into focused ones", which is why the web starter is named `webmvc` and Flyway has its own starter. Other dependencies (the MySQL driver, PDFBox, the Prometheus registry) are ordinary libraries with no starter.
+A comment in the project's `pom.xml` notes that "Spring Boot 4 splits the old all-in-one starters into focused ones," which is why the web starter is named `webmvc` and Flyway has its own starter. Other dependencies (the MySQL driver, PDFBox, the Prometheus registry) are ordinary libraries with no starter.
 
 **Where do the versions come from?** The top of the `pom.xml` declares `spring-boot-starter-parent` version `4.1.1` as its **parent POM**, a Maven project file that other projects inherit defaults from, such as a tested list of library versions. That parent contains a table of tested versions for hundreds of libraries, so most dependencies in the file have *no version number at all*: Maven takes it from the parent. Upgrading Spring Boot upgrades the whole tested set at once.
 
-Auto-configuration is the second half of the trick. When Spring Boot starts, it looks at what is on the classpath and at your settings, and creates sensible beans for you. With the JPA starter and a MySQL driver present and `spring.datasource.url` set, it builds the database connection pool and the transaction manager without you writing a line. With the Flyway starter present, it runs the migrations at startup (Chapter 14). With the web starter, it starts Tomcat. If you define your own bean of the same kind, yours takes priority: that's exactly what `SecurityConfig` does when it declares its own `PasswordEncoder` and `SecurityFilterChain` (Chapter 15). The rule of thumb is that Boot provides a default and you override only what you must.
+Auto-configuration is the second half of the trick. When Spring Boot starts, it looks at what is on the classpath and at your settings, and creates sensible beans for you. With the JPA (Jakarta Persistence) starter and a MySQL driver present and `spring.datasource.url` set, it builds the database connection pool and the transaction manager without you writing a line. With the Flyway starter present, it runs the migrations at startup (Chapter 14). With the web starter, it starts Tomcat. If you define your own bean of the same kind, yours takes priority: that's exactly what `SecurityConfig` does when it declares its own `PasswordEncoder` and `SecurityFilterChain` (Chapter 15). The rule of thumb is that Boot provides a default and you override only what you must.
 
 We simplify here: the full list of what is auto-configured is long and changes between versions. You don't need to memorize it; you need to know that it exists, so that when a bean appears that you never wrote, you know where it came from.
 
@@ -322,7 +322,7 @@ log.info("Created initial admin account '{}' from BOOTSTRAP_ADMIN_PASSWORD.", us
 
 *Path: `src/main/java/com/example/securedocviewer/account/BootstrapAdmin.java`*
 
-The logger is created once per class and tagged with the class name, so every line says which class wrote it. The `{}` in the message is a placeholder that SLF4J fills with the arguments that follow. Use placeholders, not string concatenation: the text is only assembled if that level is switched on, which is cheaper. That severity label is the **log level**: a label such as `error`, `warn`, `info` or `debug` that says how important a log line is, so that you can filter them.
+The logger is created once per class and tagged with the class name, so every line says which class wrote it. The `{}` in the message is a placeholder that SLF4J fills with the arguments that follow. Use placeholders, not string concatenation: the text is only assembled if that level is switched on, which is cheaper. That severity label is the **log level**: a label such as `error`, `warn`, `info`, or `debug` that says how important a log line is, so that you can filter them.
 
 **Table 11.3 — Log levels**
 
@@ -343,7 +343,7 @@ This book doesn't reproduce a startup log, because its exact text depends on you
 
 ### 11.7 Fail at startup, not at the first request
 
-The most useful property of this wiring is that mistakes surface when the program starts. A missing dependency stops startup with an error naming the type. `ViewerProperties` goes further: its signing secret must be present and at least 32 characters, or the application refuses to start (Chapter 13 shows how). The source comment states the reason: startup fails "rather than failing on the first tile". A server that started with a broken secret would only fail later, in front of a user.
+The most useful property of this wiring is that mistakes surface when the program starts. A missing dependency stops startup with an error naming the type. `ViewerProperties` goes further: its signing secret must be present and at least 32 characters, or the application refuses to start (Chapter 13 shows how). The source comment states the reason: startup fails "rather than failing on the first tile." A server that started with a broken secret would only fail later, in front of a user.
 
 Startup is also the place for one-off setup. Some code must run once, after the beans exist but before the app accepts requests. `BootstrapAdmin` is the project's example. It implements `ApplicationRunner`, a Spring interface with one method that Spring calls once at the end of startup.
 
@@ -404,7 +404,7 @@ The parent's table is keyed by property names such as `tomcat.version`; setting 
 - **Secrets in `application.yml`.** Anything committed is published. Use a placeholder with an empty default and supply the value by environment variable or a git-ignored `.env`.
 - **Forgetting that environment variables win.** A value in your shell overrides the file, so "I changed the YAML and nothing happened" often means a variable is set.
 - **Misspelled property names.** A key Spring doesn't recognize is silently ignored unless a typed class validates it. Prefer `@ConfigurationProperties` for groups (Chapter 13).
-- **Logging a secret or a whole request.** Log identifiers and outcomes, not credentials or bodies.
+- **Logging a secret or a whole request.** Log identifiers and outcomes, not credentials, or bodies.
 
 ## In this project
 
@@ -418,9 +418,9 @@ The parent's table is keyed by property names such as `tomcat.version`; setting 
 | Settings, placeholders, `.env` import | `src/main/resources/application.yml` |
 | Test profile | `src/test/resources/application-test.yml` |
 | Starters, parent version, Tomcat override | `pom.xml` |
-| Start-up task | `account/BootstrapAdmin.java` |
+| Startup task | `account/BootstrapAdmin.java` |
 
-Part IV's Chapter 25 tells how the project began; the configuration approach in this chapter is how the same program runs on a laptop, in tests and in Docker.
+Part IV's Chapter 25 tells how the project began; the configuration approach in this chapter is how the same program runs on a laptop, in tests, and in Docker.
 
 ## Try it
 
@@ -465,10 +465,10 @@ On your own copy, make the application fail to start in three different ways (fo
 - A framework calls your code; a library is called by it.
 - `@SpringBootApplication` starts component scanning and auto-configuration; `SpringApplication.run` starts everything, and a failed step stops the program before it listens.
 - Managed objects are beans, held in the application context and supplied to each other by constructor injection, matched by type; `@Bean` methods build beans you can't label.
-- `application.yml`, environment variables, a `.env` file and profiles let one build run in many places; `${NAME:default}` placeholders bridge them, and an environment variable beats the file.
+- `application.yml`, environment variables, a `.env` file, and profiles let one build run in many places; `${NAME:default}` placeholders bridge them, and an environment variable beats the file.
 - Starters bundle dependencies, the parent pom manages their versions, and auto-configuration builds beans from what it finds; your own beans take priority.
 - Logging goes through SLF4J with levels, and secrets are never logged.
-- Mistakes in wiring or required settings stop the program at startup, which is where you want them; a start-up runner is the place for one-time setup that must be safe to repeat.
+- Mistakes in wiring or required settings stop the program at startup, which is where you want them; a startup runner is the place for one-time setup that must be safe to repeat.
 
 ## Further reading
 

@@ -12,20 +12,20 @@
 
 ## Prerequisites
 
-Chapters 28 (hardening) and 21–23 (Angular components, services and testing). Chapter 25 (the watermark's first version) and Chapter 26 (sessions and the
+Chapters 28 (hardening) and 21–23 (Angular components, services, and testing). Chapter 25 (the watermark's first version) and Chapter 26 (sessions and the
 admin handle) matter too. The code is at `book-m4-reading` (pull request #4, three commits named 4a,
-4b and 4c), still Spring Boot 3.3.4 and Java 21. Pull request #4 was stacked on pull request #3. To run this tag yourself, see Table IV.3 ("What you
+4b, and 4c), still Spring Boot 3.3.4 and Java 21. Pull request #4 was stacked on pull request #3. To run this tag yourself, see Table IV.3 ("What you
 need to run each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m4; timeline -->
 
 ## Beginner tier: Reading comfortably
 
-### 29.1 The product owner's requirements
+### 29.1 The requirements
 
 Milestones 1 to 3 made the viewer safe. Milestone 4 makes it pleasant, because a secure viewer
 that people find annoying gets bypassed, and the point of the product is that people read in it.
 
-The AI product-owner reviewer (an AI agent playing the product owner) listed three reading problems:
+The AI product-owner reviewer listed three reading problems:
 
 - **Sessions.** A session belonged to one browser tab and ended at a hard 30-minute cut-off with no
   warning (`PO-9`). You could lose your place in the middle of a page.
@@ -43,11 +43,11 @@ friction.
 
 ### 29.2 Deep links: the address bar as part of the interface
 
-A deep link is an address that opens the application at a specific place inside it, not only at its front door. For a document viewer the useful place is "page 12 of this document".
+A deep link is an address that opens the application at a specific place inside it, not only at its front door. For a document viewer the useful place is "page 12 of this document."
 
 Web addresses can carry small pieces of data after a question mark, called **query parameters**. In
 
-```
+```text
 /documents/abc123/view?page=12
 ```
 
@@ -65,8 +65,7 @@ page you turned. `replaceUrl` overwrites the current entry instead, so Back stil
 viewer, as a reader expects.
 
 **Nothing is bypassed.** Opening a link at page 12 doesn't skip any protection. The link only says
-which page to ask for; the viewer then asks the server for signed tile URLs for that page, exactly
-as a click on Next would, and the watermark and the rate limit apply as before. Every way of
+which page to ask for; the viewer then asks the server for signed tile URLs for that page, exactly as a click on *Next* would, and the watermark and the rate limit apply as before. Every way of
 navigating goes through the same page-loading method, and that is deliberate: a shortcut that
 opened a page through a different path would be a second door that also needs a lock.
 <!-- source: PR #4 body (4a); viewer.component.ts diff at book-m4-reading -->
@@ -121,7 +120,7 @@ Read `initialPage` first.
    (or `null` if absent). `Number(...)` turns it into a number. `Number(null)` is 0, which the next
    test rejects.
 2. The `if` accepts the request only if it is a whole number (`Number.isInteger`), at least 1 and
-   at most the document's page count. Anything else, such as `?page=abc`, `?page=0` or `?page=9999`,
+   at most the document's page count. Anything else, such as `?page=abc`, `?page=0`, or `?page=9999`,
    is ignored rather than causing an error. Never trust what arrives in an address bar: a reader can
    type anything, or a link can be corrupted.
 3. If the address doesn't give a valid page, the code reads the last-visited page from
@@ -133,11 +132,11 @@ Read `initialPage` first.
 storage.
 
 **Storage and the key.** `localStorage` is a small key-value store the browser keeps per website. The
-key is built by `lastPageKey` from a prefix, the signed-in username and the document id, so two
+key is built by `lastPageKey` from a prefix, the signed-in username, and the document id, so two
 people who share one browser (or one person with two documents) don't overwrite each other's
 place. The `try`/`catch` around every storage call is intentional: private browsing modes and full
 quotas can make storage throw, and a convenience must never break the feature it decorates. The
-comment says exactly that: "resuming is just a convenience".
+comment says exactly that: "resuming is just a convenience."
 
 **Analogy.** Resume is a bookmark. **Where the analogy breaks down:** a paper bookmark lives in the
 book. This one lives in one browser on one device, so it does not follow you to your phone, and it
@@ -189,9 +188,9 @@ onKeydown(event: KeyboardEvent): void {
 The pieces, one at a time.
 
 - `@HostListener('document:keydown', ['$event'])` is an Angular **decorator** that says "call this
-  method whenever a key is pressed anywhere in the document, and pass me the event object".
+  method whenever a key is pressed anywhere in the document, and pass me the event object."
 - The `if` at the top lists four reasons to do nothing:
-  - a modifier key is held, so the browser's own shortcuts, such as Ctrl and plus for browser zoom, keep working;
+  - a modifier key is held, so the browser's own shortcuts, such as Ctrl, and plus for browser zoom, keep working;
   - there is no manifest yet, because the document hasn't loaded;
   - the focus is in an `INPUT`, `TEXTAREA` or `SELECT`, so typing a page number in the jump box doesn't turn pages;
   - the element is editable content.
@@ -203,8 +202,8 @@ The pieces, one at a time.
 - `Home` and `End` check first whether you are already there, to avoid a pointless reload of the same
   page.
 
-Everything the table calls, `nextPage`, `prevPage`, `loadPage`, is the same set of methods the buttons
-use. The tests for this milestone cover these behaviors (Section 29.11).
+Everything the table calls, `nextPage`, `prevPage`, and `loadPage`, is the same set of methods the buttons
+use. The tests that cover these behaviors are listed under In this project (Table 29.2).
 <!-- source: viewer.component.ts at book-m4-reading; PR #4 body (4a) -->
 
 ## Intermediate tier: Session time on the server and in the browser
@@ -215,9 +214,9 @@ ends, and how several tabs stay in step.*
 ### 29.5 The problem with a hard cut-off
 
 Chapter 26 gave sessions an idle timeout: after 30 minutes without requests the server forgets the
-session. Every request from you extends it, which is why it is called a **sliding** timeout. That is
+session. Every request from you extends it, which is why it is called a sliding timeout. That is
 good security (an unattended computer eventually signs out) and terrible manners when the sign-out is
-a surprise: you read a long page for 35 minutes without touching the server and find a login screen
+a surprise: you read a long page for 35 minutes without touching the server and find a sign-in screen
 with no warning.
 
 The review asked for two things: a warning before the end, and behavior that doesn't depend on
@@ -336,13 +335,12 @@ last activity was at time `t0`.
 
 The warning window is `Math.min(300, timeoutSeconds / 2)`: five minutes, or half the timeout,
 whichever is smaller. The halving matters for short timeouts. With a 120-second timeout, a fixed
-five-minute window would mean "always warning", so the window scales to 60 seconds instead. The
+five-minute window would mean "always warning," so the window scales to 60 seconds instead. The
 test file checks exactly this: at 30 seconds into a 120-second timeout the state is `active`, and at
 70 seconds it is a `warning` with 50 seconds left. A timeout of zero or less means "no timeout" and
 the function returns `active`.
 
-Table 29.1 rows are the same four cases the project's `idle.spec.ts` asserts: 10 minutes active,
-26 minutes warning with 240 seconds left, 30 minutes expired, and the scaled short-timeout case.
+Three rows of Table 29.1 (10, 26, and 30 minutes) are cases that the project's `idle.spec.ts` asserts: active, a warning with 240 seconds left, and expired. The 25-minute row shows the edge of the warning window, and a fourth test in the spec covers the scaled short-timeout case.
 <!-- source: idle.ts and idle.spec.ts at book-m4-reading -->
 
 ### 29.8 The timer and the banner
@@ -377,7 +375,7 @@ warning. On `expired` the browser signs out locally and goes to the sign-in page
 parameters: `returnUrl` (where you were, so signing back in returns you there) and `reason=idle` (so
 the sign-in page can say why you're there).
 
-The banner's **Stay signed in** button calls `staySignedIn()`, which makes a request to
+The banner's *Stay signed in* button calls `staySignedIn()`, which makes a request to
 `/api/auth/me`. Any authenticated request extends the server's session, so the cheapest one does the
 job; the interceptor then calls `touch()`, the state returns to `active`, and the banner disappears.
 
@@ -434,7 +432,7 @@ the block plus the gap, so neighboring copies never overprint each other. Becaus
 small record with no drawing in it, tests can assert the no-overlap property directly instead of
 inferring it from pixels; the class comment says so.
 
-Worked example. Suppose the font's line height is 18 pixels and the widest line is 150 pixels wide.
+**Worked example.** Suppose the font's line height is 18 pixels and the widest line is 150 pixels wide.
 With the default spacing 1.5, `gap = round(18 * 1.5) = 27`. Then `stepX = 150 + 27 = 177` pixels between
 copies along a row, and `stepY = 18 * 2 + 27 / 2 = 36 + 13 = 49` pixels between rows (the integer
 division `27 / 2` is 13). Double the spacing to 3.0 and the gap becomes 54, `stepX` 204 and `stepY`
@@ -446,7 +444,7 @@ degrees (the code does `g.rotate(-Math.PI / 6)`), and drawn at the configured op
 
 ### 29.10 A lighter mark, with limits
 
-The default opacity dropped from 0.28 to 0.2, and both opacity and spacing became configuration. In `application.yml` they are `watermark-opacity: 0.2` and `watermark-spacing: 1.5`. A comment there says each mark shows the viewer, a UTC timestamp and a short trace code that matches the session column of the audit log.
+The default opacity dropped from 0.28 to 0.2, and both opacity and spacing became configuration. In `application.yml` they are `watermark-opacity: 0.2` and `watermark-spacing: 1.5`. A comment there says each mark shows the viewer, a UTC timestamp, and a short trace code that matches the session column of the audit log.
 
 **Listing 29.7 — `WatermarkService` constructor and label lines (book-m4-reading, simplified: two excerpts from the class, added lines only; `...` marks code between them)**
 
@@ -467,7 +465,7 @@ The constructor **clamps** its settings into a safe range with `Math.max(low, Ma
 opacity between 0.05 and 0.6, spacing between 0.5 and 6. A configuration typo, such as an opacity of
 5 instead of 0.5, can't make the mark invisible or the tile unreadable. The comment in `ViewerProperties`
 states the trade-off in one line: "Lower is easier to read through; higher survives recompression
-better." A stronger mark is harder to remove and harder to read a document through. The product owner's later sign-off on the strength (Chapter 30) is a decision about that balance.
+better." A stronger mark is harder to remove and harder to read a document through. The project owner's later sign-off on the strength (Chapter 30) is a decision about that balance.
 <!-- source: WatermarkService.java, ViewerProperties.java, application.yml at book-m4-reading -->
 
 ### 29.11 The trace code
@@ -478,20 +476,24 @@ leaked screenshot, the mark must carry a reference to the session, and that refe
 reveal the credential itself. (Recall from Chapter 26 that the session id must never leave the
 server.)
 
-The answer is the **admin handle** from Chapter 26: a value derived from the session id with a keyed
+The answer is the admin handle from Chapter 26: a value derived from the session id with a keyed
 hash, which identifies the session in the admin screen but can't be turned back into the id. The
 watermark shows its first six characters, the **trace code**. `TileController` does this when it
-serves each tile:
+serves each tile (Listing 29.8):
+
+**Listing 29.8 — `TileController` trace code (book-m4-reading, excerpt: two lines)**
 
 ```java
 String traceCode = sessionKeys.adminHandle(session.getId()).substring(0, 6);
 BufferedImage watermarked = watermarkService.applyWatermark(rawTile, username, traceCode);
 ```
 
+*Path: `src/main/java/com/example/securedocviewer/controller/TileController.java`*
+
 On the administrator's side, the audit log screen gained a **trace filter**. Typing the six
 characters from a screenshot lists that session's events.
 
-**Listing 29.8 — `AuditLogService` trace filter (book-m4-reading, excerpt)**
+**Listing 29.9 — `AuditLogService` trace filter (book-m4-reading, excerpt)**
 
 ```java
 if (query.traceCode() != null && !query.traceCode().isBlank()) {
@@ -519,13 +521,13 @@ Pull request #4 records a live check in which the trace code printed on a waterm
 ### 29.12 Crockford Base32 and the letter that looked like another
 
 While checking the first version of the trace code by eye, the implementer misread a capital `I` as a
-lowercase `l` in the watermark. The codes were base64, whose alphabet contains `I`, `l`, `O` and `0`, characters that look alike in many fonts. A trace code that can't be read off a
+lowercase `l` in the watermark. The codes were base64, whose alphabet contains `I`, `l`, `O`, and `0`, characters that look alike in many fonts. A trace code that can't be read off a
 screenshot reliably has failed at its one job.
 
 **Crockford Base32** is an encoding designed for exactly this: it uses the digits and the capital
-letters except I, L, O and U. It also has a friendly property for humans: it is case-insensitive, so `l` and `I` typed by a reader can be forgiven. (The project's trace filter uppercases what you type.)
+letters except I, L, O, and U. It also has a friendly property for humans: it is case-insensitive, so `l` and `I` typed by a reader can be forgiven. (The project's trace filter uppercases what you type.)
 
-**Listing 29.9 — `SessionKeys.crockfordBase32` (book-m4-reading, simplified: the alphabet and encoder)**
+**Listing 29.10 — `SessionKeys.crockfordBase32` (book-m4-reading, simplified: the alphabet and encoder)**
 
 ```java
 private static final char[] CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
@@ -575,7 +577,7 @@ page. Fix: validate (integer, in range) and fall back, as `initialPage` does (Li
 or without the rate limit. Fix: route every navigation through one loading method.
 
 **Handling keys while the reader types.** Symptom: typing a page number turns the page. Fix: ignore
-events whose target is an input, and ignore events with Ctrl, Cmd or Alt held (Listing 29.2).
+events whose target is an input, and ignore events with Ctrl, Cmd, or Alt held (Listing 29.2).
 
 **Assuming storage always works.** Symptom: the viewer breaks in private browsing mode. Fix: wrap every
 `localStorage` call in `try`/`catch`, and treat what it stores as a hint.
@@ -626,7 +628,7 @@ flowchart LR
 *Text description:* A left-to-right flowchart in two groups. In the Angular app, the Viewer (deep links, keyboard, resume) calls TileController. The idle-timer code and the session service read the session timeout from AuthController's current-user answer. The Admin page's trace filter calls AdminController, which searches AuditLogService by session-handle prefix in MySQL. In the Spring Boot app, TileController uses SessionKeys for the admin handle and WatermarkService, which reads opacity and spacing from ViewerProperties. Notice how the watermark's trace code links the tile to the audit search.
 <!-- source: book/blueprints/v4-reading.md; classes named in the diagram, present at book-m4-reading under src/main/java/com/example/securedocviewer/: controller/AdminController.java, audit/AuditLogService.java, controller/AuthController.java, security/SessionKeys.java, controller/TileController.java, document/Viewer.java, config/ViewerProperties.java, service/WatermarkService.java -->
 
-What changed since v3 is mostly at the edges: the frontend gained the idle timer, the deep links and the keyboard handling, and the backend gained the configurable watermark, the trace code and the trace filter.
+What changed since v3 is mostly at the edges: the frontend gained the idle timer, the deep links, and the keyboard handling, and the backend gained the configurable watermark, the trace code, and the trace filter.
 
 ## Decisions and challenges
 
@@ -634,7 +636,7 @@ What changed since v3 is mostly at the edges: the frontend gained the idle timer
 
 **The problem.** The trace code in the watermark could be misread. **How it was found.** While
 checking the first version by eye, the implementer misread an `I` as an `l`. **The fix.** Switch to
-Crockford Base32, with no I, L, O or U. **The lesson.** An identifier that people read off a screen
+Crockford Base32, with no I, L, O, or U. **The lesson.** An identifier that people read off a screen
 must be designed for the human eye, not only for the parser.
 <!-- source: PR #4 body; bugs-and-findings C5; decisions D9 -->
 
@@ -642,7 +644,7 @@ must be designed for the human eye, not only for the parser.
 
 **The decision.** Lower the default opacity from 0.28 to 0.2, make opacity and spacing configurable,
 and clamp them. **The options considered.** Keep the dense mark, hide it from the reader, or lighten
-it. **Why this one.** The AI product-owner reviewer found the mark too dense and colliding with content
+it. **Why this one.** The PO reviewer found the mark too dense and colliding with content
 (`PO-10`). **What it costs.** A lighter mark is easier to crop or edit out. Later milestones record
 the watermark's strength as a documented product decision.
 <!-- source: PR #4 body; decisions D5 -->
@@ -664,7 +666,7 @@ that is the deliberate trade.
 
 ## In this project
 
-**Table 29.2 — Where the concepts live (at book-m4-reading)**
+**Table 29.2 — Where the concepts live (at `book-m4-reading`)**
 
 | Concept | Where |
 |---|---|

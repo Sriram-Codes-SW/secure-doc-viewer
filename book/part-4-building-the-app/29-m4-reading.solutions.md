@@ -9,7 +9,7 @@ With 10 minutes (600 s) left of a 1,800 s timeout, `idleState` returns `{ kind: 
 
 ### Exercise 29.2 ★ Keys while typing
 
-Arrow keys move the text cursor inside an input. If the viewer also turned pages, you couldn't edit the number you were typing. `onKeydown` returns early when the event target is an `INPUT`, `TEXTAREA` or `SELECT`, when it is editable content, and when Ctrl, Cmd or Alt is held.
+Arrow keys move the text cursor inside an input. If the viewer also turned pages, you couldn't edit the number you were typing. `onKeydown` returns early when the event target is an `INPUT`, `TEXTAREA`, or `SELECT`, when it is editable content, and when Ctrl, Cmd, or Alt is held.
 
 ### Exercise 29.3 ★★ Which page opens?
 

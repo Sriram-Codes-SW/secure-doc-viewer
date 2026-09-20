@@ -1,5 +1,5 @@
 <!-- chapter: 35 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
-# Chapter 35: Health, metrics and alerting
+# Chapter 35: Health, metrics, and alerting
 
 Once the app is running for other people, you can't watch it by staring at a terminal. Nobody is sitting next to the server when a reader gets a blank page at 2 a.m., and the person who eventually hears about it will want an answer to a simple question: what was the app doing at that moment? This chapter shows how the Secure Document Viewer reports on itself. A health check says whether it is alive. A set of counters says what it is doing and how often. The audit log says who did it. Together they let you notice a problem before a user reports it, and diagnose it after.
 
@@ -17,7 +17,7 @@ By the end of this chapter, you will be able to:
 ## Prerequisites
 
 - Chapter 11: Spring Boot foundations (starters and configuration files).
-- Chapter 16: the sign-in throttle (section 16.6).
+- Chapter 16: the sign-in throttle (Section 16.6).
 - Chapter 27: the audit trail.
 - Chapter 32: forged headers and the trust boundary.
 - Chapter 33: the compose stack and the proxy in front of the app.
@@ -30,7 +30,7 @@ A car has three kinds of feedback. The "check engine" light answers a yes-or-no 
 
 The app has all three. The health check (Chapter 30) is the light, **metrics** are the gauges, and the **audit log** is the trip log. Each answers a different question, and using the wrong one is a common beginner mistake: a light can't tell you a trend, and a gauge can't tell you who was driving.
 
-The analogy breaks down in an important place. A driver sees the dashboard without doing anything. The app's numbers are invisible until a program reads them on a schedule, stores them, and compares them to a rule. That is why this chapter also covers a scraper and alerts. Without them, the numbers exist and nobody sees them.
+**Where the analogy breaks down:** in an important place. A driver sees the dashboard without doing anything. The app's numbers are invisible until a program reads them on a schedule, stores them, and compares them to a rule. That is why this chapter also covers a scraper and alerts. Without them, the numbers exist and nobody sees them.
 
 ### 35.2 Terms you need
 
@@ -38,7 +38,7 @@ The analogy breaks down in an important place. A driver sees the dashboard witho
 - **Observability:** how well you can tell what a running system is doing from the outside, using the signals it produces.
 - Actuator (Chapter 28): the Spring Boot module that adds operational endpoints, such as health and metrics, to an app. You met Spring Boot starters in Chapter 11; Actuator is one of them.
 - Health check (Chapter 30): a URL that answers "are you working?" with a status code. Docker, load balancers, and monitors call it repeatedly.
-- **Metric:** a named number measured over time, such as "tiles served so far".
+- **Metric:** a named number measured over time, such as "tiles served so far."
 - **Counter:** a metric that only goes up (until the app restarts). You care about how fast it rises, not its absolute value.
 - **Gauge:** a metric that goes up and down, such as the number of renders currently winding down.
 - **Timer:** a metric that records how long something took, and how many times it happened.
@@ -59,7 +59,7 @@ curl -i http://localhost:8081/actuator/health
 
 The `-i` flag makes `curl` print the response headers as well as the body. On a healthy stack you see a `200` status line and a body like `{"status":"UP"}`. That is everything the endpoint says. It does not list the database, the disk, or the version of anything. Section 35.8 explains why that restraint is deliberate.
 
-Now think about who calls this URL. You do, occasionally. But mostly a machine does, every few seconds, forever: Docker, to decide whether a container is healthy, and any external monitor you add. A health check is a question meant for machines, which is why its answer is a status code. A `200` means "yes"; a `503` means "no". Machines don't need prose.
+Now think about who calls this URL. You do, occasionally. But mostly a machine does, every few seconds, forever: Docker, to decide whether a container is healthy, and any external monitor you add. A health check is a question meant for machines, which is why its answer is a status code. A `200` means "yes"; a `503` means "no." Machines don't need prose.
 
 ## Intermediate tier: What the app exposes
 
@@ -115,11 +115,11 @@ Inside the app, code records measurements through Micrometer. Micrometer doesn't
 Prometheus works by **pulling**: every scrape interval it fetches that page, notes the time, and stores each number as a point in a time series. The app never pushes. Two consequences follow:
 
 1. **A restart resets counters to zero.** Prometheus copes, because its `rate()` function treats a drop as a reset and continues, but an absolute counter value alone tells you little.
-2. **The app must be reachable by Prometheus.** That is why the endpoint's access rule (section 35.9) matters.
+2. **The app must be reachable by Prometheus.** That is why the endpoint's access rule (Section 35.9) matters.
 
-Let's look at what the page contains. This is an **illustrative** sample, not captured from a run, with values invented to show the shape. The real page also includes hundreds of JVM and HTTP metrics.
+Let's look at what the page contains. This is an *illustrative* sample, not captured from a run, with values invented to show the shape. The real page also includes hundreds of JVM and HTTP metrics.
 
-**To see the real page**, remember that the access rule of section 35.9 allows only loopback by default, and that the full Compose stack publishes no port for the app. Two ways work. With the backend run from source (`./mvnw spring-boot:run`, Chapter 6), open `http://localhost:8080/actuator/prometheus` from the same machine. With the full stack, ask the app container to call itself, which arrives from its own loopback address: `docker compose exec app curl -s http://localhost:8080/actuator/prometheus` (the image installs `curl` for its health check). Opening the page through nginx on port 8081 won't work, because nginx forwards only the bare health path.
+*To see the real page*, remember that the access rule of Section 35.9 allows only loopback by default, and that the full Compose stack publishes no port for the app. Two ways work. With the backend run from source (`./mvnw spring-boot:run`, Chapter 6), open `http://localhost:8080/actuator/prometheus` from the same machine. With the full stack, ask the app container to call itself, which arrives from its own loopback address: `docker compose exec app curl -s http://localhost:8080/actuator/prometheus` (the image installs `curl` for its health check). Opening the page through nginx on port 8081 won't work, because nginx forwards only the bare health path.
 
 ```text
 # HELP sdv_tiles_served_total Watermarked tiles returned
@@ -138,7 +138,7 @@ sdv_render_seconds_sum 118.6
 
 Line by line: `# HELP` is the description the code registered; `# TYPE` says what kind of metric it is; each following line is `name{tags} value`. Notice three naming rules. First, dots in the code become underscores (`sdv.tiles.served` becomes `sdv_tiles_served`). Second, Prometheus appends `_total` to counters. Third, a timer is exported as separate `_count` and `_sum` series (plus a `_max` value), from which you compute an average.
 
-Also notice that `sdv_sign_in_total` has all three outcomes even though `locked` has never happened. The constructor of `ViewerMetrics` registers every outcome up front, with the comment "Registered up front so every outcome is exported as 0 before it first happens". This matters for alerting. A series that doesn't exist yet can't be compared with anything, and a rule written against it silently never fires. Starting each series at zero avoids that trap.
+Also notice that `sdv_sign_in_total` has all three outcomes even though `locked` has never happened. The constructor of `ViewerMetrics` registers every outcome up front, with the comment "Registered up front so every outcome is exported as 0 before it first happens." This matters for alerting. A series that doesn't exist yet can't be compared with anything, and a rule written against it silently never fires. Starting each series at zero avoids that trap.
 
 <!-- source: ViewerMetrics.java, SecurityConfig.java, application.yml at book-m6-final -->
 Figure 35.1 follows a measurement from the code that counts it to the person who is alerted. The two boxes marked "outside the repository" are yours to set up.
@@ -169,7 +169,7 @@ Notice the address rule on the way to Prometheus and the fact that health takes 
 
 ### 35.7 The app's own metrics, one by one
 
-Besides the usual JVM, HTTP, and connection-pool metrics that Spring Boot supplies, the app records its own. They are all defined in one class, `ViewerMetrics`. Its Javadoc states the purpose in one sentence: they let an on-call person tell "a scraper is hammering tiles" or "sign-ins are being brute-forced" from "rendering has become slow". Its last line is a rule worth remembering: "Counts only; who did what lives in the audit log."
+Besides the usual JVM, HTTP, and connection-pool metrics that Spring Boot supplies, the app records its own. They are all defined in one class, `ViewerMetrics`. Its Javadoc states the purpose in one sentence: they let an on-call person tell "a scraper is hammering tiles" or "sign-ins are being brute-forced" from "rendering has become slow." Its last line is a rule worth remembering: "Counts only; who did what lives in the audit log."
 
 Here are the class's real registrations.
 
@@ -229,22 +229,22 @@ Metrics are more revealing than health. The names alone show which features exis
 Two things protect the endpoint at once: nginx never proxies the path, and the app refuses any address not on the list. If either alone failed, the other would still hold. This layering is called defense in depth (Chapter 28).
 
 <!-- source: PR #5 body "Operations" (TM-12) -->
-The endpoint came from a finding by the Senior Technical Manager review agent (Chapter 32), which asked for operational visibility without exposing it to the world.
+The endpoint came from a finding by the AI technical-manager reviewer (the TM reviewer; Chapter 32), which asked for operational visibility without exposing it to the world.
 
 ## Advanced tier: Deciding what to alert on
 
-*On a first read you can skip to "In this project".*
+*On a first read you can skip to "In this project."*
 
 ### 35.10 Rates, not totals
 
 A counter is a running total since the last restart, so its raw value is nearly useless: "18,432 tiles served" says nothing about whether that happened in an hour or a month. What you want is a **rate**, how fast the counter rises. Prometheus gives you two functions for this. They belong to Prometheus's query language, **PromQL**, and the examples in this section are the book's own illustrations, not queries stored in the repository.
 
-*Pattern note: Rates, errors and durations are the RED idea (Chapter 39, Section 39.15).*
+*Pattern note: Rates, errors, and durations are the RED idea (Chapter 39, Section 39.15).*
 
 - `increase(sdv_sign_in_total{outcome="failure"}[15m])` is how many failed sign-ins happened in the last 15 minutes.
 - `rate(sdv_tiles_served_total[5m])` is tiles per second, averaged over the last 5 minutes.
 
-The window in square brackets matters. A short window reacts quickly and is noisy; a long window is smooth and slow. The sign-in throttle in this app works over a 15-minute window (section 16.6), so a 15-minute window in the alert matches how the app itself thinks.
+The window in square brackets matters. A short window reacts quickly and is noisy; a long window is smooth and slow. The sign-in throttle in this app works over a 15-minute window (Section 16.6), so a 15-minute window in the alert matches how the app itself thinks.
 
 You can also divide one series by another to get a **ratio**, which is often the most useful signal:
 
@@ -270,7 +270,7 @@ The README's go-live checklist names three signals to alert on. Each maps to a t
 
 - Condition idea: the refused share of tile requests above an agreed percentage for 15 minutes.
 - Meaning: either the limit is too tight for how readers really read, or a client is pulling tiles faster than any human would.
-- First step: check whether one user accounts for it (the audit log records a `RATE_LIMITED` event at most once per user per window). One user pulling all the time looks like a script. Many users each hitting the limit occasionally means the limit is set too low. The product owner's sign-off on the rate-limit defaults (September 19, 2026) says exactly this: revisit them using this number.
+- First step: check whether one user accounts for it (the audit log records a `RATE_LIMITED` event at most once per user per window). One user pulling all the time looks like a script. Many users each hitting the limit occasionally means the limit is set too low. The project owner's sign-off on the rate-limit defaults (September 19, 2026) says exactly this: revisit them using this number.
 
 **Alert 3: render trouble (`sdv_render_rejected_total`, `sdv_render_timed_out_total`, `sdv_render_abandoned_running`).**
 
@@ -292,7 +292,7 @@ Signals are more useful in combination. These scenarios are teaching examples bu
 
 ### 35.13 The audit log as the third signal
 
-Metrics say something happened; the audit log says who and when. It records sign-ins and failures, lockouts, password and account changes, uploads, edits, shares and deletes, denied access, and throttling. Two volume controls keep it useful:
+Metrics say something happened; the audit log says who and when. It records sign-ins and failures, lockouts, password, and account changes, uploads, edits, shares and deletes, denied access, and throttling. Two volume controls keep it useful:
 
 - `PAGE_VIEWED` is recorded once per session, document, and page every 10 minutes rather than for every tile. Recording every tile would bury everything else. The enum's own comment says so.
 - `ACCESS_DENIED` events are capped per user, so a flood of forbidden requests can't fill the table.
@@ -318,7 +318,7 @@ flowchart TB
 
 *Text description:* A question at the top branches into three: is it up right now, how much or how often, and who did it and when. Each leads to its tool: the health check answers with 200 or 503, the metrics with counters and rates, and the audit log with events, trace codes, and filters.
 
-## Common mistakes
+### 35.14 Common mistakes
 
 - **Alerting on a total instead of a rate.** "More than 1,000 tiles served" fires forever after the first busy day. Use `rate()` or `increase()`.
 - **A health check that can't fail.** If the endpoint answers `200` even when the database is down, monitors see nothing. The project tested the `503` path on purpose.
@@ -348,7 +348,7 @@ For each question, say which of the three signals answers it best: "is the datab
 
 ### Exercise 35.2 ★ Read the page
 
-Using the sample metrics page in section 35.6, compute the average render time in seconds, and say how many failed sign-ins are recorded.
+Using the sample metrics page in Section 35.6, compute the average render time in seconds, and say how many failed sign-ins are recorded.
 
 ### Exercise 35.3 ★★ Read the rule
 

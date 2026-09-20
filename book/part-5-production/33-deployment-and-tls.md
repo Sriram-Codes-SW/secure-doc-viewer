@@ -1,7 +1,7 @@
 <!-- chapter: 33 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded -->
 # Chapter 33: Deployment and TLS
 
-This chapter moves the Secure Document Viewer from your laptop to a server that other people can reach. You'll learn what changes when strangers are on the other end of the connection, how nginx and Caddy stand in front of the app, how the container images are built, and how to read the compose file that ties the pieces together. By the end you'll be able to bring up the whole stack with one command, put HTTPS in front of it, and explain the reason behind each line of configuration.
+This chapter moves the Secure Document Viewer from your laptop to a server that other people can reach. You'll learn what changes when strangers are on the other end of the connection, how nginx, and Caddy stand in front of the app, how the container images are built, and how to read the compose file that ties the pieces together. By the end you'll be able to bring up the whole stack with one command, put HTTPS in front of it, and explain the reason behind each line of configuration.
 
 ## Learning objectives
 
@@ -11,12 +11,12 @@ By the end of this chapter, you will be able to:
 - Describe the job of a reverse proxy and read the project's nginx configuration line by line.
 - Start the app with the `full` and `tls` compose profiles and say what each runs.
 - Read the two Dockerfiles and explain why images are built in stages and run as a non-root user.
-- Explain HTTPS, certificates, and HSTS, and why the session cookie needs the `Secure` flag.
+- Explain HTTPS, certificates, and HTTP Strict Transport Security (HSTS), and why the session cookie needs the `Secure` flag.
 - Work through the go-live checklist and justify each item.
 
 ## Prerequisites
 
-- Chapter 8: HTTP, headers, and cookies (section 8.6 on cookies).
+- Chapter 8: HTTP, headers, and cookies (Section 8.6 on cookies).
 - Chapter 10: Docker images, containers, volumes, and Compose.
 - Chapter 30: the platform milestone, where the Docker stack was built.
 - Chapter 32: the trust boundary and the forged-address incident.
@@ -27,7 +27,7 @@ By the end of this chapter, you will be able to:
 
 On your laptop the app is a workshop: only you walk in. On a server it is a shop on a busy street. You don't let customers walk into the workshop. You put a counter in front, and staff at the counter take requests, check them, and pass them to the back room. A reverse proxy (Chapter 16) is that counter. It receives requests from browsers and forwards them to the app behind it.
 
-The analogy breaks down because the counter here also does jobs a shop counter doesn't. It serves the app's static files itself. In the HTTPS setup, it also scrambles all traffic, so that people on the street can't read what passes across it. It also keeps a rule that matters for security: it decides what the back room is told about who the customer is.
+**Where the analogy breaks down:** the counter here also does jobs a shop counter doesn't. It serves the app's static files itself. In the HTTPS setup, it also scrambles all traffic, so that people on the street can't read what passes across it. It also keeps a rule that matters for security: it decides what the back room is told about who the customer is.
 
 ### 33.2 Terms you need
 
@@ -37,7 +37,7 @@ The analogy breaks down because the counter here also does jobs a shop counter d
 - Certificate (Chapter 8): a file, issued by a trusted authority, that proves a server owns its domain name. Without one, browsers warn users away.
 - **Certificate authority (CA):** an organization that browsers trust to issue certificates.
 - **Let's Encrypt:** a free CA that issues certificates automatically. Caddy talks to it for you.
-- HSTS (Chapter 30): a header, `Strict-Transport-Security`, that tells a browser "only ever use HTTPS for this site from now on".
+- HSTS (Chapter 30): a header, `Strict-Transport-Security`, that tells a browser "only ever use HTTPS for this site from now on."
 - **Compose profile:** a label on a service in the compose file. A service with a profile starts only when you ask for that profile.
 - **Non-root:** a process that runs as an ordinary user inside the container, so a break-in there doesn't hand over the whole container.
 - Multi-stage build (Chapter 10): a Dockerfile that uses one image to build the program and a smaller one to run it, so build tools don't ship.
@@ -47,10 +47,10 @@ The analogy breaks down because the counter here also does jobs a shop counter d
 
 Four things change, and this chapter takes each one in turn:
 
-1. Traffic crosses networks you don't control, so it must be encrypted (sections 33.8 and 33.12).
-2. The app must not be reachable except through the front door (sections 33.5 and 33.9).
-3. The address a request comes from is now the proxy's, so the app must be told the real one, and told whom to believe (section 33.10, and Chapter 32).
-4. Passwords and keys must come from the environment, not from code (section 33.11).
+1. Traffic crosses networks you don't control, so it must be encrypted (Sections 33.8 and 33.12).
+2. The app must not be reachable except through the front door (Sections 33.5 and 33.9).
+3. The address a request comes from is now the proxy's, so the app must be told the real one, and told whom to believe (Section 33.10, and Chapter 32).
+4. Passwords and keys must come from the environment, not from code (Section 33.11).
 
 A fifth thing changes quietly: you're now responsible for keeping it running. Chapters 34 to 36 cover backups, monitoring, and updates.
 
@@ -68,7 +68,7 @@ Open `.env` and fill in `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and `SIGNING_SECRET` 
 docker compose --profile full up -d --build
 ```
 
-Read that command word by word. `docker compose` uses the `docker-compose.yml` in the current folder. `--profile full` includes the services labeled with the `full` profile (the app and the web front end); the database has no profile, so it always starts. `up` creates and starts the containers. `-d` means "detached": run in the background and give me my terminal back. `--build` builds the images from the Dockerfiles first.
+Read that command word by word. `docker compose` uses the `docker-compose.yml` in the current folder. `--profile full` includes the services labeled with the `full` profile (the app and the web frontend); the database has no profile, so it always starts. `up` creates and starts the containers. `-d` means "detached": run in the background and give me my terminal back. `--build` builds the images from the Dockerfiles first.
 
 The first build takes several minutes: it downloads a JDK, compiles the backend, downloads Node, and builds the Angular app. Later builds reuse cached layers and are much faster. When it finishes, check what is running:
 
@@ -95,7 +95,7 @@ The project's `docker-compose.yml` defines four services. Table 33.1 summarizes 
 | `mysql` | (always) | `mysql:8.4` pinned by digest | `127.0.0.1:3306` | The database |
 | `app` | `full` | Built from `Dockerfile` | none | The Spring Boot API |
 | `web` | `full` | Built from `frontend/Dockerfile` | `127.0.0.1:8081` | nginx: the Angular app and the `/api` proxy |
-| `tls` | `tls` | `caddy:2-alpine` pinned by digest | `127.0.0.1:8443` | HTTPS front end with HSTS |
+| `tls` | `tls` | `caddy:2-alpine` pinned by digest | `127.0.0.1:8443` | HTTPS frontend with HSTS |
 
 The profiles give three ways to start it (from the comment at the top of the file):
 
@@ -189,7 +189,7 @@ Line by line:
 - `-XX:MaxRAMPercentage=75` tells the JVM to size its memory from the container's limit (the compose file gives the app `1536m`), using up to 75%, which leaves the rest for the JVM's own overhead and the operating system inside the container.
 - `VOLUME /data/storage` marks where the tiles live so Docker keeps them outside the container's writable layer, and `ENTRYPOINT` starts the app.
 
-Notice also the `.dockerignore` file at the repository root. Its first comment reads "Never send secrets, data or build output into the image build context", and it excludes `.env`, `storage/`, `target/`, `.git/`, and the frontend folder. The build context (Chapter 10) is the set of files Docker hands to the build; keeping `.env` out means your secrets can't end up baked into an image layer, where anyone who pulls the image could read them.
+Notice also the `.dockerignore` file at the repository root. Its first comment reads "Never send secrets, data or build output into the image build context," and it excludes `.env`, `storage/`, `target/`, `.git/`, and the frontend folder. The build context (Chapter 10) is the set of files Docker hands to the build; keeping `.env` out means your secrets can't end up baked into an image layer, where anyone who pulls the image could read them.
 
 The frontend image follows the same pattern.
 
@@ -284,7 +284,7 @@ Line by line:
 - `proxy_read_timeout 300s` allows for a long PDF render; `proxy_request_buffering off` streams uploads through to the backend instead of holding them in nginx first.
 - `location = /actuator/health` proxies exactly the bare health path (Chapter 35). The `=` means exact match, so `/actuator/prometheus` isn't forwarded.
 - The static-asset location caches hashed bundles (`.js`, `.css`, fonts) for a year with `immutable`. Angular puts a content hash in each bundle's filename, so a changed file has a new name, and caching forever is safe.
-- The final `location /` serves the Angular app and sets the security headers. `Cache-Control: no-cache` means "revalidate before reuse", so a new `index.html` is picked up. `try_files $uri $uri/ /index.html` is the **single-page-app fallback**: a deep link like `/viewer/123` isn't a real file, so nginx serves `index.html` and Angular's router takes over.
+- The final `location /` serves the Angular app and sets the security headers. `Cache-Control: no-cache` means "revalidate before reuse," so a new `index.html` is picked up. `try_files $uri $uri/ /index.html` is the **single-page-app fallback**: a deep link like `/viewer/123` isn't a real file, so nginx serves `index.html` and Angular's router takes over.
 
 The Content-Security-Policy deserves a moment. Reading it: scripts only from the same origin (`script-src 'self'`); images from the same origin, `blob:` URLs (the viewer builds tile images from `blob:` URLs, Chapter 21), and `data:`; no plugins (`object-src 'none'`); and no framing (`frame-ancestors 'none'`). Styles allow `'unsafe-inline'`, so Angular's inline `style` attributes work. The result is that even if an attacker injected script into a page, the browser would refuse to run it unless it came from the app's own origin.
 
@@ -307,7 +307,7 @@ The Content-Security-Policy deserves a moment. Reading it: scripts only from the
 }
 ```
 
-Caddy reads three settings from the environment. `SITE_ADDRESS` is the host name (default `localhost`, set in the compose file). `TLS_MODE` is `internal` to use Caddy's own local certificate authority, fine for trying it out, or an email address to get a real certificate from Let's Encrypt, which needs a public DNS name and ports 80 and 443 reachable from the internet. `HSTS_POLICY` defaults to `max-age=31536000`, one year, and `{$HSTS_POLICY:max-age=31536000}` is Caddy's syntax for "this variable, or this default if it's empty". `encode zstd gzip` compresses responses. `-Server` removes the `Server` header. `reverse_proxy web:8080` forwards everything to nginx, and Caddy replaces `X-Forwarded-For` with the real client address (its own comment says so: no upstream proxy is trusted).
+Caddy reads three settings from the environment. `SITE_ADDRESS` is the hostname (default `localhost`, set in the compose file). `TLS_MODE` is `internal` to use Caddy's own local certificate authority, fine for trying it out, or an email address to get a real certificate from Let's Encrypt, which needs a public DNS name and ports 80 and 443 reachable from the internet. `HSTS_POLICY` defaults to `max-age=31536000`, one year, and `{$HSTS_POLICY:max-age=31536000}` is Caddy's syntax for "this variable, or this default if it's empty." `encode zstd gzip` compresses responses. `-Server` removes the `Server` header. `reverse_proxy web:8080` forwards everything to nginx, and Caddy replaces `X-Forwarded-For` with the real client address (its own comment says so: no upstream proxy is trusted).
 
 Try it locally:
 
@@ -317,7 +317,7 @@ docker compose --profile full --profile tls up -d --build
 
 Then open `https://localhost:8443`. Your browser will warn that the certificate isn't trusted. That is expected: with `TLS_MODE=internal`, Caddy made its own certificate authority, and your browser has never heard of it. The connection *is* encrypted; what the warning says is that nobody the browser trusts vouches for the server's identity. For a real site with a public name and an email in `TLS_MODE`, Caddy asks Let's Encrypt for a certificate, proves it controls the domain (that's why the ports must be reachable), stores the certificate in the `caddy-data` volume, and renews it automatically before it expires.
 
-Why two proxies? nginx already serves the app. Caddy's strength is certificates: it obtains and renews them without configuration scripts. Keeping it as an optional profile means the plain stack stays simple. Chapter 37 (section 37.11) weighs this against a cloud load balancer.
+Why two proxies? nginx already serves the app. Caddy's strength is certificates: it obtains and renews them without configuration scripts. Keeping it as an optional profile means the plain stack stays simple. Chapter 37 (Section 37.11) weighs this against a cloud load balancer.
 
 ## Advanced tier: Trust, cookies, and going live
 
@@ -328,7 +328,7 @@ Why two proxies? nginx already serves the app. Caddy's strength is certificates:
 The compose file gives the network a fixed subnet, `172.28.0.0/24`, gives `web` the address `172.28.0.10`, and gives `tls` the address `172.28.0.11`. This is not decoration. The app sets `FORWARD_HEADERS_STRATEGY: native` and `TRUSTED_PROXY_REGEX: '172\.28\.0\.10'`, so it believes `X-Forwarded-For` only from nginx; nginx believes a forwarded address only from Caddy. The chain of belief is one link at a time, and every link is pinned to an address that can't change.
 
 <!-- source: dossier/decisions.md D11, D12; PR #5 body "Operations" (TM2-6) -->
-The fixed subnet came from a finding by the Senior Technical Manager review agent (Chapter 32): without pinned addresses, "trust the proxy" could not be expressed safely. The two-address live test in Chapter 32 checked the nginx and direct-to-app links, and a separate check of the `tls` profile confirmed that Caddy ignores a spoofed header.
+The fixed subnet came from a finding by the AI technical-manager reviewer (the TM reviewer; Chapter 32): without pinned addresses, "trust the proxy" could not be expressed safely. The two-address live test in Chapter 32 checked the nginx and direct-to-app links, and a separate check of the `tls` profile confirmed that Caddy ignores a spoofed header.
 
 The failure mode is worth understanding, because it's silent. If the addresses drift, for example someone changes nginx's address without changing `TRUSTED_PROXY_REGEX`, nothing crashes. The app stops believing the forwarded header and judges every request by the address it sees, which is now the proxy's. Every user appears to come from the same address, so the per-address throttling and the audit log's addresses become useless. Exercise 33.3 walks through it.
 
@@ -345,7 +345,7 @@ MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
 
 The `${VAR:?message}` form makes Compose refuse to start, with your message, when the value is missing. A missing secret is a loud failure at startup, not a database with an empty password. The app service gets the rest with `env_file: .env`. The `.env` file is git-ignored, and `.env.example` is the template with no real values.
 
-`SIGNING_SECRET` (at least 32 characters; startup fails otherwise) keys every tile token and the recognised-device hashes, so treat it like a password. The MySQL health check is written as `MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqladmin ping ...`: the doubled `$$` defers expansion to the container, so the password never appears in the stored command that `docker inspect` shows, and `MYSQL_PWD` keeps it off the process's argument list. A comment in the file says exactly this.
+`SIGNING_SECRET` (at least 32 characters; startup fails otherwise) keys every tile token and the recognized-device hashes, so treat it like a password. The MySQL health check is written as `MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqladmin ping ...`: the doubled `$$` defers expansion to the container, so the password never appears in the stored command that `docker inspect` shows, and `MYSQL_PWD` keeps it off the process's argument list. A comment in the file says exactly this.
 
 On a fresh database the app creates the first admin. The password is `BOOTSTRAP_ADMIN_PASSWORD` if you set it, or a random one printed once in the log if you leave it empty. The app forces a password change at first sign-in only when *it* generated the password. If you set the password yourself, change it yourself and clear it from `.env`; the README's go-live note says so, and commit `5aa0f3c` added it.
 
@@ -367,7 +367,7 @@ HSTS closes the remaining gap. Once a browser has seen the header on an HTTPS re
 
 Its power is also its risk. `includeSubDomains` extends the promise to every subdomain (`www`, `mail`, and the rest), and the browser remembers it for the whole `max-age`. If one subdomain isn't ready for HTTPS, it becomes unreachable for a year. That is why `includeSubDomains` is opt-in through `HSTS_POLICY` (commits `66f7152` and `5aa0f3c`) and the checklist says to add it only if every subdomain is HTTPS.
 
-### 33.13 Non-root, memory limits, health checks and start order
+### 33.13 Non-root, memory limits, health checks, and start order
 
 Several small settings make the stack safer and steadier:
 
@@ -411,7 +411,7 @@ The README's go-live checklist turns the chapter into steps. With the reason for
 - **Certificate issuance fails.** Symptom: Caddy logs errors obtaining a certificate. Causes: the DNS name doesn't point at the server, or ports 80/443 aren't reachable from the internet. Fix: check DNS and firewall.
 - **`SESSION_COOKIE_SECURE=true` over plain HTTP.** Symptom: you can't stay signed in, because the browser drops the `Secure` cookie. Fix: use HTTPS, or leave it `false` for local HTTP.
 - **Changing nginx's or Caddy's address without changing the trust settings.** Symptom: everyone appears to share one address. Fix: change the compose address, `TRUSTED_PROXY_REGEX`, and `set_real_ip_from` together.
-- **Publishing the app port to "make debugging easier".** It bypasses every protection in section 33.6. Use `docker compose exec` and logs instead.
+- **Publishing the app port to "make debugging easier."** It bypasses every protection in Section 33.6. Use `docker compose exec` and logs instead.
 - **Committing `.env`.** It is git-ignored for a reason. If it ever leaks, change every secret in it.
 
 ## In this project
