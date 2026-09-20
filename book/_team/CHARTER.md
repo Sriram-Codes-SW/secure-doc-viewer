@@ -62,7 +62,7 @@ Part IV milestone chapters also end with:
   file and tag. If you shorten one, label it "simplified" and say what was left out. Never
   present invented code as the project's code.
 - Versions used in this project: Java 25, Spring Boot 4.1.1 (Tomcat pinned to 11.0.26),
-  Spring Security 7, Jackson 3, Hibernate 7, Flyway 11, MySQL 8.4, Angular 22, TypeScript 6.0,
+  Spring Security 7, Jackson 3, Hibernate 7, Flyway 12, MySQL 8.4, Angular 22, TypeScript 6.0,
   Node 24, Vitest 5, Playwright 1.63, PDFBox 3.0.8, Maven 3.9.16. Check anything else against
   `pom.xml` / `package.json` at the relevant tag.
 - When the book simplifies for beginners, say so ("we simplify here; Chapter N gives the full

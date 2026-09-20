@@ -43,6 +43,9 @@ part-5-production/34-backups-and-operations.md
 part-5-production/35-metrics-and-monitoring.md
 part-5-production/36-supply-chain-and-ci.md
 tradeoffs/37-engineering-tradeoffs.md
+part-6-patterns/00-part-introduction.md
+part-6-patterns/38-design-patterns.md
+part-6-patterns/39-architectural-patterns.md
 appendices/epilogue.md
 appendices/appendix-a-glossary.md
 appendices/appendix-b-blueprint-history.md

@@ -1,0 +1,30 @@
+\usepackage{fontspec}
+\usepackage{pifont}
+\catcode`★=\active \def★{\ding{72}}
+\catcode`→=\active \def→{\ensuremath{\rightarrow}}
+\catcode`✓=\active \def✓{\ding{51}}
+\catcode`✗=\active \def✗{\ding{55}}
+\usepackage{fancyhdr}
+\usepackage{fvextra}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{microtype}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\footnotesize}
+\fvset{breaklines=true,breakanywhere=true}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\nouppercase{\leftmark}}
+\fancyhead[RO]{\small\nouppercase{\rightmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\setlength{\emergencystretch}{3em}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>0.6\textheight0.6\textheight\else\Gin@nat@height\fi}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\makeatother

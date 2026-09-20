@@ -445,7 +445,7 @@ Explain every token a beginner hasn't seen before; after Part I, you may group r
 ### 11.5 Versions at older milestone tags
 
 The book teaches the project's final stack (Java 25, Spring Boot 4.1.1, Spring Security 7,
-Jackson 3, Hibernate 7, Flyway 11, Angular 22, TypeScript 6.0, Node 24). But tags
+Jackson 3, Hibernate 7, Flyway 12, Angular 22, TypeScript 6.0, Node 24). But tags
 `book-m0-mvp` to `book-m4-reading` were built on **Spring Boot 3.3.4 and Java 21**; the
 upgrade happens at `book-m5-platform`.
 

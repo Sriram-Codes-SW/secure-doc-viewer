@@ -20,3 +20,7 @@ It applies only when a 429 or 503 arrives without a usable `Retry-After` header:
 ### Exercise 22.5 ★★★ A reload without the version check
 
 If the reload returned the same version that was reported gone (for example because the tiles were unavailable for another reason), the viewer would reload, refetch the tiles, receive 410 again, and repeat indefinitely, hammering the server and spending the rate-limit budget. The check stops after one reload and shows an error instead.
+
+### Exercise 22.6 ★★ Why `switchMap`
+
+The reader types "al" and a request for "al" starts, and the server is slow to answer. The reader types "alice" and a request for "alice" starts, and the server answers it quickly. With `mergeMap`, both requests stay alive; when the slow answer for "al" finally arrives, it is emitted after the answer for "alice", replacing the correct suggestions with the ones for "al". `switchMap` cancels the "al" request as soon as "alice" starts, so a stale answer can never arrive.

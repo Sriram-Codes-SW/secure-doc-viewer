@@ -29,3 +29,10 @@ Example:
 ### Exercise 23.5 ★★★ Typing a page number
 
 Typing "1" or "-" in the page box would also trigger the key actions: "-" would zoom out, and arrow keys, meant to move the text cursor, would turn pages. Worse, `preventDefault()` would block the character from being typed at all.
+
+### Exercise 23.6 ★★ Run `safeReturnUrl`
+
+- `/documents/abc/manage` starts with one slash and not two, so it is returned unchanged.
+- `///x` starts with `//`, so the result is `/documents`.
+- `javascript:alert(1)` doesn't start with `/`, so the result is `/documents`.
+- The empty string is falsy (`returnUrl &&` fails), so the result is `/documents`.

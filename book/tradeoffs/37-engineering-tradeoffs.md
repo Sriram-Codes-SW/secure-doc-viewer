@@ -1,4 +1,4 @@
-<!-- chapter: 37 | part: trade-offs | owner: writer-production | tag: book-m6-final | status: draft -->
+<!-- chapter: 37 | part: trade-offs | owner: writer-production | tag: book-m6-final | status: expanded-draft -->
 # Chapter 37: The engineering trade-offs
 
 Tag: `book-m6-final`. Prerequisites: Chapters 15, 16, 25 to 31, and 32 to 36. Terms such as CDN (a network of servers that delivers files from near the reader), Redis (an in-memory data store shared between servers), and presigned URL (a temporary signed link to a stored file) are glossed where they first appear or in the chapters named.
@@ -18,7 +18,7 @@ A trade-off is a decision where getting one good thing means giving up another. 
 reasonable for a small, single-server app with one team, and
 each has a point where it stops being reasonable.
 
-Every decision below uses the same six headings: **The decision**, **What the project chose**,
+Sections 37.1 to 37.16 each cover one decision, using the same six headings: **The decision**, **What the project chose**,
 **Pros**, **Cons**, **The enterprise alternative**, and **When you'd switch**. Statements about
 what happened cite the README, a pull request (PR), or a commit. Where the record shows the
 outcome but not the reasoning, the text says so and marks the reasoning as the book's reading.
@@ -245,7 +245,177 @@ commit message of `b6aef4e`.
 
 **When you'd switch.** When you need availability that one machine can't give, or capacity beyond a bigger machine. Do 37.5 and 37.7 first; scaling out before them does not work.
 
-## 37.12 Decision table
+## 37.12 Session cookies vs. tokens kept in the browser
+
+<!-- source: dossier/decisions.md D3; PR #1 body; commit 68b4945; bugs-and-findings.md B (TM-1, TM-15) -->
+**The decision.** How does the browser prove, on every request after sign-in, who it is?
+
+**What the project chose.** A server-side HTTP session, carried in an httpOnly cookie named `SDV_SESSION` with `SameSite=Strict`, plus CSRF protection for anything that changes state, and a 30-minute idle timeout (PR #1). Before that, the session id lived in the browser's `sessionStorage` and travelled in an `X-Session-Id` header, which a reviewer flagged: any script injected into the page could read it, and the admin API was returning session ids too. The project's records show the outcome and the reason for leaving `sessionStorage`; they do not show a comparison with signed tokens such as JWTs, so this section describes the outcome and its consequences, not a debate.
+
+**Pros.**
+- JavaScript can't read an httpOnly cookie, so a script injected into the page can't steal the session id.
+- The server owns the session, so it can end it: signing out, an idle timeout, an absolute 12-hour lifetime, an administrator's revoke, or a role change (PR #1) all take effect immediately, on the next request. Tile URLs are bound to the session (Chapter 32), so ending the session also kills every tile URL issued under it.
+- The browser sends the cookie by itself, so the Angular code has no token-handling logic to get wrong.
+
+**Cons.**
+- A cookie is sent automatically, which is exactly what makes cross-site request forgery possible, so the app needs the CSRF machinery (Chapter 16) and the front end has to echo a token.
+- The session state lives in memory on one instance (37.5), so scaling out needs a shared store.
+- Cookies fit a browser talking to one site. The design assumes a single origin, which is why nginx serves the app and proxies `/api` (Chapter 33).
+
+**The enterprise alternative.** Signed tokens (for example JWTs) that the client presents on each request are common where many services or non-browser clients share one sign-in, because any service can verify a token without asking a session store. That is general industry practice, not something the project evaluated. Tokens trade the immediate server-side revocation you get from sessions for statelessness, and typically need short lifetimes and a refresh mechanism to compensate.
+
+**When you'd switch.** When a mobile app or another service needs the API from a different origin, or when an identity provider (37.6) issues the tokens for you. Even then, browser-facing apps often keep a session cookie at the edge.
+
+## 37.13 nginx and Caddy vs. a cloud load balancer
+
+<!-- source: dossier/decisions.md D11, D12; commits 2d10e07, a51674c, 5aa0f3c; README "HTTPS", "Trust boundary" -->
+**The decision.** What stands between the internet and the app, and who terminates TLS?
+
+**What the project chose.** Two programs in the compose file. nginx (the unprivileged image, non-root) serves the Angular build, proxies `/api`, and sets headers. Caddy, in an optional `tls` profile, terminates TLS, gets certificates from Let's Encrypt (or from its own local certificate authority for trials), and adds `Strict-Transport-Security` (Chapter 33). Addresses are fixed in one Docker network so that each program can say exactly whom it trusts.
+
+**Pros.**
+- The whole deployment is a folder and one command; it runs on any machine with Docker, including a laptop for rehearsals.
+- Caddy obtains and renews certificates without extra scripts.
+- Everything a reader needs to audit is in three small files: `docker-compose.yml`, `frontend/nginx.conf`, and `deploy/Caddyfile`.
+
+**Cons.**
+- Two proxies mean two things to configure and to keep patched; the CI image scan covers both, but a person still has to act on it (Chapter 36).
+- Trust rests on fixed addresses and on getting five settings to agree (the compose addresses, `TRUSTED_PROXY_REGEX`, `set_real_ip_from`, the header overwrite, and the profile). The failure mode is silent: if they drift apart, the app just sees the wrong address (exercise 33.3), and this was the shape of the High finding that blocked the platform pull request (Chapter 32).
+- It's a single host. Nothing here spreads traffic across machines or survives losing the machine.
+- Going public isn't a switch: you edit the `ports` of the `tls` service, and HSTS decisions such as `includeSubDomains` are hard to undo.
+
+**The enterprise alternative.** A managed load balancer from a cloud provider or a platform, terminating TLS with certificates it manages, forwarding to several instances, and running health checks against `/actuator/health`. That is general industry practice; the project's records don't describe a comparison. It moves the trust boundary: the app would trust forwarded headers from the load balancer's address range instead of nginx's fixed address, and the nginx overwrite rule would have to be replaced by whatever the load balancer guarantees about the header.
+
+**When you'd switch.** When you run more than one instance (37.11), or when your platform already provides certificates and load balancing and running your own is extra work.
+
+## 37.14 Recognised-device lockout vs. simpler rules
+
+<!-- source: dossier/decisions.md D7; PR #5 body "TM3-1"; commit 82c24b6; README "Sign-in lockout" -->
+**The decision.** How do you slow down password guessing without letting an attacker lock real users out?
+
+**What the project chose.** Three counters over 15 minutes: 5 failures for one account from one address, 20 for one address across accounts, and 20 for one account from *unrecognised* devices only. A device is recognised for an account after a successful sign-in from its address (IPv6 grouped by /64) within 30 days; only a keyed hash of the address is stored, and the list is cleared when the password changes, is reset, or the account is disabled. An administrator can press Unlock.
+
+The path there matters. Phase 1 had only the first two counters. The first fix for the forged-address bug added an account-wide counter that counted failures from everywhere, and the next review showed that anyone could lock any user out by failing 20 times. The recognised-device rule is the replacement.
+
+**Pros.**
+- A botnet spreading guesses over many addresses is stopped by the account-wide counter, while the account's owner can still sign in from a usual device.
+- Failures are counted atomically (Chapter 32), so a burst of parallel guesses gets no extra tries.
+- The rule that fired is recorded in the audit event, so a person can tell guessing from an accident.
+
+**Cons.**
+- The trade-off is stated in the README: during an attack on an account, its owner can't sign in from a *new* device, such as a new laptop or a hotel network, until the window passes or an administrator unlocks it. An attacker who knows this can time an attack for when the owner travels.
+- The counters are in memory (37.5) while the recognised devices are in the database, so the two halves behave differently after a restart.
+- Recognised-device hashes are keyed by `SIGNING_SECRET`, which ties this feature to a secret you must keep with your backups (Chapter 34).
+
+**The enterprise alternative.** A second proof for new devices: multi-factor authentication or an emailed one-time code, ideally supplied by an identity provider (37.6). Those can let a legitimate owner on a new device without a human unlocking anything. That is general industry practice, and the README lists MFA's absence as a limitation.
+
+**When you'd switch.** When the app adds MFA or an identity provider. At that point the account-wide counter can be simplified, because a stolen password alone no longer suffices.
+
+## 37.15 Stopping the app for backups vs. online snapshots
+
+<!-- source: README "Backup and restore"; PR #5 body "Final-review fixes"; dossier/bugs-and-findings.md F1 -->
+**The decision.** Do you keep the app running during a backup, or stop it?
+
+**What the project chose.** Stop it for the few seconds a backup takes (Chapter 34). The database dump and the tile archive are then guaranteed to describe the same moment. The choice was a response to a reviewer's finding: a dump taken before a PDF replacement and an archive taken after it would leave documents pointing at tiles that no longer exist. The janitor also refuses to delete a document's other tile versions while its current one is missing.
+
+**Pros.** It works with plain tools, needs no special storage, and its correctness is easy to explain. A restore drill (Chapter 34) proved it.
+
+**Cons.** Readers get errors during the window, and the approach only works because there is one instance and one machine (37.11). A longer database means a longer window.
+
+**The enterprise alternative.** Backups that don't need the app to stop: storage snapshots for the tiles, and a database with point-in-time recovery. The catch: the "current tile version" pointer in the database still has to match the tiles, so the consistency problem doesn't vanish, it moves. General industry practice; not evaluated by the project.
+
+**When you'd switch.** When the backup window is no longer acceptable, or when 37.7 and 37.9 move storage and the database to services that snapshot on their own.
+
+## 37.16 Newest platform vs. staying on the older supported line
+
+<!-- source: dossier/decisions.md D10, D13; PR #5 body "Platform upgrade"; PR #10 body; bugs-and-findings.md G9 -->
+**The decision.** When you start a production hardening, do you upgrade the platform first, and how new?
+
+**What the project chose.** The product owner asked to keep the technology "as new as long as it is a standard version". The platform upgrade in PR #5 went from Spring Boot 3.3.4 to 4.1.1 and Java 21 to 25, bringing Spring Security 7, Jackson 3, Hibernate 7, and Flyway 12, all "the latest GA versions checked on Maven Central". One motivation was that Spring Boot 3.3 had passed its open-source support window, and the migration also removed a Flyway warning that MySQL 8.4 was untested. Yet the project applies a different rule to runtimes and databases: PR #10 tells Dependabot to skip Node's odd-numbered releases, Java releases between LTS versions, and MySQL's non-LTS "Innovation" releases. So the policy is: newest release of the *framework*, long-term-support lines for the *runtime and data*.
+
+**Pros.**
+- Supported software receives security fixes, and no deprecation warnings remain after the migration.
+- Doing the migration once, before go-live, is cheaper than doing it later under pressure.
+
+**Cons.**
+- The migration itself cost work: new package names for Jackson 3, a changed constructor for the authentication provider, renamed configuration methods.
+- A new release can lag its own dependencies' fixes. Spring Boot 4.1.1 shipped Tomcat 11.0.24, which had three critical advisories, and the project had to pin Tomcat 11.0.26 (Chapter 36).
+- Fewer people will have met the problems you meet, so fewer answers exist yet (a general observation, not a project record).
+
+**The enterprise alternative.** Many organizations stay a step behind, on a long-term-support line, and upgrade on a schedule with a test plan. That's general practice, and the project's own LTS-only rules for the runtime and database follow the same idea.
+
+**When you'd switch.** When staying current costs more than it saves, or when a compliance rule requires a specific supported line.
+
+## 37.17 A worked plan: from one instance to three
+
+The decisions above are linked, and the clearest way to see it is to plan a change that touches several of them. This section is the book's design exercise, not project history: a step-by-step plan for running three instances, using only facts about the app's current code and README.
+
+<!-- source: README Limitations; LoginThrottle, TileRateLimiter, AuditLogService at book-m6-final; this is the book's design exercise -->
+Figure 37.1 contrasts today's single instance with the target of the exercise. Everything shared in the second box is something that lives inside the one instance today.
+
+```mermaid
+flowchart LR
+    subgraph NOW["Today: one instance"]
+        N1["nginx and Caddy"] --> A1["app: sessions, counters, audit throttle in memory"]
+        A1 --> D1[("MySQL")]
+        A1 --> L1[("local tile volume")]
+    end
+    subgraph LATER["Design exercise: three instances"]
+        LB["load balancer"] --> I1["app 1"]
+        LB --> I2["app 2"]
+        LB --> I3["app 3"]
+        I1 --> SS[("shared store: sessions and counters")]
+        I2 --> SS
+        I3 --> SS
+        I1 --> OS[("shared tile storage")]
+        I2 --> OS
+        I3 --> OS
+        I1 --> DB[("MySQL")]
+        I2 --> DB
+        I3 --> DB
+    end
+```
+
+*Figure 37.1 — One instance today, and what three instances would have to share*
+
+**Step 0: list the in-memory state.** Search the code for anything that lives in a map or a field rather than the database. The README names two, sessions and rate-limit counters. Reading the code at `book-m6-final` finds more: the sign-in throttle counters (`LoginThrottle`), the tile rate limiter (`TileRateLimiter`), and the audit throttle that limits how often `PAGE_VIEWED` and `ACCESS_DENIED` events are written (`AuditLogService`). Each is correct on one instance and wrong on three: a user could exceed a limit by up to three times just by being spread across instances.
+
+**Step 1: share sessions.** Put sessions in a shared store (Spring Session with Redis, as the README suggests). Until this is done, a load balancer would send a signed-in user to an instance that has never heard of them.
+
+**Step 2: share the counters.** Move the sign-in and tile counters to the same store, so a limit holds no matter which instance answers. The audit throttle needs the same treatment, or the log will show up to three times as many events.
+
+**Step 3: share the tiles.** Local disk can't be seen by the other instances. Move tiles to object storage. This is the biggest change, because it touches several decisions at once: tile serving (37.4, signed URLs), watermarking (37.2), the janitor and backups (Chapter 34), and the row-lock-based atomic replace (Chapter 32), which relies on the database and the file layout agreeing.
+
+**Step 4: one place for scheduled jobs.** The janitor, the audit purge, and the device purge use `@Scheduled`, which runs on every instance. Running the audit purge three times a night is harmless; running three janitors that delete directories at the same time is the kind of thing you'd rather decide on purpose. A design has to choose one runner (for example, a leader lock or a separate job).
+
+**Step 5: the same secret everywhere.** `SIGNING_SECRET` verifies tile tokens and keys the recognised-device hashes and session handles. All instances must have the same value, or a URL issued by one instance would be rejected by another.
+
+**Step 6: the front door.** Put a load balancer in front (37.13), point its health check at `/actuator/health`, and re-derive the trust boundary: the app must trust forwarded headers only from the balancer.
+
+**Step 7: deploy without downtime.** Roll one instance at a time; with shared sessions, users no longer notice.
+
+Notice the order. Steps 1 to 3 have to come before Step 6, or the load balancer would expose the problems the earlier steps fix. That is Exercise 37.3 in another form, and it's the reason this chapter says "do 37.5 and 37.7 first".
+
+Figure 37.2 shows the order of the seven steps as a chain.
+
+```mermaid
+flowchart LR
+    S1["1 Share sessions"] --> S2["2 Share counters"] --> S3["3 Share tiles"] --> S4["4 One runner for scheduled jobs"] --> S5["5 Same secret everywhere"] --> S6["6 Load balancer in front"] --> S7["7 Rolling deploys"]
+```
+
+*Figure 37.2 — The order of the scale-out plan: share the state first, then add the front door*
+
+## 37.18 Common mistakes when weighing trade-offs
+
+- **Assuming the enterprise alternative is simply better.** Each one has its own costs, usually complexity and money. The right question is whether you have the problem it solves.
+- **Switching before measuring.** Use the metrics in Chapter 35 to see which limit you are actually hitting.
+- **Ignoring coupling.** Moving one piece (tiles to S3) drags others along (watermarking, sessions, backups). List what a decision touches before you make it.
+- **Deferring without a note.** "We'll add it later" is fine when the README says what "it" is and what will have to change, as this project's Limitations section does.
+- **Mixing evidence and opinion.** When you write a design document, label which statements come from your records and which are general industry practice, as this chapter does.
+- **Treating a mitigation as a control.** Client-side blocking (37.10) and a light watermark (37.3) are friction and attribution, not prevention. Say so where readers will see it.
+- **Forgetting the human cost.** Every extra system (a Redis, an identity provider) needs someone to patch it, back it up, and be woken when it fails.
+
+## 37.19 Decision table
 
 **Table 37.1 — The decisions at a glance**
 
@@ -258,10 +428,15 @@ commit message of `b6aef4e`.
 | 37.5 Sessions | In memory | Restarts, one instance | Redis session store |
 | 37.6 Authentication | Built-in accounts | No MFA or SSO | OIDC identity provider |
 | 37.7 Tile storage | Local disk volume | One machine; coupled backups | S3 and CDN |
-| 37.8 Rate limit | One per-user limit | Same rule for all documents | Sensitivity levels, anomaly detection |
+| 37.8 Rate limit | One per-user limit | Same rule for all documents | Sensitivity levels; back-to-back alerting (README) |
 | 37.9 Database | MySQL 8.4 and Flyway | Single server | Managed database with replicas |
 | 37.10 Client blocking | Right-click blocked | Bypassed with DevTools | Friction only, on top of controls |
 | 37.11 Instances | One | Availability and capacity | Load-balanced stateless instances |
+| 37.12 Sessions vs tokens | Server session in httpOnly cookie | CSRF machinery; shared store to scale | Signed tokens for cross-origin or service clients |
+| 37.13 Front door | nginx plus Caddy | Two proxies; silent trust drift | Managed load balancer |
+| 37.14 Lockout | Recognised-device rule | New device locked out during an attack | MFA or one-time codes |
+| 37.15 Backups | Stop the app briefly | Outage window; single instance only | Snapshots and point-in-time recovery |
+| 37.16 Platform | Newest framework, LTS runtime and data | Migration work; lagging dependency fixes | Stay on an LTS line, upgrade on schedule |
 
 ## Try it
 
@@ -276,7 +451,15 @@ Explain why moving tiles to S3 (37.7) forces you to revisit per-request watermar
 Order the decisions in the sequence you would change them for a first scale-out, and defend the order.
 ### Exercise 37.4 ★★★ A switch trigger as an alert
 
-Choose one decision and write the "When you'd switch" trigger as a measurable alert, using metrics from Chapter 35.
+Choose one decision and write the "When you'd switch" trigger as a measurable alert, using metrics from Chapter 35 (for example `sdv_tiles_rate_limited_total`).
+
+### Exercise 37.5 ★★ Cookie or token?
+
+A mobile app must call the same API from outside the browser. Using 37.12, list what changes about sessions, CSRF, and revocation if it uses tokens, and what the project would have to build or give up.
+
+### Exercise 37.6 ★★★ Critique the plan
+
+Section 37.17 lists seven steps to three instances. Find one step that hides more work than it shows, say what the extra work is, and propose an ordering change that would let you ship two instances earlier than three.
 
 ## Summary
 
@@ -284,6 +467,8 @@ Choose one decision and write the "When you'd switch" trigger as a measurable al
 - Several limits are linked: sessions, counters, and tiles must all become shared before a second instance is safe.
 - The project recorded some reasoning and only outcomes for others; this chapter says which.
 - Friction that is not a control is acceptable only when it is labeled honestly.
+- Sixteen decisions form a web, not a list: a plan for three instances (37.17) touches sessions, counters, tiles, jobs, secrets, and the front door in a fixed order.
+- Enterprise alternatives are answers to problems you may not have yet; measure first (Chapter 35), then switch.
 
 ## Further reading
 

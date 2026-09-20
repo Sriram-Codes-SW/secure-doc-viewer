@@ -1,4 +1,4 @@
-<!-- chapter: 32 | part: V | owner: writer-production | tag: book-m5-platform | status: draft -->
+<!-- chapter: 32 | part: V | owner: writer-production | tag: book-m5-platform, book-m6-final | status: expanded-draft -->
 # Chapter 32: Security review and threat modeling
 
 This chapter teaches you to look at your own app the way an attacker does, and walks through the
@@ -47,11 +47,11 @@ minute with a script.
 - **Asset:** something worth protecting. Here: the document content, the accounts, and the audit trail.
 - **Actor:** someone who interacts with the system: readers, publishers, administrators, and attackers (who may also hold a valid account).
 - **Entry point:** anywhere data crosses into the system from outside: an HTTP endpoint, a header, a cookie, an uploaded file.
-- **Trust boundary:** a line across which data stops being trustworthy. The browser is outside it. Section 32.6 shows where the project drew the line in front of the API.
-- **Threat:** a way an actor could harm an asset.
+- Trust boundary (Chapter 23): a line across which data stops being trustworthy. The browser is outside it. Section 32.6 shows where the project drew the line in front of the API.
+- Threat (Chapter 1): a way an actor could harm an asset.
 - **Control:** something that reduces a threat, such as a signature check or a rate limit.
-- **CVE:** a public identifier for a known vulnerability in software you use, such as "CVE-2026-1234". Section 32.5 mentions three that hit a web server library the app depends on.
-- **BCrypt:** a deliberately slow way to store passwords so that a stolen database is hard to crack. It only looks at the first 72 bytes of a password, which matters in section 32.5.
+- CVE (Chapter 31): a public identifier for a known vulnerability in software you use, such as "CVE-2026-1234". Section 32.5 mentions three that hit a web server library the app depends on.
+- BCrypt (Chapter 15): a deliberately slow way to store passwords so that a stolen database is hard to crack. It only looks at the first 72 bytes of a password, which matters in section 32.5.
 
 ### 32.3 The app's threat model on one page
 
@@ -101,8 +101,8 @@ moved to their own database transaction.
 reviewer recommended not merging until one High finding was fixed, and the finding was
 introduced by the pull request under review.
 
-A **reverse proxy** is a program that receives requests from browsers and passes them to the app
-behind it; **nginx** is the one this project uses, and Chapter 33 covers it. A proxy tells the app
+A reverse proxy (Chapter 16) is a program that receives requests from browsers and passes them to the app
+behind it; nginx (Chapter 30) is the one this project uses, and Chapter 33 covers it. A proxy tells the app
 who the original caller was in a header called `X-Forwarded-For`.
 
 <!-- source: PR #5 body, "Correction"; commit 2d82253; dossier/decisions.md D11 -->
@@ -150,12 +150,29 @@ Anything reaching `app:8080` directly is judged by its own address.
 
 <!-- source: PR #5 body "Live two-IP lockout test"; dossier/decisions.md D7 -->
 nginx overwrites the header with the connection address and accepts a forwarded address only
-from the optional HTTPS front end, **Caddy** (a web server that handles certificates, at
-`172.28.0.11`; Chapter 33). In the two-address live test, all 18 checks passed. They covered a
+from the optional HTTPS front end, Caddy (Chapter 30), a web server that handles certificates, at
+`172.28.0.11` (Chapter 33). In the two-address live test, all 18 checks passed. They covered a
 spoofed `X-Forwarded-For` header sent through nginx and sent directly to `app:8080`: both still
 hit the lockout, and the audit log showed the container addresses, never the spoofed one. A
 separate check of the HTTPS profile confirmed that a spoofed header sent through Caddy is ignored
 (the real peer is audited); it was not one of the 18.
+
+<!-- source: docker-compose.yml, frontend/nginx.conf, deploy/Caddyfile at book-m6-final -->
+Figure 32.1 shows who is allowed to say what about the caller's address. Read it from left to right: each arrow names what the receiving program does with the `X-Forwarded-For` header.
+
+```mermaid
+flowchart LR
+    B["Browser: may send any headers"] -->|"HTTPS"| C["Caddy at 172.28.0.11, tls profile"]
+    C -->|"replaces X-Forwarded-For with the real peer"| N["nginx at 172.28.0.10"]
+    B -.->|"http, full profile only"| N
+    N -->|"overwrites X-Forwarded-For with the connection address"| A["app on port 8080"]
+    A --> M[("MySQL")]
+    O["Any other container"] -.->|"judged by its own address"| A
+```
+
+*Figure 32.1 — The trust boundary: who may set the client address, and where it is believed*
+
+Notice that belief is granted one link at a time and every link is pinned to a fixed address: nginx believes a forwarded address only from Caddy, and the app believes it only from nginx (`TRUSTED_PROXY_REGEX`). The dotted arrows are the paths that stay unbelieved: a browser talking to nginx directly, and any other container talking to the app.
 
 ### 32.7 Class 2: races
 
@@ -249,8 +266,8 @@ row in Table 32.1: until an account whose password an administrator set has chos
 API answers `403 passwordChangeRequired`. Five details in the listing deserve a second look:
 
 1. **The last rule is `denyAll()`.** A URL nobody thought about is refused, not allowed. Rules are checked top to bottom and the first match wins, so specific rules come first.
-2. **CSRF** (cross-site request forgery: another website making your browser send a request with your cookie) is stopped by a token that Angular copies from a cookie JavaScript may read (`withHttpOnlyFalse()`, in the omitted bean) into the `X-XSRF-TOKEN` header. The session cookie is the **httpOnly** one, meaning JavaScript cannot read it at all. The CSRF cookie is `SameSite=Strict`, meaning the browser sends it only for requests that start on the app's own site.
-3. **Session fixation protection** (`changeSessionId`) gives you a new session id at sign-in, so an id planted before sign-in is worthless afterward.
+2. CSRF (cross-site request forgery: another website making your browser send a request with your cookie; Chapter 8) is stopped by a token that Angular copies from a cookie JavaScript may read (`withHttpOnlyFalse()`, in the omitted bean) into the `X-XSRF-TOKEN` header. The session cookie is the httpOnly (Chapter 26) one, meaning JavaScript cannot read it at all. The CSRF cookie is `SameSite=Strict`, meaning the browser sends it only for requests that start on the app's own site.
+3. Session fixation protection (Chapter 26), here `changeSessionId`, gives you a new session id at sign-in, so an id planted before sign-in is worthless afterward.
 4. **`maximumSessions(-1)` means unlimited sessions, but registered ones.** The registry is what lets an administrator list and revoke them.
 5. **The CSP** (Content Security Policy, a header telling the browser what a page may load) is `default-src 'none'`. The API returns only JSON and PNG tiles, so nothing it serves needs to run a script or be framed. The Angular app has its own, different policy set by nginx (Chapter 33).
 
@@ -281,10 +298,131 @@ You don't need a security team to start. Take one feature and ask these five que
 Then write a test for each answer that surprised you, and make it go through the real front door,
 as the incident in section 32.5 taught.
 
+### 32.13 A worked review: the tile endpoint
+
+Questions are easier to learn by using them, so let's review the most important endpoint in the app, the one that returns pixels. Its job: given a signed URL, return one watermarked tile. Here is the middle of the method, real code with its real comments.
+
+**Listing 32.3 — `TileController.java`, `book-m6-final` (excerpt: the checks in `getTile`, from token verification to the render-version check; the method signature and everything after the version check, that is watermarking, the audit event, the metric, and the response, are omitted)**
+
+```java
+        SignedTilePayload payload = signedUrlService.verifyAndDecode(token);
+
+        // Second, independent check: the request must come from the very
+        // session the token was issued to. Spring Security has already
+        // rejected the request if that session was logged out, timed out or
+        // revoked, so a still-unexpired token dies with its session — and a
+        // URL copied into another browser or account fails here.
+        HttpSession session = request.getSession(false);
+        if (session == null || !sessionKeys.tileBindingMatches(session.getId(), payload.sessionBinding())) {
+            throw new InvalidTokenException("This tile link was issued to a different session.");
+        }
+        String username = authentication.getName();
+        Actor actor = actors.of(request, authentication);
+
+        // Third, independent check: a signature- and session-valid request
+        // can still be part of a burst trying to redeem every tile of every
+        // page. Enforced after auth so unauthenticated requests can't burn
+        // a legitimate user's allowance, and before the disk read/render
+        // so a throttled request doesn't pay that cost.
+        java.time.Instant counted;
+        try {
+            counted = tileRateLimiter.recordAndEnforce(username);
+        } catch (RateLimitExceededException e) {
+            metrics.tileRateLimited();
+            auditLogService.recordAtMostEvery(Duration.ofSeconds(properties.getTileRateLimitWindowSeconds()),
+                    "rate-limited:" + username, AuditEventType.RATE_LIMITED, actor,
+                    Subject.document(payload.documentId(), null));
+            throw e;
+        }
+
+        // Fourth: the document may have been unshared or deleted since the URL was issued.
+        TileAccess access = documents.tileAccessIfViewable(payload.documentId(), Viewer.of(authentication))
+                .orElseThrow(() -> {
+                    auditLogService.recordAtMostEvery(Duration.ofSeconds(5), "denied:" + username,
+                            AuditEventType.ACCESS_DENIED, actor, Subject.document(payload.documentId(), null, "tile"));
+                    return new DocumentNotFoundException("Document not found.");
+                });
+
+        // Issued for an earlier render: the document was replaced since. Serving the
+        // current render's tile here would mix old and new tiles on one page.
+        if (payload.tileVersion() != access.tileVersion()) {
+            throw new TileGoneException();
+        }
+```
+
+Now apply the five questions from section 32.12.
+
+<!-- source: TileController.getTile at book-m6-final -->
+Figure 32.2 draws the same code as a flow, so you can see the order of the checks and the answer each failure gives.
+
+```mermaid
+flowchart TB
+    T["1 Token: signature and expiry"] --> S["2 Session binding: the same session the URL was issued to"]
+    S --> R["3 Rate limit: per user, per window"]
+    R --> A["4 Access: the user may still view the document"]
+    A --> V["5 Render version: the token matches the current render"]
+    V --> W["6 Work limit: server-wide cap on tile work"]
+    W --> P["Load the tile, watermark it, return the PNG"]
+    T -->|"invalid or expired"| E1["401"]
+    S -->|"other session"| E1
+    R -->|"over the limit"| E2["429 with Retry-After"]
+    A -->|"not viewable"| E3["404"]
+    V -->|"old render"| E4["410 Gone"]
+    W -->|"busy"| E5["503 with Retry-After, allowance refunded"]
+```
+
+*Figure 32.2 — The chain of checks a tile request passes, and the answer each one gives*
+
+Every check is independent, and a request must pass all of them. Notice where the expensive work sits: the disk read and the watermark come last, after every cheap check has had its chance to refuse the request. Spring Security has already rejected requests from signed-out, expired, or revoked sessions before the method runs.
+
+**1. Asset and who may touch it.** The asset is one tile of one page of one document. Who may touch it: a signed-in user who can view the document, holding a URL issued to that very session, within their rate allowance.
+
+**2. What can the caller forge?** The only input is `token`. Everything the caller controls is inside it, and `verifyAndDecode` (sections 17.5 and 25.6) checks the signature and expiry before anything else runs, so a forged or edited token stops on the first line. The session cookie is also caller-supplied, but the server resolves it to a real session or nothing.
+
+**3. What is checked, and where?** Read the numbered comments: the token's signature and expiry (the first check, in `verifyAndDecode`), the session binding (second), the rate limit (third), document access (fourth), and the render version. Each is *independent*: a request that passes one still has to pass the rest. This is the design principle to notice. The chain doesn't rely on the front end having filtered anything. Also note the *order*, which is a decision in itself:
+
+- The rate limit runs after authentication, "so unauthenticated requests can't burn a legitimate user's allowance", and before the disk read, "so a throttled request doesn't pay that cost". An attacker without a session can't use up a real user's tiles, and a throttled attacker can't make the server do expensive work.
+- Document access is re-checked on *every tile*, not only when URLs are issued. That is what makes unsharing take effect on pages already open.
+
+**4. Two at once, or a thousand?** Two protections. The rate limiter is one (180 per window per user), and the server-wide tile work cap in the omitted part is another: many readers at once get `503` and the viewer retries. The comment near the end of the method explains a subtle fairness rule: when the server is merely busy, the reader's allowance is refunded (`tileRateLimiter.refund`), because being slowed down by the server isn't the reader's fault.
+
+**5. What does a failure reveal?** Look at what the client sees when things go wrong: an invalid token (`401`), a different session (`401`), rate limited (`429` with `Retry-After`), and a document that isn't viewable, `DocumentNotFoundException("Document not found.")`, which becomes `404` whether the document never existed or exists but isn't shared with you. A stranger can't distinguish the two. The old-render case is different: `410 Gone`, because the viewer is *supposed* to learn that the page was replaced and reload.
+
+Notice also what the review found that a beginner might miss: the audit calls. A denied access records an event, but only at most once every 5 seconds per user (`Duration.ofSeconds(5)`), so someone probing a thousand document ids can't fill the audit table with a thousand rows. That's the audit-flooding finding from section 32.5, visible in the code.
+
+The whole exercise took a few minutes because the code states its intent in comments. A review of code with no such comments takes much longer, which is a good argument for writing them.
+
+### 32.14 More incidents, told as stories
+
+The chapter so far described the review rounds by outcome. Four incidents are worth telling in detail, because each teaches a habit you can carry to your own work.
+
+<!-- source: dossier/bugs-and-findings.md B (TM-1, PO-2); commit 68b4945; PR #1 body -->
+**The credential in the API.** Before Phase 1, the admin API listed every live session, and the session id was the only thing needed to act as that session. The Senior Technical Manager review agent demonstrated the takeover: an account read another account's session id from the admin listing, requested tile URLs with it, and got a tile back. The watermark and the audit log named the victim, not the attacker. The fix (commit `68b4945`, PR #1) was in two parts: the admin API now lists sessions by an opaque *handle* that can't be turned back into the session id, and it is restricted to administrators. *Lesson: never return a credential from an API, and make the identifier you show a person different from the one that grants access.* The class `SessionKeys` (Listing 32.1) exists because of this.
+
+<!-- source: dossier/bugs-and-findings.md B (TM-4), G8; commits 68b4945, f682716 -->
+**The token that carried the session.** The first version of a tile token was a base64 string containing the document, page, tile, session id, and expiry. Base64 isn't encryption; anyone can decode it. So a leaked tile URL leaked the session id, which was the credential. The fix replaced the session id in the token with a keyed binding, as in Listing 32.1. A second, related problem surfaced later, in Round 2: after a document was replaced, old tile URLs silently served tiles from the *new* render, so a page could mix old and new tiles. The fix was to sign the render version into the token, and the `410` check at the end of Listing 32.3 is that fix. *Lesson: a signed token should carry everything the server needs to notice that the world changed, not only who it was issued to.*
+
+<!-- source: dossier/bugs-and-findings.md G1, G2; commit 1ce2c8b -->
+**The race and the byte count.** Two more findings came from the review agent running probes against a live app rather than reading code. In the first, nine wrong passwords sent in parallel for one account from one address all got `401`, though the limit was five; only the next single attempt got `429`. The cause: the throttle checked the counter, then verified the password (which takes about 100 milliseconds), then recorded the failure, and nothing tied the three steps together. The fix counts the attempt first and gives it back if the password turns out to be right. After the fix, the same test lets exactly five through. In the second, creating a user with a 100-character password returned a generic server error. The validation allowed 12 to 128 *characters*, but BCrypt rejects more than 72 *bytes*, and many characters, emoji for instance, take several bytes. The fix validates the UTF-8 byte length. *Lessons: a check followed by an action is a race; and characters aren't bytes.*
+
+<!-- source: dossier/bugs-and-findings.md G13; commit 6cf17fa -->
+**The endless reload.** A dry-run code review found that if a tile file for the *current* render was missing (for example after a mismatched restore, Chapter 34), the server answered `410`, and the viewer, taught that `410` means "the page was replaced, reload", reloaded and got `410` again, forever. The fix has two halves. On the server, `410` is only returned when the document has truly moved on to a newer render; a missing tile of the current render is a logged generic `500`, which you can read in `loadTile` in the real source. On the client, if a reload triggered by `410` finds the same version again, the viewer stops and shows "Some parts of this page could not be loaded". *Lesson: every retry loop needs a stop condition on both sides.*
+
+### 32.15 Common mistakes
+
+- **Treating "the tests pass" as "it is secure".** The tests had all passed when the reviewers found the forged-address bug. Tests check what you thought of; attackers try what you didn't.
+- **Checking only at the front door.** A check at URL-issuing time but not at tile time means unsharing never takes effect on open pages. Check where the asset is served.
+- **Returning different answers for "no" and "not yours".** `403` for a private document tells a stranger it exists. Use the same answer for both.
+- **Believing a header because a proxy usually sets it.** Any header a client can send, a client can forge. Trust only what a boundary you control has written.
+- **A lockout that punishes the victim.** Blocking an account after N failures from anywhere lets an attacker lock out anyone. Look for who benefits from each rule.
+- **Fixing the symptom and not writing the test.** The forged-address fix came with a Playwright test that fails on the old stack. Without it, the bug could come back unnoticed.
+- **Claiming more than you've tested.** The pull request that introduced the spoofing bug had said direct callers couldn't spoof, which was false. If you haven't tried to break a claim, write "intended to" instead.
+
 ## In this project
 
 | Path | First appears | What it does |
 |---|---|---|
+| `src/main/java/com/example/securedocviewer/controller/TileController.java` | `book-m0-mvp`, checks added in `book-m1-accounts` and `book-m2-documents` | The tile endpoint reviewed in section 32.13 (Listing 32.3) |
 | `src/main/java/com/example/securedocviewer/security/SecurityConfig.java` | `book-m1-accounts`, hardened by `book-m5-platform` | The filter chain (Listing 32.2) |
 | `src/main/java/com/example/securedocviewer/security/SessionKeys.java` | `book-m1-accounts` | Tile binding and admin handle (Listing 32.1) |
 | `src/main/java/com/example/securedocviewer/security/LoginThrottle.java` | `book-m1-accounts` | The three lockout counters |
@@ -311,6 +449,14 @@ Write a one-paragraph threat model for a feature "download a document's audit hi
 
 Explain why the project's first account-wide lockout (all addresses) was itself a vulnerability, describe what an attacker gains from the recognised-device design's trade-off, and suggest one mitigation that isn't in the app.
 
+### Exercise 32.5 ★★ Reorder the checks
+
+In Listing 32.3, suppose someone moves the rate-limit check to run *after* the tile has been loaded from disk and watermarked, so that only the response is refused. The endpoint still returns `429` to a user over the limit. Describe what an attacker gains, and explain which comment in the listing already warns against it.
+
+### Exercise 32.6 ★★★ Review a new endpoint
+
+Suppose the team adds `GET /api/documents/{id}/download-thumbnail`, which returns a small preview image of page 1. Apply the five questions from section 32.12 to it, in writing: asset and allowed users, forgeable inputs, checks and where they run, concurrency, and what a failure reveals. Then list two tests you would write, including one that goes through the real front door.
+
 ## Summary
 
 - A threat model lists assets, actors, entry points, threats, and controls; Table 32.1 is this app's.
@@ -319,6 +465,8 @@ Explain why the project's first account-wide lockout (all addresses) was itself 
 - Four classes recur: forged inputs, races, resource exhaustion, and information leaks.
 - The app states what it does not defend against: screenshots, a patient user with a valid session, and missing MFA.
 - Claims about security need tests that try to break them through the real entry point.
+- Reviewing one endpoint with the five questions (the tile endpoint in Listing 32.3) shows the design principle: several independent checks, each in the place where the asset is served, in an order chosen so that attackers can't make the server do expensive work.
+- Four incidents give four habits: never return a credential, put in a signed token the facts that can change, treat check-then-act as a race, and give every retry loop a stop condition.
 
 Chapter 33 takes the app to a real host and puts nginx and Caddy in front of it.
 

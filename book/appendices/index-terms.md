@@ -1,64 +1,86 @@
 # Index terms
 
-Index-ready vocabulary: bolded defined terms in the chapters that exist so far. Generated and filtered; regenerate as chapters land.
+Index-ready vocabulary: bolded defined terms in the chapters that exist. Generated and filtered; regenerate as chapters change.
 
 ## 01-the-big-picture
 
+- administrator
 - audit trail
+- Authentication
+- Authorization
 - cache
 - client
 - database
+- defense
 - developer tools
 - naive viewer
 - PDF
+- publisher
 - rasterize
 - rate limit
+- reader
+- roles
 - server
 - session
 - signature
 - signed URL
+- threat
 - tiles
 - URL
+- visibility
 - watermark
 
 ## 02-command-line-and-files
 
 - absolute
 - address
+- arguments
 - encoding
 - environment variable
+- flags
 - folders
 - Git Bash
+- home folder
 - line ending
 - listens
 - path
+- pipe
 - port
 - process
 - prompt
+- redirection
 - relative
 - shell
 - terminal
+- text editor
 - text file
+- UTF-8
 - Version control
 - working directory
 
 ## 03-first-java-program
 
+- array
 - assigns
 - bytecode
+- ceiling division
 - class
 - compiler
 - compiler error
 - doc comment
+- encoded
 - exception
 - if statement
 - JDK
+- JRE
 - JVM
+- literal
 - loop
 - main method
 - method
 - Operators
 - parameters
+- passed by value
 - program
 - programming language
 - return value
@@ -67,98 +89,151 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - stack trace
 - statically typed
 - string
+- switch
+- test
 - token
 - type
 - variable
 
 ## 04-classes-and-objects
 
+- access levels
 - annotations
 - class
+- composition
 - constructor
+- constructor injection
+- dependency injection
 - Encapsulation
 - enum
 - fields
+- framework
 - generic
 - getter
 - immutable
 - import
+- Inheritance
 - interface
 - object
 - Packages
 - record
 - setter
+- static factory method
+- static methods
 
 ## 05-collections-and-exceptions
 
+- boxing
+- bytes
 - catches
+- checked
 - closed
 - collection
 - deque
+- diamond
+- entries
 - exception
+- finally
+- for-each loop
 - generic
+- immutable
 - Instant
 - keys
 - lambda
 - list
 - map
+- method reference
 - Optional
 - set
 - stream
+- thread
 - Try-with-resources
+- unchecked
 - UTC
 - values
 
 ## 06-maven-and-project-layout
 
+- a reproducible build
+- build
 - build tool
+- continuous integration
 - convention over configuration
 - coordinates
 - dependency
-- executable
+- executable JAR
+- framework
+- Gradle
 - JAR
 - Maven
 - Maven Central
+- parent
+- phase
 - phases
+- plugins
 - Properties
 - scope
 - starter
+- supply chain
+- transitive dependencies
 - wrapper
 - XML
 
 ## 07-git-and-github
 
+- added
 - branch
 - clone
 - Code review
 - commit
 - detached HEAD
+- fast-forward
 - Git
 - merge
+- merge commit
+- merge conflict
+- private
 - pull request
 - remote
 - repository
+- stacked
+- staging area
 - tag
+- Untracked
 - Version control
+- working folder
 
 ## 08-how-the-web-works
 
 - authentication
 - body
 - certificate
+- Content-Security-Policy
 - cookie
+- CSRF
+- CSRF token
+- DNS
 - encryption
 - headers
 - HTTP
 - HTTPS
+- idempotent
 - integrity
 - JSON
 - method
+- multipart
 - origin
+- parts
+- Permissions-Policy
 - protocol
+- proxy
+- Referrer-Policy: no-referrer
 - request
 - request line
+- resource
 - response
+- REST
+- safe
 - same-origin policy
 - session
 - status code
@@ -170,6 +245,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - columns
 - constraint
 - database
+- Denormalized
 - Flyway
 - foreign key
 - index
@@ -181,6 +257,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - MySQL
 - primary key
 - relational database
+- reserved word
 - row lock
 - rows
 - schema
@@ -191,6 +268,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 
 ## 10-docker-and-compose
 
+- build context
 - container
 - containers
 - digest
@@ -198,11 +276,15 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - Docker Compose
 - Dockerfile
 - image
+- install MySQL directly
+- layers
 - multi-stage build
 - network
 - profiles
 - registry
+- service name
 - tag
+- virtual machine
 - volume
 
 ## 11-spring-boot-foundations
@@ -243,11 +325,10 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - log
 - stack trace
 - UUID
-- `Accept` header
-- `Retry-After`
 
 ## 14-jpa-and-flyway
 
+- commits
 - cron
 - entity
 - fixed delay
@@ -259,6 +340,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - pessimistic
 - query method
 - repository
+- rolls back
 - row lock
 - Spring Data JPA
 - transaction
@@ -280,6 +362,7 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 ## 16-spring-security-defenses
 
 - atomic counting
+- clickjacking
 - Content Security Policy
 - cross-site request forgery (CSRF)
 - double-submit cookie
@@ -297,11 +380,25 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 
 ## 18-testing-the-backend
 
+- Assertions
+- error
+- failure
+- flaky test
+- H2
+- integration test
 - JUnit 5
+- lambda
+- latch
+- mock
+- Mockito
 - MockMvc
+- not
+- round trip
+- skipped
+- system test
 - test
-- test pyramid
 - Testcontainers
+- unit test
 
 ## 19-typescript
 
@@ -321,12 +418,19 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 ## 20-node-npm-angular-cli
 
 - Angular CLI
+- budgets
+- bundler
 - development server
+- digest
+- Editing `package-lock.json` by hand,
+- hash
+- LTS
 - Node.js
 - npm
 - origin
 - packages
 - proxy
+- registry
 - semantic versioning
 
 ## 21-angular-components
@@ -436,9 +540,20 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 
 ## 31-m6-final
 
-- CI
+- 72 bytes
+- check-then-act race
+- Continuous integration (CI)
+- CVE
 - Dependabot
 - dependency
+- flaky test
+- ignore rule
+- LTS
+- peer dependency
+- race condition
+- render slots
+- semantic versioning
+- ultrareview
 
 ## 32-security-review
 
@@ -452,7 +567,6 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 - reverse proxy
 - Right-click blocking
 - threat model
-- `Referrer-Policy: no-referrer`
 
 ## 33-deployment-and-tls
 
@@ -468,8 +582,15 @@ Index-ready vocabulary: bolded defined terms in the chapters that exist so far. 
 ## 35-metrics-and-monitoring
 
 - audit log
+- defense in depth
 - health check
+- illustrative
 - metrics
+- Operations
+- pulling
+- rate
+- ratio
+- Tag
 
 ## 36-supply-chain-and-ci
 

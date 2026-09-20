@@ -1,0 +1,13 @@
+# Review: part-1-foundations/00-part-introduction.md (window 7, full review)
+
+Verified: the setup guide it links to exists (`front-matter/c-setting-up-your-machine.md`, with a check per tool and a "Get the code" step); the incidents it names (password limit in bytes, sign-in race, audit times from the future) are in Chapters 3 and 5; the `pom.xml` Tomcat pin is in Chapter 6; each of Chapters 8, 9 and 10 has a "real incident"; Chapters 1 to 10 exist and match Table 1. Reads well, honest about scope, and matches STYLE voice. No secrets, no history claims needing the dossier. No blockers, no majors.
+
+## Findings
+
+1. **minor** - The promise "Each chapter uses only what earlier ones taught, with a small number of forward pointers that are marked as such" is too strong for the expanded chapters. Chapter 4 (Listing 4.9, 4.12) uses Spring Security, JPA annotations, `Optional` chains and method references; Chapter 3 mentions BCrypt, JRE and Docker; Chapter 8 needs a running app (Chapter 10). Either soften ("with forward pointers, marked as such, that you can skip on a first read") or tighten the chapters as the individual reviews suggest.
+2. **minor** - "Chapters 7 to 10 each contain a 'real incident'": Chapter 7's closest match is the OneDrive story (7.8) and the pull-request history; it is not labeled an incident. Add a short "A real incident" heading to Chapter 7 or say "Chapters 8 to 10".
+3. **minor** - "You do not need Node.js yet; Part III asks for it", but the setup guide asks the reader to install Node in Step 4 and includes it in the final check. Say "install it during setup, but you will not use it until Part III".
+4. **minor** - Table caption reads "Table 1" but STYLE 13.2 numbers tables per chapter (Table N.M); the part introduction is chapter 0, so "Table 0.1" or an unnumbered small table is consistent with the house style.
+5. **minor** - "Snippets labeled *Example* ... carry no tag; snippets labeled *Listing* come from this repository" is exactly the STYLE rule and helpful. Add that a few teaching examples mirror real code (for instance Example 5.5) and are still Examples.
+6. **minor** - "each exercise has a worked solution in Appendix C": true only once the editor compiles Appendix C; confirm before release. "★ in every chapter and ★★ for hard chapters" is a good guide; note that ★★★ exercises are open-ended and their solutions describe one good answer, not the only one.
+7. **minor** - "By the end you can ... explain how a browser talks to a server" is verifiable through Chapter 8's exercises; "start its database in a container" through Exercise 10.2. Consider ending with a two-line self-check that names those exercises.

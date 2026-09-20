@@ -35,8 +35,12 @@ Example:
 
 ### Exercise 24.4 ★★ Two themes
 
-The two themes use different color values (Listing 21.5), so text that has enough contrast in one palette may not in the other. Checking only the light theme would leave the dark palette unverified.
+The two themes use different color values (Listing 21.8), so text that has enough contrast in one palette may not in the other. Checking only the light theme would leave the dark palette unverified.
 
 ### Exercise 24.5 ★★★ Why only end-to-end catches it
 
 The bug was in how nginx built the `X-Forwarded-For` header before passing the request to the backend, and the backend's decision to trust it. A Vitest spec runs neither. Only a test that sends real requests through the whole stack can see the header being overwritten (or not). A unit test could still add a check on the frontend side that no code sets that header itself, but that is not where the vulnerability was.
+
+### Exercise 24.6 ★★ Prove it can fail
+
+In `idle.ts`, change `IDLE_WARNING_SECONDS = 5 * 60` to `5 * 61`. The warning window becomes 305 seconds, so at 1,499 seconds after activity (301 seconds left) the function returns a warning instead of `active`. The test's output shows the expected value `{ kind: 'active' }` next to the received `{ kind: 'warning', secondsLeft: 301 }`. (The test "starts warning exactly when five minutes remain" would still pass, which is why the two tests are needed together to pin down both sides of the boundary.) Put the constant back afterward.

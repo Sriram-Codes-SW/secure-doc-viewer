@@ -1,34 +1,57 @@
-<!-- chapter: 16 | part: II | owner: writer-backend | tag: book-m6-final | status: draft -->
+<!-- chapter: 16 | part: II | owner: writer-backend | tag: book-m6-final | status: expanded -->
 # Chapter 16: Spring Security II: defenses
 
-Signing in is only the start. This chapter covers the layers that keep a signed-in session safe and the sign-in endpoint hard to abuse: CSRF protection, per-endpoint authorization, security headers, throttling, session lifetime and the forced password change.
+Signing in is only the start. A signed-in browser carries a credential that other websites can try to borrow, a public sign-in form invites password guessing, and every request must be checked against what its caller is allowed to do. This chapter covers the layers that make a signed-in session safe and the sign-in endpoint hard to abuse: CSRF protection, per-endpoint authorization, security headers, session lifetime and revocation, sign-in throttling, trusting proxies, and the forced password change. Several of them come with real incidents from this project.
 
 ## Learning objectives
 
 By the end of this chapter, you will be able to:
 
 - Explain a CSRF attack and the cookie-plus-header defense the project uses.
-- Read the authorization rules in `SecurityConfig` and explain why unreadable documents give 404, not 403.
-- Explain what the project's security headers do.
-- Describe how `LoginThrottle` counts attempts atomically.
-- Explain why `X-Forwarded-For` is trusted only from a proxy.
-- Explain what `SessionLifetimeFilter` and `PasswordChangeRequiredFilter` enforce.
-
-**A note on versions.** All listings are quoted from `book-m6-final`, where these defenses are complete. `SpaCsrfTokenRequestHandler.java` is identical at `book-m1-accounts`; the throttling, session-lifetime and forced-password-change code arrived in later milestones, and `SecurityConfig` differs from its milestone 1 form.
+- Read the authorization rules in `SecurityConfig`, and explain why a document you can't see gives `404` rather than `403`.
+- Explain what each security header the API sends is for.
+- Describe how sessions are ended: by idle timeout, by a fixed lifetime, and by an administrator.
+- Explain how `LoginThrottle` counts attempts atomically, and why a lockout is itself something to defend.
+- Explain why `X-Forwarded-For` is trusted only from a configured proxy.
+- Explain how the forced password change is enforced on the server.
 
 ## Prerequisites
 
-- Chapter 8: how the web works (headers, cookies)
+- Chapter 8: how the web works (headers, cookies, the same-origin rule)
+- Chapter 13: Validation, configuration properties and errors
+- Chapter 14: Storing data with JPA and Flyway (audit rows are written in their own transaction)
 - Chapter 15: Spring Security I
-- Chapter 14: Storing data with JPA and Flyway (audit rows written in their own transaction)
+
+**A note on versions.** All listings are quoted from `book-m6-final`, where these defenses are complete. `SpaCsrfTokenRequestHandler.java` is identical at `book-m1-accounts`. The throttling, session-lifetime and forced-password-change code arrived in later milestones, and `SecurityConfig` differs from its milestone 1 form.
 
 ## Beginner tier: Attacks the browser makes for you
 
-### 16.1 CSRF: the attack and the cookie-plus-header defense
+### 16.1 CSRF: the attack
 
-Your browser attaches the session cookie to every request to the app, whoever caused that request. Suppose you're signed in and visit a malicious page containing a hidden form that posts to the app's "delete document" address. The browser dutifully sends your cookie, and the server sees a valid session. This is **cross-site request forgery (CSRF)**: another site borrows your credentials.
+Your browser attaches the session cookie to every request it sends to the app, no matter which page caused the request. That's convenient, and it is also the weakness. Suppose you are signed in to the app in one tab, and in another tab you open a malicious page. That page can contain a hidden form that sends a request to the app's "delete document" address. The browser dutifully attaches your cookie, and the server sees a valid session and does what the request says. This is **cross-site request forgery (CSRF)**: another site borrows your credentials to act in your name. The attacker never sees your cookie; they only need the browser to send it.
 
-The defense is a secret the attacker's page can't know. The server sets a second cookie, `XSRF-TOKEN`, whose value the app's own JavaScript reads and copies into a header (`X-XSRF-TOKEN`) on every state-changing request. A foreign page can make the browser send cookies but can't read this one, so it can't fill in the header. The server rejects any write whose header doesn't match. This is the **double-submit cookie** pattern, and it is what `SecurityConfig` sets up:
+An analogy: you leave your outgoing mail tray on your desk. Anyone who can slip a note into the tray gets it posted with your return address, and the post office treats it as yours. The defense is a code word. The post office says: "Every request from you must include today's code word, which only you were told." A stranger who slips a note into your tray can't add the code word, because they don't know it.
+
+**Where the analogy breaks down:** the code word only helps if the stranger can't read it. Anyone who can run a script *inside* the legitimate page (a cross-site scripting attack) can read the code word and use it. The CSRF token protects against forged requests from other sites, not against a compromised page. That's why the API also sends the strict headers in Section 16.4.
+
+### 16.2 The defense: a token in a cookie and a header
+
+The server sets a second cookie, `XSRF-TOKEN`, holding a random value. The app's own JavaScript reads that cookie and copies its value into a request header, `X-XSRF-TOKEN`, on every request that changes something (`POST`, `PUT`, `PATCH`, `DELETE`). The server accepts a change only if the header matches the token. A foreign page can make the browser *send* cookies, but it can't *read* this cookie (browsers only let a site read its own cookies), so it can't fill in the header. This is the **double-submit cookie** pattern: the same value arrives twice, once in a cookie the browser sends automatically and once in a header that only the real app can write.
+
+Here is one changing request as it travels, written as an example with placeholders, not captured from the project.
+
+**Example 16.1 — A request that changes something, with its CSRF header (teaching example)**
+
+```text
+DELETE /api/documents/<document-id> HTTP/1.1
+Host: localhost:8080
+Cookie: SDV_SESSION=<session-id>; XSRF-TOKEN=<csrf-token>
+X-XSRF-TOKEN: <csrf-token>
+```
+
+The two `<csrf-token>` placeholders are the same value. If the header is missing or different, the server answers `403` before the controller runs. The project configures the cookie in `SecurityConfig`.
+
+**Listing 16.1 — `SecurityConfig.csrfTokenRepository` (`book-m6-final`)**
 
 ```java
 @Bean
@@ -39,15 +62,13 @@ public CsrfTokenRepository csrfTokenRepository() {
 }
 ```
 
-(`book-m6-final`, `SecurityConfig.java`.) `withHttpOnlyFalse()` is deliberate: unlike the session cookie, this one *must* be readable by JavaScript. It reveals nothing useful on its own, because it's worthless without a valid session cookie as well.
+*Path: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
-**Where the analogy breaks down.** This isn't a password: it protects against forged requests, not against someone who already controls your browser (script injection defeats it).
+`withHttpOnlyFalse()` is deliberate. Unlike the session cookie, this cookie *must* be readable by JavaScript, or the app couldn't copy it into the header. That is safe because the token alone gives nothing: a forged request also needs the session cookie, and this cookie's value is worthless to a page that isn't the app. `sameSite("Strict")` and `path("/")` apply the same cookie rules as the session cookie (Chapter 15).
 
-The Single-Page-App handler in Listing 16.1 adapts Spring's default to Angular.
+Spring's default handling of CSRF tokens is designed for pages rendered on the server. A single-page application (**SPA**, an app that loads one page and then updates it with JavaScript, as Angular does) needs a small adaptation, which the project keeps in one class.
 
-**Listing 16.1 — `SpaCsrfTokenRequestHandler.java` (`book-m6-final`, imports omitted)**
-
-*`src/main/java/com/example/securedocviewer/security/SpaCsrfTokenRequestHandler.java`*
+**Listing 16.2 — `SpaCsrfTokenRequestHandler.java` (`book-m6-final`, imports omitted)**
 
 ```java
 final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
@@ -69,16 +90,25 @@ final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
 }
 ```
 
-The class comment explains the design: the SPA echoes the raw cookie value in the header, while server-rendered values stay BREACH-protected, and "loading the token on every request makes sure the XSRF-TOKEN cookie is always present". The `SecurityIntegrationTest` case `stateChangingRequestsNeedACsrfToken` shows the result: a write without the token gets `403` with `Missing or invalid CSRF token. Reload the page and try again.`
+*Path: `src/main/java/com/example/securedocviewer/security/SpaCsrfTokenRequestHandler.java`*
 
-## Intermediate tier: Who may do what
+The class has two "handlers": `plain` uses the token as it is, and `xor` scrambles it with random data each time it's rendered, which protects tokens that are embedded in server-rendered pages from an attack called BREACH (one that recovers secrets from the size of compressed responses). `handle` uses the scrambled handler and calls `csrfToken.get()` to force the token to be generated, so the `XSRF-TOKEN` cookie exists from the very first response. `resolveCsrfTokenValue` decides how to read the incoming token: if the request has the `X-XSRF-TOKEN` header, which is what Angular sends with the raw cookie value, compare it as is; otherwise fall back to the scrambled form. The class comment describes this as Spring Security's recommended handling for single-page apps.
 
-### 16.2 Authorization rules per endpoint; 404 vs 403
+You can see the outcome in the `stateChangingRequestsNeedACsrfToken` test in `SecurityIntegrationTest`: a signed-in `POST` without the token gets `403` with the message `Missing or invalid CSRF token. Reload the page and try again.` (Chapter 18).
 
-`SecurityConfig` lists the rules in order, first match wins (`book-m6-final`, excerpt):
+## Intermediate tier: Who may do what, and what the browser is told
+
+*If you're reading for the first time, Sections 16.3 and 16.4 are the important ones here; 16.5 is about ending sessions and can be skimmed until you need it.*
+
+### 16.3 Authorization rules per endpoint; 404 versus 403
+
+Authentication says who the caller is; the **authorization rules** say what each kind of caller may reach. `SecurityConfig` lists them in order, and **the first rule that matches a request wins**.
+
+**Listing 16.3 — `SecurityConfig.securityFilterChain` (`book-m6-final`, excerpt: the `authorizeHttpRequests` rules; one metrics rule is replaced by `// ...`)**
 
 ```java
 .authorizeHttpRequests(auth -> auth
+        // Liveness/readiness for monitoring: status only, no details.
         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
         // ...
         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
@@ -93,34 +123,127 @@ The class comment explains the design: the SPA echoes the raw cookie value in th
         .anyRequest().denyAll())
 ```
 
-Two things stand out. The last rule, `anyRequest().denyAll()`, means anything not listed is refused: you must open a door on purpose. And the rules are coarse (by role and path); finer rules such as "only the owner may share this document" live in `DocumentService`, which has the document in hand.
+*Path: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
-The class comment of `DocumentService` states a related choice: "A document the user can't view is reported as not found, never as forbidden, so its existence isn't revealed." A `403` tells a prober "this id exists but is off-limits"; a `404` tells them nothing. The project applies `403` only when the caller can see the document but not change it.
+Read it from top to bottom, as Spring does. Health checks are open, because monitoring tools have no account, and they reveal only a status. Sign-in must be open: nobody can sign in if they need to be signed in first. Anything under `/api/admin/` needs the `ADMIN` role. Upload (`POST /api/documents`) needs `PUBLISHER` or `ADMIN`. The comment on the replacement rule gives a reason that isn't obvious: the refusal happens *before* the request body is read, so a reader who tries to upload a 50 MB file is turned away without the server spending time receiving it. A `*` in a path stands for one path segment. Then comes a general rule: everything else under `/api/` needs *any* signed-in user. Finally, `anyRequest().denyAll()` refuses anything not mentioned. This last line is the most important habit in the list. A new endpoint you forget to think about is closed, not open.
 
-### 16.3 Security headers: CSP, `nosniff`, `Referrer-Policy`
+Note the order matters: the specific admin rule sits *above* the general `authenticated()` rule. If they were swapped, any signed-in user would match `/api/**` first and reach the admin endpoints.
 
-Response headers can instruct the browser to be stricter. The project sets these in `SecurityConfig`:
+The rules are coarse: they know the path and the role, not which document is meant. Finer rules ("only the owner may share this document") live in `DocumentService`, which has the document in hand, as the comment in the listing says.
+
+**A document you can't see gives `404`, not `403`.** Suppose a reader asks for `/api/documents/<some-id>`. If the id belongs to a document they may not open, a `403 Forbidden` would say "this exists, and you're not allowed", which confirms the id is real. The class comment of `DocumentService` states the project's rule: "A document the user can't view is reported as not found, never as forbidden, so its existence isn't revealed." A `404` for a document that doesn't exist and a `404` for one you may not see look identical. The `403` is reserved for the case where you *can* see the document but may not change it, for example a reader trying to share a document that is visible to them.
+
+**Errors raised inside the filter chain.** The controller advice from Chapter 13 can't catch failures that happen in a filter, because the filter runs before any controller. `SecurityErrorResponses` fills that gap. It implements three Spring Security hooks: the authentication entry point (no one is signed in, so `401` with `Sign-in required.`), the access-denied handler (signed in, but not allowed, so `403`, with a special message for a bad CSRF token), and the expired-session strategy (a session an administrator has ended, so `401` with `Your session has ended. Please sign in again.`). All three write the same `{"error": "..."}` JSON as `GlobalExceptionHandler`, so the browser app needs only one way to read errors.
+
+### 16.4 Security headers
+
+Response headers can instruct the browser to be stricter with what it received. The project sets them in `SecurityConfig`.
+
+**Listing 16.4 — `SecurityConfig.securityFilterChain` (`book-m6-final`, excerpt: the `headers` block)**
 
 ```java
 .headers(headers -> headers
+        // The API only ever returns JSON and PNG tiles, so nothing it serves
+        // needs to run script, load resources or be framed.
         .contentSecurityPolicy(csp -> csp.policyDirectives(
                 "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"))
+        // Tile URLs carry signed tokens; never send them onward in a Referer.
         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
         .permissionsPolicyHeader(permissions -> permissions.policy(
                 "camera=(), microphone=(), geolocation=(), payment=()")))
 ```
 
-(`book-m6-final`, excerpt.) A **Content Security Policy** (CSP) tells the browser what a page may load; the API only returns JSON and PNGs, so `default-src 'none'` forbids everything, and `frame-ancestors 'none'` prevents the response from being framed by another site (**clickjacking**: tricking you into clicking something on a page that a malicious site has hidden inside a frame). The older `X-Frame-Options` header does the same job for old browsers; Spring Security adds it by default. `Referrer-Policy: no-referrer` matters here because tile URLs carry signed tokens: the code comment says "never send them onward in a Referer". Spring Security also adds `X-Content-Type-Options: nosniff` by default, which stops browsers guessing a content type. `SecurityHeadersTest` checks these headers (`book-m3-hardening` and later).
+*Path: `src/main/java/com/example/securedocviewer/security/SecurityConfig.java`*
 
-## Advanced tier: Abuse, proxies and lifetimes
+**Table 16.1 — The security headers and what each does**
 
-### 16.4 Throttling sign-in attempts (`LoginThrottle`) and atomic counting
+| Header | Value in this app | What it prevents |
+|---|---|---|
+| `Content-Security-Policy` | `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'` | A response being used to run script, load other resources, be framed, or submit forms |
+| `Referrer-Policy` | `no-referrer` | The browser sending the address of the previous page (including signed tile URLs) to other sites |
+| `Permissions-Policy` | camera, microphone, geolocation, payment all empty | The page using those browser features |
+| `X-Content-Type-Options` | `nosniff` (Spring Security default) | The browser guessing that JSON is HTML and running it |
+| `X-Frame-Options` | `DENY` (Spring Security default) | Framing, for older browsers |
 
-Hashing is slow on purpose, but an attacker can still try many passwords. `LoginThrottle` applies three rolling 15-minute rules: 5 failures for one account from one address, 20 failures from one address across any accounts (password spraying), and 20 failures for one account across all addresses. Listing 16.2 shows the core.
+A **Content Security Policy (CSP)** tells the browser what a response is allowed to load or do. `default-src 'none'` says "nothing at all", which is right for an API that returns only JSON and PNG images. `frame-ancestors 'none'` forbids any site from placing the response inside a frame, which defeats **clickjacking**, where an attacker hides a real page inside a frame on their own page and tricks you into clicking it. `base-uri` and `form-action` close two smaller doors. The older `X-Frame-Options: DENY` header does the framing job for old browsers; Spring Security adds it by default, and so it adds `nosniff`.
 
-**Listing 16.2 — `LoginThrottle.reserve` (`book-m6-final`)**
+Two of the choices are worth a second look. `Referrer-Policy: no-referrer` is here *because of the signed tile URLs* (Chapter 17): a tile URL contains a token, and if the browser sent that URL as the referrer to another site, the token would leak. And `default-src 'none'` is possible because this is an API; the web page itself is served by another component, which has its own CSP (Part V).
 
-*`src/main/java/com/example/securedocviewer/security/LoginThrottle.java`*
+The `SecurityHeadersTest` class checks the headers on a plain API response, and also that `/actuator/health` shows only `UP` with no details and that other actuator endpoints such as `/actuator/env` are closed. A security header nobody tests tends to disappear in the next refactor.
+
+### 16.5 Session lifetime, idle timeout, revocation
+
+Chapter 15 set a 30-minute **idle timeout**: 30 minutes without a request ends the session. But an idle timeout alone has a gap. A session that is used continuously would never expire, so a stolen or forgotten session could live forever as long as *something* keeps using it. `SessionLifetimeFilter` adds an **absolute lifetime**: a session ends a fixed time after sign-in, however active it is.
+
+**Listing 16.5 — `SessionLifetimeFilter.java` (`book-m6-final`, excerpt: the check in `doFilterInternal`)**
+
+```java
+if (session != null) {
+    if (session.getAttribute(SIGNED_IN_AT) instanceof Instant signedInAt) {
+        if (Instant.now().isAfter(signedInAt.plus(maxLifetime))) {
+            session.invalidate();
+            SecurityContextHolder.clearContext();
+        }
+    } else if (session.getAttribute(SECURITY_CONTEXT) != null) {
+        // Signed in before this rule existed: its lifetime starts now.
+        session.setAttribute(SIGNED_IN_AT, Instant.now());
+    }
+}
+chain.doFilter(request, response);
+```
+
+*Path: `src/main/java/com/example/securedocviewer/security/SessionLifetimeFilter.java`*
+
+The `SIGNED_IN_AT` attribute is set by `AuthController` at sign-in (Listing 15.7). The filter reads it, and if more than `maxLifetime` (12 hours by default, `session-max-lifetime`) has passed, it invalidates the session and clears the security context. Then it *continues the chain* rather than answering itself: the request now looks anonymous, so the normal rules produce the normal `401`, and the app sends the user to the sign-in screen. The `else if` covers sessions that existed before the rule was introduced: instead of living forever, their clock starts on their next request. Both behaviors have tests, for example `aSessionEndsAFixedTimeAfterSignInHoweverActive`, which backdates the sign-in time by 13 hours and expects `401`.
+
+The filter is registered before Spring's authorization filter, so an expired session is treated as anonymous *before* any access rule is applied.
+
+**Revocation.** `SecurityConfig` registers every session in a `SessionRegistry` and allows unlimited concurrent sessions (`maximumSessions(-1)`): the app doesn't limit how many devices you sign in from, but it knows about each one. That lets `SessionAdministration` list and end sessions. The admin page lists sessions by an opaque **handle** (Chapter 15, Section 15.9), and `revoke(handle)` calls `expireNow()` on the matching session. Spring Security then rejects that session's next request, and the message from `SecurityErrorResponses` appears. `revokeAllFor(username, exceptSessionId)` ends every session a user has, "so the change takes effect now, not when their session happens to time out": it runs when an administrator changes a user's role, disables the account or resets the password, and when users change their own password.
+
+The test `anAdminCanSignAUserOutEverywhere` shows the whole thing: one user signs in on a "laptop" and a "phone", the user's own attempt to end all sessions is refused with `403`, the administrator's succeeds with `204`, both of the user's sessions get `401` on their next request, and the administrator's own session is unaffected.
+
+## Advanced tier: Abuse, proxies and forced changes
+
+*You can skip to "In this project" on a first read. Part IV tells the milestones in which these incidents were found.*
+
+### 16.6 Throttling sign-in attempts, and atomic counting
+
+Hashing passwords slowly (Chapter 15) makes each guess expensive, but an attacker can still send many guesses. **Throttling** limits how many attempts are allowed in a period. `LoginThrottle` applies three rules over a rolling 15-minute window.
+
+**Table 16.2 — The three sign-in rules (`LoginThrottle`)**
+
+| Rule | Limit | Stops |
+|---|---|---|
+| account+ip | 5 failures for one account from one address | Guessing one account's password from one place |
+| ip | 20 failures from one address across any accounts | Trying one common password against many accounts ("password spraying") |
+| account-wide | 20 failures for one account across all addresses, for addresses the account hasn't recently used | Spreading guesses over many addresses |
+
+A refused attempt returns `429 Too Many Requests` with a `Retry-After` header saying how many seconds until the oldest counted failure ages out of the window. The window is **rolling**: it always looks at the last 15 minutes, not at fixed clock periods, so there's no boundary an attacker can wait for. Figure 16.1 shows how the three rules and the recognised-device exemption combine into one decision.
+
+```mermaid
+flowchart TB
+    A["Sign-in attempt for an account from an address"] --> B{"5 or more failures for this account from this address"}
+    B -- "yes" --> L1["Refuse with 429 and Retry-After (rule account+ip)"]
+    B -- "no" --> C{"20 or more failures from this address for any account"}
+    C -- "yes" --> L2["Refuse with 429 (rule ip)"]
+    C -- "no" --> D{"Has this account signed in from this address recently"}
+    D -- "yes, a recognised device" --> OK["Allowed: count the attempt in advance, then check the password"]
+    D -- "no" --> E{"20 or more failures for this account from all addresses"}
+    E -- "yes" --> L3["Refuse with 429 (rule account-wide)"]
+    E -- "no" --> OK
+```
+
+*Figure 16.1 — The three sign-in rules and the recognised-device exemption in `LoginThrottle.checkAllowed`*
+
+<!-- source: LoginThrottle.checkAllowed at book-m6-final -->
+
+The first two rules apply to everyone, including a recognised device: that is why someone sharing the owner's network address still can't guess freely. Only the third rule, the account-wide one, is skipped for a device the account has recently used, which is what stops a stranger from locking the owner out of their usual device.
+
+**The check-then-act race.** The obvious way to write this is: (1) check whether the caller is locked out; (2) verify the password; (3) if wrong, record a failure. There is a gap between steps 1 and 3, and a password check takes about a tenth of a second. An attacker who sends many guesses at the same moment gets them *all* past step 1 before any reaches step 3, so a limit of five doesn't stop nine simultaneous guesses. This is a **race condition**: the result depends on the timing of things that happen at once.
+
+**The incident.** During the final review rounds, a threat-modeling review (an AI agent playing a security reviewer, as Chapter 32 explains) asked whether the sign-in protection would survive a serious external review, and ran a live probe: nine concurrent wrong passwords for one account from one address, with a limit of five. All nine received `401` (their passwords were actually checked) and only the next single attempt got `429`. The cause was exactly the gap above. <!-- source: dossier bugs-and-findings G1; commit 1ce2c8b --> The fix, in commit `1ce2c8b`, is the code below: reserve the attempt *before* checking the password, and hand the reservation back on success.
+
+**Listing 16.6 — `LoginThrottle.java` (`book-m6-final`, excerpt: methods `reserve` and `succeeded`)**
 
 ```java
 public synchronized Instant reserve(String username, String clientIp, boolean recognisedDevice) {
@@ -138,48 +261,51 @@ public synchronized void succeeded(String username, String clientIp, Instant res
 }
 ```
 
-The design is **atomic counting**. The naive way is: check the count, verify the password, then count a failure. With a burst of parallel requests, all of them pass the check before any is counted, so an attacker gets far more guesses than the limit. Instead, `reserve` checks and counts in one `synchronized` step, *before* the password is verified; a correct password hands the count back with `succeeded`. The class comment says why: "a burst of parallel guesses can't all pass the check before any of them is counted." The test `aBurstOfParallelWrongPasswordsGetsNoMoreThanTheLimit` covers it. The counters are in memory (a restart clears them, per the class comment), and a `@Scheduled` sweep prunes old entries (Chapter 14).
+*Path: `src/main/java/com/example/securedocviewer/security/LoginThrottle.java`*
 
-Addresses the account recently signed in from (`KnownDevices`) are exempt from the account-wide rule only, so an attacker hammering a username from elsewhere can't lock its owner out of the usual device. Stored addresses are keyed hashes, not raw IPs.
+`synchronized` is a Java keyword meaning "only one thread at a time may run this method on this object". `reserve` therefore checks *and* counts as one indivisible step: the second of nine simultaneous callers can't check until the first has counted. Every attempt is counted as a failure in advance; a correct password calls `succeeded`, which removes that provisional failure and clears the account-and-address counter. The class comment states the guarantee: "a burst of parallel guesses can't all pass the check before any of them is counted." After the fix, the same probe let exactly five through. The test `aBurstOfParallelWrongPasswordsGetsNoMoreThanTheLimit` (Chapter 18, Section 18.10) is the regression guard, and **the lesson generalizes: a check followed by an action is a race unless something makes the two one step.**
 
-### 16.5 Trusting `X-Forwarded-For` only from a proxy
+Two limits of the design are stated in the class comment: the counters live in memory (a restart clears them), and attempts refused by a lock aren't counted, so being locked out doesn't extend the lock. A `@Scheduled` sweep every five minutes drops counters whose failures have all aged out (Chapter 14).
 
-Throttling by address needs the real client address. Behind a reverse proxy, the connection comes from the proxy, and the original address arrives in the `X-Forwarded-For` header, which any client can also forge. `application.yml` therefore trusts it only when configured:
+**A lockout is also an attack surface.** The first version of the account-wide rule locked an account after 20 failures from *any* addresses. The reviewer then pointed out that this lets anyone lock out any user: fail 20 times as the victim from a few addresses and the real owner can't sign in. The project's answer is the **recognised device**. `KnownDevices` remembers, for 30 days, addresses an account has *successfully* signed in from, and the account-wide rule doesn't apply to those. An attacker hammering a username from elsewhere therefore can't lock the owner out of their usual device, while the per-address rule still applies to everyone. <!-- source: dossier decisions D7, bugs-and-findings E1; commit 82c24b6 --> Because an address is personal data, only a keyed hash of it is stored (IPv6 addresses grouped by their /64 prefix, since one device rotates addresses within a prefix), entries expire after 30 days, and they are forgotten when the password changes or the account is disabled. The trade-off is documented: the correct password from a *new* address is refused during an account-wide lockout until an administrator unlocks the account.
+
+### 16.7 Trusting `X-Forwarded-For` only from a proxy
+
+Throttling by address needs the real client address. In a deployment the connection reaches the app through a **reverse proxy** (a server that receives requests on the app's behalf and forwards them, covered in Part V), so the address on the connection is the proxy's, and the original address travels in a header, `X-Forwarded-For`. But any client can write that header. If the app believes it blindly, an attacker can send a different fake address with every attempt and never hit a per-address limit.
+
+**Listing 16.7 — `application.yml` (`book-m6-final`, excerpt: the forwarded-header settings)**
 
 ```yaml
 server:
+  port: 8080
+  # Set to "native" only when running behind a trusted reverse proxy (the
+  # docker-compose "full" profile does); otherwise X-Forwarded-For is ignored,
+  # so clients can't spoof their IP to dodge login throttling.
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
   tomcat:
     remoteip:
+      # Which peers may set X-Forwarded-For. Compose pins this to the nginx
+      # container's fixed address, so nothing else on the network can spoof it.
       internal-proxies: ${TRUSTED_PROXY_REGEX:127\.0\.0\.1|0:0:0:0:0:0:0:1}
 ```
 
-(`book-m6-final`, excerpt with comments trimmed.) Its comments explain: set `native` only behind a trusted proxy, "otherwise X-Forwarded-For is ignored, so clients can't spoof their IP to dodge login throttling", and the trusted-proxy pattern is pinned to the proxy's fixed address. Part V returns to deployment.
+*Path: `src/main/resources/application.yml`*
 
-### 16.6 Session lifetime, idle timeout, revocation
+The default, `none`, ignores the header entirely: safe when the app is reached directly. Behind the project's own proxy, the setting becomes `native`, and `internal-proxies` says *which* peers Tomcat may believe; the deployment pins it to the proxy's fixed address. Only then does `request.getRemoteAddr()`, which `AuthController` uses, return the forwarded client address.
 
-The 30-minute idle timeout ends abandoned sessions, but a session in constant use would never expire. `SessionLifetimeFilter` adds a fixed cap (12 hours by default, `session-max-lifetime`):
+**The incident.** An earlier version of the deployment did the opposite of what the setting says: nginx *appended* to an `X-Forwarded-For` header the client had supplied, and the app trusted it, so a client could reset its sign-in lockout simply by sending a fake address. The description of the pull request that introduced this had claimed direct callers couldn't spoof; that claim was false, and the pull request text was corrected in place. The reviewer found it by testing through the real proxy. The fix made nginx overwrite the header with the real peer address, and later the app trusts the header only from the proxy's fixed address. A browser test that goes through nginx now guards it. <!-- source: dossier bugs-and-findings D1 (TM2-1); commits 2d82253, a51674c --> The lesson: **a header a proxy sets is only as trustworthy as the proxy's configuration, so test through the proxy, not around it.**
 
-```java
-if (session.getAttribute(SIGNED_IN_AT) instanceof Instant signedInAt) {
-    if (Instant.now().isAfter(signedInAt.plus(maxLifetime))) {
-        session.invalidate();
-        SecurityContextHolder.clearContext();
-    }
-}
-```
+The tests inside the Java project can't exercise a proxy, but they follow the principle in a small way. `SecurityIntegrationTest` gives every test that causes failures its own address with a helper `from("198.51.100.61")`, whose comment says why: "Tests that cause failures use their own address, so they don't use up 127.0.0.1's allowance."
 
-(`book-m6-final`, `SessionLifetimeFilter.java`, excerpt.) The request then continues unauthenticated and gets the normal `401`. `SecurityConfig` registers sessions in a `SessionRegistry` and allows unlimited concurrent sessions (`maximumSessions(-1)`), so an admin can list sessions by an opaque handle and revoke them; a revoked session is refused on its next request with the message `Your session has ended. Please sign in again.` Sign-in also changes the session id (`changeSessionId`), which defeats **session fixation**, where an attacker plants a known id before you sign in.
+### 16.8 Forced password change
 
-#### A real incident: the CSRF cookie that vanished at sign-in
+An account whose password an administrator set, or whose first password was generated and printed in a log, must choose its own at first sign-in. The check that the UI redirects to a password form is a convenience; the *enforcement* is on the server, in `PasswordChangeRequiredFilter`.
 
-Spring's built-in step for rotating the CSRF token deleted the cookie and then re-read the token from the request, which still carried the old cookie, so the browser ended with no token and its first write after signing in failed with `403`. `AuthController` now generates and saves a fresh token itself so exactly one `Set-Cookie` is sent, and `CsrfCookieFlowTest` reproduces the browser's steps (with no test helper) to guard it. The lesson: test security flows the way a browser behaves, because test helpers can hide the very bug you're looking for; that test even needs its own fresh context because the helper "permanently swaps the CSRF filter's repository". <!-- source: AuthController.rotateCsrfToken comment and CsrfCookieFlowTest class comment at book-m6-final; dossier/bugs-and-findings.md#C1 and #C2 -->
-
-### 16.7 Forced password change
-
-Accounts whose password an admin set must choose their own at first sign-in. `PasswordChangeRequiredFilter` enforces it on the server, not just in the UI:
+**Listing 16.8 — `PasswordChangeRequiredFilter.java` (`book-m6-final`, excerpt: the check in `doFilterInternal`)**
 
 ```java
+HttpSession session = request.getSession(false);
+String path = request.getRequestURI().substring(request.getContextPath().length());
 if (session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ATTRIBUTE))
         && path.startsWith("/api/") && !path.startsWith("/api/auth/")) {
     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -187,57 +313,115 @@ if (session != null && Boolean.TRUE.equals(session.getAttribute(SESSION_ATTRIBUT
     response.getWriter().write("{\"error\":\"You must change your password before continuing.\",\"passwordChangeRequired\":true}");
     return;
 }
+chain.doFilter(request, response);
 ```
 
-(`book-m6-final`, excerpt.) While the flag is set on the session, everything under `/api` except the auth endpoints returns `403`. Both custom filters are added around `AuthorizationFilter` in `SecurityConfig`. The test `anAdminSetPasswordMustBeChangedBeforeAnythingElseWorks` walks through it.
+*Path: `src/main/java/com/example/securedocviewer/security/PasswordChangeRequiredFilter.java`*
+
+While the session's flag `sdv.mustChangePassword` is set (Chapter 15's Step 7), everything under `/api/` except the `/api/auth/` endpoints (where the user can look up who they are, change the password, or sign out) gets a `403` with an explanation and `passwordChangeRequired: true`. Note the `return` without `chain.doFilter`: the request stops here. Both custom filters are added around Spring's `AuthorizationFilter` in `SecurityConfig`: the lifetime filter before it and this one after it. Figure 16.2 shows where the two filters sit among the others.
+
+```mermaid
+flowchart TB
+    R["Request"] --> P0["Earlier Spring Security filters: load the session's security context, check the CSRF token"]
+    P0 --> L["SessionLifetimeFilter: ends a session older than its fixed lifetime"]
+    L --> Z["AuthorizationFilter: the path and role rules"]
+    Z --> P["PasswordChangeRequiredFilter: refuses api paths while a change is pending"]
+    P --> K["Controller"]
+```
+
+*Figure 16.2 — Where the project's two custom filters sit in the chain*
+
+<!-- source: SecurityConfig.securityFilterChain at book-m6-final -->
+
+The order explains the behavior. The lifetime filter runs before the authorization rules, so a session that has outlived its fixed lifetime looks anonymous by the time the rules are applied, and the caller gets the ordinary `401`. The password-change filter runs after them, so it only ever sees requests that authorization has let through, and it blocks those that belong to an account still waiting to choose a password. The test `anAdminSetPasswordMustBeChangedBeforeAnythingElseWorks` walks through the story: an administrator creates a user, the user signs in and is told a change is needed, `GET /api/documents` returns `403` with the flag, `GET /api/auth/me` still works, and after `POST /api/auth/password` the documents endpoint returns `200`.
+
+Changing a password is itself guarded. The endpoint reserves an attempt from the same `LoginThrottle` before checking the current password, because a stolen session shouldn't be a free way to guess it. The commit that added atomic sign-in counting closed this gap too. <!-- source: dossier bugs-and-findings G4; commit 1ce2c8b --> A successful change also ends the user's other sessions, so anyone who had the old password is signed out.
+
+### 16.9 A real incident: the CSRF cookie that vanished at sign-in
+
+Section 16.2's design had a bug that only a browser could see. At sign-in, Spring's built-in step for rotating the CSRF token (part of protecting against session fixation) deleted the cookie and then re-read the token from the request, which still carried the *old* cookie. The browser ended with no token, and the first write after signing in failed with `403`. It was found in a live check against a real database while building the first accounts milestone. `AuthController` now generates and saves a fresh token itself, so exactly one `Set-Cookie` is sent (its comment on `rotateCsrfToken` explains this), and `CsrfCookieFlowTest` reproduces the browser's steps to guard it. <!-- source: dossier bugs-and-findings C1, C2; PR #1; AuthController.rotateCsrfToken and CsrfCookieFlowTest comments at book-m6-final --> Chapter 18, Section 18.8, explains why the ordinary test helper could never have caught it.
+
+### 16.10 Common mistakes
+
+- **Leaving a path open by omission.** Without `anyRequest().denyAll()`, a new endpoint could be reachable by default. Deny first; open on purpose.
+- **Ordering rules wrongly.** A broad rule above a specific one shadows it. Put the specific rules first.
+- **Answering 403 when you mean "doesn't exist".** It confirms the resource is real. Return `404` when the caller has no right to know.
+- **Trusting `X-Forwarded-For` everywhere.** Trust it from a named proxy only.
+- **Counting after checking.** Any limit that checks first and counts later can be beaten with parallel requests.
+- **Building a lockout with no exceptions.** An attacker can use it against the victim; think about who else could trigger it.
+- **Hiding a button and calling it security.** The UI conceals what a role can't use, but the server enforces it on every request. Test the server path, as `readersCannotReachAdminOrUpload` does.
+- **Testing security with the shortcut helpers only.** See Chapter 18, Section 18.8.
 
 ## In this project
 
-**Table 16.1 — Where Chapter 16's ideas live (`book-m6-final`)**
+**Table 16.3 — Where Chapter 16's ideas live (`book-m6-final`)**
 
 | Idea | File |
 |---|---|
-| CSRF | `security/SecurityConfig.java`, `security/SpaCsrfTokenRequestHandler.java` |
+| CSRF | `security/SecurityConfig.java`, `security/SpaCsrfTokenRequestHandler.java`, `controller/AuthController.java` |
 | Rules and headers | `security/SecurityConfig.java` |
 | Filter-chain JSON errors | `security/SecurityErrorResponses.java` |
-| Throttling | `security/LoginThrottle.java`, `security/KnownDevices.java` |
-| Session filters | `security/SessionLifetimeFilter.java`, `security/PasswordChangeRequiredFilter.java` |
-| Proxy trust, timeouts | `src/main/resources/application.yml` |
+| Throttling and recognised devices | `security/LoginThrottle.java`, `security/KnownDevices.java` |
+| Session filters and revocation | `security/SessionLifetimeFilter.java`, `security/PasswordChangeRequiredFilter.java`, `security/SessionAdministration.java` |
+| Proxy trust, cookie and timeout settings | `src/main/resources/application.yml` |
+
+Part IV's chapters on milestones 1, 3 and 5 (Chapters 26, 28 and 30) tell when each defense arrived and why.
 
 ## Try it
 
-### Exercise 16.1 ★ The deny-all default
+### Exercise 16.1 ★ What does `denyAll()` do?
 
-What does `anyRequest().denyAll()` do to a new endpoint you forget to list?
+In Listing 16.3, what happens to a request for `GET /api/does-not-exist` from a signed-in reader? What about `GET /somewhere-else` from anyone? Which rule matches each?
 
-### Exercise 16.2 ★ Why the CSRF cookie is readable
+*Solution:* Appendix C, Exercise 16.1.
 
-Why must the `XSRF-TOKEN` cookie be readable by JavaScript when the session cookie must not be?
+### Exercise 16.2 ★ Two cookies, two rules
 
-### Exercise 16.3 ★★ Count before checking
+Explain in your own words why the `XSRF-TOKEN` cookie is readable by JavaScript while `SDV_SESSION` is not, and why that difference is safe.
 
-Why does `LoginThrottle.reserve` count before the password is checked?
+*Solution:* Appendix C, Exercise 16.2.
 
-### Exercise 16.4 ★★ Someone else's document
+### Exercise 16.3 ★★ Read the headers on your own copy
 
-A reader asks for a document id that belongs to someone else. Which status does the server return, and why?
+Start your own local copy of the app and use `curl -i` (Chapter 8) on `/api/auth/me` without signing in. List every security header in the response and match each to a row of Table 16.1. Which header, if missing, would you notice last, and why?
 
-### Exercise 16.5 ★★★ Trusting forwarded headers
+*Solution:* Appendix C, Exercise 16.3.
 
-Explain what would go wrong if `FORWARD_HEADERS_STRATEGY` were `native` on a server directly reachable from the internet.
+### Exercise 16.4 ★★ 404 or 403?
+
+For each request, say which status the server returns and why: (a) a reader asks for a private document that belongs to someone else; (b) a reader asks to share a document that is visible to everyone; (c) a reader asks for the admin audit log; (d) no one is signed in and asks for `/api/documents`.
+
+*Hint:* the answers involve two different layers, the rules in `SecurityConfig` and the checks in `DocumentService`.
+
+*Solution:* Appendix C, Exercise 16.4.
+
+### Exercise 16.5 ★★★ Break the throttle in a scratch copy
+
+On a scratch branch, change `LoginThrottle.reserve` so it calls `checkAllowed` but records the failure only *after* `authenticate` fails (a check-then-act design). Run `aBurstOfParallelWrongPasswordsGetsNoMoreThanTheLimit`. What do you observe? Explain why the original passes and yours doesn't.
+
+*Solution:* Appendix C, Exercise 16.5 (a worked outline).
+
+### Exercise 16.6 ★★★ Design a lockout that can't be abused
+
+Suppose you must protect a "reset PIN" endpoint that allows 3 attempts. Design the counting so that (a) parallel guesses can't exceed 3, and (b) a stranger can't lock the real owner out for good. Say what you count, where you store it, and what happens to a legitimate owner who is locked out.
+
+*Solution:* Appendix C, Exercise 16.6 (a worked outline).
 
 ## Summary
 
-- CSRF protection uses a readable token cookie echoed in a header; foreign sites can't read it.
-- Authorization is deny-by-default, with coarse rules in `SecurityConfig` and per-document rules in the service; unreadable documents look nonexistent.
-- Security headers restrict what browsers do with the API's responses.
-- `LoginThrottle` counts each attempt before verifying it, so parallel guessing is bounded.
-- `X-Forwarded-For` is trusted only from a configured proxy.
-- Filters enforce a fixed session lifetime and the forced password change on the server.
+- CSRF lets another site borrow your cookie; the project defends with a readable `XSRF-TOKEN` cookie that the app copies into an `X-XSRF-TOKEN` header, which a foreign site can't do.
+- Authorization is deny-by-default, with coarse role rules in `SecurityConfig` (first match wins, specific before general) and per-document rules in the service; a document you can't see is reported as not found.
+- Security headers instruct the browser to load nothing from the API, refuse framing, and never leak signed URLs in a `Referer`.
+- Sessions end by idle timeout, by a fixed maximum lifetime and by administrator revocation; every session is registered so it can be listed and ended.
+- `LoginThrottle` reserves each attempt atomically before checking the password; recognised devices stop a lockout from being turned against its owner.
+- `X-Forwarded-For` is trusted only from a configured proxy address.
+- The forced password change is enforced by a server-side filter, and every one of these defenses has a test.
 
 ## Further reading
 
 - *Spring Security Reference Documentation*, "Cross Site Request Forgery (CSRF)." https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html
 - *Spring Security Reference Documentation*, "Authorize HttpServletRequests." https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html
-- *OWASP Cheat Sheet Series*, "Cross-Site Request Forgery Prevention Cheat Sheet." https://cheatsheetseries.owasp.org/
+- *Spring Security Reference Documentation*, "Security HTTP Response Headers." https://docs.spring.io/spring-security/reference/servlet/exploits/headers.html
+- *OWASP Cheat Sheet Series*, "Cross-Site Request Forgery Prevention Cheat Sheet." https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+- *OWASP Cheat Sheet Series*, "Authentication Cheat Sheet." https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
 - *MDN Web Docs*, "Content Security Policy (CSP)." https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
