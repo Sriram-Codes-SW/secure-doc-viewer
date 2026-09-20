@@ -54,16 +54,16 @@ for i, line in enumerate(lines):
 with open(rp, 'w', encoding='utf-8', newline='\n') as f:
     f.write('\n'.join(lines))
 
-# PDF only: the default LaTeX fonts lack these glyphs, so use same-width ASCII stand-ins (EPUB/HTML keep the originals).
+# PDF only: no font in the image has colour emoji, so print the one emoji (in a Java string) as its escape.
 pdf_text = open(rp, encoding='utf-8').read()
-for old, new in {'─': '-', '├': '+', '└': '+', '│': '|', '≈': '~',
-                 '\U0001F600': BACKSLASH + 'uD83D' + BACKSLASH + 'uDE00'}.items():
-    pdf_text = pdf_text.replace(old, new)
+pdf_text = pdf_text.replace('\U0001F600', BACKSLASH + 'uD83D' + BACKSLASH + 'uDE00')
 with open(os.path.join(OUT, 'diagrams', 'rendered-pdf.md'), 'w', encoding='utf-8', newline='\n') as f:
     f.write(pdf_text)
 
+# Pandoc + XeLaTeX image with real fonts (see Dockerfile); built once, cached afterwards.
+subprocess.run(['docker', 'build', '-q', '-t', 'sdv-book-pandoc', HERE], check=True)
 common = ['docker', 'run', '--rm', '-v', BOOK.replace(BACKSLASH, '/') + ':/data', '-w', '/data/build/out',
-          'pandoc/extra:latest', '--from', 'gfm', '--toc', '--toc-depth=2', '--standalone', '--resource-path=.:/data/build/out/diagrams',
+          'sdv-book-pandoc', '--from', 'gfm', '--toc', '--toc-depth=2', '--standalone', '--resource-path=.:/data/build/out/diagrams',
           '--metadata', 'title=Building a Secure Document Viewer',
           '--metadata', 'subtitle=From first line of Java to production', '--metadata', 'lang=en-US']
 env = dict(os.environ, MSYS_NO_PATHCONV='1')
@@ -71,7 +71,9 @@ subprocess.run(common + ['-o', 'secure-doc-viewer-guide.epub', SRC], check=True,
 subprocess.run(common + ['--embed-resources', '-o', 'secure-doc-viewer-guide.html', SRC], check=True, env=env)
 # LaTeX book PDF (XeLaTeX): chapters start new pages, running headers, wrapped code, numbered sections.
 subprocess.run(common + ['--pdf-engine=xelatex', '-V', 'documentclass=book', '-V', 'classoption=oneside,11pt', '-V', 'papersize=a4',
-               '-V', 'geometry:margin=2.5cm', '--top-level-division=chapter', '--highlight-style=tango',
+               '-V', 'geometry:margin=2.5cm', '-V', 'mainfont=texgyrepagella-regular.otf',
+               '-V', 'mainfontoptions=BoldFont=texgyrepagella-bold.otf,ItalicFont=texgyrepagella-italic.otf,BoldItalicFont=texgyrepagella-bolditalic.otf',
+               '-V', 'monofont=DejaVu Sans Mono', '-V', 'monofontoptions=Scale=0.85', '--top-level-division=chapter', '--syntax-highlighting=tango',
                '--include-in-header=/data/build/header.tex', '-V', 'colorlinks=true', '-o', 'secure-doc-viewer-guide.pdf', 'diagrams/rendered-pdf.md'],
                check=True, env=env)
 for n in sorted(os.listdir(OUT)):

@@ -1,9 +1,11 @@
 \usepackage{fontspec}
-\usepackage{pifont}
-\catcode`★=\active \def★{\ding{72}}
-\catcode`→=\active \def→{\ensuremath{\rightarrow}}
-\catcode`✓=\active \def✓{\ding{51}}
-\catcode`✗=\active \def✗{\ding{55}}
+\usepackage{newunicodechar}
+\newfontfamily\symbolfont{DejaVu Sans}
+\newunicodechar{★}{{\symbolfont ★}}
+\newunicodechar{→}{{\symbolfont →}}
+\newunicodechar{✓}{{\symbolfont ✓}}
+\newunicodechar{✗}{{\symbolfont ✗}}
+\newunicodechar{≈}{{\symbolfont ≈}}
 \usepackage{fancyhdr}
 \usepackage{fvextra}
 \usepackage{graphicx}
