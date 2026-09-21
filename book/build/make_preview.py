@@ -1,12 +1,14 @@
-"""Draws the social preview card: 1280x640 (GitHub) and 1200x630 (LinkedIn / Open Graph).
-Same look as the book cover: navy, a page cut into tiles with one tile picked out, white text (contrast about 11:1).
+"""Draws the two preview cards.
+- preview-1280x640.png: GitHub social preview (Settings > General > Social preview). Same look as the book cover: navy, a page
+  cut into tiles with one tile picked out, white text (contrast about 11:1).
+- preview-link-2400x1260.png: the card for links shared on LinkedIn and other sites (Open Graph, 1.91:1). It is drawn at twice
+  the size with a larger title and fewer words, because those sites show it as a small thumbnail.
 Built-in Helvetica keeps the files free of font licences. usage: python make_preview.py [output-dir]
 """
 import os
 import sys
 
 import pymupdf
-from PIL import Image
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
 W, H = 1280, 640
@@ -56,10 +58,35 @@ put('By Claude (Anthropic)  |  Spring Boot, Angular, Docker', 566, 'hebo', 24, S
 pix = page.get_pixmap(dpi=72)
 p1 = os.path.join(OUT, 'preview-1280x640.png')
 pix.save(p1)
-# 1200x630 for LinkedIn and Open Graph: scale to 1200x600 and centre on navy
-img = Image.open(p1).convert('RGB').resize((1200, 600), Image.LANCZOS)
-canvas = Image.new('RGB', (1200, 630), (0x1F, 0x3D, 0x5C))
-canvas.paste(img, (0, 15))
-p2 = os.path.join(OUT, 'preview-1200x630.png')
-canvas.save(p2, optimize=True)
-print('wrote', p1, pix.width, 'x', pix.height, '|', p2, os.path.getsize(p1) // 1024, 'KB and', os.path.getsize(p2) // 1024, 'KB')
+print('wrote', p1, pix.width, 'x', pix.height, os.path.getsize(p1) // 1024, 'KB')
+
+# ---- link card: 1200x630 layout drawn at 2x (2400x1260), larger text, tile row along the bottom ----
+LW, LH = 1200, 630
+LSOFT = rgb('E3EBF4')
+ldoc = pymupdf.open()
+lp = ldoc.new_page(width=LW, height=LH)
+lp.draw_rect(pymupdf.Rect(0, 0, LW, LH), color=None, fill=NAVY)
+ts, tg, tn, ty = 56, 8, 15, 548
+for c in range(tn):
+    colour = PICKED if c == 7 else TILES[(c * 3) % 5]
+    x = 60 + c * (ts + tg)
+    lp.draw_rect(pymupdf.Rect(x, ty, x + ts, ty + ts), color=None, fill=colour)
+lavail = LW - 120
+
+
+def lput(text, y, font, size, colour):
+    while pymupdf.get_text_length(text, fontname=font, fontsize=size) > lavail:
+        size -= 1
+    lp.insert_text((60, y), text, fontname=font, fontsize=size, color=colour)
+
+
+lput('Building a Secure', 135, 'hebo', 112, WHITE)
+lput('Document Viewer', 250, 'hebo', 112, WHITE)
+lput('A free textbook: from first line of', 322, 'hebo', 46, LSOFT)
+lput('Java to production', 376, 'hebo', 46, LSOFT)
+lput('41 chapters | 242 exercises | 81 diagrams', 444, 'hebo', 40, WHITE)
+lput('By Claude (Anthropic)', 500, 'helv', 34, LSOFT)
+p2 = os.path.join(OUT, 'preview-link-2400x1260.png')
+lpix = lp.get_pixmap(dpi=144)
+lpix.save(p2)
+print('wrote', p2, lpix.width, 'x', lpix.height, os.path.getsize(p2) // 1024, 'KB')
