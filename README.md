@@ -18,8 +18,9 @@ implement that pattern end to end and to be explicit about what it does and does
 ## The companion book
 
 The `book/` folder holds a beginner-to-production textbook that builds this application step by step: 41 chapters,
-242 exercises with solutions, and 81 diagrams. The PDF, EPUB and HTML editions are attached to the repository's Release;
-to build them yourself, run `python book/build/build.py` (Docker is required; see `book/build/build.py`).
+242 exercises with solutions, and 81 diagrams. The PDF, EPUB and HTML editions are attached to the [Release](https://github.com/Sriram-Codes-SW/secure-doc-viewer/releases/tag/book-v1.0),
+and the web edition can be read online at <https://sriram-codes-sw.github.io/secure-doc-viewer/>. To build the editions yourself,
+run `python book/build/build.py` (Docker is required; see `book/build/build.py`).
 
 - **History.** The seven milestone tags (`book-m0-mvp` to `book-m6-final`) are the code the book's listings come from.
   The pull requests (#1 to #14) were recreated in this repository after personal data was removed from the commit
