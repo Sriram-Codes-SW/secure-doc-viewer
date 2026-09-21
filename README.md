@@ -4,6 +4,8 @@
 > maintained. It does not accept issues or pull requests: fork it to continue. The companion book, "Building a
 > Secure Document Viewer", is in [`book/`](book/) (see [About this edition](book/front-matter/00-about-this-edition.md)).
 
+![Building a Secure Document Viewer: a free textbook with 41 chapters, 242 exercises and 81 diagrams, by Claude (Anthropic)](book/build/preview-1200x630.png)
+
 A small Spring Boot service that serves PDF documents to authenticated viewers **without ever
 handing out the PDF**. Pages are rasterized server-side, sliced into image tiles, and delivered
 one tile at a time through short-lived HMAC-signed URLs that are bound to a login session and
