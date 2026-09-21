@@ -1,3 +1,7 @@
+# ARCHIVED SNAPSHOT: version-update pull requests are switched off in every block below
+# (open-pull-requests-limit: 0) because this repository is published as a read-only snapshot.
+# Remove those lines in a fork to turn the weekly updates back on.
+#
 # Weekly dependency update PRs, grouped per ecosystem so they arrive as a few
 # reviewable PRs rather than dozens. CI runs the full suite on each.
 #
@@ -10,6 +14,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
     groups:
       maven:
         patterns: ['*']
@@ -18,6 +23,7 @@ updates:
     directory: /frontend
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
     groups:
       angular:
         patterns: ['@angular/*', '@angular-devkit/*']
@@ -35,6 +41,7 @@ updates:
     directories: [/, /frontend]
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
     ignore:
       # Odd-numbered Node releases never become LTS (24 and 26 are LTS lines).
       - dependency-name: node
@@ -47,6 +54,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
     ignore:
       # Stay on the MySQL 8.4 LTS line (patches only). Innovation releases (9.x
       # below 9.7, 26.x...) are not LTS; moving to the next LTS (9.7) is a
@@ -58,3 +66,4 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
