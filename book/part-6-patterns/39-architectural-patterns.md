@@ -440,9 +440,9 @@ flowchart LR
 
 ### 39.17 A worked example: how the lockout was decided
 
-Here is a real decision from the project, put through the framework. It's the sign-in lockout, and it changed twice. The facts come from the pull request for the platform milestone (PR #5), the README, and the commit that introduced the final design (`82c24b6`).
+Here is a real decision from the project, put through the framework. It's the sign-in lockout, and it changed twice. The facts come from the pull request for the platform milestone (PR #5), the README, and the commit that introduced the final design (`672907d`).
 
-<!-- source: PR #5 body "TM3-1"; commit 82c24b6; README "Sign-in lockout"; dossier decisions D7 -->
+<!-- source: PR #5 body "TM3-1"; commit 672907d; README "Sign-in lockout"; dossier decisions D7 -->
 **Step 1: problem and constraints.** Attackers guess passwords, and a stolen password must be hard to find by guessing. Constraints: no multi-factor authentication (MFA) and no identity provider (Chapter 37, Section 37.6); one instance, so counters are in memory; real owners must not be locked out by strangers.
 
 **Step 2: options.** (a) Count failures per account and address, and per address. (b) Add a counter for the account from all addresses. (c) Add that counter only for addresses the account hasn't signed in from before. (d) Do nothing: rely on BCrypt's slowness and strong passwords. (e) Add a second proof, such as multi-factor authentication or an identity provider (out of scope here; see Section 37.6). This is a retelling with the framework, not a decision made with it: the facts come from the pull request and the commits.

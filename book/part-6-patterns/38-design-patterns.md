@@ -376,7 +376,7 @@ sequenceDiagram
 
 <!-- source: TileController.getTile, TileRateLimiter and TileWorkLimiter at book-m6-final -->
 
-The refund arrived together with the server-wide cap on concurrent tile work, in one of the later review rounds. A reader who is turned away with `503` is therefore not charged against their allowance for a request that was never served. <!-- source: dossier bugs-and-findings G10; commit 782ab6b --> **What it costs:** the compensation code has to be right on every failure path. **When not to use it:** when the check and the action can be made one step already (an atomic database update), there is nothing to hand back.
+The refund arrived together with the server-wide cap on concurrent tile work, in one of the later review rounds. A reader who is turned away with `503` is therefore not charged against their allowance for a request that was never served. <!-- source: dossier bugs-and-findings G10; commit 156ee56 --> **What it costs:** the compensation code has to be right on every failure path. **When not to use it:** when the check and the action can be made one step already (an atomic database update), there is nothing to hand back.
 
 ### 38.11 Guard clauses and failing fast
 

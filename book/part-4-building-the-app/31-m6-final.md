@@ -17,7 +17,7 @@ Chapter 30 (the platform), Chapter 18 (backend testing) and Chapter 24 (frontend
 testing). The code is at `book-m6-final`, the tip of `main` after pull
 requests #9 to #12. The difference from `book-m5-platform` touches only four paths:
 `.github/dependabot.yml`, `frontend/package.json`, its lock file, and `TileGenerationServiceTest`.
-At `book-m6-final` (commit `a27e069`) the repository has 38 commits and pull requests 1 to 12. A later documentation-only pull request, #13, corrected the README's mention of a canvas and a code comment; at the tag itself, trust the code (Chapter 21) over that README sentence. Versions at this tag: Spring Boot 4.1.1, Java 25, and, only from this tag, Vitest 5.0.1 and jsdom
+At `book-m6-final` (commit `d41e2b8`) the repository has 38 commits and pull requests 1 to 12. A later documentation-only pull request, #13, corrected the README's mention of a canvas and a code comment; at the tag itself, trust the code (Chapter 21) over that README sentence. Versions at this tag: Spring Boot 4.1.1, Java 25, and, only from this tag, Vitest 5.0.1 and jsdom
 30.0.1 in the frontend (earlier tags use Vitest 4).
 <!-- source: git diff --stat book-m5-platform book-m6-final; PR #9-#12; coordinator correction in requests.md -->
 
@@ -352,7 +352,7 @@ when the password is right. The measured result after the fix is exactly 5 accep
 **The lesson.** Whenever you write "check, then do," ask what happens if two requests arrive
 between the check and the do. Put the check and the reservation in one atomic step, and test with
 real parallelism, not only sequential calls.
-<!-- source: bugs-and-findings G1; commit 1ce2c8b; LoginThrottle.java at book-m5-platform -->
+<!-- source: bugs-and-findings G1; commit 708fd8c; LoginThrottle.java at book-m5-platform -->
 
 ### 31.11 Characters are not bytes: the 72-byte password
 
@@ -394,7 +394,7 @@ they typed. The commit adds a test for it.
 **The lesson.** A limit written in one unit ("characters") and enforced by a library in another
 ("bytes") is a bug waiting for an unusual input. Read the documentation for the unit your
 dependency actually counts.
-<!-- source: bugs-and-findings G2; commit 1ce2c8b; UserAccountService.java at book-m5-platform -->
+<!-- source: bugs-and-findings G2; commit 708fd8c; UserAccountService.java at book-m5-platform -->
 
 ### 31.12 The critical advisories in the framework itself
 
@@ -403,7 +403,7 @@ version behind (Chapter 30). Yet this Spring Boot release shipped Tomcat 11.0.24
 carried three advisories rated critical.
 
 **The fix.** Maven lets you override a version that a parent manages, using a property. The commit
-in the second ultrareview-preparation round (`f682716`) pinned Tomcat to a fixed release and left a
+in the second ultrareview-preparation round (`7484f4f`) pinned Tomcat to a fixed release and left a
 comment that says when to remove the pin. The dependency and image scans in CI, which the pull
 request lists among its supply-chain measures, check for this kind of problem.
 
@@ -425,7 +425,7 @@ comment names them so the next person can look each one up, and it states the ex
 **The lesson.** Using the newest framework release doesn't guarantee that its dependencies are
 patched, because a framework can lag the security fixes of the libraries inside it. Scan your
 dependency tree in CI, and when you override a managed version, write down why and when to stop.
-<!-- source: bugs-and-findings G9, G7; commit f682716; PR #5 body; pom.xml at book-m5-platform -->
+<!-- source: bugs-and-findings G9, G7; commit 7484f4f; PR #5 body; pom.xml at book-m5-platform -->
 
 ### 31.13 The admin page that would never let itself expire
 
@@ -433,7 +433,7 @@ dependency tree in CI, and when you override a managed version, write down why a
 to the server counted as activity, so the admin's own session never went idle and never timed out,
 on the account with the most power in the app.
 
-**The fix.** Poll only while somebody is actually there. The final round (commit `6cf17fa`) made the
+**The fix.** Poll only while somebody is actually there. The final round (commit `f1bb3a8`) made the
 decision a small pure function that the tests can call directly, and the TM reviewer verified
 the result.
 
@@ -462,7 +462,7 @@ a hidden tab.
 **The lesson.** Two features that are each reasonable (live refresh, idle timeout) can cancel each
 other out. When a mechanism observes activity, check that your own background traffic does not count
 as activity.
-<!-- source: bugs-and-findings G12; PR #5 body; commit 6cf17fa; admin-dashboard.component.ts and spec at book-m5-platform -->
+<!-- source: bugs-and-findings G12; PR #5 body; commit f1bb3a8; admin-dashboard.component.ts and spec at book-m5-platform -->
 
 ### 31.14 The retry loop with no end
 
@@ -479,7 +479,7 @@ render slot. The viewer stops and says "Some parts of this page could not be loa
 
 **The lesson.** Every retry loop needs a stop condition on both ends. The server must not say "try
 again" when trying again cannot help, and the client must not believe it forever.
-<!-- source: bugs-and-findings G13; PR #5 body; commit 6cf17fa -->
+<!-- source: bugs-and-findings G13; PR #5 body; commit f1bb3a8 -->
 
 ### 31.15 The ultrareview that never ran
 

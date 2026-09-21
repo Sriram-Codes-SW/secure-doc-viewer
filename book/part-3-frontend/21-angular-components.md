@@ -1,5 +1,5 @@
 <!-- chapter: 21 | part: III | owner: writer-frontend | tag: book-m6-final | status: expanded -->
-<!-- source: contrast tokens changed between book-m4-reading and book-m5-platform (git diff of styles.css); idle banner from Phase 4b (6417d49, book-m4-reading); tile-seam comment in viewer.component.css; contrast ratios computed by the author with the WCAG relative-luminance formula; listings verified with git show book-m6-final -->
+<!-- source: contrast tokens changed between book-m4-reading and book-m5-platform (git diff of styles.css); idle banner from Phase 4b (ff971da, book-m4-reading); tile-seam comment in viewer.component.css; contrast ratios computed by the author with the WCAG relative-luminance formula; listings verified with git show book-m6-final -->
 # Chapter 21: Angular components and templates
 
 Every screen of the Secure Document Viewer is an Angular component: the top bar, the sign-in form, the document list, and the page viewer. In this chapter you learn what a component is, how its template shows data and reacts to change, and how the app's stylesheet gives every screen a consistent look in light and dark themes. You will also see how the viewer paints a PDF page out of many small pieces without using an image tag, and why.

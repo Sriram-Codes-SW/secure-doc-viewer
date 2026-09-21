@@ -550,7 +550,7 @@ Read `canManage`: an admin may manage anything; otherwise the viewer must be a p
 
 *Read now, revisit later.* Two pieces of syntax here belong to Chapter 5. First, `AppUser::isEnabled` is a short way to write "call `isEnabled` on the user", called a *method reference*. Second, the chain `.filter(...).map(...).orElse(...)` works on an `Optional`, a box that may hold a user or nothing. Read the chain as: look the user up; keep them only if the account is enabled; build a `Viewer` from their current role; if there is no such user, use a `Viewer` with no rights. The lesson does not depend on the syntax.
 
-**The lesson.** An immutable record is safe against being changed, but it can still be *stale*. When a decision depends on facts that can change, such as a role, re-check them at the moment of the decision. The same principle runs through the app: access to tiles is re-checked on every tile request, so unsharing a document cuts off pages that are already open. <!-- source: dossier bugs-and-findings.md D2 (TM2-3, commit 2d82253); git log -S currentRoles (commit 6cf17fa, round 4); DocumentService.java at book-m6-final -->
+**The lesson.** An immutable record is safe against being changed, but it can still be *stale*. When a decision depends on facts that can change, such as a role, re-check them at the moment of the decision. The same principle runs through the app: access to tiles is re-checked on every tile request, so unsharing a document cuts off pages that are already open. <!-- source: dossier bugs-and-findings.md D2 (TM2-3, commit 65f2530); git log -S currentRoles (commit f1bb3a8, round 4); DocumentService.java at book-m6-final -->
 
 ### 4.11 Common mistakes
 

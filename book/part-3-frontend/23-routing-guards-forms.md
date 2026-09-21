@@ -1,5 +1,5 @@
 <!-- chapter: 23 | part: III | owner: writer-frontend | tag: book-m6-final | status: expanded -->
-<!-- source: forced password change and swipe added in commit 47a9e19 (book-m5-platform); deep links and keyboard in commit 0a6a7c1 (book-m4-reading); safeReturnUrl present since book-m1-accounts; listings verified with git show book-m6-final and book-m1-accounts -->
+<!-- source: forced password change and swipe added in commit d74a346 (book-m5-platform); deep links and keyboard in commit 187498c (book-m4-reading); safeReturnUrl present since book-m1-accounts; listings verified with git show book-m6-final and book-m1-accounts -->
 # Chapter 23: Routing, guards, and forms
 
 A single-page application has one HTML page, but readers expect many: a sign-in page, a document list, a viewer you can bookmark. This chapter shows how Angular's router creates that illusion, how guards keep readers out of screens they can't use, how the forms collect input, and how the viewer supports deep links, keyboard navigation, and swiping. Along the way it keeps returning to one theme that runs through the whole project: the browser is friendly territory for convenience and hostile territory for security, so every check made here is also made again on the server.

@@ -1,5 +1,5 @@
 <!-- chapter: 24 | part: III | owner: writer-frontend | tag: book-m6-final | status: expanded -->
-<!-- source: X-Forwarded-For spoofing finding (TM2-1, fix 2d82253, PR 1) and its Playwright regression test; axe checks and e2e suite added in Phase 5 (2d10e07); all listings verified with git show book-m6-final -->
+<!-- source: X-Forwarded-For spoofing finding (TM2-1, fix 65f2530, PR 1) and its Playwright regression test; axe checks and e2e suite added in Phase 5 (08f3879); all listings verified with git show book-m6-final -->
 # Chapter 24: Testing the frontend
 
 The frontend makes promises: a reader who wasn't given a document never sees it, a page turn asks for exactly one new page of tiles, every screen is readable in light and dark themes. Tests turn those promises into checks that run on every change. This chapter shows the two layers the project uses: fast unit tests with Vitest, and slow, realistic end-to-end tests with Playwright, including automated accessibility checks. It also shows how to read tests as documentation, because in this project the test names are the most honest list of what the frontend is supposed to do.

@@ -1,5 +1,9 @@
 # Secure Document Viewer
 
+> **Status: archived, read-only snapshot.** This repository was published as a finished reference and is not
+> maintained. It does not accept issues or pull requests: fork it to continue. The companion book, "Building a
+> Secure Document Viewer", is in [`book/`](book/) (see [About this edition](book/front-matter/00-about-this-edition.md)).
+
 A small Spring Boot service that serves PDF documents to authenticated viewers **without ever
 handing out the PDF**. Pages are rasterized server-side, sliced into image tiles, and delivered
 one tile at a time through short-lived HMAC-signed URLs that are bound to a login session and
@@ -10,6 +14,19 @@ This is the architecture commercial e-magazine and flipbook readers use. The pro
 implement that pattern end to end and to be explicit about what it does and does not achieve.
 
 ---
+
+## The companion book
+
+The `book/` folder holds a beginner-to-production textbook that builds this application step by step: 41 chapters,
+242 exercises with solutions, and 81 diagrams. The PDF, EPUB and HTML editions are attached to the repository's Release;
+to build them yourself, run `python book/build/build.py` (Docker is required; see `book/build/build.py`).
+
+- **History.** The seven milestone tags (`book-m0-mvp` to `book-m6-final`) are the code the book's listings come from.
+  The pull requests (#1 to #14) were recreated in this repository after personal data was removed from the commit
+  history, so the dates GitHub shows on them are the recreation dates; the commits keep their original dates.
+- **Review records.** `book/_team/` keeps the records of how the book was reviewed and checked (see its README).
+- **Honest limits.** The book, and the [Limitations](#limitations) section below, say what the application does not
+  defend against. It is a reference project, not production software, and it comes with no warranty.
 
 ## Why this design
 
@@ -429,4 +446,6 @@ Stated plainly, because the honest framing matters more than the feature list:
 
 ## License
 
-MIT
+The application source code and build files are released under the MIT License (see [LICENSE](LICENSE)). The text and
+figures of the book under `book/` are copyright 2026, all rights reserved (see [book/LICENSE.md](book/LICENSE.md));
+the code listings quoted in the book are excerpts of the MIT-licensed source code.

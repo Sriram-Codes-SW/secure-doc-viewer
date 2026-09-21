@@ -2,7 +2,7 @@
 
 Scope: full read as a beginner; history and figures checked against the dossier and README (Read/Grep only; the chapter has no code listings). Solutions file arithmetic re-computed: all six answers are correct (24 tiles; 13 requests, and 36 with 256 px tiles; Exercise 1.6: 4 tiles per page, 45 pages a minute, about 11 minutes; 35 tiles per page, 17,500 tiles / 120 per minute = about 2.4 hours).
 
-History claims verified against the dossier: 13 PO + 20 TM findings; session-id takeover (TM-1) and no-password sign-in (TM-2); five phases with one PR each, milestones 1-5, small maintenance changes as milestone 6; 114 backend and 31 frontend tests; 33 minutes vs about 2.4 hours (decisions.md, TM final review); blank page by about page 4 (bugs-and-findings D7 / PO-7); earlier 256 px / 120 per minute vs now 512 px / 180 (a51674c); the PO and TM described as AI review agents (compliant). The dossier is cited only in HTML source comments (compliant). The README has the "~12 tiles" line (README line 28). No secrets. No blockers.
+History claims verified against the dossier: 13 PO + 20 TM findings; session-id takeover (TM-1) and no-password sign-in (TM-2); five phases with one PR each, milestones 1-5, small maintenance changes as milestone 6; 114 backend and 31 frontend tests; 33 minutes vs about 2.4 hours (decisions.md, TM final review); blank page by about page 4 (bugs-and-findings D7 / PO-7); earlier 256 px / 120 per minute vs now 512 px / 180 (5fc0faf); the PO and TM described as AI review agents (compliant). The dossier is cited only in HTML source comments (compliant). The README has the "~12 tiles" line (README line 28). No secrets. No blockers.
 
 ## Findings
 

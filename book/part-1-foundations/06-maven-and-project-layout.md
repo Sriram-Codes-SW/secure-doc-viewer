@@ -221,7 +221,7 @@ Some libraries exist only to check the app, not to run it. They carry `<scope>te
 
 `spring-boot-starter-test` is the starter that brings the testing tools (Chapter 18 teaches them). `h2` is a small database that lives entirely in memory, so most tests can exercise database code without needing MySQL running. `testcontainers-mysql` goes further: it starts a real MySQL in a Docker container (Chapter 10) for one test class. The comment in the file records that this test is skipped when Docker is not available, so a machine without Docker can still run the rest of the tests.
 
-The pairing shows a real trade-off. Tests against the small in-memory database are fast and need nothing installed, but that database is not MySQL and can behave differently. The Testcontainers test is slower but faithful. The project keeps both: fast tests for everyday feedback, one faithful test as a check. <!-- source: dossier decisions.md (H2 in MySQL mode since m1; MySqlIntegrationTest added in commit a51674c) -->
+The pairing shows a real trade-off. Tests against the small in-memory database are fast and need nothing installed, but that database is not MySQL and can behave differently. The Testcontainers test is slower but faithful. The project keeps both: fast tests for everyday feedback, one faithful test as a check. <!-- source: dossier decisions.md (H2 in MySQL mode since m1; MySqlIntegrationTest added in commit 5fc0faf) -->
 
 ### 6.6 What the Spring Boot plugin adds
 
@@ -302,7 +302,7 @@ Only the first run pays for the download. Every later run, on your laptop, in th
 
 The wrapper arrived late. In the first review of the project, the AI technical-manager reviewer (an AI review agent, like the other reviewer you will meet) listed the missing Dockerfile, CI and Maven wrapper as one finding. The wrapper was added in the commit that moved the project to Java 25, the one behind milestone `book-m5-platform`.
 
-This has a practical consequence for you. At the tags `book-m0-mvp` to `book-m4-reading` there is no `mvnw`, and the project builds with Spring Boot 3.3.4 on Java 21. To run one of those milestones you need a JDK 21 and a Maven that you install yourself (Maven 3.9 is the line the wrapper later pinned), and you start the app with `mvn` instead of `./mvnw`. Table IV.3 in [Part IV](../part-4-building-the-app/00-part-introduction.md) lists exactly what each group of tags needs. Reading the older code with `git show <tag>:<path>` (Chapter 7) needs none of that. <!-- source: dossier reviews.md TM-14; timeline.md commit 2d10e07; git log for mvnw; Table IV.3 in Part IV -->
+This has a practical consequence for you. At the tags `book-m0-mvp` to `book-m4-reading` there is no `mvnw`, and the project builds with Spring Boot 3.3.4 on Java 21. To run one of those milestones you need a JDK 21 and a Maven that you install yourself (Maven 3.9 is the line the wrapper later pinned), and you start the app with `mvn` instead of `./mvnw`. Table IV.3 in [Part IV](../part-4-building-the-app/00-part-introduction.md) lists exactly what each group of tags needs. Reading the older code with `git show <tag>:<path>` (Chapter 7) needs none of that. <!-- source: dossier reviews.md TM-14; timeline.md commit 08f3879; git log for mvnw; Table IV.3 in Part IV -->
 
 ### 6.8 Lifecycle: compile, test, package, verify
 
@@ -395,7 +395,7 @@ Pinning matters for security as well as convenience. The libraries you depend on
 
 #### The Tomcat pin
 
-Look back at Listing 6.2. Spring Boot 4.1.1 shipped with Tomcat 11.0.24, the web server embedded in the app. That release had three critical security advisories. The project's fifth pull request went through several rounds of review, and one of them found the problem. The fix was one line: override `tomcat.version` to 11.0.26, and write a comment saying when to drop the override, which is once Boot itself manages 11.0.25 or later. The lesson generalizes: a framework release can lag behind the security fixes of its own dependencies, so scanning the dependency list continuously is part of the build, not an occasional chore. <!-- source: dossier bugs-and-findings.md G9; commit f682716; pom.xml comment at book-m6-final -->
+Look back at Listing 6.2. Spring Boot 4.1.1 shipped with Tomcat 11.0.24, the web server embedded in the app. That release had three critical security advisories. The project's fifth pull request went through several rounds of review, and one of them found the problem. The fix was one line: override `tomcat.version` to 11.0.26, and write a comment saying when to drop the override, which is once Boot itself manages 11.0.25 or later. The lesson generalizes: a framework release can lag behind the security fixes of its own dependencies, so scanning the dependency list continuously is part of the build, not an occasional chore. <!-- source: dossier bugs-and-findings.md G9; commit 7484f4f; pom.xml comment at book-m6-final -->
 
 The scan runs in the project's CI. Here is the job that does it.
 

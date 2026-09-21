@@ -1,6 +1,6 @@
 # Final technical review (after the proofreading pass)
 
-Reviewer: final technical reviewer. Branch `book/draft`, diff base `bb46933..HEAD`. Read-only review; no chapter edited, no build run.
+Reviewer: final technical reviewer. Branch `book/draft`, diff base `0116061..HEAD`. Read-only review; no chapter edited, no build run.
 
 ## Verdict
 
@@ -14,7 +14,7 @@ PUBLISH on the technical content. No Blocker and no Major finding. Five Minor fi
 
 ## How this was checked
 
-1. Structural drift scan (own script, `scratchpad/codedrift.py`): compared every changed hunk between `bb46933` and HEAD against fenced blocks and inline code. Result: no change inside any non-diagram code listing; the only fence-level changes are the restructured Mermaid diagrams (top-to-bottom layouts, shorter node labels, new Prometheus and Actuator nodes) and one Markdown re-indent in Ch 9 Section 9.3 (the two `bash` blocks are now indented under list items 2 and 3; valid). The only inline-code changes are added tokens (tag names in "In this project", `401`, `.env`, `stopTimeout`, `denyAll`, and so on), none altered.
+1. Structural drift scan (own script, `scratchpad/codedrift.py`): compared every changed hunk between `0116061` and HEAD against fenced blocks and inline code. Result: no change inside any non-diagram code listing; the only fence-level changes are the restructured Mermaid diagrams (top-to-bottom layouts, shorter node labels, new Prometheus and Actuator nodes) and one Markdown re-indent in Ch 9 Section 9.3 (the two `bash` blocks are now indented under list items 2 and 3; valid). The only inline-code changes are added tokens (tag names in "In this project", `401`, `.env`, `stopTimeout`, `denyAll`, and so on), none altered.
 2. Word-level scan of all 1,995 change pairs; the 803 non-punctuation ones were read (glossary and index by sampling). Number-changing pairs were all checked. Word-list replacements ("login" to "sign-in", "logout", "front end") appear only in prose; the two prose spots (`25:557` "logging" to "signing" out, `30:82` "front end" to "proxy") are correct. "recognised" to "recognized" touched no code or quoted repository text (the KnownDevices Javadoc, which uses the British spelling, is not quoted in a listing).
 3. Checkers: `listingcheck.py` (292 listings verified, 13 flagged, exactly the 13 known: 10.6, 10.7, 13.2, 15.1, 18.2, 18.4, 26.13, 28.4, 28.6, 31.1, 34.1, 34.2, 36.4; nothing new). `refcheck.py`: 0 broken references (the 2 hits are in STYLE.md). `xref.py`: 0. `figcheck3.py`: 78 captioned figures, every one has a text description; sequence problem only for the Part II opener figure label "II.1" (a part-level figure, harmless). `gen_appendix_c.py` regenerated to the scratchpad and is byte-identical (ignoring CR) to the committed Appendix C; all 242 exercises exist, every non-three-star exercise has a solution heading in Appendix C, and the Ch 39 exercises now carry "Solution:" pointers that match their headings.
 4. Three new listings, compared line by line with the tag:

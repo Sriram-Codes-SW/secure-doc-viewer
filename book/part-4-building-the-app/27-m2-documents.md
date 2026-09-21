@@ -14,7 +14,7 @@
 ## Prerequisites
 
 Chapters 26 (accounts and sessions), 9 (SQL and MySQL) and 14 (JPA and Flyway). The code is at `book-m2-documents`, still Spring Boot 3.3.4 and Java 21. This
-milestone is pull request #2 (commit `ba00693`), which was stacked on pull request #1 and merged
+milestone is pull request #2 (commit `f648f33`), which was stacked on pull request #1 and merged
 within a minute of it. To run this tag yourself, see Table IV.3 ("What you need to run each tag") in
 the [Part IV introduction](00-part-introduction.md).
 <!-- source: milestone brief m2; timeline -->

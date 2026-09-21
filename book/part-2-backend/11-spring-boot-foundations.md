@@ -394,7 +394,7 @@ Spring Boot's parent manages the version of every library, including Tomcat. Usu
 
 *Path: `pom.xml`*
 
-The parent's table is keyed by property names such as `tomcat.version`; setting the property in *your* `pom.xml` replaces the managed value. The IDs in the comment are GitHub security advisory numbers, which you can look up. The comment is what makes the override safe: a future maintainer knows why it's there and when to delete it. The lesson: **a framework release can lag behind its own dependencies' security fixes, so scan your dependencies and know how to override one deliberately.** Chapter 36 covers scanning. <!-- source: dossier bugs-and-findings G9; commit f682716; pom.xml comment at book-m6-final -->
+The parent's table is keyed by property names such as `tomcat.version`; setting the property in *your* `pom.xml` replaces the managed value. The IDs in the comment are GitHub security advisory numbers, which you can look up. The comment is what makes the override safe: a future maintainer knows why it's there and when to delete it. The lesson: **a framework release can lag behind its own dependencies' security fixes, so scan your dependencies and know how to override one deliberately.** Chapter 36 covers scanning. <!-- source: dossier bugs-and-findings G9; commit 7484f4f; pom.xml comment at book-m6-final -->
 
 ### 11.10 Common mistakes
 

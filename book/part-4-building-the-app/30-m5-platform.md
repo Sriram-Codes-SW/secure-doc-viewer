@@ -16,7 +16,7 @@
 
 Chapters 26–29 (the earlier milestones), 10 (Docker and Compose), 24 (end-to-end tests) and 16
 (Spring Security). The code is at `book-m5-platform`, the merge of
-pull request #5. It is the largest milestone: 15 commits, `2d10e07` to `51ea941`, written over roughly
+pull request #5. It is the largest milestone: 15 commits, `08f3879` to `607182e`, written over roughly
 half a day and reviewed in several rounds. Versions at this tag differ from the earlier chapters:
 Spring Boot 4.1.1, Java 25, PDFBox 3.0.8, Maven wrapper 3.9.16 (check `pom.xml` at the tag).
 <!-- source: milestone brief m5; timeline; versions record -->
@@ -286,9 +286,9 @@ request's first description claimed direct callers couldn't spoof; that was fals
 description now keeps the struck-through claim and a "Correction." The TM reviewer (`TM2-1`,
 high, introduced by this pull request) found it and recommended not merging until it was fixed.
 
-**The fix, in two steps.** Commit `2d82253` made nginx *overwrite* the header with the real address
+**The fix, in two steps.** Commit `65f2530` made nginx *overwrite* the header with the real address
 of the connecting peer. A Playwright test that goes through nginx proves it: it fails on the
-pre-fix stack ("Expected 429, Received 401") and passes now. Commit `a51674c` tightened trust further
+pre-fix stack ("Expected 429, Received 401") and passes now. Commit `5fc0faf` tightened trust further
 (finding `TM2-6`): the Compose network has a fixed range, nginx has a fixed address, and the API's
 `TRUSTED_PROXY_REGEX` accepts forwarded headers only from that address.
 
@@ -459,7 +459,7 @@ that the fix created a new attack (`TM3-1`): anyone could lock out any user by f
 few addresses. The victim's own attempts, from their usual computer, would then be refused: a
 **denial of service** against a person.
 
-The final design, commit `82c24b6`, uses a 15-minute window and three rules.
+The final design, commit `672907d`, uses a 15-minute window and three rules.
 
 **Table 30.2 — The three lockout rules**
 
@@ -879,7 +879,7 @@ The implementer laid the options out for the project owner. Now: normal reading 
 limit only slows copying. The project owner first asked how different limits for sensitive documents would work, which became an open idea: per-document sensitivity levels. Then the project owner decided to go ahead with the
 current rate-limit setup and to watch how it works in practice. The README records the
 sign-off.
-<!-- source: decisions D6; PR #5 body; commits 66f7152, 51ea941 -->
+<!-- source: decisions D6; PR #5 body; commits bbca423, 607182e -->
 
 ### 30.16 Operations, tests, and time
 
