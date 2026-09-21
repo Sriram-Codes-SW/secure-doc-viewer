@@ -5,8 +5,7 @@
 This guide is binding for every file under `book/`. Where it and the charter disagree on a
 matter of style, this guide wins; on accuracy, the charter's rules always win. If something
 isn't covered here, follow *The Chicago Manual of Style* (18th edition) for prose and the
-*Microsoft Writing Style Guide* for technical usage, then ask the editor through
-`book/_team/requests.md` so the answer can be added here.
+*Microsoft Writing Style Guide* for technical usage, then record the answer here.
 
 Owner: `editor`. Last updated: 2026-09-19.
 
@@ -330,7 +329,7 @@ Writers: propose additions through `requests.md`. Chapter numbers follow `book/O
 - Before bolding, check `book/GLOSSARY.md`. If the term is already defined in an earlier
   chapter, don't redefine it; if the reader might have forgotten, remind them in a clause with
   a cross-reference: "the session cookie (Section 6.4)".
-- **Every bolded term goes into the glossary.** Add a request to `book/_team/requests.md`:
+- **Every bolded term goes into the glossary.** Record it with a line like this in the editor's request log (a working file that is not part of this repository):
 
   ```markdown
   - [writer-backend → editor] glossary: **entity** — a Java class whose objects are stored as rows in a database table. (Ch 14, Section 14.3)
@@ -552,7 +551,7 @@ The advanced tiers and Part IV's "Decisions and challenges" use real events. Rul
 - **Source everything.** Every incident, decision, number, date, or version comes from the
   dossier (`book/_team/dossier/`) or a primary source (git history, a PR description, the
   code). Put the source in an HTML comment at the end of the paragraph:
-  `<!-- source: PR #5; commit 782ab6b; dossier/incidents.md#render-pool -->`. If you can't
+  `<!-- source: PR #5; commit 156ee56; dossier/incidents.md#render-pool -->`. If you can't
   source it, don't write it.
 - **Incident structure**, as `####` subsections or bold lead-ins:
   **The problem**, **How it was found**, **The fix**, **The lesson**. The lesson generalizes

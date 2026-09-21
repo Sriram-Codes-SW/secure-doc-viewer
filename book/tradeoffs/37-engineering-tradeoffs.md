@@ -31,7 +31,7 @@ outcome but not the reasoning, the text says so and marks the reasoning as the b
 
 ## 37.1 Server-side tiles vs. sending the PDF
 
-<!-- source: README "Why this design"; commit b6aef4e; dossier/decisions.md D4 -->
+<!-- source: README "Why this design"; commit df2bd6c; dossier/decisions.md D4 -->
 
 **The decision.** How do you show a document to someone without handing them the file?
 
@@ -39,7 +39,7 @@ outcome but not the reasoning, the text says so and marks the reasoning as the b
 and, in the README's words, the PDF "stops existing as a servable file after ingest." Only the tiles remain, and no endpoint returns a
 page or document (README, "Why this design"; the ingest code deletes the staged source PDF, `TileGenerationService`).
 The browser paints the tiles as absolutely positioned elements with CSS background images built from `blob:` URLs (Chapter 21). The reasoning at MVP time survives only in the
-commit message of `b6aef4e`.
+commit message of `df2bd6c`.
 
 **Pros.**
 - The protection lives on the server, where the client cannot reach it. Hiding a download button in the browser is undone with DevTools in seconds.
@@ -59,7 +59,7 @@ commit message of `b6aef4e`.
 
 **The decision.** When do you stamp the viewer's identity on a tile?
 
-**What the project chose.** At request time, when each tile is served (README, "Watermarking happens on the way out"; original design `b6aef4e`).
+**What the project chose.** At request time, when each tile is served (README, "Watermarking happens on the way out"; original design `df2bd6c`).
 
 **Pros.**
 - One stored tile serves every viewer. Stamping at ingest would give one identical, un-attributable copy for everyone; pre-stamping per user would store N copies of every tile.
@@ -86,7 +86,7 @@ commit message of `b6aef4e`.
 
 **Cons.**
 - A light mark deters less than a heavy one, and a determined person can crop or retouch a fragment.
-- The pattern is laid out per tile, so copies do not line up across tile boundaries (commit `f468678` states this exactly in the README).
+- The pattern is laid out per tile, so copies do not line up across tile boundaries (commit `f7beda2` states this exactly in the README).
 
 **The enterprise alternative.** The README's own lever is turning the mark up (`watermark-opacity`, `watermark-spacing`). General industry practice, not recorded by the project: adding an invisible forensic mark alongside the visible one.
 
@@ -94,13 +94,13 @@ commit message of `b6aef4e`.
 
 ## 37.4 App-issued HMAC tokens vs. cloud-signed URLs
 
-<!-- source: README "Why this design", Limitations; commit f682716; dossier/decisions.md D8 -->
+<!-- source: README "Why this design", Limitations; commit 7484f4f; dossier/decisions.md D8 -->
 
 **The decision.** Who signs the URL that lets a browser fetch a tile?
 
 *See also: Chapter 41, Section 41.8 works through the CloudFront option on AWS.*
 
-**What the project chose.** The app signs it with HMAC-SHA256 over document, page, row, column, render version, session binding, and expiry, with a 120-second lifetime. `SignedUrlService` deliberately mirrors the presigned-URL pattern (README, Limitations). The render version was added to the signed payload after a probe found old URLs silently serving the new render (`f682716`).
+**What the project chose.** The app signs it with HMAC-SHA256 over document, page, row, column, render version, session binding, and expiry, with a 120-second lifetime. `SignedUrlService` deliberately mirrors the presigned-URL pattern (README, Limitations). The render version was added to the signed payload after a probe found old URLs silently serving the new render (`7484f4f`).
 
 **Pros.**
 - No external service: the whole check is one class you can read and test.
@@ -158,7 +158,7 @@ commit message of `b6aef4e`.
 
 ## 37.7 Local disk tiles vs. object storage
 
-<!-- source: README "Backup and restore", Limitations; commits cd0f5c2, 66f7152; dossier/decisions.md D8 -->
+<!-- source: README "Backup and restore", Limitations; commits 00e0619, bbca423; dossier/decisions.md D8 -->
 
 **The decision.** Where do the tiles live?
 
@@ -171,7 +171,7 @@ commit message of `b6aef4e`.
 - Versioned folders make replacement atomic for readers (no mixed old and new pages).
 
 **Cons.**
-- Backups are coupled: the database and the tile volume must be captured at the same moment, so the runbook stops the app during a backup. A dump taken before a replace plus an archive taken after would point documents at deleted tiles (commit `66f7152`).
+- Backups are coupled: the database and the tile volume must be captured at the same moment, so the runbook stops the app during a backup. A dump taken before a replace plus an archive taken after would point documents at deleted tiles (commit `bbca423`).
 - Storage is tied to one machine; a second instance cannot see it.
 - The developer setup warns against synced folders (OneDrive, Dropbox) because they lock files (PR #2).
 
@@ -181,11 +181,11 @@ commit message of `b6aef4e`.
 
 ## 37.8 Per-user rate limits vs. per-document sensitivity
 
-<!-- source: README Limitations; commits a51674c, 51ea941; dossier/decisions.md D6 -->
+<!-- source: README Limitations; commits 5fc0faf, 607182e; dossier/decisions.md D6 -->
 
 **The decision.** How fast may a viewer pull tiles, and is the same limit right for every document?
 
-**What the project chose.** One per-user limit: 180 tile requests per 60-second window with 512-pixel tiles, about 15 pages a minute. The history: the limit and tile size moved from 256 pixels and 120 a minute to 512 and 180 after readers saw blank pages (raised by the PO reviewer; see Chapter 32). The reviewer noted that a 500-page harvest then takes about 33 minutes instead of about 2.4 hours. The project owner accepted this on September 19, 2026 (commit `51ea941`) and asked how sensitive documents could differ; per-document sensitivity levels are listed as a possible follow-up.
+**What the project chose.** One per-user limit: 180 tile requests per 60-second window with 512-pixel tiles, about 15 pages a minute. The history: the limit and tile size moved from 256 pixels and 120 a minute to 512 and 180 after readers saw blank pages (raised by the PO reviewer; see Chapter 32). The reviewer noted that a 500-page harvest then takes about 33 minutes instead of about 2.4 hours. The project owner accepted this on September 19, 2026 (commit `607182e`) and asked how sensitive documents could differ; per-document sensitivity levels are listed as a possible follow-up.
 
 **Pros.**
 - Reading feels normal, and bulk harvesting is slow and boundable instead of instant.
@@ -263,7 +263,7 @@ commit message of `b6aef4e`.
 
 ## 37.12 Session cookies vs. tokens kept in the browser
 
-<!-- source: dossier/decisions.md D3; PR #1 body; commit 68b4945; bugs-and-findings.md B (TM-1, TM-15) -->
+<!-- source: dossier/decisions.md D3; PR #1 body; commit 154d62b; bugs-and-findings.md B (TM-1, TM-15) -->
 **The decision.** How does the browser prove, on every request after sign-in, who it is?
 
 **What the project chose.** A server-side HTTP session, carried in an httpOnly cookie named `SDV_SESSION` with `SameSite=Strict`, plus cross-site request forgery (CSRF) protection for anything that changes state, and a 30-minute idle timeout (PR #1). Before that, the session id lived in the browser's `sessionStorage` and travelled in an `X-Session-Id` header, which a reviewer flagged: any script injected into the page could read it, and the admin API was returning session ids too. The project's records show the outcome and the reason for leaving `sessionStorage`; they do not show a comparison with signed tokens such as JWTs, so this section describes the outcome and its consequences, not a debate.
@@ -284,7 +284,7 @@ commit message of `b6aef4e`.
 
 ## 37.13 nginx and Caddy vs. a cloud load balancer
 
-<!-- source: dossier/decisions.md D11, D12; commits 2d10e07, a51674c, 5aa0f3c; README "HTTPS", "Trust boundary" -->
+<!-- source: dossier/decisions.md D11, D12; commits 08f3879, 5fc0faf, c40375a; README "HTTPS", "Trust boundary" -->
 **The decision.** What stands between the internet and the app, and who terminates TLS?
 
 **What the project chose.** Two programs in the compose file. nginx (the unprivileged image, non-root) serves the Angular build, proxies `/api`, and sets headers. Caddy, in an optional `tls` profile, terminates TLS, gets certificates from Let's Encrypt (or from its own local certificate authority for trials), and adds `Strict-Transport-Security` (Chapter 33). Addresses are fixed in one Docker network so that each program can say exactly whom it trusts.
@@ -306,7 +306,7 @@ commit message of `b6aef4e`.
 
 ## 37.14 Recognized-device lockout vs. simpler rules
 
-<!-- source: dossier/decisions.md D7; PR #5 body "TM3-1"; commit 82c24b6; README "Sign-in lockout" -->
+<!-- source: dossier/decisions.md D7; PR #5 body "TM3-1"; commit 672907d; README "Sign-in lockout" -->
 **The decision.** How do you slow down password guessing without letting an attacker lock real users out?
 
 **What the project chose.** Three counters over 15 minutes: 5 failures for one account from one address, 20 for one address across accounts, and 20 for one account from *unrecognized* devices only. A device is recognized for an account after a successful sign-in from its address (IPv6 grouped by /64) within 30 days; only a keyed hash of the address is stored, and the list is cleared when the password changes, is reset, or the account is disabled. An administrator can press Unlock.

@@ -30,7 +30,7 @@ It turns each page into an image, cuts that image into tiles when the document i
 hands out the tiles one at a time through short-lived signed URLs that are tied to a session. Each
 tile is stamped with the identity of the person requesting it, and the browser puts the tiles back
 together on a canvas.
-<!-- source: commit b6aef4e message; README at book-m0-mvp -->
+<!-- source: commit df2bd6c message; README at book-m0-mvp -->
 
 To see why that is a good design, look at the obvious alternative. A naive viewer shows the PDF
 in the browser and "protects" it by hiding the download button and blocking the right-click menu. The
@@ -56,7 +56,7 @@ Table 25.1 is a list of small defenses, each closing one door. Read the last row
 "Limitations" section says so directly ("This does not make content uncopyable, and nothing can"), and
 the book keeps that honesty. The goal is to raise the cost of casual copying and to make leaks
 attributable to a person.
-<!-- source: README at book-m0-mvp (Why this design; Limitations); commit b6aef4e -->
+<!-- source: README at book-m0-mvp (Why this design; Limitations); commit df2bd6c -->
 
 At this tag the product is backend only. It has controllers, services, a session service, an
 in-memory `DocumentRegistry`, five unit-test classes, and one static `index.html`. There is no database
@@ -159,7 +159,7 @@ If a single pixel differs, the test fails with its coordinates. The point of the
 in the test's own words: "tiles are a lossless partition of the page ... no seams, no overlap, no
 dropped edge strips." Because `TileGrid` has no dependency on PDFBox or Spring, the test needs only a
 synthetic image and runs in milliseconds.
-<!-- source: TileGrid.java, TileGridTest.java at book-m0-mvp; commit b6aef4e message -->
+<!-- source: TileGrid.java, TileGridTest.java at book-m0-mvp; commit df2bd6c message -->
 
 ### 25.4 Turning a PDF into tiles (`TileGenerationService`)
 
@@ -766,14 +766,14 @@ deliver tiles through short-lived HMAC-signed URLs bound to a session, and reass
 browser. **The options considered.** The alternatives weighed at MVP time aren't recorded in the repository history, so this book doesn't invent them. **Why this one.** The first commit records this rationale and isolates the grid math in `TileGrid` with a round-trip test. **What it costs.** Every
 tile request does work on the server (Section 25.7), and the design stays a deterrent rather than a
 guarantee.
-<!-- source: commit b6aef4e; decisions D4 -->
+<!-- source: commit df2bd6c; decisions D4 -->
 
 ### Decision: watermark at serve time
 
 **The decision.** Stamp the viewer's identity onto each tile when it is served, not at ingest. **Why.**
 One stored tile serves every viewer while each response stays traceable. **What it costs.** A decode,
 draw and encode per request, and no shared caching, recorded later as a low-severity limitation.
-<!-- source: commit b6aef4e; decisions D5 -->
+<!-- source: commit df2bd6c; decisions D5 -->
 
 ### Decision: isolate the math
 
@@ -781,7 +781,7 @@ draw and encode per request, and no shared caching, recorded later as a low-seve
 The commit message singles this out: the tiles must reassemble the page exactly, and a synthetic
 image is enough to prove it. **What it costs.** One more class, and the discipline to keep PDF
 rendering out of it.
-<!-- source: commit b6aef4e message; TileGridTest.java -->
+<!-- source: commit df2bd6c message; TileGridTest.java -->
 
 ### Challenge: the MVP was a demo, and a review said so
 

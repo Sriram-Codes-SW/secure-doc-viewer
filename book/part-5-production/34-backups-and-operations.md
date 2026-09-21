@@ -64,7 +64,7 @@ Now a small exercise in thinking. Suppose the server disk fails at 3 p.m. and yo
 
 ### 34.4 Why the two must match
 
-<!-- source: README "Backup and restore"; PR #5 body "Final-review fixes (66f7152)"; dossier/bugs-and-findings.md F1 -->
+<!-- source: README "Backup and restore"; PR #5 body "Final-review fixes (bbca423)"; dossier/bugs-and-findings.md F1 -->
 Replacing a PDF renders new tiles into a new version folder, switches the document to it, and then deletes the previous version's tiles as soon as the switch commits. Now imagine you back up in the obvious order: first dump the database, then archive the tiles. Suppose a publisher replaces a document between the two steps.
 
 1. 10:00: your dump says document D uses tile version 1.
@@ -73,7 +73,7 @@ Replacing a PDF renders new tiles into a new version folder, switches the docume
 
 After a restore, the database says D uses version 1, but version 1 isn't in the archive. Every page of D is blank. Neither file is corrupt; they describe different moments. That is what "inconsistent" means, and no tool will warn you.
 
-The AI technical-manager reviewer (the TM reviewer; see Chapter 32) found this in the final review before go-live, and the runbook changed to stop the app for the few seconds a backup takes, so nothing can change between the two captures (commit `66f7152`). The trade-off is stated openly in the README: a short outage in return for backups that are correct without cleverness. Chapter 37 (Section 37.7) puts it next to the alternatives.
+The AI technical-manager reviewer (the TM reviewer; see Chapter 32) found this in the final review before go-live, and the runbook changed to stop the app for the few seconds a backup takes, so nothing can change between the two captures (commit `bbca423`). The trade-off is stated openly in the README: a short outage in return for backups that are correct without cleverness. Chapter 37 (Section 37.7) puts it next to the alternatives.
 
 ### 34.5 The backup commands, line by line
 
@@ -148,7 +148,7 @@ Also keep `.env` with the backup, as the README says. A restore under a differen
 
 ### 34.7 The restore drill
 
-<!-- source: PR #5 body "Final-review fixes (66f7152)", the restore drill; dossier/bugs-and-findings.md F1 -->
+<!-- source: PR #5 body "Final-review fixes (bbca423)", the restore drill; dossier/bugs-and-findings.md F1 -->
 A backup is only proven by a restore. The project did one, and the checks it used are a good template. According to PR #5, the drill went like this:
 
 1. A backup was taken exactly per the runbook.
@@ -286,7 +286,7 @@ The app runs as a single instance. Sessions and rate-limit counters live in the 
 | Path | First appears | What it does |
 |---|---|---|
 | `README.md` ("Backup and restore") | `book-m5-platform` | The runbook in Listings 34.1 and 34.2 |
-| `src/main/java/com/example/securedocviewer/service/StorageJanitor.java` | `book-m2-documents` | Removes unreferenced tile folders (Listing 34.3); the missing-current-version guard arrived with `66f7152` |
+| `src/main/java/com/example/securedocviewer/service/StorageJanitor.java` | `book-m2-documents` | Removes unreferenced tile folders (Listing 34.3); the missing-current-version guard arrived with `bbca423` |
 | `src/main/java/com/example/securedocviewer/audit/AuditLogService.java` | `book-m2-documents` | The audit purge and the throttle sweep |
 | `src/main/java/com/example/securedocviewer/security/KnownDevices.java` | `book-m5-platform` | The recognized-device purge |
 | `docker-compose.yml` (`mysql-data`, `app-storage`) | `book-m5-platform` | The two volumes to back up |

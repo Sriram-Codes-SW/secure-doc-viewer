@@ -18,7 +18,7 @@ Chapters 14–16 (data, Spring Data, and Spring Security basics), 19–23 (the A
 Chapter 25, the milestone this one builds on. The code is at
 `book-m1-accounts`: still Spring Boot 3.3.4 and Java 21, now with Spring Security, JPA, Flyway, MySQL
 8.4 and an Angular 22 frontend (Blueprint v1). This milestone is pull request #1: an earlier baseline
-commit (`32d040f`, the Angular frontend and admin features) followed by "Phase 1" (`68b4945`, real
+commit (`1f111ef`, the Angular frontend and admin features) followed by "Phase 1" (`154d62b`, real
 accounts, roles, and the admin lockdown). To run this tag yourself, see Table IV.3 ("What you need to
 run each tag") in the [Part IV introduction](00-part-introduction.md).
 <!-- source: blueprints/v1-accounts.md; timeline; PR #1 body -->
@@ -454,7 +454,7 @@ survives a reload: on startup we simply ask the server who we are." The choice c
 
 ### 26.9 The Angular frontend appears
 
-The first commit of this milestone, `32d040f`, adds the Angular frontend: sign-in, document list,
+The first commit of this milestone, `1f111ef`, adds the Angular frontend: sign-in, document list,
 upload, viewer, and admin pages. It replaces the m0 static page. Tiles are painted as absolutely
 positioned elements with CSS background images, not on a canvas (Chapter 21 explains the technique). The project README at the tags still says that the browser reassembles tiles onto a canvas; a later documentation-only pull request (#13) corrected that sentence, so trust the code.
 Angular's development-server proxy makes the app and the API share one origin during development.

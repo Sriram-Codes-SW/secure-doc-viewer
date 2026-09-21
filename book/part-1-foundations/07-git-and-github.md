@@ -25,7 +25,7 @@ By the end of this chapter, you will be able to:
 
 Imagine writing a long document and saving copies named `report-final`, `report-final-2`, and `report-really-final`. Within a week you cannot say which is newest, what changed between them, or which one you sent to your manager. Version control replaces that habit. A tool records every meaningful change, who made it, when, and why, and lets you return to any earlier state. **Git** is the version control tool this project uses, and it is the most widely used one in the world.
 
-A Git project is a **repository**: your files plus a hidden folder named `.git` that holds the whole history. Each saved state is a **commit**: a snapshot of every tracked file at one moment, with a message describing the change and a unique identifier such as `2d10e07`. Commits form a chain, and each one points to the commit before it. Because each snapshot is complete, you can reload any of them.
+A Git project is a **repository**: your files plus a hidden folder named `.git` that holds the whole history. Each saved state is a **commit**: a snapshot of every tracked file at one moment, with a message describing the change and a unique identifier such as `08f3879`. Commits form a chain, and each one points to the commit before it. Because each snapshot is complete, you can reload any of them.
 
 **Analogy.** A commit is a numbered save point in a video game; you can reload any one.
 
@@ -133,7 +133,7 @@ git commit -m "Note that edge tiles are cropped"
 git log --oneline
 ```
 
-`--oneline` compresses each commit to one line: its short identifier and its message. You should see two lines. Good commit messages matter more than beginners expect. Write what changed and, if it is not obvious, why. The project's own history reads well because its messages do that: "Fix review findings: X-Forwarded-For spoofing, role vs ownership, audit volume, UTC" tells you at a glance what the commit was for. <!-- source: git log, commit 2d82253 -->
+`--oneline` compresses each commit to one line: its short identifier and its message. You should see two lines. Good commit messages matter more than beginners expect. Write what changed and, if it is not obvious, why. The project's own history reads well because its messages do that: "Fix review findings: X-Forwarded-For spoofing, role vs ownership, audit volume, UTC" tells you at a glance what the commit was for. <!-- source: git log, commit 65f2530 -->
 
 ### 7.4 Getting the project
 
@@ -153,19 +153,19 @@ git log --oneline
 You should see something like this, newest first. The very top line depends on where the project's history stood when you cloned it; the line shown is the tip of `main` at `book-m6-final`:
 
 ```text
-a27e069 Merge pull request #12 from ...
-144f13a Bump jsdom from 28.1.0 to 30.0.1 in /frontend
+d41e2b8 Merge pull request #12 from ...
+ccc9b89 Bump jsdom from 28.1.0 to 30.0.1 in /frontend
 ...
-b6aef4e Add secure document viewer: tiled rendering with signed URLs and per-viewer watermarking
+df2bd6c Add secure document viewer: tiled rendering with signed URLs and per-viewer watermarking
 ```
 
 The last line is the very first commit: the project began as a small tiled viewer, which is what `book-m0-mvp` marks. To see what one commit changed, use `git show`:
 
 ```bash
-git show 2d10e07 --stat
+git show 08f3879 --stat
 ```
 
-`--stat` summarizes which files changed. This commit, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests", is the one that introduced the Dockerfile and the Maven wrapper from Chapter 6. (In that title, CI is continuous integration and e2e means end-to-end: tests that drive the whole running app.) It touched 28 files. <!-- source: git show --stat 2d10e07; git log --diff-filter=A for mvnw -->
+`--stat` summarizes which files changed. This commit, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests", is the one that introduced the Dockerfile and the Maven wrapper from Chapter 6. (In that title, CI is continuous integration and e2e means end-to-end: tests that drive the whole running app.) It touched 28 files. <!-- source: git show --stat 08f3879; git log --diff-filter=A for mvnw -->
 
 ## Intermediate tier: Tags, branches, and pull requests
 
@@ -179,13 +179,13 @@ A **tag** is a permanent name for one commit, like a bookmark. The project has s
 
 | Tag | Milestone | Commit |
 |---|---|---|
-| `book-m0-mvp` | Tiled viewer with signed URLs and watermarks | `b6aef4e` (the first commit) |
-| `book-m1-accounts` | Accounts, roles, sessions, CSRF, sign-in throttling | `f166d37` (merge of pull request 1) |
-| `book-m2-documents` | Ownership, sharing, MySQL and Flyway, audit trail | `a99704c` (merge of pull request 2) |
-| `book-m3-hardening` | Upload and API hardening, secrets, operations | `8a14482` (merge of pull request 3) |
-| `book-m4-reading` | Reading experience, deep links, idle warning, watermark | `6459d4e` (merge of pull request 4) |
-| `book-m5-platform` | Spring Boot 4, Docker, CI, production hardening | `d1b1086` (merge of pull request 5) |
-| `book-m6-final` | The finished app | `a27e069` (merge of pull request 12) |
+| `book-m0-mvp` | Tiled viewer with signed URLs and watermarks | `df2bd6c` (the first commit) |
+| `book-m1-accounts` | Accounts, roles, sessions, CSRF, sign-in throttling | `ad1a410` (merge of pull request 1) |
+| `book-m2-documents` | Ownership, sharing, MySQL and Flyway, audit trail | `d88044e` (merge of pull request 2) |
+| `book-m3-hardening` | Upload and API hardening, secrets, operations | `65a302e` (merge of pull request 3) |
+| `book-m4-reading` | Reading experience, deep links, idle warning, watermark | `4af6338` (merge of pull request 4) |
+| `book-m5-platform` | Spring Boot 4, Docker, CI, production hardening | `dbc5fcf` (merge of pull request 5) |
+| `book-m6-final` | The finished app | `d41e2b8` (merge of pull request 12) |
 
 A few words in the table are new. CSRF (Cross-Site Request Forgery) is an attack on signed-in users that Chapter 8 explains. CI (continuous integration) is a service that builds and tests every proposed change automatically, as Chapter 6 describes.
 
@@ -197,39 +197,39 @@ Figure 7.2 shows the project's real history as branches and merges. Each phase b
 
 ```mermaid
 gitGraph
-    commit id: "b6aef4e" tag: "book-m0-mvp"
+    commit id: "df2bd6c" tag: "book-m0-mvp"
     branch phase1
-    commit id: "32d040f"
-    commit id: "68b4945"
+    commit id: "1f111ef"
+    commit id: "154d62b"
     branch phase2
-    commit id: "ba00693"
+    commit id: "f648f33"
     branch phase3
-    commit id: "3de764d"
-    commit id: "335e0b0"
-    commit id: "a5d5e02"
+    commit id: "ce1ead0"
+    commit id: "c85c51c"
+    commit id: "1960b50"
     branch phase4
-    commit id: "0a6a7c1"
-    commit id: "6417d49"
-    commit id: "60e104a"
+    commit id: "187498c"
+    commit id: "ff971da"
+    commit id: "dd6a01b"
     branch phase5
-    commit id: "2d10e07"
+    commit id: "08f3879"
     commit id: "review rounds"
     checkout main
-    merge phase1 id: "f166d37" tag: "book-m1-accounts"
-    merge phase2 id: "a99704c" tag: "book-m2-documents"
-    merge phase3 id: "8a14482" tag: "book-m3-hardening"
-    merge phase4 id: "6459d4e" tag: "book-m4-reading"
-    merge phase5 id: "d1b1086" tag: "book-m5-platform"
-    commit id: "a27e069" tag: "book-m6-final"
+    merge phase1 id: "ad1a410" tag: "book-m1-accounts"
+    merge phase2 id: "d88044e" tag: "book-m2-documents"
+    merge phase3 id: "65a302e" tag: "book-m3-hardening"
+    merge phase4 id: "4af6338" tag: "book-m4-reading"
+    merge phase5 id: "dbc5fcf" tag: "book-m5-platform"
+    commit id: "d41e2b8" tag: "book-m6-final"
 ```
 
 *Figure 7.2 — The project's history: stacked phase branches and the seven tags (simplified)*
 
 *Text description:* A branching history drawn along a main line. The first commit on `main` carries the tag `book-m0-mvp`. Five branches then stack one on top of the next, each starting from the end of the previous one. `main` later merges them in order, and each merge commit carries one milestone tag from `book-m1-accounts` to `book-m5-platform`, followed by a final commit tagged `book-m6-final`.
 
-<!-- source: git log --graph at book-m6-final; parents of 32d040f, ba00693, 3de764d, 0a6a7c1 and 2d10e07 checked with git log; dossier timeline.md -->
+<!-- source: git log --graph at book-m6-final; parents of 1f111ef, f648f33, ce1ead0, 187498c and 08f3879 checked with git log; dossier timeline.md -->
 
-The figure makes two simplifications. First, the branch names are shortened to `phase1` to `phase5`; the real ones are `hardening/review-findings`, `phase-2/documents` and so on. Second, the last box stands for the four small merges of pull requests 9 to 12, of which `a27e069` is the final merge. The box "review rounds" stands for the 14 further commits on the fifth branch. Notice that each `book-m` tag sits on a merge commit on `main`, except the first, which is the very first commit.
+The figure makes two simplifications. First, the branch names are shortened to `phase1` to `phase5`; the real ones are `hardening/review-findings`, `phase-2/documents` and so on. Second, the last box stands for the four small merges of pull requests 9 to 12, of which `d41e2b8` is the final merge. The box "review rounds" stands for the 14 further commits on the fifth branch. Notice that each `book-m` tag sits on a merge commit on `main`, except the first, which is the very first commit.
 
 List the tags, and read any file as it was at a tag without changing anything on disk. (A fresh clone normally includes the tags; if `git tag` shows none, run `git fetch --tags`.)
 
@@ -278,7 +278,7 @@ On GitHub, a **pull request** (PR) is a proposal to merge one branch into anothe
 
 This project used one pull request per phase, and the pull requests are a record of how it grew. For example, `book-m1-accounts` is the merge of pull request 1, "Phase 1: real accounts, roles, and admin lockdown". And `book-m5-platform` is the merge of pull request 5, "Phase 5: Spring Boot 4 / Java 25, Docker stack, CI, and e2e tests". Pull request 5 is the largest story: after it was opened, review rounds added fixes for problems the reviewers found, and about 15 commits landed on that branch before it was merged. In this project, the reviewers were AI review agents: a senior technical manager agent and a product owner agent. The technical manager agent gave a final recommendation to merge pull request 5, "subject to the product owner's approval," and it was the project's human owner who approved the merge. The agents advised; a person decided. Part V describes what they found. <!-- source: dossier timeline.md (PR #5 commits); reviews.md (line 5964, TM recommends merge subject to product owner approval; user approves merging #5) -->
 
-You can read the pull requests on the repository's *Pull requests* tab (with access to the private repository, Section 7.4), or from the terminal with `gh pr view 5` if you have GitHub's command-line tool, `gh`, signed in.
+You can read the pull requests on the repository's *Pull requests* tab, or from the terminal with `gh pr view 5` if you have GitHub's command-line tool, `gh`, signed in. The pull requests in the public repository were recreated after personal data was removed from the commit history, so the dates GitHub shows on those pages are the recreation dates; the commits keep their original dates.
 
 Not every pull request in the history is a feature. After pull request 5 merged, the automated checks failed once on `main` because one test was flaky: it sometimes failed and sometimes passed for the same code. The fix went through its own small pull request (number 9). Dependabot, a bot that proposes dependency updates, opened pull requests 6, 7 and 8 right after the merge. The project closed all three with an explanation, because they proposed unstable or non-LTS (long-term-support) versions. It then changed the bot's rules to propose only stable lines (pull request 10). Later Dependabot pull requests (11 and 12) were merged, which produced `book-m6-final`. One more pull request, number 13, was merged after that tag: it is documentation only, and it removed the stale mentions of a canvas from the README and from a comment in `PageInfo.java` (Chapter 4). So the tags stop at pull request 12, and `main` has one further commit than the last tag. The point for you: a pull request is the unit of change, whatever its size, and a healthy history has small ones. <!-- source: dossier timeline.md, PR index -->
 
@@ -342,7 +342,7 @@ History answers questions the code cannot. Three commands do most of the work.
 git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_versions_and_account_security.sql
 ```
 
-`--diff-filter=A` keeps only commits that **added** the file. The answer is a commit titled "Atomic PDF replace via versioned tiles; bounded rendering", made during the review rounds of pull request 5. So the reason for the `tile_version` column in Chapter 9 is a replace-a-PDF bug found in review, which Chapter 30 tells in full. The history led you to the story. <!-- source: git log --diff-filter=A for V3 (commit cd0f5c2); dossier timeline.md -->
+`--diff-filter=A` keeps only commits that **added** the file. The answer is a commit titled "Atomic PDF replace via versioned tiles; bounded rendering", made during the review rounds of pull request 5. So the reason for the `tile_version` column in Chapter 9 is a replace-a-PDF bug found in review, which Chapter 30 tells in full. The history led you to the story. <!-- source: git log --diff-filter=A for V3 (commit 00e0619); dossier timeline.md -->
 
 `git blame <file>`, called **blame** for short, shows, line by line, which commit last changed each line. It is not for blaming people; it is the quickest route from a puzzling line to the commit message that explains it. And `git log --stat` shows which files each commit touched, so you can see the size and shape of a change before you read it.
 
@@ -356,7 +356,7 @@ git log --oneline --diff-filter=A -- src/main/resources/db/migration/V3__tile_ve
 
 **"LF will be replaced by CRLF" warnings on Windows.** (LF and CRLF are the Unix and Windows line endings from Chapter 2.) This is Git converting line endings (Chapter 2) between the Windows and Unix styles. It is normal. If a script such as `mvnw` fails with a strange `\r` error, the conversion went too far for that file (Chapter 6).
 
-**"Permission denied" or a request for credentials when cloning.** The repository is private. Check that your GitHub account has access, and that you are signed in through the method your clone address uses.
+**"Permission denied" or a request for credentials when cloning.** The public repository needs no account to clone over HTTPS. If you cloned your own private copy, check that your GitHub account has access, and that you are signed in through the method your clone address uses.
 
 **You committed a secret.** Do not rely on deleting it in a new commit. Treat it as leaked: replace the secret with a new one first, since that is what actually protects you. Then, if the repository is shared, ask an experienced colleague about rewriting history, which is possible but affects everyone.
 

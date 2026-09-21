@@ -97,14 +97,14 @@ added ownership, sharing, and an audit trail. Its description records a bug a te
 events were being rolled back together with the failed request and never saved, so audit writes
 moved to their own database transaction.
 
-**Round 2 (PR #5: reviewed at `2d10e07`, fixed in `2d82253`).** The TM reviewer recommended not merging until one High finding was fixed, and the finding was
+**Round 2 (PR #5: reviewed at `08f3879`, fixed in `65f2530`).** The TM reviewer recommended not merging until one High finding was fixed, and the finding was
 introduced by the pull request under review.
 
 A reverse proxy (Chapter 16) is a program that receives requests from browsers and passes them to the app
 behind it; nginx (Chapter 30) is the one this project uses, and Chapter 33 covers it. A proxy tells the app
 who the original caller was in a header called `X-Forwarded-For`.
 
-<!-- source: PR #5 body, "Correction"; commit 2d82253; dossier/decisions.md D11 -->
+<!-- source: PR #5 body, "Correction"; commit 65f2530; dossier/decisions.md D11 -->
 > **Incident: the spoofable client address.** The first nginx configuration appended to
 > any `X-Forwarded-For` header the client sent. The API used that header as the client's address
 > for sign-in throttling, so an attacker could invent a new address on every attempt and never
@@ -119,16 +119,16 @@ The same round found that managing a document needed a second check: it now requ
 ownership *and* the PUBLISHER role (or ADMIN), so a demoted publisher keeps read access only. It
 also found the audit log could be flooded.
 
-<!-- source: PR #5 body "TM3-1"; commit 82c24b6; dossier/decisions.md D7 -->
-**Round 3 (commit `82c24b6`).** The first fix for password guessing added an account-wide
+<!-- source: PR #5 body "TM3-1"; commit 672907d; dossier/decisions.md D7 -->
+**Round 3 (commit `672907d`).** The first fix for password guessing added an account-wide
 lockout across all addresses. That let anyone lock any user out by failing 20 times. The
 replacement is the recognized-device rule from the README: the account-wide counter applies only
 to attempts from unrecognized devices. Its cost is stated plainly there: during a distributed
 attack, the owner can still sign in from a usual device but not from a new one until the window
 passes or an administrator presses Unlock.
 
-<!-- source: commits 1ce2c8b, f682716, 782ab6b, 6cf17fa; dossier/bugs-and-findings.md -->
-**Later rounds (commits `1ce2c8b`, `f682716`, `782ab6b`, `6cf17fa`).** Atomic sign-in throttling,
+<!-- source: commits 708fd8c, 7484f4f, 156ee56, f1bb3a8; dossier/bugs-and-findings.md -->
+**Later rounds (commits `708fd8c`, `7484f4f`, `156ee56`, `f1bb3a8`).** Atomic sign-in throttling,
 a 72-byte password limit (BCrypt's maximum), a render timeout, a session lifetime cap, versioned
 tile tokens, bounded renders, a tile work cap, and an upgrade of Tomcat (the web server library
 inside Spring Boot) from 11.0.24 to 11.0.26 to close three published CVEs. Follow-ups added a
@@ -402,16 +402,16 @@ The whole exercise took a few minutes because the code states its intent in comm
 
 The chapter so far described the review rounds by outcome. Four incidents are worth telling in detail, because each teaches a habit you can carry to your own work.
 
-<!-- source: dossier/bugs-and-findings.md B (TM-1, PO-2); commit 68b4945; PR #1 body -->
-**The credential in the API.** Before Phase 1, the admin API listed every live session, and the session id was the only thing needed to act as that session. The TM reviewer demonstrated the takeover: an account read another account's session id from the admin listing, requested tile URLs with it, and got a tile back. The watermark and the audit log named the victim, not the attacker. The fix (commit `68b4945`, PR #1) was in two parts: the admin API now lists sessions by an opaque *handle* that can't be turned back into the session id, and it is restricted to administrators. *Lesson: never return a credential from an API, and make the identifier you show a person different from the one that grants access.* The class `SessionKeys` (Listing 32.1) exists because of this.
+<!-- source: dossier/bugs-and-findings.md B (TM-1, PO-2); commit 154d62b; PR #1 body -->
+**The credential in the API.** Before Phase 1, the admin API listed every live session, and the session id was the only thing needed to act as that session. The TM reviewer demonstrated the takeover: an account read another account's session id from the admin listing, requested tile URLs with it, and got a tile back. The watermark and the audit log named the victim, not the attacker. The fix (commit `154d62b`, PR #1) was in two parts: the admin API now lists sessions by an opaque *handle* that can't be turned back into the session id, and it is restricted to administrators. *Lesson: never return a credential from an API, and make the identifier you show a person different from the one that grants access.* The class `SessionKeys` (Listing 32.1) exists because of this.
 
-<!-- source: dossier/bugs-and-findings.md B (TM-4), G8; commits 68b4945, f682716 -->
+<!-- source: dossier/bugs-and-findings.md B (TM-4), G8; commits 154d62b, 7484f4f -->
 **The token that carried the session.** The first version of a tile token was a base64 string containing the document, page, tile, session id, and expiry. Base64 isn't encryption; anyone can decode it. So a leaked tile URL leaked the session id, which was the credential. The fix replaced the session id in the token with a keyed binding, as in Listing 32.1. A second, related problem surfaced later, in Round 2: after a document was replaced, old tile URLs silently served tiles from the *new* render, so a page could mix old and new tiles. The fix was to sign the render version into the token, and the `410` check at the end of Listing 32.3 is that fix. *Lesson: a signed token should carry everything the server needs to notice that the world changed, not only who it was issued to.*
 
-<!-- source: dossier/bugs-and-findings.md G1, G2; commit 1ce2c8b -->
+<!-- source: dossier/bugs-and-findings.md G1, G2; commit 708fd8c -->
 **The race and the byte count.** Two more findings came from an AI reviewer running probes against a live app rather than reading code. In the first, nine wrong passwords sent in parallel for one account from one address all got `401`, though the limit was five; only the next single attempt got `429`. The cause: the throttle checked the counter, then verified the password (which takes about 100 milliseconds), then recorded the failure, and nothing tied the three steps together. The fix counts the attempt first and gives it back if the password turns out to be right. After the fix, the same test lets exactly five through. In the second, creating a user with a 100-character password returned a generic server error. The validation allowed 12 to 128 *characters*, but BCrypt rejects more than 72 *bytes*, and many characters, emoji for instance, take several bytes. The fix validates the UTF-8 byte length. *Lessons: a check followed by an action is a race; and characters aren't bytes.*
 
-<!-- source: dossier/bugs-and-findings.md G13; commit 6cf17fa -->
+<!-- source: dossier/bugs-and-findings.md G13; commit f1bb3a8 -->
 **The endless reload.** A dry-run code review found that if a tile file for the *current* render was missing (for example after a mismatched restore, Chapter 34), the server answered `410`, and the viewer, taught that `410` means "the page was replaced, reload," reloaded and got `410` again, forever. The fix has two halves. On the server, `410` is only returned when the document has truly moved on to a newer render; a missing tile of the current render is a logged generic `500`, which you can read in `loadTile` in the real source. On the client, if a reload triggered by `410` finds the same version again, the viewer stops and shows "Some parts of this page could not be loaded." *Lesson: every retry loop needs a stop condition on both sides.*
 
 ### 32.15 Common mistakes

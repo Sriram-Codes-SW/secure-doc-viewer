@@ -52,11 +52,12 @@ technology, the PDF has not been checked with PAC or with the accessibility chec
 third-party audit has been made. This book does not claim conformance with WCAG, PDF/UA, or EPUB
 Accessibility.
 
-If you find a barrier, please report it as you would an error (see Corrections and updates below), and
-say which edition and which page you were using.
+If you find a barrier, see Corrections and updates below: this edition is a frozen snapshot, so the way
+to fix a barrier is to fork the repository and correct it there.
 
 ## Corrections and updates
 
 Software changes. Versions, screens, and documentation pages described here were checked on
 September 20, 2026. Where a chapter cites documentation, check the current page before you rely on
-a detail. If you find an error, report it to the author or the publisher of your copy.
+a detail. This edition is a frozen snapshot: the repository is archived and read-only, so it does not take issues or
+pull requests. If you find an error, fork the repository and correct it there.

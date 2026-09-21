@@ -48,7 +48,7 @@ A restaurant is only as safe as its ingredients. The chef can wash every dish pe
 
 The abstract risk became concrete during the project's final review rounds. Spring Boot 4.1.1, the framework version the project uses, ships with a particular version of Tomcat (the web server library inside Spring Boot). That version, 11.0.24, had three published critical advisories. Nothing in the project's own code was wrong. The problem was one of the ingredients.
 
-<!-- source: dossier/bugs-and-findings.md G9; commit f682716; pom.xml at book-m6-final -->
+<!-- source: dossier/bugs-and-findings.md G9; commit 7484f4f; pom.xml at book-m6-final -->
 The fix was a single line in `pom.xml`, with a comment that explains it. Here it is.
 
 **Listing 36.1 — `pom.xml`, `book-m6-final` (excerpt: the Tomcat override in `<properties>`)**
@@ -94,7 +94,7 @@ concurrency:
 The `e2e` job declares `needs: [backend, frontend]`, so it starts only after both pass. That ordering saves time: there's no point building Docker images when a unit test has already failed.
 
 <!-- source: .github/workflows/ci.yml at book-m6-final -->
-Figure 36.1 shows how the four jobs relate. Any red node fails the run. GitHub shows the failed status on the pull request; whether a failure also blocks merging depends on branch protection or repository rulesets. On September 20, 2026, the project's private repository could not enable them (the GitHub API answered HTTP 403, "Upgrade to GitHub Pro or make this repository public"), so here a red run is a signal that the reviewer must honor, not a lock.
+Figure 36.1 shows how the four jobs relate. Any red node fails the run. GitHub shows the failed status on the pull request; whether a failure also blocks merging depends on branch protection or repository rulesets. On September 20, 2026, while the project's repository was still private, GitHub could not enable them (the API answered HTTP 403, "Upgrade to GitHub Pro or make this repository public"), so during development a red run was a signal that the reviewer had to honor, not a lock. The published repository is archived and read-only, so the question does not arise there; in your own fork, enable branch protection or a ruleset that requires the four checks.
 
 ```mermaid
 flowchart TB
@@ -224,7 +224,7 @@ The long hash is a commit SHA. The `# v7.0.1` comment is for humans; the workflo
 
 `.github/dependabot.yml` asks for weekly grouped update pull requests for Maven, npm, Docker, Docker Compose, and GitHub Actions. Grouping matters: without it, Dependabot opens one pull request per dependency, which is dozens a week. The `maven` group and the `angular` group each bundle related updates into a single reviewable PR. CI runs the full suite on each one, and that is what makes automatic proposals safe: a change reaches `main` only after the tests, the scans, and the end-to-end run pass.
 
-<!-- source: PR #10 body; dossier/decisions.md D13; PRs #6, #7, #8; commit 8cdb129 -->
+<!-- source: PR #10 body; dossier/decisions.md D13; PRs #6, #7, #8; commit 0d68b3c -->
 A week of Dependabot output exposed a gap. It proposed MySQL 26.7 (PR #6), Node 25 (PR #7), and a group with TypeScript 7, Vitest 5, and jsdom 30 (PR #8), and the last couldn't even install, because Angular 22 accepts only TypeScript `>=6.0 <6.1`. None of the three was a bug in Dependabot. Each was an upgrade the project didn't want: a non-LTS database release, a Node version that will never become LTS, and a bundle where one breaking change blocked the others. The project closed all three and replaced them with PR #10, which added rules.
 
 <!-- source: .github/dependabot.yml at book-m6-final; PR 10 body -->
@@ -279,7 +279,7 @@ The general lesson: automated updates need rules about *which* versions you acce
 
 ### 36.10 A flaky test on `main`
 
-<!-- source: PR #9 body; commit ec6c1c5; dossier/bugs-and-findings.md C7 -->
+<!-- source: PR #9 body; commit 898d65b; dossier/bugs-and-findings.md C7 -->
 Your CI can also catch a problem in *your own tests*. After PR #5 merged, CI on `main` failed once. The test `aRenderThatTakesTooLongIsAbandonedAndFreesItsSlot` asserted that every render slot was free at the same instant the second render returned. But the render thread frees its slot in a `finally` block that runs immediately after the caller receives its result. On a fast machine the assertion could land in that gap and read 0 free slots instead of 1.
 
 PR #9 changed the test to wait up to 5 seconds for the counters to reach the expected value. It was a test-only change; production behavior was unchanged, since in production the slot frees microseconds after the upload returns. The fixed test passed five times in a row locally. The lesson is one to remember whenever you test code that uses several threads: never assert on state that another thread changes after your result is returned. Poll with a timeout instead.

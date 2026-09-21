@@ -18,8 +18,8 @@ The one serious problem is in the **built PDF, not the Markdown**: multi-column 
 
 ## Settled points from the brief
 
-1. **Tile rate limit, 180 versus 120.** Both are right, at different tags. `application.yml` has `tile-rate-limit-per-window: 120` at `book-m1-accounts`, `m2`, `m3` and `m4` (comment: "~35 tiles ... 120 lets a reader turn ~3 pages a minute"), and `180` at `book-m5-platform` and `book-m6-final` (with `tile-size: 512`). The change is in commit `cd0f5c2`. The book is consistent with that: Ch 26 says 120 (m1), Ch 30 Section 30.15 says "rose from 120 to 180", and Ch 1, 32, 37 and Appendix C say 180 (final). The arithmetic holds: 180 / 12 tiles = 15 pages a minute; 500 pages x 12 / 180 = 33 minutes; 500 x 35 / 120 = 2.4 hours. No change needed.
-2. **Canvas versus CSS divs.** The book is right. `git grep -i canvas book-m6-final -- frontend/src` finds nothing; the Angular viewer positions `div` elements with `blob:` backgrounds (Ch 21 Section 21.9). The `<canvas>` appears only in the m0 static page (`src/main/resources/static/index.html`, Ch 25). At `book-m6-final` the app README (line 6) and the `PageInfo` Javadoc still say `<canvas>`; on `main`, PR #13 (`b44606e`, after the tag) fixed both. Ch 4 Section 4.x's note that the comment "is stale in the repository" is true at the tag only (see FSE-12).
+1. **Tile rate limit, 180 versus 120.** Both are right, at different tags. `application.yml` has `tile-rate-limit-per-window: 120` at `book-m1-accounts`, `m2`, `m3` and `m4` (comment: "~35 tiles ... 120 lets a reader turn ~3 pages a minute"), and `180` at `book-m5-platform` and `book-m6-final` (with `tile-size: 512`). The change is in commit `00e0619`. The book is consistent with that: Ch 26 says 120 (m1), Ch 30 Section 30.15 says "rose from 120 to 180", and Ch 1, 32, 37 and Appendix C say 180 (final). The arithmetic holds: 180 / 12 tiles = 15 pages a minute; 500 pages x 12 / 180 = 33 minutes; 500 x 35 / 120 = 2.4 hours. No change needed.
+2. **Canvas versus CSS divs.** The book is right. `git grep -i canvas book-m6-final -- frontend/src` finds nothing; the Angular viewer positions `div` elements with `blob:` backgrounds (Ch 21 Section 21.9). The `<canvas>` appears only in the m0 static page (`src/main/resources/static/index.html`, Ch 25). At `book-m6-final` the app README (line 6) and the `PageInfo` Javadoc still say `<canvas>`; on `main`, PR #13 (`cb3f184`, after the tag) fixed both. Ch 4 Section 4.x's note that the comment "is stale in the repository" is true at the tag only (see FSE-12).
 
 ## Blockers
 
@@ -94,7 +94,7 @@ The one serious problem is in the **built PDF, not the Markdown**: multi-column 
 ### FSE-12 Ch 4 note about the stale `<canvas>` comment needs a time qualifier
 - **Where:** Ch 4, note under Listing 4.3.
 - **Quote:** "so the comment is stale in the repository".
-- **Problem:** true at `book-m6-final`; PR #13 (`b44606e`, merged into `main` after the tag) removed the canvas wording from `PageInfo.java` and the README. A reader who clones `main` will not find the comment.
+- **Problem:** true at `book-m6-final`; PR #13 (`cb3f184`, merged into `main` after the tag) removed the canvas wording from `PageInfo.java` and the README. A reader who clones `main` will not find the comment.
 - **Suggested fix:** "so the comment is stale at `book-m6-final` (a later commit on `main` corrects it)". The `git log --oneline` output in Ch 7 already hedges the top line.
 
 ### FSE-13 Ch 35 illustrative metrics page has no way to fetch it in the shipped stack
@@ -107,11 +107,11 @@ The one serious problem is in the **built PDF, not the Markdown**: multi-column 
 Covered in depth (chapter or section, what I checked):
 
 - **Setup chapter (S):** versions (JDK 25, Node 24, Docker Compose v2), per-OS steps, the seven tags list, Maven wrapper 3.9.16 (`maven-wrapper.properties` at m6).
-- **Ch 1:** 12 tiles per letter page (1,275 x 1,650 / 512 = 3 x 4); 180/60 s, 15 pages a minute, 33 minutes, 2.4 hours; 114 backend and 31 frontend tests (exact recount: 114 `@Test` at `6cf17fa` and at `book-m6-final`, 31 `it(` in `frontend/src`).
+- **Ch 1:** 12 tiles per letter page (1,275 x 1,650 / 512 = 3 x 4); 180/60 s, 15 pages a minute, 33 minutes, 2.4 hours; 114 backend and 31 frontend tests (exact recount: 114 `@Test` at `f1bb3a8` and at `book-m6-final`, 31 `it(` in `frontend/src`).
 - **Ch 2:** `.env` handling, `openssl rand -hex 32`, retry backoff (`50L << min(attempt,4)`, `ATTEMPTS = 8`, about four seconds; Ch 27 corrects the Javadoc's "two seconds"). One nit, FSE-11.
 - **Ch 3 to 5:** all 20 "Example" blocks compile with JDK 26 (fragments wrapped in a `main`), and outputs match the text (`3 columns, 4 rows`, `12`, `TileRef[row=2, col=1]`, and so on). Appendix C solutions for 3.1, 3.5, 3.6, 4.2 to 4.5, 5.2, 5.4, 5.5 compile and behave as stated. Ex 1.1, 3.4 (café 4 chars, 5 bytes), 3.6, 4.4 correct.
 - **Ch 6:** `pom.xml` facts at m6 (`java.version` 25, PDFBox 3.0.8, `tomcat.version` 11.0.26 with the three advisories in the file's comment, `finalName secure-doc-viewer`, version 0.1.0); wrapper first appears at m5; Ex 6.5 dependency comparison m0 versus m2 matches the two `pom.xml` files.
-- **Ch 7:** commands, `git show 2d10e07 --stat` (28 files, 997 insertions), 38 commits with milestone 5 = 15 commits plus its merge (verified with `rev-list`).
+- **Ch 7:** commands, `git show 08f3879 --stat` (28 files, 997 insertions), 38 commits with milestone 5 = 15 commits plus its merge (verified with `rev-list`).
 - **Ch 8:** curl commands, cookie flags, `SameSite=Strict`, `SDV_SESSION`.
 - **Ch 9:** all six tables and their migrations `V1` to `V3` match; every SQL statement in the chapter uses columns that exist; the migration loop through `docker compose exec -T mysql sh -c 'MYSQL_PWD=...'` is valid because the container holds `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`; the Flyway "non-empty schema" warning is accurate.
 - **Ch 10:** Compose listings (m1 and m6), profiles, ports 8081/8443, fixed subnet 172.28.0.x, `.dockerignore`; `docker-compose.yml` is byte-identical at m5 and m6.

@@ -347,7 +347,7 @@ The `${VAR:?message}` form makes Compose refuse to start, with your message, whe
 
 `SIGNING_SECRET` (at least 32 characters; startup fails otherwise) keys every tile token and the recognized-device hashes, so treat it like a password. The MySQL health check is written as `MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqladmin ping ...`: the doubled `$$` defers expansion to the container, so the password never appears in the stored command that `docker inspect` shows, and `MYSQL_PWD` keeps it off the process's argument list. A comment in the file says exactly this.
 
-On a fresh database the app creates the first admin. The password is `BOOTSTRAP_ADMIN_PASSWORD` if you set it, or a random one printed once in the log if you leave it empty. The app forces a password change at first sign-in only when *it* generated the password. If you set the password yourself, change it yourself and clear it from `.env`; the README's go-live note says so, and commit `5aa0f3c` added it.
+On a fresh database the app creates the first admin. The password is `BOOTSTRAP_ADMIN_PASSWORD` if you set it, or a random one printed once in the log if you leave it empty. The app forces a password change at first sign-in only when *it* generated the password. If you set the password yourself, change it yourself and clear it from `.env`; the README's go-live note says so, and commit `c40375a` added it.
 
 ### 33.12 Secure cookies and HSTS
 
@@ -365,7 +365,7 @@ The default is `false` so that `http://localhost` works during development; a br
 
 HSTS closes the remaining gap. Once a browser has seen the header on an HTTPS response, it refuses to use plain HTTP for that site for the `max-age` (here, one year, `31536000` seconds), even if the user types `http://`. That protects against a downgrade attack, where someone on the network strips the encryption from a first request.
 
-Its power is also its risk. `includeSubDomains` extends the promise to every subdomain (`www`, `mail`, and the rest), and the browser remembers it for the whole `max-age`. If one subdomain isn't ready for HTTPS, it becomes unreachable for a year. That is why `includeSubDomains` is opt-in through `HSTS_POLICY` (commits `66f7152` and `5aa0f3c`) and the checklist says to add it only if every subdomain is HTTPS.
+Its power is also its risk. `includeSubDomains` extends the promise to every subdomain (`www`, `mail`, and the rest), and the browser remembers it for the whole `max-age`. If one subdomain isn't ready for HTTPS, it becomes unreachable for a year. That is why `includeSubDomains` is opt-in through `HSTS_POLICY` (commits `bbca423` and `c40375a`) and the checklist says to add it only if every subdomain is HTTPS.
 
 ### 33.13 Non-root, memory limits, health checks, and start order
 
