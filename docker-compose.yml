@@ -3,6 +3,9 @@
 # With HTTPS:         `docker compose --profile full --profile tls up -d --build` -> also https://localhost:8443
 #                     (see deploy/Caddyfile; set SESSION_COOKIE_SECURE=true in .env when serving over HTTPS)
 # Credentials come from the git-ignored .env file (copy .env.example).
+# The project name is set explicitly so image and volume names (secure-doc-viewer-app, secure-doc-viewer_app-storage ...)
+# do not depend on the folder or repository name; the CI image scan relies on them.
+name: secure-doc-viewer
 services:
   mysql:
     image: mysql:8.4@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
